@@ -17,5 +17,5 @@ COPY . .
 # Expose port
 EXPOSE 8080
 
-# Start command
-CMD ["uvicorn", "api_gateway_simple:app", "--host", "0.0.0.0", "--port", "8080"]
+# Start command - use python -m to ensure uvicorn is found
+CMD ["python", "-m", "uvicorn", "api_gateway_simple:app", "--host", "0.0.0.0", "--port", "8080"]
