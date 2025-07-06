@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO Dashboard - Početna</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            color: #2c5530;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-decoration: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            text-decoration: none;
+            color: white;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-description {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .api-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .api-link {
+            background: rgba(103, 126, 234, 0.1);
+            color: #667eea;
+            padding: 1rem;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            border: 2px solid rgba(103, 126, 234, 0.2);
+        }
+
+        .api-link:hover {
+            background: rgba(103, 126, 234, 0.2);
+            text-decoration: none;
+            color: #5a67d8;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #16a34a;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .info-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid,
+            .api-links {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 2rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="status-indicator">
+        <div class="status-dot"></div>
+        <span>AVA Sistem Aktivan</span>
+    </div>
+
+    <div class="container">
+        <div class="logo">🌾</div>
+        <h1>AVA OLO Dashboard</h1>
+        <p class="subtitle">Hrvatski Poljoprivredni Virtualni Asistent</p>
+
+        <div class="dashboard-grid">
+            <a href="monitoring_dashboard.html" class="dashboard-card">
+                <div class="card-icon">📊</div>
+                <div class="card-title">Monitoring Dashboard</div>
+                <div class="card-description">Praćenje farmi, polja i razgovora u realnom vremenu</div>
+            </a>
+
+            <a href="database_explorer.html" class="dashboard-card">
+                <div class="card-icon">🗃️</div>
+                <div class="card-title">Database Explorer</div>
+                <div class="card-description">Interaktivno pregledanje i izvoz podataka</div>
+            </a>
+        </div>
+
+        <div class="api-links">
+            <a href="http://localhost:8010/docs" target="_blank" class="api-link">
+                📡 Monitoring API Docs
+            </a>
+            <a href="http://localhost:8011/docs" target="_blank" class="api-link">
+                🔍 Explorer API Docs
+            </a>
+        </div>
+
+        <div class="info-section">
+            <h3>Aktivni Servisi</h3>
+            <p>
+                <strong>Monitoring API:</strong> localhost:8010<br>
+                <strong>Explorer API:</strong> localhost:8011<br>
+                <strong>Dashboard:</strong> localhost:8090
+            </p>
+            <p style="margin-top: 1rem;">
+                <strong>Značajke:</strong> Realnо praćenje farmi • Hrvatska lokalizacija • 
+                Excel/CSV izvoz • WebSocket ažuriranja • SQL interface
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Simple health check for APIs
+        async function checkAPIs() {
+            const apis = [
+                'http://localhost:8010/health',
+                'http://localhost:8011/health'
+            ];
+            
+            try {
+                const results = await Promise.all(
+                    apis.map(url => 
+                        fetch(url).then(r => r.ok).catch(() => false)
+                    )
+                );
+                
+                const allHealthy = results.every(r => r);
+                const statusEl = document.querySelector('.status-indicator');
+                
+                if (allHealthy) {
+                    statusEl.style.background = 'rgba(34, 197, 94, 0.1)';
+                    statusEl.style.color = '#16a34a';
+                    statusEl.style.borderColor = 'rgba(34, 197, 94, 0.3)';
+                    statusEl.querySelector('span').textContent = 'AVA Sistem Aktivan';
+                } else {
+                    statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                    statusEl.style.color = '#dc2626';
+                    statusEl.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    statusEl.querySelector('span').textContent = 'API Nedostupan';
+                }
+            } catch (error) {
+                console.log('Health check failed:', error);
+            }
+        }
+
+        // Check API health on load and every 30 seconds
+        checkAPIs();
+        setInterval(checkAPIs, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+# AVA OLO Dashboard System Dependencies
+# Core dependencies for the agricultural dashboard
+
+# Web Framework and API
+fastapi==0.110.0
+uvicorn==0.27.0.post1
+gunicorn==20.1.0
+
+# Database
+asyncpg==0.28.0
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.7
+
+# Data Processing and Export
+pandas==2.0.3
+openpyxl==3.1.2
+xlsxwriter==3.1.2
+
+# Environment and Configuration
+python-dotenv==1.0.0
+
+# HTTP Requests (for health checks)
+requests==2.31.0
+
+# WebSocket support (included in uvicorn)
+websockets==11.0.3
+
+# Additional utilities
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Original project dependencies (if needed)
+pinecone-client==2.0.0
+openai==0.27.0
+langchain==0.0.100
+langchain-community==0.0.3
+langchain-openai==0.1.0
+tiktoken==0.9.0
+
+# Development and testing (optional)
+# pytest==7.4.3
+# pytest-asyncio==0.21.1
