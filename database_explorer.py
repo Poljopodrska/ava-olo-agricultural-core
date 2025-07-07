@@ -13,9 +13,9 @@ import tempfile
 import pandas as pd
 
 # Add parent directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from core.database_operations import DatabaseOperations
+from database_operations import DatabaseOperations
 
 logger = logging.getLogger(__name__)
 
