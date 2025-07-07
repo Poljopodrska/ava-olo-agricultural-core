@@ -1,7 +1,6 @@
 version: 1.0
 runtime: docker
 run:
-  runtime-version: latest
   network:
     port: 8080
     env: PORT
