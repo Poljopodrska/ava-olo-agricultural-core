@@ -29,7 +29,7 @@ app = FastAPI(
 )
 
 # Setup templates
-templates = Jinja2Templates(directory="services/templates")
+templates = Jinja2Templates(directory="templates")
 
 # Initialize database
 db_ops = DatabaseOperations()

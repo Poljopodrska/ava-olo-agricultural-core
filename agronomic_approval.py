@@ -21,7 +21,7 @@ app = FastAPI(
 )
 
 # Setup templates
-templates = Jinja2Templates(directory="services/templates")
+templates = Jinja2Templates(directory="templates")
 
 async def get_api_gateway_data(endpoint: str) -> Dict[str, Any]:
     """Get data from API Gateway"""
