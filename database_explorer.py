@@ -79,37 +79,71 @@ class DatabaseExplorer:
                     text(f"SELECT COUNT(*) FROM {table_name}")
                 ).scalar() or 0
                 
-                # Get recent entries count
-                counts = {}
-                for period_name, days in [("24h", 1), ("7d", 7), ("30d", 30)]:
-                    start_date = datetime.now() - timedelta(days=days)
-                    count = session.execute(
-                        text(f"""
-                            SELECT COUNT(*) FROM {table_name} 
-                            WHERE created_at >= :start_date OR updated_at >= :start_date
-                        """),
-                        {"start_date": start_date}
-                    ).scalar() or 0
-                    counts[period_name] = count
+                # Get recent entries count - check if date columns exist
+                counts = {"24h": 0, "7d": 0, "30d": 0}
+                
+                # Check if table has date columns
+                date_columns = []
+                for col in columns:
+                    col_name = col["name"].lower()
+                    if col_name in ["created_at", "updated_at", "date", "timestamp"]:
+                        date_columns.append(col["name"])
+                
+                if date_columns:
+                    for period_name, days in [("24h", 1), ("7d", 7), ("30d", 30)]:
+                        start_date = datetime.now() - timedelta(days=days)
+                        date_conditions = " OR ".join([f"{col} >= :start_date" for col in date_columns])
+                        try:
+                            count = session.execute(
+                                text(f"SELECT COUNT(*) FROM {table_name} WHERE {date_conditions}"),
+                                {"start_date": start_date}
+                            ).scalar() or 0
+                            counts[period_name] = count
+                        except:
+                            pass
                 
                 # Get sample data
-                sample_rows = session.execute(
-                    text(f"SELECT * FROM {table_name} ORDER BY created_at DESC LIMIT 5")
-                ).fetchall()
+                try:
+                    # Try to order by a date column if available, otherwise by id
+                    order_column = date_columns[0] if date_columns else "id"
+                    sample_rows = session.execute(
+                        text(f"SELECT * FROM {table_name} ORDER BY {order_column} DESC LIMIT 5")
+                    ).fetchall()
+                except:
+                    # If ordering fails, just get any 5 rows
+                    sample_rows = session.execute(
+                        text(f"SELECT * FROM {table_name} LIMIT 5")
+                    ).fetchall()
                 
                 return {
                     "table_name": table_name,
                     "total_records": total_count,
                     "columns": [{"name": col["name"], "type": str(col["type"])} for col in columns],
                     "recent_counts": counts,
-                    "sample_data": [dict(row) for row in sample_rows] if sample_rows else []
+                    "sample_data": [dict(zip([col["name"] for col in columns], row)) for row in sample_rows] if sample_rows else []
                 }
                 
         except Exception as e:
-            logger.error(f"Error getting table info: {e}")
+            logger.error(f"Error getting table info for {table_name}: {e}")
+            # Check if it's a table not found error
+            error_msg = str(e)
+            if "does not exist" in error_msg or "farmers" in table_name:
+                # Try to list available tables
+                try:
+                    with self.db_ops.get_session() as session:
+                        tables_result = session.execute(
+                            text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name")
+                        ).fetchall()
+                        available_tables = [t[0] for t in tables_result] if tables_result else []
+                        return {
+                            "table_name": table_name,
+                            "error": f"Table '{table_name}' not found. Available tables: {', '.join(available_tables) if available_tables else 'No tables found in database'}"
+                        }
+                except:
+                    pass
             return {
                 "table_name": table_name,
-                "error": str(e)
+                "error": error_msg
             }
     
     async def get_table_data_filtered(self, table_name: str, days: int = 30, 
@@ -159,7 +193,7 @@ class DatabaseExplorer:
                 total_count = session.execute(text(count_query), params).scalar() or 0
                 results = session.execute(text(query), params).fetchall()
                 
-                rows = [dict(row) for row in results]
+                rows = [dict(zip(columns, row)) for row in results]
                 
                 return {
                     "columns": columns,
@@ -189,26 +223,29 @@ class DatabaseExplorer:
         
         # Farmer queries
         if "farmer" in description_lower:
-            if "new" in description_lower or "recent" in description_lower:
-                if "week" in description_lower or "7 day" in description_lower:
-                    sql_query = "SELECT * FROM farmers WHERE created_at >= NOW() - INTERVAL '7 days' ORDER BY created_at DESC"
-                    query_type = "recent_farmers"
-                elif "month" in description_lower or "30 day" in description_lower:
-                    sql_query = "SELECT * FROM farmers WHERE created_at >= NOW() - INTERVAL '30 days' ORDER BY created_at DESC"
-                    query_type = "recent_farmers"
-                else:
-                    sql_query = "SELECT * FROM farmers WHERE created_at >= NOW() - INTERVAL '1 day' ORDER BY created_at DESC"
-                    query_type = "recent_farmers"
+            if "all" in description_lower and ("show" in description_lower or "list" in description_lower or "get" in description_lower):
+                sql_query = "SELECT * FROM farmers ORDER BY id DESC"
+                query_type = "all_farmers"
+            elif "new" in description_lower or "recent" in description_lower:
+                # Since farmers table doesn't have created_at, we can't filter by date
+                sql_query = "SELECT * FROM farmers ORDER BY id DESC LIMIT 10"
+                query_type = "recent_farmers"
             elif "count" in description_lower or "how many" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_farmers, COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_farmers FROM farmers"
+                sql_query = "SELECT COUNT(*) as total_farmers FROM farmers"
                 query_type = "count"
-            elif "inactive" in description_lower:
-                sql_query = "SELECT * FROM farmers WHERE is_active = FALSE ORDER BY updated_at DESC"
-                query_type = "inactive_farmers"
+            elif "by city" in description_lower or "cities" in description_lower:
+                sql_query = "SELECT city, COUNT(*) as farmer_count FROM farmers GROUP BY city ORDER BY farmer_count DESC"
+                query_type = "farmers_by_city"
+            elif "by country" in description_lower:
+                sql_query = "SELECT country, COUNT(*) as farmer_count FROM farmers GROUP BY country ORDER BY farmer_count DESC"
+                query_type = "farmers_by_country"
         
         # Field queries
         elif "field" in description_lower:
-            if "large" in description_lower or "big" in description_lower:
+            if "all" in description_lower and ("show" in description_lower or "list" in description_lower or "get" in description_lower):
+                sql_query = "SELECT * FROM fields ORDER BY created_at DESC"
+                query_type = "all_fields"
+            elif "large" in description_lower or "big" in description_lower:
                 sql_query = "SELECT * FROM fields WHERE area_hectares > 50 ORDER BY area_hectares DESC"
                 query_type = "large_fields"
             elif "crop" in description_lower:
@@ -263,22 +300,35 @@ class DatabaseExplorer:
             if not query_upper.strip().startswith("SELECT") and not query_upper.strip().startswith("--"):
                 raise ValueError("Only SELECT queries are allowed")
             
+            # Check for dangerous keywords with word boundaries
             dangerous_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE"]
-            if any(keyword in query_upper for keyword in dangerous_keywords):
-                raise ValueError("Query contains dangerous operations")
+            import re
+            for keyword in dangerous_keywords:
+                if re.search(r'\b' + keyword + r'\b', query_upper):
+                    raise ValueError("Query contains dangerous operations")
             
             with self.db_ops.get_session() as session:
                 # Add limit if not present
                 if "LIMIT" not in query_upper and not query_upper.strip().startswith("--"):
                     sql_query += " LIMIT 100"
                 
-                results = session.execute(text(sql_query)).fetchall()
+                result = session.execute(text(sql_query))
+                
+                # Get column names first
+                columns = list(result.keys())
+                
+                # Fetch all rows
+                results = result.fetchall()
                 
                 if results:
-                    columns = list(results[0].keys())
-                    rows = [dict(row) for row in results]
+                    # Convert rows to dictionaries
+                    rows = []
+                    for row in results:
+                        row_dict = {}
+                        for idx, col in enumerate(columns):
+                            row_dict[col] = row[idx]
+                        rows.append(row_dict)
                 else:
-                    columns = []
                     rows = []
                 
                 return {
@@ -377,6 +427,37 @@ async def api_ai_query(query_description: str = Form(...)):
         return {
             "query": query_result,
             "execution": {"success": False, "error": "Could not generate valid SQL query"}
+        }
+
+@app.get("/api/tables")
+async def list_tables():
+    """List all available tables in the database"""
+    try:
+        with db_ops.get_session() as session:
+            result = session.execute(
+                text("""
+                    SELECT table_name, 
+                           pg_size_pretty(pg_total_relation_size(quote_ident(table_name)::text)) as size
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_type = 'BASE TABLE'
+                    ORDER BY table_name
+                """)
+            ).fetchall()
+            
+            tables = [{"name": row[0], "size": row[1]} for row in result]
+            
+            return {
+                "success": True,
+                "tables": tables,
+                "count": len(tables),
+                "database": db_ops.connection_string.split('/')[-1].split('?')[0]
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "tables": []
         }
 
 @app.get("/health")
