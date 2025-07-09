@@ -240,7 +240,7 @@
                 Describe what data you're looking for in plain English, and I'll convert it to SQL
             </p>
             
-            <form action="/ai-query" method="post" class="ai-query-form">
+            <form action="ai-query" method="post" class="ai-query-form">
                 <input 
                     type="text" 
                     name="query_description" 
@@ -268,7 +268,7 @@
                 <h2 class="group-title">{{ group_name }}</h2>
                 <div class="tables-grid">
                     {% for table in tables %}
-                    <a href="/table/{{ table.name }}" class="table-card">
+                    <a href="table/{{ table.name }}" class="table-card">
                         <div class="table-header">
                             <span class="table-icon">{{ table.icon }}</span>
                             <span class="table-name">{{ table.name }}</span>

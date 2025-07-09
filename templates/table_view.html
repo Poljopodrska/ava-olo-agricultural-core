@@ -296,7 +296,7 @@
         <div class="header-content">
             <div class="logo">🗃️ AVA OLO Database Explorer</div>
             <div class="nav-links">
-                <a href="/" class="back-link">← Back to Tables</a>
+                <a href="../" class="back-link">← Back to Tables</a>
                 <span class="timestamp">{{ current_time }}</span>
             </div>
         </div>
@@ -336,13 +336,13 @@
                 <!-- Time Filter -->
                 <div class="time-filter">
                     <span class="filter-label">Show entries from:</span>
-                    <a href="/table/{{ table_name }}?days=1" 
+                    <a href="?days=1" 
                        class="filter-button {% if selected_days == 1 %}active{% endif %}">24 Hours</a>
-                    <a href="/table/{{ table_name }}?days=7" 
+                    <a href="?days=7" 
                        class="filter-button {% if selected_days == 7 %}active{% endif %}">7 Days</a>
-                    <a href="/table/{{ table_name }}?days=30" 
+                    <a href="?days=30" 
                        class="filter-button {% if selected_days == 30 %}active{% endif %}">30 Days</a>
-                    <a href="/table/{{ table_name }}?days=365" 
+                    <a href="?days=365" 
                        class="filter-button {% if selected_days == 365 %}active{% endif %}">All Time</a>
                 </div>
             {% endif %}
