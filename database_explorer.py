@@ -1,9 +1,9 @@
 """
 AVA OLO Database Explorer - Port 8005
-User-friendly interface for database exploration and data export
+Professional database exploration interface with AI-powered querying
 """
-from fastapi import FastAPI, Request, Query, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Request, Query, HTTPException, Form
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import logging
 import os
@@ -11,6 +11,8 @@ import sys
 from typing import Dict, Any, List, Optional
 import tempfile
 import pandas as pd
+from datetime import datetime, timedelta
+from sqlalchemy import text, inspect
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -22,8 +24,8 @@ logger = logging.getLogger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="AVA OLO Database Explorer",
-    description="User-friendly database exploration and data export",
-    version="2.0.0"
+    description="Professional database exploration with AI-powered querying",
+    version="3.0.0"
 )
 
 # Setup templates
@@ -33,101 +35,131 @@ templates = Jinja2Templates(directory="templates")
 db_ops = DatabaseOperations()
 
 class DatabaseExplorer:
-    """Database explorer for table browsing and data export"""
+    """Enhanced database explorer with AI query capabilities"""
     
     def __init__(self):
         self.db_ops = DatabaseOperations()
     
-    async def get_tables_info(self) -> List[Dict[str, Any]]:
-        """Get information about all tables"""
+    def get_table_groups(self) -> Dict[str, List[Dict[str, str]]]:
+        """Get tables organized into logical groups"""
+        return {
+            "Core Data": [
+                {"name": "farmers", "description": "Farmer profiles and information", "icon": "👨‍🌾"},
+                {"name": "fields", "description": "Agricultural fields and properties", "icon": "🌾"},
+                {"name": "crops", "description": "Crop types and varieties", "icon": "🌱"}
+            ],
+            "Operations": [
+                {"name": "tasks", "description": "Field operations and activities", "icon": "📋"},
+                {"name": "activities", "description": "Agricultural activities tracking", "icon": "🚜"},
+                {"name": "field_operations", "description": "Detailed field operations", "icon": "⚙️"}
+            ],
+            "Communication": [
+                {"name": "incoming_messages", "description": "Farmer questions and messages", "icon": "💬"},
+                {"name": "outgoing_messages", "description": "System responses and advice", "icon": "📤"},
+                {"name": "notifications", "description": "System notifications", "icon": "🔔"}
+            ],
+            "Analytics": [
+                {"name": "recommendations", "description": "AI-generated recommendations", "icon": "🤖"},
+                {"name": "weather_data", "description": "Weather information and forecasts", "icon": "🌤️"},
+                {"name": "market_prices", "description": "Market price tracking", "icon": "💰"}
+            ]
+        }
+    
+    async def get_table_info(self, table_name: str) -> Dict[str, Any]:
+        """Get comprehensive table information"""
         try:
             with self.db_ops.get_session() as session:
-                from sqlalchemy import text, inspect
-                
                 inspector = inspect(session.bind)
-                tables = []
                 
-                for table_name in inspector.get_table_names():
-                    try:
-                        # Get row count
-                        row_count = session.execute(
-                            text(f"SELECT COUNT(*) FROM {table_name}")
-                        ).scalar()
-                        
-                        # Get column info
-                        columns = inspector.get_columns(table_name)
-                        
-                        tables.append({
-                            "name": table_name,
-                            "row_count": row_count,
-                            "columns": [{"name": col["name"], "type": str(col["type"])} for col in columns],
-                            "description": self._get_table_description(table_name)
-                        })
-                        
-                    except Exception as e:
-                        logger.warning(f"Error getting info for table {table_name}: {str(e)}")
-                        continue
+                # Get columns
+                columns = inspector.get_columns(table_name)
                 
-                return tables
+                # Get row count
+                total_count = session.execute(
+                    text(f"SELECT COUNT(*) FROM {table_name}")
+                ).scalar() or 0
+                
+                # Get recent entries count
+                counts = {}
+                for period_name, days in [("24h", 1), ("7d", 7), ("30d", 30)]:
+                    start_date = datetime.now() - timedelta(days=days)
+                    count = session.execute(
+                        text(f"""
+                            SELECT COUNT(*) FROM {table_name} 
+                            WHERE created_at >= :start_date OR updated_at >= :start_date
+                        """),
+                        {"start_date": start_date}
+                    ).scalar() or 0
+                    counts[period_name] = count
+                
+                # Get sample data
+                sample_rows = session.execute(
+                    text(f"SELECT * FROM {table_name} ORDER BY created_at DESC LIMIT 5")
+                ).fetchall()
+                
+                return {
+                    "table_name": table_name,
+                    "total_records": total_count,
+                    "columns": [{"name": col["name"], "type": str(col["type"])} for col in columns],
+                    "recent_counts": counts,
+                    "sample_data": [dict(row) for row in sample_rows] if sample_rows else []
+                }
                 
         except Exception as e:
-            logger.error(f"Error getting tables info: {str(e)}")
-            return []
+            logger.error(f"Error getting table info: {e}")
+            return {
+                "table_name": table_name,
+                "error": str(e)
+            }
     
-    def _get_table_description(self, table_name: str) -> str:
-        """Get human-readable description for table"""
-        descriptions = {
-            "ava_conversations": "Razgovori između korisnika i AVA sustava",
-            "farmers": "Informacije o poljoprivrednicima",
-            "fields": "Polja i parcele",
-            "crops": "Usjevi i biljke",
-            "tasks": "Zadaci i aktivnosti na farmama"
-        }
-        return descriptions.get(table_name, "")
-    
-    async def get_table_data(self, table_name: str, page: int = 1, limit: int = 50, 
-                           search: str = "", order_by: str = "", order_dir: str = "desc") -> Dict[str, Any]:
-        """Get paginated data from a table"""
+    async def get_table_data_filtered(self, table_name: str, days: int = 30, 
+                                    page: int = 1, limit: int = 50) -> Dict[str, Any]:
+        """Get filtered table data"""
         try:
             with self.db_ops.get_session() as session:
-                from sqlalchemy import text, inspect
-                
                 inspector = inspect(session.bind)
                 columns = [col["name"] for col in inspector.get_columns(table_name)]
                 
-                # Build query
-                query_parts = [f"SELECT * FROM {table_name}"]
-                params = {}
+                # Build date filter
+                start_date = datetime.now() - timedelta(days=days)
                 
-                # Add search condition
-                if search:
-                    search_conditions = []
-                    for col in columns:
-                        search_conditions.append(f"{col}::text ILIKE :search")
-                    query_parts.append(f"WHERE ({' OR '.join(search_conditions)})")
-                    params["search"] = f"%{search}%"
+                # Check if table has date columns
+                date_columns = []
+                for col in ["created_at", "updated_at", "sent_at", "date"]:
+                    if col in columns:
+                        date_columns.append(col)
                 
-                # Add ordering
-                if order_by and order_by in columns:
-                    direction = "DESC" if order_dir.lower() == "desc" else "ASC"
-                    query_parts.append(f"ORDER BY {order_by} {direction}")
+                # Build query with date filter
+                if date_columns:
+                    date_conditions = " OR ".join([
+                        f"{col} >= :start_date" for col in date_columns
+                    ])
+                    query = f"""
+                        SELECT * FROM {table_name}
+                        WHERE {date_conditions}
+                        ORDER BY {date_columns[0]} DESC
+                        LIMIT :limit OFFSET :offset
+                    """
+                    count_query = f"""
+                        SELECT COUNT(*) FROM {table_name}
+                        WHERE {date_conditions}
+                    """
+                else:
+                    query = f"""
+                        SELECT * FROM {table_name}
+                        ORDER BY id DESC
+                        LIMIT :limit OFFSET :offset
+                    """
+                    count_query = f"SELECT COUNT(*) FROM {table_name}"
                 
-                # Get total count
-                count_query = query_parts[0].replace("SELECT *", "SELECT COUNT(*)")
-                if len(query_parts) > 1 and query_parts[1].startswith("WHERE"):
-                    count_query += f" {query_parts[1]}"
-                
-                total_count = session.execute(text(count_query), params).scalar()
-                
-                # Add pagination
+                # Execute queries
                 offset = (page - 1) * limit
-                query_parts.extend([f"LIMIT {limit}", f"OFFSET {offset}"])
+                params = {"start_date": start_date, "limit": limit, "offset": offset}
                 
-                # Execute main query
-                query = " ".join(query_parts)
+                total_count = session.execute(text(count_query), params).scalar() or 0
                 results = session.execute(text(query), params).fetchall()
                 
-                rows = [list(row) for row in results]
+                rows = [dict(row) for row in results]
                 
                 return {
                     "columns": columns,
@@ -135,111 +167,134 @@ class DatabaseExplorer:
                     "total_count": total_count,
                     "page": page,
                     "limit": limit,
-                    "has_more": (page * limit) < total_count
+                    "total_pages": (total_count + limit - 1) // limit
                 }
                 
         except Exception as e:
-            logger.error(f"Error getting table data: {str(e)}")
+            logger.error(f"Error getting filtered table data: {e}")
             return {
                 "columns": [],
                 "rows": [],
                 "total_count": 0,
-                "page": 1,
-                "limit": limit,
-                "has_more": False
+                "error": str(e)
             }
     
-    async def get_column_stats(self, table_name: str) -> List[Dict[str, Any]]:
-        """Get statistics for each column in the table"""
-        try:
-            with self.db_ops.get_session() as session:
-                from sqlalchemy import text, inspect
-                
-                inspector = inspect(session.bind)
-                columns = inspector.get_columns(table_name)
-                stats = []
-                
-                for col in columns:
-                    col_name = col["name"]
-                    col_type = str(col["type"])
-                    
-                    try:
-                        # Basic stats
-                        null_count = session.execute(
-                            text(f"SELECT COUNT(*) FROM {table_name} WHERE {col_name} IS NULL")
-                        ).scalar()
-                        
-                        unique_count = session.execute(
-                            text(f"SELECT COUNT(DISTINCT {col_name}) FROM {table_name}")
-                        ).scalar()
-                        
-                        # Sample values
-                        sample_values = session.execute(
-                            text(f"SELECT DISTINCT {col_name} FROM {table_name} WHERE {col_name} IS NOT NULL LIMIT 5")
-                        ).fetchall()
-                        
-                        stat_info = {
-                            "name": col_name,
-                            "type": col_type,
-                            "null_count": null_count,
-                            "unique_count": unique_count,
-                            "sample_values": [str(row[0]) for row in sample_values]
-                        }
-                        
-                        # Additional stats for numeric columns
-                        if "int" in col_type.lower() or "float" in col_type.lower() or "numeric" in col_type.lower():
-                            try:
-                                min_val = session.execute(
-                                    text(f"SELECT MIN({col_name}) FROM {table_name}")
-                                ).scalar()
-                                max_val = session.execute(
-                                    text(f"SELECT MAX({col_name}) FROM {table_name}")
-                                ).scalar()
-                                
-                                stat_info["min_value"] = str(min_val) if min_val is not None else None
-                                stat_info["max_value"] = str(max_val) if max_val is not None else None
-                            except:
-                                pass
-                        
-                        stats.append(stat_info)
-                        
-                    except Exception as e:
-                        logger.warning(f"Error getting stats for column {col_name}: {str(e)}")
-                        continue
-                
-                return stats
-                
-        except Exception as e:
-            logger.error(f"Error getting column stats: {str(e)}")
-            return []
-    
-    async def export_table_data(self, table_name: str, format: str = "excel", 
-                              search: str = "", limit: int = 10000) -> str:
-        """Export table data to file"""
-        try:
-            # Get data
-            data = await self.get_table_data(table_name, page=1, limit=limit, search=search)
-            
-            if not data["rows"]:
-                raise HTTPException(status_code=404, detail="No data to export")
-            
-            # Create DataFrame
-            df = pd.DataFrame(data["rows"], columns=data["columns"])
-            
-            # Create temporary file
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{format}") as tmp_file:
-                if format.lower() == "excel":
-                    df.to_excel(tmp_file.name, index=False)
-                elif format.lower() == "csv":
-                    df.to_csv(tmp_file.name, index=False)
+    async def convert_natural_language_to_sql(self, description: str) -> Dict[str, Any]:
+        """Convert natural language query to SQL"""
+        description_lower = description.lower()
+        
+        # Pattern matching for common queries
+        sql_query = ""
+        query_type = "custom"
+        
+        # Farmer queries
+        if "farmer" in description_lower:
+            if "new" in description_lower or "recent" in description_lower:
+                if "week" in description_lower or "7 day" in description_lower:
+                    sql_query = "SELECT * FROM farmers WHERE created_at >= NOW() - INTERVAL '7 days' ORDER BY created_at DESC"
+                    query_type = "recent_farmers"
+                elif "month" in description_lower or "30 day" in description_lower:
+                    sql_query = "SELECT * FROM farmers WHERE created_at >= NOW() - INTERVAL '30 days' ORDER BY created_at DESC"
+                    query_type = "recent_farmers"
                 else:
-                    raise HTTPException(status_code=400, detail="Unsupported format")
+                    sql_query = "SELECT * FROM farmers WHERE created_at >= NOW() - INTERVAL '1 day' ORDER BY created_at DESC"
+                    query_type = "recent_farmers"
+            elif "count" in description_lower or "how many" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_farmers, COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_farmers FROM farmers"
+                query_type = "count"
+            elif "inactive" in description_lower:
+                sql_query = "SELECT * FROM farmers WHERE is_active = FALSE ORDER BY updated_at DESC"
+                query_type = "inactive_farmers"
+        
+        # Field queries
+        elif "field" in description_lower:
+            if "large" in description_lower or "big" in description_lower:
+                sql_query = "SELECT * FROM fields WHERE area_hectares > 50 ORDER BY area_hectares DESC"
+                query_type = "large_fields"
+            elif "crop" in description_lower:
+                sql_query = "SELECT f.*, c.name as crop_name FROM fields f LEFT JOIN crops c ON f.crop_id = c.id ORDER BY f.created_at DESC"
+                query_type = "fields_with_crops"
+        
+        # Message queries
+        elif "message" in description_lower or "question" in description_lower:
+            if "today" in description_lower:
+                sql_query = "SELECT * FROM incoming_messages WHERE DATE(created_at) = CURRENT_DATE ORDER BY created_at DESC"
+                query_type = "today_messages"
+            elif "unanswered" in description_lower:
+                sql_query = "SELECT * FROM incoming_messages WHERE response_sent = FALSE ORDER BY created_at DESC"
+                query_type = "unanswered"
+        
+        # Task queries
+        elif "task" in description_lower or "operation" in description_lower:
+            if "pending" in description_lower or "incomplete" in description_lower:
+                sql_query = "SELECT * FROM tasks WHERE status != 'completed' ORDER BY priority DESC, created_at DESC"
+                query_type = "pending_tasks"
+            elif "today" in description_lower:
+                sql_query = "SELECT * FROM tasks WHERE DATE(created_at) = CURRENT_DATE ORDER BY created_at DESC"
+                query_type = "today_tasks"
+        
+        # Analytics queries
+        elif "statistic" in description_lower or "summary" in description_lower:
+            sql_query = """
+                SELECT 
+                    (SELECT COUNT(*) FROM farmers) as total_farmers,
+                    (SELECT COUNT(*) FROM fields) as total_fields,
+                    (SELECT COUNT(*) FROM incoming_messages) as total_messages,
+                    (SELECT COUNT(*) FROM tasks) as total_tasks
+            """
+            query_type = "statistics"
+        
+        # Default fallback
+        if not sql_query:
+            sql_query = f"-- Unable to generate SQL from: {description}\n-- Try being more specific about what data you want to see"
+            query_type = "failed"
+        
+        return {
+            "sql_query": sql_query,
+            "query_type": query_type,
+            "original_description": description
+        }
+    
+    async def execute_ai_query(self, sql_query: str) -> Dict[str, Any]:
+        """Execute the AI-generated SQL query safely"""
+        try:
+            # Security check
+            query_upper = sql_query.upper()
+            if not query_upper.strip().startswith("SELECT") and not query_upper.strip().startswith("--"):
+                raise ValueError("Only SELECT queries are allowed")
+            
+            dangerous_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE"]
+            if any(keyword in query_upper for keyword in dangerous_keywords):
+                raise ValueError("Query contains dangerous operations")
+            
+            with self.db_ops.get_session() as session:
+                # Add limit if not present
+                if "LIMIT" not in query_upper and not query_upper.strip().startswith("--"):
+                    sql_query += " LIMIT 100"
                 
-                return tmp_file.name
+                results = session.execute(text(sql_query)).fetchall()
+                
+                if results:
+                    columns = list(results[0].keys())
+                    rows = [dict(row) for row in results]
+                else:
+                    columns = []
+                    rows = []
+                
+                return {
+                    "success": True,
+                    "columns": columns,
+                    "rows": rows,
+                    "row_count": len(rows)
+                }
                 
         except Exception as e:
-            logger.error(f"Error exporting data: {str(e)}")
-            raise HTTPException(status_code=500, detail="Export failed")
+            return {
+                "success": False,
+                "error": str(e),
+                "columns": [],
+                "rows": []
+            }
 
 # Initialize explorer
 explorer = DatabaseExplorer()
@@ -247,98 +302,86 @@ explorer = DatabaseExplorer()
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Database Explorer Dashboard"""
-    tables = await explorer.get_tables_info()
+    """Enhanced Database Explorer Dashboard"""
+    table_groups = explorer.get_table_groups()
     
     return templates.TemplateResponse("database_explorer.html", {
         "request": request,
-        "tables": tables
+        "table_groups": table_groups,
+        "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     })
 
-@app.get("/api/schema/tables")
-async def get_tables():
-    """API endpoint for tables information"""
-    return await explorer.get_tables_info()
-
-@app.get("/api/data/{table_name}")
-async def get_table_data(
-    table_name: str,
-    page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=10, le=1000),
-    search: str = Query(""),
-    order_by: str = Query(""),
-    order_dir: str = Query("desc")
-):
-    """API endpoint for table data"""
-    return await explorer.get_table_data(table_name, page, limit, search, order_by, order_dir)
-
-@app.get("/api/data/{table_name}/columns")
-async def get_column_stats(table_name: str):
-    """API endpoint for column statistics"""
-    return await explorer.get_column_stats(table_name)
-
-@app.get("/api/data/{table_name}/export")
-async def export_table(
-    table_name: str,
-    format: str = Query("excel"),
-    search: str = Query(""),
-    limit: int = Query(10000)
-):
-    """Export table data"""
-    file_path = await explorer.export_table_data(table_name, format, search, limit)
+@app.get("/table/{table_name}", response_class=HTMLResponse)
+async def view_table(request: Request, table_name: str, days: int = Query(30)):
+    """View table with time-based filtering"""
+    table_info = await explorer.get_table_info(table_name)
+    table_data = await explorer.get_table_data_filtered(table_name, days=days)
     
-    filename = f"{table_name}.{format}"
-    return FileResponse(
-        file_path,
-        filename=filename,
-        media_type="application/octet-stream"
-    )
+    return templates.TemplateResponse("table_view.html", {
+        "request": request,
+        "table_name": table_name,
+        "table_info": table_info,
+        "table_data": table_data,
+        "selected_days": days,
+        "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
 
-@app.get("/api/query/custom")
-async def execute_custom_query(query: str = Query(...), limit: int = Query(1000)):
-    """Execute custom SQL query (SELECT only)"""
-    try:
-        # Security check - only allow SELECT statements
-        query_clean = query.strip().upper()
-        if not query_clean.startswith("SELECT"):
-            raise HTTPException(status_code=400, detail="Only SELECT queries are allowed")
-        
-        # Prevent dangerous operations
-        dangerous_keywords = ["DROP", "DELETE", "UPDATE", "INSERT", "ALTER", "CREATE", "TRUNCATE"]
-        if any(keyword in query_clean for keyword in dangerous_keywords):
-            raise HTTPException(status_code=400, detail="Query contains dangerous operations")
-        
-        with db_ops.get_session() as session:
-            from sqlalchemy import text
-            
-            # Add limit to query if not present
-            if "LIMIT" not in query_clean:
-                query += f" LIMIT {limit}"
-            
-            results = session.execute(text(query)).fetchall()
-            
-            if results:
-                columns = list(results[0].keys())
-                rows = [list(row) for row in results]
-            else:
-                columns = []
-                rows = []
-            
-            return {
-                "columns": columns,
-                "rows": rows,
-                "row_count": len(rows)
-            }
-            
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error executing custom query: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Query execution failed: {str(e)}")
+@app.post("/ai-query", response_class=HTMLResponse)
+async def ai_query(request: Request, query_description: str = Form(...)):
+    """Convert natural language to SQL and execute"""
+    # Convert to SQL
+    query_result = await explorer.convert_natural_language_to_sql(query_description)
+    
+    # Execute if successful
+    if query_result["query_type"] != "failed":
+        execution_result = await explorer.execute_ai_query(query_result["sql_query"])
+    else:
+        execution_result = {"success": False, "error": "Could not generate valid SQL query"}
+    
+    return templates.TemplateResponse("ai_query_results.html", {
+        "request": request,
+        "query_description": query_description,
+        "sql_query": query_result["sql_query"],
+        "query_type": query_result["query_type"],
+        "results": execution_result,
+        "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+@app.get("/api/table/{table_name}/data")
+async def api_table_data(
+    table_name: str,
+    days: int = Query(30),
+    page: int = Query(1),
+    limit: int = Query(50)
+):
+    """API endpoint for table data with filtering"""
+    return await explorer.get_table_data_filtered(table_name, days, page, limit)
+
+@app.get("/api/table/{table_name}/info")
+async def api_table_info(table_name: str):
+    """API endpoint for table information"""
+    return await explorer.get_table_info(table_name)
+
+@app.post("/api/ai-query")
+async def api_ai_query(query_description: str = Form(...)):
+    """API endpoint for AI query conversion and execution"""
+    query_result = await explorer.convert_natural_language_to_sql(query_description)
+    
+    if query_result["query_type"] != "failed":
+        execution_result = await explorer.execute_ai_query(query_result["sql_query"])
+        return {
+            "query": query_result,
+            "execution": execution_result
+        }
+    else:
+        return {
+            "query": query_result,
+            "execution": {"success": False, "error": "Could not generate valid SQL query"}
+        }
 
 @app.get("/health")
 async def health_check():
-    """Health check"""
+    """Health check endpoint"""
     db_healthy = await db_ops.health_check()
     
     return {
@@ -346,10 +389,12 @@ async def health_check():
         "status": "healthy",
         "database": "connected" if db_healthy else "disconnected",
         "port": 8005,
-        "purpose": "Database exploration and data export"
+        "purpose": "Professional database exploration with AI querying",
+        "version": "3.0.0"
     }
 
 if __name__ == "__main__":
     import uvicorn
     print("🗃️ Starting AVA OLO Database Explorer on port 8005")
+    print("✨ Features: AI Query Assistant, Time Filtering, Table Groups")
     uvicorn.run(app, host="0.0.0.0", port=8005)
