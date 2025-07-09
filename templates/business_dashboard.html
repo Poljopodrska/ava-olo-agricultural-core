@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVA OLO - Business KPI Dashboard</title>
+    <title>AVA OLO - Business Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -13,459 +13,602 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
             color: #333;
+            line-height: 1.6;
         }
 
         .header {
-            background: rgba(255, 255, 255, 0.95);
+            background: white;
             padding: 1rem 2rem;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .logo {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .logo h1 {
-            color: #2c5530;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 700;
+            color: #2e7d32;
         }
 
-        .business-info {
-            background: #667eea;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+        .timestamp {
+            color: #666;
             font-size: 0.9rem;
         }
 
-        .dashboard {
-            padding: 2rem;
+        .dashboard-container {
             max-width: 1400px;
-            margin: 0 auto;
+            margin: 2rem auto;
+            padding: 0 1rem;
         }
 
+        /* KPI Grid Layout */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
-        .kpi-card {
-            background: rgba(255, 255, 255, 0.95);
+        /* Unit 1: Database Overview */
+        .overview-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .overview-card {
+            background: white;
             padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
         }
 
-        .kpi-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        .overview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
 
-        .kpi-header {
+        .overview-title {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .overview-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a73e8;
+            margin-bottom: 0.5rem;
+        }
+
+        .overview-change {
+            color: #0f9d58;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .overview-change.negative {
+            color: #ea4335;
+        }
+
+        /* Hectare Breakdown */
+        .breakdown-container {
+            margin-top: 1rem;
+        }
+
+        .breakdown-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .breakdown-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .breakdown-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Unit 2: Growth Trends */
+        .trends-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .trends-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .trend-period {
+            text-align: center;
+        }
+
+        .period-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1a73e8;
             margin-bottom: 1rem;
         }
 
-        .kpi-title {
+        .trend-metric {
+            margin: 0.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .metric-label {
+            color: #666;
             font-size: 0.9rem;
-            color: #6b7280;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        /* Unit 3: Charts */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        /* Unit 4: Today's Activity */
+        .activity-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .activity-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .activity-item:hover {
+            background: #e9ecef;
+        }
+
+        .activity-count {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a73e8;
+        }
+
+        .activity-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Unit 5: Activity Stream */
+        .stream-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .stream-item {
+            display: flex;
+            align-items: start;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            transition: background 0.2s;
+        }
+
+        .stream-item:hover {
+            background: #f8f9fa;
+        }
+
+        .stream-time {
+            color: #666;
+            font-size: 0.8rem;
+            min-width: 80px;
+        }
+
+        .stream-content {
+            flex: 1;
+        }
+
+        .stream-action {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .stream-details {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Unit 6: Database Changes */
+        .changes-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .changes-table {
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        .changes-table th {
+            text-align: left;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .changes-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .changes-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .kpi-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
+        .badge-insert {
+            background: #e8f5e9;
+            color: #2e7d32;
         }
 
-        .icon-conversations { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
-        .icon-farmers { background: linear-gradient(135deg, #34d399, #10b981); }
-        .icon-growth { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
-        .icon-approval { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
-
-        .kpi-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            line-height: 1;
-            margin-bottom: 0.5rem;
+        .badge-update {
+            background: #e3f2fd;
+            color: #1565c0;
         }
 
-        .kpi-change {
-            font-size: 0.9rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
+        .badge-delete {
+            background: #ffebee;
+            color: #c62828;
         }
 
-        .change-positive { color: #16a34a; }
-        .change-negative { color: #dc2626; }
-        .change-neutral { color: #6b7280; }
-
-        .charts-section {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .chart-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .chart-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-        }
-
-        .stats-summary {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            overflow: hidden;
-        }
-
-        .stats-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stats-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .refresh-btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: opacity 0.3s ease;
-        }
-
-        .refresh-btn:hover {
-            opacity: 0.8;
-        }
-
-        .stat-item {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .stat-label {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .stat-value {
-            font-weight: 700;
-            color: #1f2937;
-        }
-
-        .performance-indicator {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .indicator-excellent { background: #d1fae5; color: #065f46; }
-        .indicator-good { background: #dbeafe; color: #1e40af; }
-        .indicator-warning { background: #fef3c7; color: #92400e; }
-        .indicator-poor { background: #fee2e2; color: #991b1b; }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #6b7280;
-        }
-
-        .error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #dc2626;
-            padding: 1rem;
-            border-radius: 8px;
-            margin: 1rem 0;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
             .charts-section {
                 grid-template-columns: 1fr;
             }
             
-            .kpi-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            .dashboard-container {
+                padding: 0 0.5rem;
             }
             
-            .dashboard {
-                padding: 1rem;
+            .section-title {
+                font-size: 1.2rem;
             }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="logo">
-            <div style="font-size: 2rem;">📊</div>
-            <h1>AVA OLO Business Dashboard</h1>
-        </div>
-        <div class="business-info">
-            💼 Poslovni KPI-jevi i analitika
+        <div class="header-content">
+            <div class="logo">🌾 AVA OLO Business Dashboard</div>
+            <div class="timestamp">Last updated: {{ current_time }}</div>
         </div>
     </div>
 
-    <div class="dashboard">
-        <!-- Key Performance Indicators -->
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <div class="kpi-title">Ukupno Razgovora</div>
-                    <div class="kpi-icon icon-conversations">💬</div>
-                </div>
-                <div class="kpi-value">{{ metrics.total_conversations }}</div>
-                <div class="kpi-change change-positive">
-                    <span>📈</span> {{ metrics.week_conversations }} ovaj tjedan
-                </div>
+    <div class="dashboard-container">
+        <!-- Unit 1: Database Overview -->
+        <h2 class="section-title">Database Overview</h2>
+        <div class="overview-section">
+            <div class="overview-card">
+                <div class="overview-title">Total Farmers</div>
+                <div class="overview-value">{{ total_farmers.count }}</div>
+                <div class="overview-change">{{ total_farmers.change }} today</div>
             </div>
-
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <div class="kpi-title">Aktivni Farmeri</div>
-                    <div class="kpi-icon icon-farmers">👨‍🌾</div>
-                </div>
-                <div class="kpi-value">{{ metrics.total_farmers }}</div>
-                <div class="kpi-change change-positive">
-                    <span>📈</span> {{ metrics.today_conversations }} danas
-                </div>
+            
+            <div class="overview-card">
+                <div class="overview-title">Total Hectares</div>
+                <div class="overview-value">{{ total_hectares.count }}</div>
+                <div class="overview-change">{{ total_hectares.change }} today</div>
             </div>
-
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <div class="kpi-title">Rast (Tjedni)</div>
-                    <div class="kpi-icon icon-growth">📈</div>
-                </div>
-                <div class="kpi-value">{{ "%.1f"|format(metrics.growth_rate) }}%</div>
-                <div class="kpi-change {{ 'change-positive' if metrics.growth_rate >= 0 else 'change-negative' }}">
-                    <span>{{ '📈' if metrics.growth_rate >= 0 else '📉' }}</span> 
-                    {{ 'Pozitivan' if metrics.growth_rate >= 0 else 'Negativan' }} trend
-                </div>
-            </div>
-
-            <div class="kpi-card">
-                <div class="kpi-header">
-                    <div class="kpi-title">Stopa Odobrenja</div>
-                    <div class="kpi-icon icon-approval">✅</div>
-                </div>
-                <div class="kpi-value">{{ "%.1f"|format(metrics.approval_rate) }}%</div>
-                <div class="kpi-change change-positive">
-                    <span>✅</span> {{ metrics.expert_approved }} odobreno
+            
+            <div class="overview-card">
+                <div class="overview-title">Hectare Breakdown</div>
+                <div class="breakdown-container">
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">🌾 Arable Crops</span>
+                        <span class="breakdown-value">{{ hectare_breakdown.arable_crops }} ha</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">🍇 Vineyards</span>
+                        <span class="breakdown-value">{{ hectare_breakdown.vineyards }} ha</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">🍎 Orchards</span>
+                        <span class="breakdown-value">{{ hectare_breakdown.orchards }} ha</span>
+                    </div>
+                    <div class="breakdown-item">
+                        <span class="breakdown-label">🌱 Others</span>
+                        <span class="breakdown-value">{{ hectare_breakdown.others }} ha</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts and Analytics -->
-        <div class="charts-section">
-            <div class="chart-card">
-                <div class="chart-title">
-                    <span>Trend Razgovora (30 dana)</span>
-                    <button class="refresh-btn" onclick="refreshTrends()">Osvježi</button>
+        <!-- Unit 2: Growth Trends -->
+        <div class="trends-section">
+            <h2 class="section-title">Growth Trends</h2>
+            <div class="trends-grid">
+                <div class="trend-period">
+                    <div class="period-title">Last 24 Hours</div>
+                    <div class="trend-metric">
+                        <span class="metric-label">New Farmers</span>
+                        <span class="metric-value">+{{ growth_trends['24h'].new_farmers }}</span>
+                    </div>
+                    <div class="trend-metric">
+                        <span class="metric-label">Unsubscribed</span>
+                        <span class="metric-value">-{{ growth_trends['24h'].unsubscribed }}</span>
+                    </div>
+                    <div class="trend-metric">
+                        <span class="metric-label">New Hectares</span>
+                        <span class="metric-value">+{{ growth_trends['24h'].new_hectares }}</span>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="trendsChart"></canvas>
+                
+                <div class="trend-period">
+                    <div class="period-title">Last 7 Days</div>
+                    <div class="trend-metric">
+                        <span class="metric-label">New Farmers</span>
+                        <span class="metric-value">+{{ growth_trends['7d'].new_farmers }}</span>
+                    </div>
+                    <div class="trend-metric">
+                        <span class="metric-label">Unsubscribed</span>
+                        <span class="metric-value">-{{ growth_trends['7d'].unsubscribed }}</span>
+                    </div>
+                    <div class="trend-metric">
+                        <span class="metric-label">New Hectares</span>
+                        <span class="metric-value">+{{ growth_trends['7d'].new_hectares }}</span>
+                    </div>
+                </div>
+                
+                <div class="trend-period">
+                    <div class="period-title">Last 30 Days</div>
+                    <div class="trend-metric">
+                        <span class="metric-label">New Farmers</span>
+                        <span class="metric-value">+{{ growth_trends['30d'].new_farmers }}</span>
+                    </div>
+                    <div class="trend-metric">
+                        <span class="metric-label">Unsubscribed</span>
+                        <span class="metric-value">-{{ growth_trends['30d'].unsubscribed }}</span>
+                    </div>
+                    <div class="trend-metric">
+                        <span class="metric-label">New Hectares</span>
+                        <span class="metric-value">+{{ growth_trends['30d'].new_hectares }}</span>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="stats-summary">
-                <div class="stats-header">
-                    <div class="stats-title">Ključne Metrike</div>
+        <!-- Unit 3: Farmer Growth Charts -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3 class="chart-title">Daily Farmer Activity (Last 30 Days)</h3>
+                <canvas id="dailyChart"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="chart-title">Cumulative Farmer Growth</h3>
+                <canvas id="cumulativeChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Unit 4: Today's Activity -->
+        <div class="activity-section">
+            <h2 class="section-title">Today's Activity</h2>
+            <div class="activity-grid">
+                <div class="activity-item">
+                    <div class="activity-count">{{ todays_activity.new_fields }}</div>
+                    <div class="activity-label">New Fields</div>
                 </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Prosječna Pouzdanost</div>
-                    <div class="stat-value">
-                        {{ "%.1f"|format(metrics.avg_confidence * 100) }}%
-                        <span class="performance-indicator {{ 'indicator-excellent' if metrics.avg_confidence >= 0.9 else 'indicator-good' if metrics.avg_confidence >= 0.8 else 'indicator-warning' if metrics.avg_confidence >= 0.7 else 'indicator-poor' }}">
-                            {{ 'Izvrsno' if metrics.avg_confidence >= 0.9 else 'Dobro' if metrics.avg_confidence >= 0.8 else 'Upozorenje' if metrics.avg_confidence >= 0.7 else 'Slabo' }}
-                        </span>
-                    </div>
+                <div class="activity-item">
+                    <div class="activity-count">{{ todays_activity.crops_planted }}</div>
+                    <div class="activity-label">Crops Planted</div>
                 </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Stopa Odobrenja</div>
-                    <div class="stat-value">
-                        {{ "%.1f"|format(metrics.approval_rate) }}%
-                        <span class="performance-indicator {{ 'indicator-excellent' if metrics.approval_rate >= 90 else 'indicator-good' if metrics.approval_rate >= 80 else 'indicator-warning' if metrics.approval_rate >= 70 else 'indicator-poor' }}">
-                            {{ 'Izvrsno' if metrics.approval_rate >= 90 else 'Dobro' if metrics.approval_rate >= 80 else 'Upozorenje' if metrics.approval_rate >= 70 else 'Slabo' }}
-                        </span>
-                    </div>
+                <div class="activity-item">
+                    <div class="activity-count">{{ todays_activity.new_operations }}</div>
+                    <div class="activity-label">Operations</div>
                 </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Tjedni Rast</div>
-                    <div class="stat-value">
-                        {{ "%.1f"|format(metrics.growth_rate) }}%
-                        <span class="performance-indicator {{ 'indicator-excellent' if metrics.growth_rate >= 10 else 'indicator-good' if metrics.growth_rate >= 5 else 'indicator-warning' if metrics.growth_rate >= 0 else 'indicator-poor' }}">
-                            {{ 'Izvrsno' if metrics.growth_rate >= 10 else 'Dobro' if metrics.growth_rate >= 5 else 'Stagnacija' if metrics.growth_rate >= 0 else 'Pad' }}
-                        </span>
-                    </div>
+                <div class="activity-item">
+                    <div class="activity-count">{{ todays_activity.questions_asked }}</div>
+                    <div class="activity-label">Questions</div>
                 </div>
-                
-                <div class="stat-item">
-                    <div class="stat-label">Današnji Promet</div>
-                    <div class="stat-value">
-                        {{ metrics.today_conversations }} razgovora
-                        <span class="performance-indicator indicator-good">Aktivno</span>
-                    </div>
+                <div class="activity-item">
+                    <div class="activity-count">{{ todays_activity.active_farmers }}</div>
+                    <div class="activity-label">Active Farmers</div>
                 </div>
             </div>
+        </div>
+
+        <!-- Unit 5: Activity Stream -->
+        <div class="stream-section">
+            <h2 class="section-title">Live Activity Stream</h2>
+            {% for activity in activity_stream %}
+            <div class="stream-item">
+                <div class="stream-time">{{ activity.time }}</div>
+                <div class="stream-content">
+                    <div class="stream-action">{{ activity.action }}</div>
+                    <div class="stream-details">{{ activity.details }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Unit 6: Recent Database Changes -->
+        <div class="changes-section">
+            <h2 class="section-title">Recent Database Changes</h2>
+            <table class="changes-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Table</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for change in recent_changes %}
+                    <tr>
+                        <td>{{ change.timestamp }}</td>
+                        <td>{{ change.table }}</td>
+                        <td>
+                            <span class="badge badge-{{ change.action.lower() }}">
+                                {{ change.action }}
+                            </span>
+                        </td>
+                        <td>{{ change.details }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
     <script>
-        // Configuration
-        const trends = {{ trends|tojson }};
-        let trendsChart = null;
-
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeTrendsChart();
-            
-            // Auto-refresh every 60 seconds
-            setInterval(refreshDashboard, 60000);
-        });
-
-        function initializeTrendsChart() {
-            const ctx = document.getElementById('trendsChart').getContext('2d');
-            
-            if (trendsChart) {
-                trendsChart.destroy();
-            }
-
-            const data = trends.trends || [];
-            const labels = data.map(d => new Date(d.date).toLocaleDateString('hr-HR')).reverse();
-            const conversations = data.map(d => d.conversations).reverse();
-            const farmers = data.map(d => d.unique_farmers).reverse();
-
-            trendsChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Razgovori',
-                            data: conversations,
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Jedinstveni Farmeri',
-                            data: farmers,
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            fill: false,
-                            tension: 0.4
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
+        // Daily Activity Chart
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        new Chart(dailyCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ farmer_growth_daily.dates | tojson }},
+                datasets: [{
+                    label: 'New Farmers',
+                    data: {{ farmer_growth_daily.new_farmers | tojson }},
+                    backgroundColor: '#4caf50',
+                    borderColor: '#45a049',
+                    borderWidth: 1
+                }, {
+                    label: 'Unsubscribed',
+                    data: {{ farmer_growth_daily.unsubscribed | tojson }},
+                    backgroundColor: '#f44336',
+                    borderColor: '#da190b',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
-            });
-        }
-
-        async function refreshTrends() {
-            try {
-                const response = await fetch('/api/trends?days=30');
-                if (response.ok) {
-                    location.reload(); // Simple refresh for now
-                }
-            } catch (error) {
-                console.error('Failed to refresh trends:', error);
             }
-        }
+        });
 
-        async function refreshDashboard() {
-            try {
-                const response = await fetch('/api/metrics');
-                if (response.ok) {
-                    // Could update metrics without full reload
-                    console.log('Dashboard metrics updated');
+        // Cumulative Growth Chart
+        const cumulativeCtx = document.getElementById('cumulativeChart').getContext('2d');
+        new Chart(cumulativeCtx, {
+            type: 'line',
+            data: {
+                labels: {{ farmer_growth_cumulative.dates | tojson }},
+                datasets: [{
+                    label: 'Total Farmers',
+                    data: {{ farmer_growth_cumulative.cumulative | tojson }},
+                    borderColor: '#1a73e8',
+                    backgroundColor: 'rgba(26, 115, 232, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
                 }
-            } catch (error) {
-                console.error('Failed to refresh dashboard:', error);
             }
-        }
+        });
 
-        // Utility function for Croatian locale formatting
-        function formatNumber(num) {
-            return new Intl.NumberFormat('hr-HR').format(num);
-        }
+        // Auto-refresh every 30 seconds
+        setTimeout(() => {
+            window.location.reload();
+        }, 30000);
     </script>
 </body>
 </html>
