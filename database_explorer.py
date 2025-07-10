@@ -34,6 +34,9 @@ templates = Jinja2Templates(directory="templates")
 # Initialize database
 db_ops = DatabaseOperations()
 
+# Import RDS inspector
+from inspect_rds import create_inspect_endpoint
+
 class DatabaseExplorer:
     """Enhanced database explorer with AI query capabilities"""
     
@@ -429,6 +432,49 @@ async def api_ai_query(query_description: str = Form(...)):
             "execution": {"success": False, "error": "Could not generate valid SQL query"}
         }
 
+@app.get("/api/test-connection")
+async def test_connection():
+    """Test database connection and show basic info"""
+    try:
+        with db_ops.get_session() as session:
+            # Test basic connection
+            db_version = session.execute(text("SELECT version()")).scalar()
+            current_db = session.execute(text("SELECT current_database()")).scalar()
+            current_user = session.execute(text("SELECT current_user")).scalar()
+            
+            # List all databases
+            databases = session.execute(
+                text("SELECT datname FROM pg_database WHERE datistemplate = false")
+            ).fetchall()
+            
+            # Check all schemas
+            schemas = session.execute(
+                text("""
+                    SELECT schema_name 
+                    FROM information_schema.schemata 
+                    WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+                    ORDER BY schema_name
+                """)
+            ).fetchall()
+            
+            return {
+                "success": True,
+                "connection": {
+                    "version": db_version,
+                    "current_database": current_db,
+                    "current_user": current_user,
+                    "host": db_ops.connection_string.split('@')[1].split('/')[0]
+                },
+                "databases": [db[0] for db in databases],
+                "schemas": [s[0] for s in schemas]
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "connection_string": db_ops.connection_string.split('@')[1] if '@' in db_ops.connection_string else "Unknown"
+        }
+
 @app.get("/api/tables")
 async def list_tables():
     """List all available tables in the database"""
@@ -473,6 +519,9 @@ async def health_check():
         "purpose": "Professional database exploration with AI querying",
         "version": "3.0.0"
     }
+
+# Add RDS inspection endpoints
+inspector = create_inspect_endpoint(app, db_ops)
 
 if __name__ == "__main__":
     import uvicorn
