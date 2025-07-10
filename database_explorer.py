@@ -2,7 +2,7 @@
 AVA OLO Database Explorer - Port 8005
 Professional database exploration interface with AI-powered querying
 """
-from fastapi import FastAPI, Request, Query, HTTPException, Form
+from fastapi import FastAPI, Request, Query, HTTPException, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import logging
@@ -13,6 +13,7 @@ import tempfile
 import pandas as pd
 from datetime import datetime, timedelta
 from sqlalchemy import text, inspect
+import re
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -505,6 +506,160 @@ async def list_tables():
             "error": str(e),
             "tables": []
         }
+
+@app.post("/api/import-sql")
+async def import_sql_file(file: UploadFile = File(...)):
+    """Import SQL file to create database structure"""
+    try:
+        # Read the uploaded file
+        content = await file.read()
+        sql_content = content.decode('utf-8')
+        
+        # Parse SQL statements
+        statements = []
+        current = []
+        in_function = False
+        
+        for line in sql_content.split('\n'):
+            # Skip comments
+            if line.strip().startswith('--'):
+                continue
+                
+            # Track if we're inside a function
+            if 'CREATE FUNCTION' in line or 'CREATE OR REPLACE FUNCTION' in line:
+                in_function = True
+            if in_function and 'LANGUAGE' in line and line.strip().endswith(';'):
+                in_function = False
+                
+            if line.strip():
+                current.append(line)
+                
+            # End of statement
+            if not in_function and line.strip().endswith(';'):
+                stmt = ' '.join(current)
+                if stmt.strip():
+                    statements.append(stmt)
+                current = []
+        
+        # Execute statements
+        executed = 0
+        errors = []
+        tables_created = []
+        
+        with db_ops.get_session() as session:
+            for i, statement in enumerate(statements):
+                try:
+                    # Skip certain statements
+                    if any(skip in statement.upper() for skip in ['SET STATEMENT_TIMEOUT', 'SET LOCK_TIMEOUT', 'SELECT PG_CATALOG', 'SET CHECK_FUNCTION_BODIES', 'SET XMLOPTION', 'SET CLIENT_MIN_MESSAGES', 'SET ROW_SECURITY', 'SET DEFAULT_TABLE_ACCESS_METHOD', 'COMMENT ON SCHEMA']):
+                        continue
+                    
+                    # Extract table name if CREATE TABLE
+                    if 'CREATE TABLE' in statement.upper():
+                        match = re.search(r'CREATE TABLE\s+["]?([^"\s]+)["]?\.?["]?([^"\s(]+)?', statement, re.IGNORECASE)
+                        if match:
+                            table_name = match.group(2) if match.group(2) else match.group(1)
+                            tables_created.append(table_name)
+                    
+                    session.execute(text(statement))
+                    session.commit()
+                    executed += 1
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    errors.append(f"Statement {i+1}: {error_msg[:200]}")
+                    session.rollback()
+                    
+                    # Continue on certain errors
+                    if 'already exists' in error_msg:
+                        continue
+        
+        return {
+            "success": len(errors) == 0,
+            "filename": file.filename,
+            "total_statements": len(statements),
+            "executed": executed,
+            "tables_created": tables_created,
+            "errors": errors[:10] if errors else []
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/import", response_class=HTMLResponse)
+async def import_page(request: Request):
+    """Simple import page"""
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Import Database</title>
+        <style>
+            body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; }
+            .upload-form { border: 2px dashed #ccc; padding: 40px; text-align: center; }
+            input[type="file"] { margin: 20px 0; }
+            button { background: #1a73e8; color: white; padding: 10px 30px; border: none; border-radius: 5px; cursor: pointer; }
+            .result { margin-top: 20px; padding: 20px; border-radius: 5px; }
+            .success { background: #d4edda; color: #155724; }
+            .error { background: #f8d7da; color: #721c24; }
+        </style>
+    </head>
+    <body>
+        <h1>Import Database Structure</h1>
+        <div class="upload-form">
+            <h3>Upload SQL file to import database structure</h3>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="sqlFile" accept=".sql" required>
+                <br>
+                <button type="submit">Import SQL</button>
+            </form>
+        </div>
+        <div id="result"></div>
+        
+        <script>
+            document.getElementById('uploadForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const fileInput = document.getElementById('sqlFile');
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '<p>Importing...</p>';
+                
+                try {
+                    const response = await fetch('/database/api/import-sql', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        resultDiv.className = 'result success';
+                        resultDiv.innerHTML = `
+                            <h3>✅ Import Successful!</h3>
+                            <p>Executed ${result.executed} statements</p>
+                            <p>Created ${result.tables_created.length} tables: ${result.tables_created.join(', ')}</p>
+                        `;
+                    } else {
+                        resultDiv.className = 'result error';
+                        resultDiv.innerHTML = `
+                            <h3>❌ Import Failed</h3>
+                            <p>${result.error || result.errors.join('<br>')}</p>
+                        `;
+                    }
+                } catch (error) {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h3>Error: ${error.message}</h3>`;
+                }
+            };
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html)
 
 @app.get("/health")
 async def health_check():
