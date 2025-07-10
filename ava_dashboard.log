@@ -1,0 +1,63 @@
+2025-07-09 08:03:56,857 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:04:56,522 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:05:56,705 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:06:57,871 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:08:58,112 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:09:57,776 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:10:57,211 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:11:56,740 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:12:57,248 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:15:56,726 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:16:56,433 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:17:58,351 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:18:03,061 - __main__ - ERROR - Error getting table info: (psycopg2.errors.UndefinedColumn) column "created_at" does not exist
+LINE 3:                             WHERE created_at >= '2025-07-08T...
+                                          ^
+
+[SQL: 
+                            SELECT COUNT(*) FROM farmers 
+                            WHERE created_at >= %(start_date)s OR updated_at >= %(start_date)s
+                        ]
+[parameters: {'start_date': datetime.datetime(2025, 7, 8, 8, 18, 3, 60417)}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-07-09 08:18:57,754 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:25:57,736 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:26:56,848 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:27:56,494 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:28:58,223 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:29:57,859 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:38:57,735 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:39:57,300 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:40:57,330 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:41:57,173 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:42:57,121 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:43:56,959 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:44:57,200 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:45:57,100 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:46:56,679 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:47:56,896 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:48:56,581 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:49:56,788 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:50:40,670 - __main__ - ERROR - Error getting table info: cannot convert dictionary update sequence element #0 to a sequence
+2025-07-09 08:50:40,677 - __main__ - ERROR - Error getting filtered table data: cannot convert dictionary update sequence element #0 to a sequence
+2025-07-09 08:50:56,506 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 08:51:48,662 - __main__ - ERROR - Error getting table info: cannot convert dictionary update sequence element #0 to a sequence
+2025-07-09 08:51:48,667 - __main__ - ERROR - Error getting filtered table data: cannot convert dictionary update sequence element #0 to a sequence
+2025-07-09 08:51:58,327 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:26:44,278 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:27:43,942 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:28:44,245 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:29:43,934 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:30:44,259 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:31:43,439 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:32:43,760 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:33:44,023 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:34:44,223 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:35:43,855 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:36:44,173 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:37:43,911 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:38:44,108 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:39:43,604 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:40:43,918 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:41:43,526 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+2025-07-09 17:42:43,783 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers

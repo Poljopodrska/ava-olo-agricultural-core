@@ -661,6 +661,24 @@ async def import_page(request: Request):
     """
     return HTMLResponse(content=html)
 
+@app.get("/run-import")
+async def run_import():
+    """One-time import of database schema"""
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["python3", "import_database.py"],
+            capture_output=True,
+            text=True
+        )
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""

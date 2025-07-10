@@ -1,0 +1,23 @@
+INFO:     Started server process [163072]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8005 (Press CTRL+C to quit)
+✅ Database Config: PostgreSQL at localhost:5432/farmer_crm
+✅ API Ports: Monitoring=8000, Explorer=8001, Dashboard=8080
+✅ Locale: Europe/Zagreb (hr_HR.UTF-8)
+🗃️ Starting AVA OLO Database Explorer on port 8005
+✨ Features: AI Query Assistant, Time Filtering, Table Groups
+INFO:     127.0.0.1:45934 - "POST /ai-query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35606 - "POST /api/ai-query HTTP/1.1" 200 OK
+2025-07-09 08:03:56,857 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+INFO:     127.0.0.1:60358 - "GET /health HTTP/1.1" 200 OK
+2025-07-09 08:04:56,522 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+INFO:     127.0.0.1:60370 - "GET /health HTTP/1.1" 200 OK
+2025-07-09 08:05:56,705 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+INFO:     127.0.0.1:50108 - "GET /health HTTP/1.1" 200 OK
+2025-07-09 08:06:57,871 - database_operations - INFO - Database health check: Connected to farmer_crm with 4 farmers
+INFO:     127.0.0.1:50124 - "GET /health HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [163072]
