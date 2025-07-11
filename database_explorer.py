@@ -245,45 +245,62 @@ class DatabaseExplorer:
             elif "count" in description_lower or "how many" in description_lower or "koliko" in description_lower or "število" in description_lower:
                 sql_query = "SELECT COUNT(*) as total_farmers FROM farmers"
                 query_type = "count"
-            elif "by city" in description_lower or "cities" in description_lower:
+            elif "by city" in description_lower or "cities" in description_lower or "po mestih" in description_lower or "mesta" in description_lower:
                 sql_query = "SELECT city, COUNT(*) as farmer_count FROM farmers GROUP BY city ORDER BY farmer_count DESC"
                 query_type = "farmers_by_city"
-            elif "by country" in description_lower:
+            elif "by country" in description_lower or "po državah" in description_lower:
                 sql_query = "SELECT country, COUNT(*) as farmer_count FROM farmers GROUP BY country ORDER BY farmer_count DESC"
                 query_type = "farmers_by_country"
         
-        # Field queries
-        elif "field" in description_lower:
-            if "all" in description_lower and ("show" in description_lower or "list" in description_lower or "get" in description_lower):
+        # Special handling for "koliko kmetov" pattern
+        elif "koliko" in description_lower and ("kmetov" in description_lower or "je" in description_lower) and ("bazi" in description_lower or "podatkih" in description_lower):
+            sql_query = "SELECT COUNT(*) as total_farmers FROM farmers"
+            query_type = "count"
+        
+        # Field queries (English: field, Slovenian: parcela/polje)
+        elif "field" in description_lower or "parcel" in description_lower or "polje" in description_lower:
+            if ("all" in description_lower or "vse" in description_lower) and ("show" in description_lower or "list" in description_lower or "get" in description_lower or "pokaži" in description_lower):
                 sql_query = "SELECT * FROM fields ORDER BY created_at DESC"
                 query_type = "all_fields"
-            elif "large" in description_lower or "big" in description_lower:
+            elif "large" in description_lower or "big" in description_lower or "velik" in description_lower or "večj" in description_lower:
                 sql_query = "SELECT * FROM fields WHERE area_hectares > 50 ORDER BY area_hectares DESC"
                 query_type = "large_fields"
-            elif "crop" in description_lower:
+            elif "crop" in description_lower or "pridelek" in description_lower or "pridelk" in description_lower:
                 sql_query = "SELECT f.*, c.name as crop_name FROM fields f LEFT JOIN crops c ON f.crop_id = c.id ORDER BY f.created_at DESC"
                 query_type = "fields_with_crops"
+            elif "koliko" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_fields FROM fields"
+                query_type = "count"
         
-        # Message queries
-        elif "message" in description_lower or "question" in description_lower:
-            if "today" in description_lower:
+        # Message queries (English: message, Slovenian: sporočilo)
+        elif "message" in description_lower or "question" in description_lower or "sporočil" in description_lower or "vprašanj" in description_lower:
+            if "today" in description_lower or "danes" in description_lower or "današnj" in description_lower:
                 sql_query = "SELECT * FROM incoming_messages WHERE DATE(created_at) = CURRENT_DATE ORDER BY created_at DESC"
                 query_type = "today_messages"
-            elif "unanswered" in description_lower:
+            elif "unanswered" in description_lower or "neodgovorjen" in description_lower:
                 sql_query = "SELECT * FROM incoming_messages WHERE response_sent = FALSE ORDER BY created_at DESC"
                 query_type = "unanswered"
+            elif "zadnj" in description_lower or "recent" in description_lower:
+                sql_query = "SELECT * FROM incoming_messages ORDER BY created_at DESC LIMIT 10"
+                query_type = "recent_messages"
+            elif "koliko" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_messages FROM incoming_messages"
+                query_type = "count"
         
-        # Task queries
-        elif "task" in description_lower or "operation" in description_lower:
-            if "pending" in description_lower or "incomplete" in description_lower:
+        # Task queries (English: task, Slovenian: naloga/opravilo)
+        elif "task" in description_lower or "operation" in description_lower or "nalog" in description_lower or "opravil" in description_lower:
+            if "pending" in description_lower or "incomplete" in description_lower or "nedokončan" in description_lower or "čakajoč" in description_lower:
                 sql_query = "SELECT * FROM tasks WHERE status != 'completed' ORDER BY priority DESC, created_at DESC"
                 query_type = "pending_tasks"
-            elif "today" in description_lower:
+            elif "today" in description_lower or "danes" in description_lower or "današnj" in description_lower:
                 sql_query = "SELECT * FROM tasks WHERE DATE(created_at) = CURRENT_DATE ORDER BY created_at DESC"
                 query_type = "today_tasks"
+            elif "koliko" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_tasks FROM tasks"
+                query_type = "count"
         
-        # Analytics queries
-        elif "statistic" in description_lower or "summary" in description_lower:
+        # Analytics queries (English: statistics, Slovenian: statistika)
+        elif "statistic" in description_lower or "summary" in description_lower or "statistik" in description_lower or "povzetek" in description_lower:
             sql_query = """
                 SELECT 
                     (SELECT COUNT(*) FROM farmers) as total_farmers,
@@ -292,6 +309,18 @@ class DatabaseExplorer:
                     (SELECT COUNT(*) FROM tasks) as total_tasks
             """
             query_type = "statistics"
+        
+        # Generic "koliko" (how many) queries
+        elif "koliko" in description_lower:
+            if "parcel" in description_lower or "polj" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_fields FROM fields"
+                query_type = "count"
+            elif "sporočil" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_messages FROM incoming_messages"
+                query_type = "count"
+            elif "nalog" in description_lower or "opravil" in description_lower:
+                sql_query = "SELECT COUNT(*) as total_tasks FROM tasks"
+                query_type = "count"
         
         # Default fallback
         if not sql_query:
