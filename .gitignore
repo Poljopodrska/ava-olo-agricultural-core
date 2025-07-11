@@ -28,4 +28,4 @@ awscliv2.zip
 Thumbs.db
 
 # Git token file
-.git-token
+.git-token.env
