@@ -46,6 +46,24 @@
             font-size: 0.9rem;
         }
 
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            color: #666;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #f0f0f0;
+            color: #1a73e8;
+        }
+
         .container {
             max-width: 1400px;
             margin: 2rem auto;
@@ -219,12 +237,45 @@
                 grid-template-columns: 1fr;
             }
         }
+        
+        .lang-switch {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        
+        .lang-switch a {
+            padding: 0.5rem 1rem;
+            background: #f0f0f0;
+            color: #666;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            margin-left: 0.5rem;
+        }
+        
+        .lang-switch a:hover {
+            background: #e0e0e0;
+        }
+        
+        .lang-switch a.active {
+            background: #1a73e8;
+            color: white;
+        }
     </style>
 </head>
 <body>
+    <div class="lang-switch">
+        <a href="?lang=en" {% if lang == 'en' %}class="active"{% endif %}>EN</a>
+        <a href="?lang=sl" {% if lang == 'sl' %}class="active"{% endif %}>SL</a>
+    </div>
     <div class="header">
         <div class="header-content">
-            <div class="logo">🗃️ AVA OLO Database Explorer</div>
+            <div class="logo">🗃️ {{ t.get('title', 'AVA OLO Database Explorer') }}</div>
+            <div class="nav-links">
+                <a href="/database/modify?lang={{ lang }}" class="nav-link">🔧 {{ t.get('data_modifier', 'Data Modifier') }}</a>
+                <a href="/database/api/test-connection" class="nav-link">🔌 Test Connection</a>
+                <a href="/database/import" class="nav-link">📤 Import Data</a>
+            </div>
             <div class="timestamp">{{ current_time }}</div>
         </div>
     </div>
@@ -234,10 +285,10 @@
         <div class="ai-query-section">
             <h1 class="ai-query-title">
                 <span>🤖</span>
-                AI Query Assistant
+                {{ t.get('ai_query', 'AI Query Assistant') }}
             </h1>
             <p class="ai-query-subtitle">
-                Describe what data you're looking for in plain English, and I'll convert it to SQL
+                {{ t.get('ai_query_subtitle', 'Describe what data you\'re looking for in plain language') }}
             </p>
             
             <form action="ai-query" method="post" class="ai-query-form">
@@ -245,19 +296,17 @@
                     type="text" 
                     name="query_description" 
                     class="ai-query-input" 
-                    placeholder="e.g., Show me all new farmers from the last week"
+                    placeholder="{{ t.get('search_placeholder', 'Ask a question about your data...') }}"
                     required
                 >
-                <button type="submit" class="ai-query-button">Generate Query</button>
+                <button type="submit" class="ai-query-button">{{ t.get('submit', 'Submit') }}</button>
             </form>
             
             <div class="ai-examples">
-                <strong>Try these examples:</strong>
-                <span class="ai-example" onclick="setQuery('Show me all new farmers from the last week')">New farmers this week</span>
-                <span class="ai-example" onclick="setQuery('Count how many farmers we have')">Total farmer count</span>
-                <span class="ai-example" onclick="setQuery('Show large fields over 50 hectares')">Large fields</span>
-                <span class="ai-example" onclick="setQuery('List today\'s messages')">Today's messages</span>
-                <span class="ai-example" onclick="setQuery('Show pending tasks')">Pending tasks</span>
+                <strong>{{ t.get('example_queries', 'Example queries') }}:</strong>
+                {% for example in examples %}
+                <span class="ai-example" onclick="setQuery('{{ example }}')">{{ example }}</span>
+                {% endfor %}
             </div>
         </div>
 

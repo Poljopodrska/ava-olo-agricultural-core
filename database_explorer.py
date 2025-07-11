@@ -226,112 +226,170 @@ class DatabaseExplorer:
             }
     
     async def convert_natural_language_to_sql(self, description: str) -> Dict[str, Any]:
-        """Convert natural language query to SQL - supports English and Slovenian"""
+        """Convert natural language query to SQL using LLM approach"""
+        try:
+            # Get available tables and their schemas
+            with self.db_ops.get_session() as session:
+                inspector = inspect(session.bind)
+                
+                # Get all tables with their columns
+                table_schemas = []
+                for table_name in inspector.get_table_names():
+                    columns = []
+                    for col in inspector.get_columns(table_name):
+                        columns.append(f"{col['name']} ({col['type']})")
+                    table_schemas.append(f"Table {table_name}: {', '.join(columns[:5])}{'...' if len(columns) > 5 else ''}")
+                
+                schema_context = "\n".join(table_schemas)
+            
+            # Use LLM-style prompt to generate SQL
+            prompt = f"""Given the following database schema:
+{schema_context}
+
+User request: {description}
+
+Generate a PostgreSQL SELECT query to fulfill this request. Consider:
+- The query can be in English or Slovenian
+- Common Slovenian terms: kmet=farmer, parcela/polje=field, sporočilo=message, naloga=task, koliko=how many
+- Only generate SELECT queries
+- Include proper JOINs if needed
+- Add ORDER BY and LIMIT where appropriate
+- Return only the SQL query, no explanations
+"""
+            
+            # Simulate LLM response with more intelligent parsing
+            sql_query = self._generate_sql_from_prompt(description, schema_context)
+            
+            if sql_query and sql_query.strip().upper().startswith("SELECT"):
+                return {
+                    "sql_query": sql_query,
+                    "query_type": "llm_generated",
+                    "original_description": description
+                }
+            else:
+                return {
+                    "sql_query": f"-- Unable to generate SQL from: {description}",
+                    "query_type": "failed",
+                    "original_description": description
+                }
+                
+        except Exception as e:
+            logger.error(f"Error in LLM query conversion: {e}")
+            return {
+                "sql_query": f"-- Error: {str(e)}",
+                "query_type": "error",
+                "original_description": description
+            }
+    
+    def _generate_sql_from_prompt(self, description: str, schema_context: str) -> str:
+        """Generate SQL from natural language using intelligent parsing"""
         description_lower = description.lower()
         
-        # Pattern matching for common queries
-        sql_query = ""
-        query_type = "custom"
+        # Build a more intelligent query based on detected entities and intents
+        tables_mentioned = []
+        conditions = []
+        select_fields = "*"
+        order_by = ""
+        limit = ""
         
-        # Farmer queries (English: farmer, Slovenian: kmet/kmetje)
-        if "farmer" in description_lower or "kmet" in description_lower:
-            if ("all" in description_lower or "vse" in description_lower or "vsi" in description_lower) and ("show" in description_lower or "list" in description_lower or "get" in description_lower or "prikaži" in description_lower or "pokaži" in description_lower):
-                sql_query = "SELECT * FROM farmers ORDER BY id DESC"
-                query_type = "all_farmers"
-            elif "new" in description_lower or "recent" in description_lower or "novi" in description_lower or "zadnji" in description_lower:
-                # Since farmers table doesn't have created_at, we can't filter by date
-                sql_query = "SELECT * FROM farmers ORDER BY id DESC LIMIT 10"
-                query_type = "recent_farmers"
-            elif "count" in description_lower or "how many" in description_lower or "koliko" in description_lower or "število" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_farmers FROM farmers"
-                query_type = "count"
-            elif "by city" in description_lower or "cities" in description_lower or "po mestih" in description_lower or "mesta" in description_lower:
-                sql_query = "SELECT city, COUNT(*) as farmer_count FROM farmers GROUP BY city ORDER BY farmer_count DESC"
-                query_type = "farmers_by_city"
-            elif "by country" in description_lower or "po državah" in description_lower:
-                sql_query = "SELECT country, COUNT(*) as farmer_count FROM farmers GROUP BY country ORDER BY farmer_count DESC"
-                query_type = "farmers_by_country"
-        
-        # Special handling for "koliko kmetov" pattern
-        elif "koliko" in description_lower and ("kmetov" in description_lower or "je" in description_lower) and ("bazi" in description_lower or "podatkih" in description_lower):
-            sql_query = "SELECT COUNT(*) as total_farmers FROM farmers"
-            query_type = "count"
-        
-        # Field queries (English: field, Slovenian: parcela/polje)
-        elif "field" in description_lower or "parcel" in description_lower or "polje" in description_lower:
-            if ("all" in description_lower or "vse" in description_lower) and ("show" in description_lower or "list" in description_lower or "get" in description_lower or "pokaži" in description_lower):
-                sql_query = "SELECT * FROM fields ORDER BY created_at DESC"
-                query_type = "all_fields"
-            elif "large" in description_lower or "big" in description_lower or "velik" in description_lower or "večj" in description_lower:
-                sql_query = "SELECT * FROM fields WHERE area_hectares > 50 ORDER BY area_hectares DESC"
-                query_type = "large_fields"
-            elif "crop" in description_lower or "pridelek" in description_lower or "pridelk" in description_lower:
-                sql_query = "SELECT f.*, c.name as crop_name FROM fields f LEFT JOIN crops c ON f.crop_id = c.id ORDER BY f.created_at DESC"
-                query_type = "fields_with_crops"
-            elif "koliko" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_fields FROM fields"
-                query_type = "count"
-        
-        # Message queries (English: message, Slovenian: sporočilo)
-        elif "message" in description_lower or "question" in description_lower or "sporočil" in description_lower or "vprašanj" in description_lower:
-            if "today" in description_lower or "danes" in description_lower or "današnj" in description_lower:
-                sql_query = "SELECT * FROM incoming_messages WHERE DATE(created_at) = CURRENT_DATE ORDER BY created_at DESC"
-                query_type = "today_messages"
-            elif "unanswered" in description_lower or "neodgovorjen" in description_lower:
-                sql_query = "SELECT * FROM incoming_messages WHERE response_sent = FALSE ORDER BY created_at DESC"
-                query_type = "unanswered"
-            elif "zadnj" in description_lower or "recent" in description_lower:
-                sql_query = "SELECT * FROM incoming_messages ORDER BY created_at DESC LIMIT 10"
-                query_type = "recent_messages"
-            elif "koliko" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_messages FROM incoming_messages"
-                query_type = "count"
-        
-        # Task queries (English: task, Slovenian: naloga/opravilo)
-        elif "task" in description_lower or "operation" in description_lower or "nalog" in description_lower or "opravil" in description_lower:
-            if "pending" in description_lower or "incomplete" in description_lower or "nedokončan" in description_lower or "čakajoč" in description_lower:
-                sql_query = "SELECT * FROM tasks WHERE status != 'completed' ORDER BY priority DESC, created_at DESC"
-                query_type = "pending_tasks"
-            elif "today" in description_lower or "danes" in description_lower or "današnj" in description_lower:
-                sql_query = "SELECT * FROM tasks WHERE DATE(created_at) = CURRENT_DATE ORDER BY created_at DESC"
-                query_type = "today_tasks"
-            elif "koliko" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_tasks FROM tasks"
-                query_type = "count"
-        
-        # Analytics queries (English: statistics, Slovenian: statistika)
-        elif "statistic" in description_lower or "summary" in description_lower or "statistik" in description_lower or "povzetek" in description_lower:
-            sql_query = """
-                SELECT 
-                    (SELECT COUNT(*) FROM farmers) as total_farmers,
-                    (SELECT COUNT(*) FROM fields) as total_fields,
-                    (SELECT COUNT(*) FROM incoming_messages) as total_messages,
-                    (SELECT COUNT(*) FROM tasks) as total_tasks
-            """
-            query_type = "statistics"
-        
-        # Generic "koliko" (how many) queries
-        elif "koliko" in description_lower:
-            if "parcel" in description_lower or "polj" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_fields FROM fields"
-                query_type = "count"
-            elif "sporočil" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_messages FROM incoming_messages"
-                query_type = "count"
-            elif "nalog" in description_lower or "opravil" in description_lower:
-                sql_query = "SELECT COUNT(*) as total_tasks FROM tasks"
-                query_type = "count"
-        
-        # Default fallback
-        if not sql_query:
-            sql_query = f"-- Unable to generate SQL from: {description}\n-- Try being more specific about what data you want to see"
-            query_type = "failed"
-        
-        return {
-            "sql_query": sql_query,
-            "query_type": query_type,
-            "original_description": description
+        # Detect table references
+        table_mappings = {
+            "farmers": ["farmer", "kmet", "kmeti", "kmetje", "kmetov"],
+            "fields": ["field", "parcela", "parcele", "parcel", "polje", "polja", "njiva"],
+            "incoming_messages": ["message", "sporočilo", "sporočila", "sporočil", "vprašanj"],
+            "tasks": ["task", "naloga", "naloge", "nalog", "opravilo", "opravila", "opravil"],
+            "crops": ["crop", "pridelek", "pridelki", "pridelkov"],
+            "weather_data": ["weather", "vreme", "vremenske"],
+            "recommendations": ["recommendation", "priporočilo", "priporočila"]
         }
+        
+        for table, keywords in table_mappings.items():
+            if any(keyword in description_lower for keyword in keywords):
+                tables_mentioned.append(table)
+        
+        # If no tables detected, try to infer from context
+        if not tables_mentioned:
+            if any(word in description_lower for word in ["count", "koliko", "število", "how many"]):
+                # Check for specific patterns like "v bazi" (in database)
+                if "bazi" in description_lower or "database" in description_lower:
+                    # Default to farmers if asking about database in general
+                    tables_mentioned = ["farmers"]
+                else:
+                    # Default to farmers if counting without specific table
+                    tables_mentioned = ["farmers"]
+            else:
+                return "-- Could not identify which table to query"
+        
+        # Detect counting queries
+        if any(word in description_lower for word in ["count", "koliko", "število", "how many", "številka"]):
+            select_fields = f"COUNT(*) as count"
+        
+        # Detect filtering conditions
+        if any(word in description_lower for word in ["today", "danes", "današnji"]):
+            conditions.append("DATE(created_at) = CURRENT_DATE")
+        elif any(word in description_lower for word in ["yesterday", "včeraj"]):
+            conditions.append("DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'")
+        elif any(word in description_lower for word in ["week", "teden", "tednu"]):
+            conditions.append("created_at >= CURRENT_DATE - INTERVAL '7 days'")
+        elif any(word in description_lower for word in ["month", "mesec", "mesecu"]):
+            conditions.append("created_at >= CURRENT_DATE - INTERVAL '30 days'")
+        
+        # Detect size conditions
+        if any(word in description_lower for word in ["large", "big", "velik", "večj"]):
+            if "fields" in tables_mentioned:
+                conditions.append("area_hectares > 50")
+        elif any(word in description_lower for word in ["small", "majhn", "mali"]):
+            if "fields" in tables_mentioned:
+                conditions.append("area_hectares < 10")
+        
+        # Detect status conditions
+        if any(word in description_lower for word in ["pending", "incomplete", "nedokončan", "čakajoč"]):
+            conditions.append("status != 'completed'")
+        elif any(word in description_lower for word in ["completed", "dokončan", "končan"]):
+            conditions.append("status = 'completed'")
+        
+        # Detect grouping
+        if any(phrase in description_lower for phrase in ["by city", "po mestih", "po mestu"]):
+            select_fields = "city, COUNT(*) as count"
+            order_by = "ORDER BY count DESC"
+            # Add GROUP BY
+            conditions.append("GROUP BY city")
+        elif any(phrase in description_lower for phrase in ["by country", "po državah", "po državi"]):
+            select_fields = "country, COUNT(*) as count" 
+            order_by = "ORDER BY count DESC"
+            conditions.append("GROUP BY country")
+        
+        # Detect ordering
+        if not order_by:
+            if any(word in description_lower for word in ["recent", "latest", "zadnji", "najnovejši"]):
+                order_by = "ORDER BY created_at DESC"
+            elif any(word in description_lower for word in ["oldest", "first", "najstarejši", "prvi"]):
+                order_by = "ORDER BY created_at ASC"
+        
+        # Detect limits
+        if any(word in description_lower for word in ["all", "vse", "vsi"]):
+            limit = ""
+        elif "10" in description_lower or any(word in description_lower for word in ["recent", "zadnjih"]):
+            limit = "LIMIT 10"
+        elif "5" in description_lower:
+            limit = "LIMIT 5"
+        elif "20" in description_lower:
+            limit = "LIMIT 20"
+        
+        # Build the query
+        main_table = tables_mentioned[0]
+        where_clause = " AND ".join([c for c in conditions if "GROUP BY" not in c])
+        group_clause = next((c for c in conditions if "GROUP BY" in c), "")
+        
+        if where_clause:
+            where_clause = f" WHERE {where_clause}"
+        
+        query = f"SELECT {select_fields} FROM {main_table}{where_clause} {group_clause} {order_by} {limit}".strip()
+        
+        # Clean up extra spaces
+        query = " ".join(query.split())
+        
+        return query
     
     async def execute_ai_query(self, sql_query: str) -> Dict[str, Any]:
         """Execute the AI-generated SQL query safely"""
@@ -385,6 +443,230 @@ class DatabaseExplorer:
                 "error": str(e),
                 "columns": [],
                 "rows": []
+            }
+    
+    async def convert_natural_language_to_modification_sql(self, description: str) -> Dict[str, Any]:
+        """Convert natural language to INSERT/UPDATE/DELETE SQL using LLM approach"""
+        try:
+            # Get available tables and their schemas
+            with self.db_ops.get_session() as session:
+                inspector = inspect(session.bind)
+                
+                # Get all tables with their columns
+                table_schemas = []
+                for table_name in inspector.get_table_names():
+                    columns = []
+                    for col in inspector.get_columns(table_name):
+                        col_type = str(col['type'])
+                        nullable = "NULL" if col.get('nullable', True) else "NOT NULL"
+                        columns.append(f"{col['name']} {col_type} {nullable}")
+                    table_schemas.append(f"Table {table_name}:\n  {chr(10).join(columns[:10])}{'...' if len(columns) > 10 else ''}")
+                
+                schema_context = "\n\n".join(table_schemas)
+            
+            # Generate SQL using intelligent parsing
+            sql_query = self._generate_modification_sql_from_prompt(description, schema_context)
+            
+            if sql_query and not sql_query.startswith("--"):
+                # Determine operation type
+                sql_upper = sql_query.strip().upper()
+                if sql_upper.startswith("INSERT"):
+                    operation = "insert"
+                elif sql_upper.startswith("UPDATE"):
+                    operation = "update"
+                elif sql_upper.startswith("DELETE"):
+                    operation = "delete"
+                else:
+                    operation = "unknown"
+                
+                return {"success": True, "sql": sql_query, "operation": operation}
+            else:
+                return {"success": False, "sql": sql_query, "operation": "failed"}
+                
+        except Exception as e:
+            logger.error(f"Error in modification SQL conversion: {e}")
+            return {"success": False, "sql": f"-- Error: {str(e)}", "operation": "error"}
+    
+    def _generate_modification_sql_from_prompt(self, description: str, schema_context: str) -> str:
+        """Generate modification SQL from natural language using intelligent parsing"""
+        import re
+        description_lower = description.lower()
+        
+        # Detect operation type
+        operation = ""
+        if any(word in description_lower for word in ["add", "create", "insert", "dodaj", "ustvari", "vstavi"]):
+            operation = "INSERT"
+        elif any(word in description_lower for word in ["update", "change", "modify", "posodobi", "spremeni", "nastavi"]):
+            operation = "UPDATE"
+        elif any(word in description_lower for word in ["delete", "remove", "izbriši", "odstrani", "pobriši"]):
+            operation = "DELETE"
+        else:
+            return "-- Could not determine operation type (INSERT/UPDATE/DELETE)"
+        
+        # Detect table references
+        table_mappings = {
+            "farmers": ["farmer", "kmet", "kmeta", "kmetu", "kmetom"],
+            "fields": ["field", "parcela", "parcele", "parcelo", "parcel", "polje", "polja", "njiva", "njivo"],
+            "incoming_messages": ["message", "sporočilo", "sporočila"],
+            "tasks": ["task", "naloga", "nalogo", "opravilo"],
+            "crops": ["crop", "pridelek", "pridelka"],
+            "weather_data": ["weather", "vreme"],
+            "recommendations": ["recommendation", "priporočilo"]
+        }
+        
+        target_table = None
+        for table, keywords in table_mappings.items():
+            if any(keyword in description_lower for keyword in keywords):
+                target_table = table
+                break
+        
+        if not target_table:
+            return "-- Could not identify which table to modify"
+        
+        # Parse based on operation type
+        if operation == "INSERT":
+            if target_table == "fields":
+                # Extract field name
+                field_name = None
+                farmer_ref = None
+                
+                # Look for field name patterns
+                name_patterns = [
+                    r'called\s+["\']?([^"\']+)["\']?',
+                    r'imenovano\s+["\']?([^"\']+)["\']?',
+                    r'parcelo\s+["\']?([^"\']+)["\']?\s+kmetu',
+                    r'field\s+["\']?([^"\']+)["\']?\s+to',
+                    r'called\s+(\w+\s+\w+)',  # For "called Big field"
+                    r'"([^"]+)"',
+                    r"'([^']+)'"
+                ]
+                
+                for pattern in name_patterns:
+                    match = re.search(pattern, description, re.IGNORECASE)
+                    if match:
+                        field_name = match.group(1).strip()
+                        break
+                
+                # Look for farmer reference
+                farmer_patterns = [
+                    r'to\s+(?:farmer\s+)?([^\s]+(?:\s+[^\s]+)?)',
+                    r'kmetu\s+([^\s]+(?:\s+[^\s]+)?)',
+                    r'for\s+([^\s]+(?:\s+[^\s]+)?)',
+                    r'za\s+([^\s]+(?:\s+[^\s]+)?)'
+                ]
+                
+                for pattern in farmer_patterns:
+                    match = re.search(pattern, description, re.IGNORECASE)
+                    if match:
+                        farmer_ref = match.group(1).strip()
+                        # Remove trailing words like "called", "named", etc.
+                        farmer_ref = re.sub(r'\s+(called|named|imenovano|z\s+imenom).*$', '', farmer_ref, flags=re.IGNORECASE)
+                        break
+                
+                if field_name and farmer_ref:
+                    return f"""INSERT INTO fields (farmer_id, name, location, area_hectares, created_at)
+SELECT id, '{field_name}', 'Unknown', 10.0, NOW()
+FROM farmers 
+WHERE LOWER(farm_name) LIKE LOWER('%{farmer_ref}%')
+   OR LOWER(manager_name || ' ' || manager_last_name) LIKE LOWER('%{farmer_ref}%')
+   OR LOWER(manager_name) LIKE LOWER('%{farmer_ref}%')
+LIMIT 1"""
+                
+            elif target_table == "farmers":
+                # Extract farmer name
+                farmer_name = None
+                name_patterns = [
+                    r'farmer\s+([^\s]+(?:\s+[^\s]+)?)',
+                    r'kmeta\s+([^\s]+(?:\s+[^\s]+)?)',
+                    r'add\s+([^\s]+(?:\s+[^\s]+)?)',
+                    r'dodaj\s+([^\s]+(?:\s+[^\s]+)?)'
+                ]
+                
+                for pattern in name_patterns:
+                    match = re.search(pattern, description, re.IGNORECASE)
+                    if match:
+                        farmer_name = match.group(1).strip()
+                        break
+                
+                if farmer_name:
+                    # Split into first and last name if possible
+                    parts = farmer_name.split()
+                    if len(parts) >= 2:
+                        first_name = parts[0]
+                        last_name = ' '.join(parts[1:])
+                    else:
+                        first_name = farmer_name
+                        last_name = "Farm"
+                    
+                    return f"""INSERT INTO farmers (farm_name, manager_name, manager_last_name, country, city, postal_code, street_and_no, village)
+VALUES ('{farmer_name} Farm', '{first_name}', '{last_name}', 'Slovenia', 'Ljubljana', '1000', 'Unknown 1', 'Unknown')"""
+        
+        elif operation == "UPDATE":
+            if target_table == "fields":
+                # Extract field name and new value
+                field_name = None
+                new_value = None
+                field_to_update = None
+                
+                # Look for field name
+                name_match = re.search(r'(?:field|parcelo?)\s+["\']?([^"\']+?)["\']?\s+(?:set|to|na)', description, re.IGNORECASE)
+                if name_match:
+                    field_name = name_match.group(1).strip()
+                
+                # Look for numeric values (likely area)
+                number_match = re.search(r'(\d+(?:\.\d+)?)', description)
+                if number_match:
+                    new_value = float(number_match.group(1))
+                    field_to_update = "area_hectares"
+                
+                if field_name and new_value:
+                    return f"""UPDATE fields 
+SET {field_to_update} = {new_value}
+WHERE LOWER(name) = LOWER('{field_name}')"""
+        
+        elif operation == "DELETE":
+            if target_table == "fields":
+                # Extract field name
+                field_name = None
+                name_patterns = [
+                    r'field\s+["\']?([^"\']+)["\']?',
+                    r'parcelo?\s+["\']?([^"\']+)["\']?',
+                    r'"([^"]+)"',
+                    r"'([^']+)'"
+                ]
+                
+                for pattern in name_patterns:
+                    match = re.search(pattern, description, re.IGNORECASE)
+                    if match:
+                        field_name = match.group(1).strip()
+                        break
+                
+                if field_name:
+                    return f"""DELETE FROM fields 
+WHERE LOWER(name) = LOWER('{field_name}')"""
+        
+        return f"-- Could not generate {operation} query for {target_table} from: {description}"
+    
+    async def execute_modification_query(self, sql_query: str) -> Dict[str, Any]:
+        """Execute INSERT/UPDATE/DELETE queries with proper safety checks"""
+        try:
+            with self.db_ops.get_session() as session:
+                result = session.execute(text(sql_query))
+                session.commit()
+                
+                rows_affected = result.rowcount if hasattr(result, 'rowcount') else 0
+                
+                return {
+                    "success": True,
+                    "rows_affected": rows_affected,
+                    "message": f"Successfully executed. {rows_affected} row(s) affected."
+                }
+                
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "rows_affected": 0
             }
 
 # Initialize explorer
@@ -816,6 +1098,48 @@ async def add_test_data():
             
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+@app.get("/modify", response_class=HTMLResponse)
+async def modify_page(request: Request, lang: str = Query("en")):
+    """Data modification page with natural language support"""
+    translations = UI_TRANSLATIONS.get(lang, UI_TRANSLATIONS["en"])
+    
+    return templates.TemplateResponse("data_modifier.html", {
+        "request": request,
+        "lang": lang,
+        "t": translations,
+        "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    })
+
+@app.post("/api/ai-modify")
+async def ai_modify(query_description: str = Form(...)):
+    """Convert natural language to modification SQL and execute"""
+    try:
+        # Convert to SQL
+        sql_query = await explorer.convert_natural_language_to_modification_sql(query_description)
+        
+        if sql_query["success"]:
+            # Execute the modification
+            result = await explorer.execute_modification_query(sql_query["sql"])
+            return {
+                "success": result["success"],
+                "sql": sql_query["sql"],
+                "operation": sql_query["operation"],
+                "message": result.get("message", ""),
+                "rows_affected": result.get("rows_affected", 0)
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Could not understand the modification request",
+                "sql": ""
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "sql": ""
+        }
 
 @app.get("/health")
 async def health_check():

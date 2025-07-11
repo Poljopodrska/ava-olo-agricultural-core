@@ -28,7 +28,21 @@ UI_TRANSLATIONS = {
             "operations": "Operations",
             "communication": "Communication",
             "analytics": "Analytics"
-        }
+        },
+        "data_modifier": "Data Modifier",
+        "back_to_explorer": "Back to Explorer",
+        "warning_modifications": "WARNING: This page allows direct database modifications. Use with caution!",
+        "modification_request": "Describe what you want to modify",
+        "modification_placeholder": "e.g. Add a field to Kmetija Vrzel called Big field",
+        "execute_modification": "Execute Modification",
+        "clear": "Clear",
+        "example_modifications": "Example Modifications",
+        "processing": "Processing...",
+        "modification_successful": "Modification Successful",
+        "rows_affected": "Rows affected",
+        "modification_failed": "Modification Failed",
+        "unknown_error": "Unknown error occurred",
+        "error": "Error"
     },
     "sl": {
         "title": "AVA OLO Raziskovalec Podatkov",
@@ -54,7 +68,21 @@ UI_TRANSLATIONS = {
             "operations": "Opravila",
             "communication": "Komunikacija",
             "analytics": "Analitika"
-        }
+        },
+        "data_modifier": "Spreminjanje podatkov",
+        "back_to_explorer": "Nazaj na raziskovalca",
+        "warning_modifications": "OPOZORILO: Ta stran omogoča neposredne spremembe baze podatkov. Uporabljajte previdno!",
+        "modification_request": "Opišite kaj želite spremeniti",
+        "modification_placeholder": "npr. Dodaj parcelo Velika njiva kmetu Vrzel",
+        "execute_modification": "Izvedi spremembo",
+        "clear": "Počisti",
+        "example_modifications": "Primeri sprememb",
+        "processing": "Obdelava...",
+        "modification_successful": "Sprememba uspešna",
+        "rows_affected": "Spremenjenih vrstic",
+        "modification_failed": "Sprememba neuspešna",
+        "unknown_error": "Neznana napaka",
+        "error": "Napaka"
     }
 }
 
