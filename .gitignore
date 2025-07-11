@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# AWS CLI
+aws/
+awscliv2.zip
+
+# Database dumps
+*.dump
+*.sql
+
+# Logs
+*.log
+
+# Environment
+.env.local
+.env.production
+
+# Temporary files
+*.tmp
+*.bak
+*_backup.py
+
+# OS files
+.DS_Store
+Thumbs.db
