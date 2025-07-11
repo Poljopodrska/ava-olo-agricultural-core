@@ -553,6 +553,46 @@ async def import_sql_file(file: UploadFile = File(...)):
                     if any(skip in statement.upper() for skip in ['SET STATEMENT_TIMEOUT', 'SET LOCK_TIMEOUT', 'SELECT PG_CATALOG', 'SET CHECK_FUNCTION_BODIES', 'SET XMLOPTION', 'SET CLIENT_MIN_MESSAGES', 'SET ROW_SECURITY', 'SET DEFAULT_TABLE_ACCESS_METHOD', 'COMMENT ON SCHEMA']):
                         continue
                     
+                    # Handle COPY statements specially
+                    if 'COPY' in statement.upper() and 'FROM stdin' in statement:
+                        # This is a COPY statement with data
+                        table_match = re.search(r'COPY\s+"?\w*"?\."?(\w+)"?', statement, re.IGNORECASE)
+                        if table_match:
+                            table_name = table_match.group(1)
+                            # Extract the data part
+                            data_start = statement.find('FROM stdin;') + len('FROM stdin;')
+                            data_end = statement.rfind('\\.')
+                            if data_start > 0 and data_end > data_start:
+                                data = statement[data_start:data_end].strip()
+                                if data:
+                                    # Count existing records
+                                    existing = session.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar()
+                                    if existing == 0:
+                                        # Process line by line
+                                        lines = data.split('\n')
+                                        imported = 0
+                                        for line in lines:
+                                            if line.strip():
+                                                values = line.split('\t')
+                                                # Convert \N to NULL
+                                                values = [None if v == '\\N' else v for v in values]
+                                                # Create INSERT statement
+                                                placeholders = ', '.join([':p' + str(i) for i in range(len(values))])
+                                                params = {f'p{i}': val for i, val in enumerate(values)}
+                                                try:
+                                                    session.execute(
+                                                        text(f"INSERT INTO {table_name} VALUES ({placeholders})"),
+                                                        params
+                                                    )
+                                                    imported += 1
+                                                except:
+                                                    pass
+                                        if imported > 0:
+                                            session.commit()
+                                            executed += 1
+                                            tables_created.append(f"{table_name} ({imported} rows)")
+                                    continue
+                    
                     # Extract table name if CREATE TABLE
                     if 'CREATE TABLE' in statement.upper():
                         match = re.search(r'CREATE TABLE\s+["]?([^"\s]+)["]?\.?["]?([^"\s(]+)?', statement, re.IGNORECASE)
