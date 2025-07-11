@@ -38,6 +38,14 @@ db_ops = DatabaseOperations()
 # Import RDS inspector
 from inspect_rds import create_inspect_endpoint
 
+# Import translations
+try:
+    from slovenian_translations import UI_TRANSLATIONS, TABLE_DESCRIPTIONS, AI_QUERY_EXAMPLES
+except:
+    UI_TRANSLATIONS = {"en": {}, "sl": {}}
+    TABLE_DESCRIPTIONS = {"en": {}, "sl": {}}
+    AI_QUERY_EXAMPLES = {"en": [], "sl": []}
+
 class DatabaseExplorer:
     """Enhanced database explorer with AI query capabilities"""
     
@@ -218,23 +226,23 @@ class DatabaseExplorer:
             }
     
     async def convert_natural_language_to_sql(self, description: str) -> Dict[str, Any]:
-        """Convert natural language query to SQL"""
+        """Convert natural language query to SQL - supports English and Slovenian"""
         description_lower = description.lower()
         
         # Pattern matching for common queries
         sql_query = ""
         query_type = "custom"
         
-        # Farmer queries
-        if "farmer" in description_lower:
-            if "all" in description_lower and ("show" in description_lower or "list" in description_lower or "get" in description_lower):
+        # Farmer queries (English: farmer, Slovenian: kmet/kmetje)
+        if "farmer" in description_lower or "kmet" in description_lower:
+            if ("all" in description_lower or "vse" in description_lower or "vsi" in description_lower) and ("show" in description_lower or "list" in description_lower or "get" in description_lower or "prikaži" in description_lower or "pokaži" in description_lower):
                 sql_query = "SELECT * FROM farmers ORDER BY id DESC"
                 query_type = "all_farmers"
-            elif "new" in description_lower or "recent" in description_lower:
+            elif "new" in description_lower or "recent" in description_lower or "novi" in description_lower or "zadnji" in description_lower:
                 # Since farmers table doesn't have created_at, we can't filter by date
                 sql_query = "SELECT * FROM farmers ORDER BY id DESC LIMIT 10"
                 query_type = "recent_farmers"
-            elif "count" in description_lower or "how many" in description_lower:
+            elif "count" in description_lower or "how many" in description_lower or "koliko" in description_lower or "število" in description_lower:
                 sql_query = "SELECT COUNT(*) as total_farmers FROM farmers"
                 query_type = "count"
             elif "by city" in description_lower or "cities" in description_lower:
@@ -355,14 +363,23 @@ explorer = DatabaseExplorer()
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    """Enhanced Database Explorer Dashboard"""
+async def home(request: Request, lang: str = Query("en")):
+    """Enhanced Database Explorer Dashboard with language support"""
     table_groups = explorer.get_table_groups()
+    
+    # Get translations for current language
+    translations = UI_TRANSLATIONS.get(lang, UI_TRANSLATIONS["en"])
+    table_desc = TABLE_DESCRIPTIONS.get(lang, TABLE_DESCRIPTIONS["en"])
+    examples = AI_QUERY_EXAMPLES.get(lang, AI_QUERY_EXAMPLES["en"])
     
     return templates.TemplateResponse("database_explorer.html", {
         "request": request,
         "table_groups": table_groups,
-        "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "lang": lang,
+        "t": translations,
+        "table_desc": table_desc,
+        "examples": examples
     })
 
 @app.get("/table/{table_name}", response_class=HTMLResponse)
