@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .query-box {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .query-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .query-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        
+        .results {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        .result-summary {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .data-table th,
+        .data-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c00;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+        
+        .sql-display {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .tab-button {
+            padding: 0.5rem 1rem;
+            background: #ecf0f1;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌾 AVA OLO Admin Dashboard</h1>
+        <div>Constitutional Compliance ✓</div>
+    </div>
+    
+    <div class="container">
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('query')">Natural Query</button>
+            <button class="tab-button" onclick="switchTab('modify')">Modify Data</button>
+            <button class="tab-button" onclick="switchTab('tables')">Browse Tables</button>
+        </div>
+        
+        <!-- Query Tab -->
+        <div id="query-tab" class="tab-content">
+            <div class="query-box">
+                <h2>Ask anything about your agricultural data</h2>
+                <p style="color: #666; margin: 0.5rem 0;">Works in any language - try Bulgarian, Slovenian, or English!</p>
+                
+                <input type="text" 
+                       id="query-input" 
+                       class="query-input" 
+                       placeholder="e.g., Колко манго дървета имам? / How many fields do I have? / Koliko kmetov?"
+                       autofocus>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="executeQuery()">Execute Query</button>
+                    <button class="btn" onclick="clearResults()">Clear</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modify Tab -->
+        <div id="modify-tab" class="tab-content hidden">
+            <div class="query-box">
+                <h2>Modify your data using natural language</h2>
+                <p style="color: #666; margin: 0.5rem 0;">Add, update, or delete records in any language</p>
+                
+                <input type="text" 
+                       id="modify-input" 
+                       class="query-input" 
+                       placeholder="e.g., Add a field called Mango Grove to Smith Farm / Dodaj parcelo Velika njiva">
+                
+                <div class="button-group">
+                    <button class="btn btn-danger" onclick="executeModification()">Execute Modification</button>
+                    <button class="btn" onclick="clearResults()">Clear</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tables Tab -->
+        <div id="tables-tab" class="tab-content hidden">
+            <div class="query-box">
+                <h2>Database Tables</h2>
+                <div id="tables-list" class="loading">Loading tables...</div>
+            </div>
+        </div>
+        
+        <div id="results-container"></div>
+    </div>
+    
+    <script>
+        // API endpoint base URL
+        const API_BASE = '/api';
+        
+        // Switch between tabs
+        function switchTab(tab) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(`${tab}-tab`).classList.remove('hidden');
+            event.target.classList.add('active');
+            
+            // Load tables if switching to tables tab
+            if (tab === 'tables') {
+                loadTables();
+            }
+        }
+        
+        // Execute natural language query
+        async function executeQuery() {
+            const query = document.getElementById('query-input').value.trim();
+            if (!query) return;
+            
+            const container = document.getElementById('results-container');
+            container.innerHTML = '<div class="results loading">Processing query...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/natural-query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `query=${encodeURIComponent(query)}&language=auto`
+                });
+                
+                const result = await response.json();
+                displayQueryResults(result);
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Execute modification query
+        async function executeModification() {
+            const query = document.getElementById('modify-input').value.trim();
+            if (!query) return;
+            
+            if (!confirm('Are you sure you want to modify the database?')) return;
+            
+            const container = document.getElementById('results-container');
+            container.innerHTML = '<div class="results loading">Processing modification...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/modify-data`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `query=${encodeURIComponent(query)}&language=auto`
+                });
+                
+                const result = await response.json();
+                displayModificationResults(result);
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Display query results
+        function displayQueryResults(result) {
+            const container = document.getElementById('results-container');
+            
+            if (!result.success) {
+                container.innerHTML = `<div class="error">${result.error?.error || 'Query failed'}</div>`;
+                return;
+            }
+            
+            const { query, results } = result;
+            
+            let html = '<div class="results">';
+            
+            // Summary
+            html += `<div class="result-summary">${results.summary}</div>`;
+            
+            // SQL Query
+            if (query.sql) {
+                html += `<div class="sql-display">${query.sql}</div>`;
+            }
+            
+            // Data table
+            if (results.data && results.data.length > 0) {
+                html += '<table class="data-table">';
+                
+                // Headers
+                html += '<thead><tr>';
+                Object.keys(results.data[0]).forEach(key => {
+                    html += `<th>${key}</th>`;
+                });
+                html += '</tr></thead>';
+                
+                // Rows
+                html += '<tbody>';
+                results.data.forEach(row => {
+                    html += '<tr>';
+                    Object.values(row).forEach(value => {
+                        html += `<td>${value !== null ? value : ''}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Display modification results
+        function displayModificationResults(result) {
+            const container = document.getElementById('results-container');
+            
+            if (!result.success) {
+                container.innerHTML = `<div class="error">${result.error?.error || 'Modification failed'}</div>`;
+                return;
+            }
+            
+            const { query, result: modResult } = result;
+            
+            let html = '<div class="results">';
+            html += `<div class="result-summary">✅ ${modResult.message}</div>`;
+            
+            if (query.sql) {
+                html += `<div class="sql-display">${query.sql}</div>`;
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Load tables list
+        async function loadTables() {
+            const container = document.getElementById('tables-list');
+            
+            try {
+                const response = await fetch(`${API_BASE}/tables`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">';
+                    
+                    result.tables.forEach(table => {
+                        html += `
+                            <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; cursor: pointer;"
+                                 onclick="viewTable('${table.name}')">
+                                <strong>${table.name}</strong><br>
+                                <small>Size: ${table.size}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<div class="error">Failed to load tables</div>';
+                }
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // View table data
+        async function viewTable(tableName) {
+            const container = document.getElementById('results-container');
+            container.innerHTML = '<div class="results loading">Loading table data...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/table/${tableName}?limit=100`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayTableData(result);
+                } else {
+                    container.innerHTML = '<div class="error">Failed to load table data</div>';
+                }
+                
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Display table data
+        function displayTableData(result) {
+            const container = document.getElementById('results-container');
+            
+            let html = '<div class="results">';
+            html += `<div class="result-summary">Table: ${result.table} (${result.total_count} total records)</div>`;
+            
+            if (result.data && result.data.length > 0) {
+                html += '<table class="data-table">';
+                
+                // Headers
+                html += '<thead><tr>';
+                result.columns.forEach(col => {
+                    html += `<th>${col}</th>`;
+                });
+                html += '</tr></thead>';
+                
+                // Rows
+                html += '<tbody>';
+                result.data.forEach(row => {
+                    html += '<tr>';
+                    result.columns.forEach(col => {
+                        html += `<td>${row[col] !== null ? row[col] : ''}</td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Clear results
+        function clearResults() {
+            document.getElementById('results-container').innerHTML = '';
+            document.getElementById('query-input').value = '';
+            document.getElementById('modify-input').value = '';
+        }
+        
+        // Handle enter key
+        document.getElementById('query-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeQuery();
+        });
+        
+        document.getElementById('modify-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') executeModification();
+        });
+    </script>
+</body>
+</html>

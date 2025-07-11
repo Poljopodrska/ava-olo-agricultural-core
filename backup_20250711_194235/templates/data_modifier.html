@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ t.get('data_modifier', 'Data Modifier') }} - AVA OLO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s;
+        }
+        
+        .nav-links a:hover {
+            background: #334155;
+            color: #f8fafc;
+        }
+        
+        .warning-banner {
+            background: #dc2626;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .main-content {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+        }
+        
+        .modification-panel {
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid #334155;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.375rem;
+            color: #f8fafc;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        
+        .btn-secondary {
+            background: #475569;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #334155;
+        }
+        
+        .examples {
+            background: #0f172a;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .examples h3 {
+            color: #cbd5e1;
+            margin-bottom: 1rem;
+        }
+        
+        .example-item {
+            padding: 0.75rem;
+            background: #1e293b;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .example-item:hover {
+            border-color: #3b82f6;
+            transform: translateX(4px);
+        }
+        
+        .example-type {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        
+        .type-insert {
+            background: #10b981;
+            color: white;
+        }
+        
+        .type-update {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .type-delete {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .result-container {
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            border: 1px solid #334155;
+            margin-top: 2rem;
+        }
+        
+        .result-success {
+            border-color: #10b981;
+        }
+        
+        .result-error {
+            border-color: #dc2626;
+        }
+        
+        .sql-display {
+            background: #0f172a;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin: 1rem 0;
+            border: 1px solid #334155;
+        }
+        
+        .result-message {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .success-message {
+            color: #10b981;
+        }
+        
+        .error-message {
+            color: #dc2626;
+        }
+        
+        .lang-switch {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        
+        .lang-switch a {
+            padding: 0.5rem 1rem;
+            background: #334155;
+            color: #cbd5e1;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            margin-left: 0.5rem;
+        }
+        
+        .lang-switch a:hover {
+            background: #475569;
+        }
+        
+        .lang-switch a.active {
+            background: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-switch">
+        <a href="?lang=en" {% if lang == 'en' %}class="active"{% endif %}>EN</a>
+        <a href="?lang=sl" {% if lang == 'sl' %}class="active"{% endif %}>SL</a>
+    </div>
+    
+    <div class="header">
+        <div class="header-content">
+            <h1>
+                <span>🔧</span>
+                {{ t.get('data_modifier', 'Data Modifier') }}
+            </h1>
+            <div class="nav-links">
+                <a href="/database/?lang={{ lang }}">📊 {{ t.get('back_to_explorer', 'Back to Explorer') }}</a>
+                <a href="/database/api/test-connection">🔌 Test Connection</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="warning-banner">
+        ⚠️ {{ t.get('warning_modifications', 'WARNING: This page allows direct database modifications. Use with caution!') }}
+    </div>
+    
+    <div class="main-content">
+        <div class="modification-panel">
+            <form id="modifyForm">
+                <div class="form-group">
+                    <label class="form-label">
+                        {{ t.get('modification_request', 'Describe what you want to modify') }}:
+                    </label>
+                    <input type="text" 
+                           id="queryInput" 
+                           class="form-input" 
+                           placeholder="{{ t.get('modification_placeholder', 'e.g. Add a field to Kmetija Vrzel called Big field') }}"
+                           autofocus>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn btn-danger">
+                        <span>⚡</span>
+                        {{ t.get('execute_modification', 'Execute Modification') }}
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                        <span>🔄</span>
+                        {{ t.get('clear', 'Clear') }}
+                    </button>
+                </div>
+            </form>
+            
+            <div class="examples">
+                <h3>{{ t.get('example_modifications', 'Example Modifications') }}:</h3>
+                
+                {% if lang == 'sl' %}
+                <div class="example-item" onclick="setExample('Dodaj parcelo Velika njiva kmetu Vrzel')">
+                    <span class="example-type type-insert">DODAJ</span>
+                    Dodaj parcelo "Velika njiva" kmetu Vrzel
+                </div>
+                <div class="example-item" onclick="setExample('Dodaj kmeta Janez Novak')">
+                    <span class="example-type type-insert">DODAJ</span>
+                    Dodaj kmeta Janez Novak
+                </div>
+                <div class="example-item" onclick="setExample('Posodobi parcelo Velika njiva nastavi površino na 25.5')">
+                    <span class="example-type type-update">POSODOBI</span>
+                    Posodobi parcelo "Velika njiva" nastavi površino na 25.5
+                </div>
+                <div class="example-item" onclick="setExample('Izbriši parcelo Stara njiva')">
+                    <span class="example-type type-delete">IZBRIŠI</span>
+                    Izbriši parcelo "Stara njiva"
+                </div>
+                {% else %}
+                <div class="example-item" onclick="setExample('Add a field to Kmetija Vrzel called Big field')">
+                    <span class="example-type type-insert">INSERT</span>
+                    Add a field to Kmetija Vrzel called "Big field"
+                </div>
+                <div class="example-item" onclick="setExample('Add farmer John Smith')">
+                    <span class="example-type type-insert">INSERT</span>
+                    Add farmer John Smith
+                </div>
+                <div class="example-item" onclick="setExample('Update field Big field set area to 25.5')">
+                    <span class="example-type type-update">UPDATE</span>
+                    Update field "Big field" set area to 25.5
+                </div>
+                <div class="example-item" onclick="setExample('Delete field Old field')">
+                    <span class="example-type type-delete">DELETE</span>
+                    Delete field "Old field"
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div id="resultContainer" style="display: none;"></div>
+    </div>
+    
+    <script>
+        function setExample(text) {
+            document.getElementById('queryInput').value = text;
+        }
+        
+        function clearForm() {
+            document.getElementById('queryInput').value = '';
+            document.getElementById('resultContainer').style.display = 'none';
+        }
+        
+        document.getElementById('modifyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const queryInput = document.getElementById('queryInput');
+            const query = queryInput.value.trim();
+            
+            if (!query) return;
+            
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = '<div class="result-container"><p>{{ t.get("processing", "Processing...") }}</p></div>';
+            resultContainer.style.display = 'block';
+            
+            try {
+                const response = await fetch('/database/api/ai-modify', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `query_description=${encodeURIComponent(query)}`
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    resultContainer.innerHTML = `
+                        <div class="result-container result-success">
+                            <p class="result-message success-message">
+                                ✅ {{ t.get('modification_successful', 'Modification Successful') }}
+                            </p>
+                            <p>{{ t.get('rows_affected', 'Rows affected') }}: ${result.rows_affected}</p>
+                            <p>${result.message || ''}</p>
+                            <div class="sql-display">${result.sql}</div>
+                        </div>
+                    `;
+                } else {
+                    resultContainer.innerHTML = `
+                        <div class="result-container result-error">
+                            <p class="result-message error-message">
+                                ❌ {{ t.get('modification_failed', 'Modification Failed') }}
+                            </p>
+                            <p>${result.error || '{{ t.get("unknown_error", "Unknown error occurred") }}'}</p>
+                            ${result.sql ? `<div class="sql-display">${result.sql}</div>` : ''}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultContainer.innerHTML = `
+                    <div class="result-container result-error">
+                        <p class="result-message error-message">
+                            ❌ {{ t.get('error', 'Error') }}
+                        </p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
