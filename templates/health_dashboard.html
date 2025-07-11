@@ -61,6 +61,9 @@
         .status-indicator.unhealthy {
             background-color: #f44336;
         }
+        .status-indicator.warning {
+            background-color: #ff9800;
+        }
         .status-indicator.offline {
             background-color: #ff9800;
         }
@@ -216,6 +219,103 @@
                 Error: {{ database_health.error }}
             </div>
             {% endif %}
+            {% endif %}
+        </div>
+        
+        <div class="status-card">
+            <h2>🏛️ Constitutional Compliance</h2>
+            {% if constitutional_health %}
+                {% if constitutional_health.status == "compliant" %}
+                <div>
+                    <span class="status-indicator healthy"></span>
+                    <span style="font-weight: bold; color: #4caf50;">FULLY COMPLIANT</span>
+                </div>
+                {% elif constitutional_health.status == "partial" %}
+                <div>
+                    <span class="status-indicator warning"></span>
+                    <span style="font-weight: bold; color: #ff9800;">PARTIALLY COMPLIANT</span>
+                </div>
+                {% else %}
+                <div>
+                    <span class="status-indicator unhealthy"></span>
+                    <span style="font-weight: bold; color: #f44336;">NON-COMPLIANT</span>
+                </div>
+                {% endif %}
+                
+                <div style="margin-top: 20px;">
+                    <h3>Configuration Status</h3>
+                    <div class="metric">
+                        <span>OpenAI API Configured:</span>
+                        <span class="metric-value">
+                            {% if constitutional_health.openai_configured %}
+                            <span style="color: #4caf50;">✓ Yes</span>
+                            {% else %}
+                            <span style="color: #f44336;">✗ No</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span>LLM Available:</span>
+                        <span class="metric-value">
+                            {% if constitutional_health.llm_available %}
+                            <span style="color: #4caf50;">✓ Yes</span>
+                            {% else %}
+                            <span style="color: #f44336;">✗ No</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h3>Constitutional Principles</h3>
+                    {% for principle, status in constitutional_health.constitutional_principles.items() %}
+                    <div class="metric">
+                        <span>{{ principle|replace('_', ' ')|title }}:</span>
+                        <span class="metric-value">
+                            {% if status %}
+                            <span style="color: #4caf50;">✓ Pass</span>
+                            {% else %}
+                            <span style="color: #f44336;">✗ Fail</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if constitutional_health.test_queries %}
+                <div style="margin-top: 20px;">
+                    <h3>Language Test Results</h3>
+                    {% for test in constitutional_health.test_queries %}
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                        <div><strong>{{ test.language }}</strong></div>
+                        <div style="font-size: 0.9em; color: #666;">Query: "{{ test.query }}"</div>
+                        <div style="margin-top: 5px;">
+                            {% if test.success %}
+                            <span style="color: #4caf50;">✓ Success</span>
+                            {% if test.sql %}
+                            <div style="font-family: monospace; font-size: 0.8em; margin-top: 5px; color: #333;">
+                                SQL: {{ test.sql|truncate(100) }}
+                            </div>
+                            {% endif %}
+                            {% else %}
+                            <span style="color: #f44336;">✗ Failed</span>
+                            {% if test.error %}
+                            <div style="font-size: 0.8em; color: #f44336;">{{ test.error }}</div>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% if constitutional_health.error %}
+                <div style="color: #f44336; margin-top: 10px;">
+                    Error: {{ constitutional_health.error }}
+                </div>
+                {% endif %}
+            {% else %}
+            <p>Constitutional compliance data unavailable</p>
             {% endif %}
         </div>
         
