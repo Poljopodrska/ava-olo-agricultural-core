@@ -26,3 +26,6 @@ awscliv2.zip
 # OS files
 .DS_Store
 Thumbs.db
+
+# Git token file
+.git-token
