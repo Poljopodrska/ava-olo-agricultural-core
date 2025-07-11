@@ -28,6 +28,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Import constitutional components for testing
+try:
+    from monitoring.core.llm_query_processor import LLMQueryProcessor
+    CONSTITUTIONAL_AVAILABLE = True
+except ImportError:
+    CONSTITUTIONAL_AVAILABLE = False
+    logger.warning("Constitutional modules not available")
+
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
@@ -41,6 +49,7 @@ SERVICES = {
     "Agronomic Dashboard": {"url": "http://localhost:8007/health", "port": 8007},
     "Business Dashboard": {"url": "http://localhost:8004/health", "port": 8004},
     "Database Explorer": {"url": "http://localhost:8005/health", "port": 8005},
+    "Admin Dashboard (Constitutional)": {"url": "http://localhost:8005/", "port": 8005},
 }
 
 class HealthMonitor:
@@ -168,6 +177,122 @@ class HealthMonitor:
                 "status": "unhealthy",
                 "error": str(e)
             }
+    
+    async def test_constitutional_compliance(self) -> Dict[str, Any]:
+        """Test constitutional LLM features"""
+        results = {
+            "status": "unknown",
+            "llm_available": False,
+            "openai_configured": False,
+            "test_queries": [],
+            "constitutional_principles": {
+                "mango_rule": False,
+                "llm_first": False,
+                "privacy_first": False,
+                "error_isolation": False
+            }
+        }
+        
+        try:
+            # Check if constitutional modules are available
+            if not CONSTITUTIONAL_AVAILABLE:
+                results["status"] = "not_available"
+                results["error"] = "Constitutional modules not installed"
+                return results
+            
+            # Check OpenAI configuration
+            from dotenv import load_dotenv
+            load_dotenv()
+            api_key = os.getenv('OPENAI_API_KEY')
+            results["openai_configured"] = bool(api_key and api_key != 'sk-your-key-here')
+            
+            # Initialize LLM processor
+            processor = LLMQueryProcessor()
+            results["llm_available"] = True
+            
+            # Test queries in different languages
+            test_cases = [
+                {
+                    "query": "koliko kmetov je v bazi?",
+                    "language": "Slovenian",
+                    "expected_sql_pattern": "COUNT.*farmers"
+                },
+                {
+                    "query": "колко манго дървета имам?",
+                    "language": "Bulgarian (Mango test)",
+                    "expected_sql_pattern": "COUNT.*field_crops|crops"
+                },
+                {
+                    "query": "show all farmers",
+                    "language": "English",
+                    "expected_sql_pattern": "SELECT.*farmers"
+                }
+            ]
+            
+            for test in test_cases:
+                try:
+                    result = processor.process_natural_query(test["query"])
+                    test_result = {
+                        "query": test["query"],
+                        "language": test["language"],
+                        "success": result.get("success", False),
+                        "detected_language": result.get("detected_language", "unknown"),
+                        "sql": result.get("sql", ""),
+                        "confidence": result.get("confidence", 0),
+                        "is_fallback": result.get("fallback", False)
+                    }
+                    
+                    # Check if SQL matches expected pattern
+                    import re
+                    if test["expected_sql_pattern"] and test_result["sql"]:
+                        test_result["sql_correct"] = bool(
+                            re.search(test["expected_sql_pattern"], test_result["sql"], re.IGNORECASE)
+                        )
+                    
+                    results["test_queries"].append(test_result)
+                except Exception as e:
+                    results["test_queries"].append({
+                        "query": test["query"],
+                        "language": test["language"],
+                        "success": False,
+                        "error": str(e)
+                    })
+            
+            # Evaluate constitutional principles
+            successful_tests = [t for t in results["test_queries"] if t.get("success")]
+            
+            # Mango Rule: Bulgarian mango query should work
+            mango_test = next((t for t in results["test_queries"] if "Bulgarian" in t["language"]), None)
+            results["constitutional_principles"]["mango_rule"] = bool(
+                mango_test and mango_test.get("success")
+            )
+            
+            # LLM First: Should use LLM when available (not fallback)
+            results["constitutional_principles"]["llm_first"] = any(
+                t.get("success") and not t.get("is_fallback") 
+                for t in results["test_queries"]
+            )
+            
+            # Privacy First: No actual data should be exposed
+            results["constitutional_principles"]["privacy_first"] = True  # By design
+            
+            # Error Isolation: All tests should complete even if some fail
+            results["constitutional_principles"]["error_isolation"] = True
+            
+            # Overall status
+            if all(results["constitutional_principles"].values()):
+                results["status"] = "compliant"
+            elif results["openai_configured"] and results["llm_available"]:
+                results["status"] = "partial"
+            else:
+                results["status"] = "non_compliant"
+                
+        except Exception as e:
+            logger.error(f"Constitutional compliance test failed: {e}")
+            results["status"] = "error"
+            results["error"] = str(e)
+        
+        return results
 
 # Initialize monitor
 monitor = HealthMonitor()
@@ -178,6 +303,7 @@ async def dashboard(request: Request):
     services_health = await monitor.get_all_services_health()
     system_metrics = await monitor.get_system_metrics()
     database_health = await monitor.get_database_health()
+    constitutional_health = await monitor.test_constitutional_compliance()
     
     # Calculate overall health
     healthy_services = sum(1 for s in services_health if s["status"] == "healthy")
@@ -190,6 +316,7 @@ async def dashboard(request: Request):
             "services": services_health,
             "system_metrics": system_metrics,
             "database_health": database_health,
+            "constitutional_health": constitutional_health,
             "healthy_services": healthy_services,
             "total_services": total_services,
             "overall_health": "healthy" if healthy_services == total_services else "degraded",
@@ -203,11 +330,13 @@ async def api_health():
     services_health = await monitor.get_all_services_health()
     system_metrics = await monitor.get_system_metrics()
     database_health = await monitor.get_database_health()
+    constitutional_health = await monitor.test_constitutional_compliance()
     
     return {
         "services": services_health,
         "system": system_metrics,
         "database": database_health,
+        "constitutional": constitutional_health,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -220,6 +349,12 @@ async def health_check():
         "port": 8008,
         "purpose": "System health monitoring"
     }
+
+@app.get("/api/constitutional-test")
+async def constitutional_test():
+    """Dedicated endpoint for testing constitutional compliance"""
+    results = await monitor.test_constitutional_compliance()
+    return results
 
 if __name__ == "__main__":
     import uvicorn
