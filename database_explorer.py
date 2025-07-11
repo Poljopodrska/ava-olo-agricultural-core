@@ -679,6 +679,58 @@ async def run_import():
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+@app.post("/api/add-test-data")
+async def add_test_data():
+    """Add test data to farmers table"""
+    try:
+        with db_ops.get_session() as session:
+            # Check if farmers table is empty
+            count = session.execute(text("SELECT COUNT(*) FROM farmers")).scalar()
+            
+            if count > 0:
+                return {"success": False, "message": f"Farmers table already has {count} records"}
+            
+            # Add test farmer
+            session.execute(text("""
+                INSERT INTO farmers (
+                    state_farm_number, farm_name, manager_name, manager_last_name,
+                    street_and_no, village, postal_code, city, country,
+                    vat_no, email, phone, wa_phone_number, notes
+                ) VALUES (
+                    'TEST001', 'Test Farm Zagreb', 'Ivan', 'Horvat',
+                    'Ilica 1', 'Zagreb', '10000', 'Zagreb', 'Croatia',
+                    'HR12345678901', 'ivan@testfarm.hr', '+385911234567', '+385911234567',
+                    'Test farmer for database verification'
+                )
+            """))
+            
+            session.execute(text("""
+                INSERT INTO farmers (
+                    state_farm_number, farm_name, manager_name, manager_last_name,
+                    street_and_no, village, postal_code, city, country,
+                    vat_no, email, phone, wa_phone_number, notes
+                ) VALUES (
+                    'TEST002', 'Organic Gardens Split', 'Ana', 'Kovač',
+                    'Riva 25', 'Split', '21000', 'Split', 'Croatia',
+                    'HR98765432109', 'ana@organicgardens.hr', '+385921234567', '+385921234567',
+                    'Specializes in organic vegetables'
+                )
+            """))
+            
+            session.commit()
+            
+            # Get new count
+            new_count = session.execute(text("SELECT COUNT(*) FROM farmers")).scalar()
+            
+            return {
+                "success": True,
+                "message": f"Added test data successfully. Farmers table now has {new_count} records",
+                "farmers_added": 2
+            }
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
