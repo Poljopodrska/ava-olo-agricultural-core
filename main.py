@@ -1,23 +1,22 @@
-# main.py - Fast Debug Version for AWS RDS Connection
+# main.py - Fix AWS RDS Authentication and SSL Issues
 import uvicorn
 import os
 import json
 import psycopg2
-import socket
 from contextlib import contextmanager
 from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="AVA OLO Constitutional Monitoring Hub - DEBUG MODE")
+app = FastAPI(title="AVA OLO Constitutional Monitoring Hub")
 
-# COMPREHENSIVE DEBUG: Constitutional AWS RDS Connection with Full Diagnostics
+# FIXED: Constitutional AWS RDS Connection with Multiple Authentication Attempts
 @contextmanager
 def get_constitutional_db_connection():
-    """Constitutional connection with comprehensive diagnostics"""
+    """Constitutional connection with multiple authentication strategies"""
     connection = None
     try:
-        # Get all connection parameters
+        # Get connection parameters
         host = os.getenv('DB_HOST')
         database = os.getenv('DB_NAME', 'farmer_crm')
         user = os.getenv('DB_USER', 'postgres')
@@ -25,51 +24,42 @@ def get_constitutional_db_connection():
         port = int(os.getenv('DB_PORT', '5432'))
         
         print(f"DEBUG: Attempting connection to {host}:{port}/{database} as {user}")
-        print(f"DEBUG: Password present: {bool(password)}")
         
-        if not host:
-            print("DEBUG: DB_HOST environment variable not set!")
-            yield None
-            return
-            
-        if not password:
-            print("DEBUG: DB_PASSWORD environment variable not set!")
-            yield None
-            return
-        
-        # Test network connectivity first
+        # Strategy 1: Try with SSL required (AWS RDS default)
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            result = sock.connect_ex((host, port))
-            sock.close()
-            if result != 0:
-                print(f"DEBUG: Cannot reach {host}:{port} - Network connectivity issue")
-                yield None
-                return
-            else:
-                print(f"DEBUG: Network connectivity to {host}:{port} - OK")
-        except Exception as net_error:
-            print(f"DEBUG: Network test failed: {net_error}")
-            yield None
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
+            print("DEBUG: Connected with SSL required")
+            yield connection
             return
-            
-        # Attempt database connection
-        connection = psycopg2.connect(
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=10,
-            sslmode='require'  # AWS RDS typically requires SSL
-        )
-        print("DEBUG: AWS RDS connection successful!")
-        yield connection
+        except psycopg2.OperationalError as ssl_error:
+            print(f"DEBUG: SSL required failed: {ssl_error}")
         
-    except psycopg2.OperationalError as op_error:
-        print(f"DEBUG: PostgreSQL Operational Error: {op_error}")
-        # Try without SSL as fallback
+        # Strategy 2: Try with SSL preferred
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='prefer'
+            )
+            print("DEBUG: Connected with SSL preferred")
+            yield connection
+            return
+        except psycopg2.OperationalError as ssl_pref_error:
+            print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
+        
+        # Strategy 3: Try without SSL (fallback)
         try:
             connection = psycopg2.connect(
                 host=host,
@@ -80,167 +70,194 @@ def get_constitutional_db_connection():
                 connect_timeout=10,
                 sslmode='disable'
             )
-            print("DEBUG: AWS RDS connection successful (without SSL)!")
+            print("DEBUG: Connected without SSL")
             yield connection
-        except Exception as ssl_fallback_error:
-            print(f"DEBUG: SSL fallback also failed: {ssl_fallback_error}")
-            yield None
+            return
+        except psycopg2.OperationalError as no_ssl_error:
+            print(f"DEBUG: No SSL failed: {no_ssl_error}")
+        
+        # Strategy 4: Try with different authentication method
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require',
+                application_name='ava_olo_constitutional'
+            )
+            print("DEBUG: Connected with application name")
+            yield connection
+            return
+        except psycopg2.OperationalError as app_name_error:
+            print(f"DEBUG: Application name failed: {app_name_error}")
+        
+        # Strategy 5: Try connecting to postgres database instead of farmer_crm
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database='postgres',  # Default database
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
+            print("DEBUG: Connected to postgres database (farmer_crm might not exist)")
+            yield connection
+            return
+        except psycopg2.OperationalError as postgres_db_error:
+            print(f"DEBUG: Postgres database failed: {postgres_db_error}")
+            
+        # All strategies failed
+        print("DEBUG: All connection strategies failed")
+        yield None
+        
     except Exception as e:
-        print(f"DEBUG: General connection error: {e}")
+        print(f"DEBUG: Unexpected error: {e}")
         yield None
     finally:
         if connection:
             connection.close()
 
-# FAST DEBUG ENDPOINTS
-@app.get("/api/debug/environment")
-async def debug_environment():
-    """Complete environment variable diagnostic"""
-    return {
-        "timestamp": "2025-07-12",
-        "environment_variables": {
-            "DB_HOST": os.getenv('DB_HOST', 'NOT_SET'),
-            "DB_HOST_length": len(os.getenv('DB_HOST', '')),
-            "DB_NAME": os.getenv('DB_NAME', 'NOT_SET'),
-            "DB_USER": os.getenv('DB_USER', 'NOT_SET'),
-            "DB_PASSWORD": "SET" if os.getenv('DB_PASSWORD') else "NOT_SET",
-            "DB_PASSWORD_length": len(os.getenv('DB_PASSWORD', '')),
-            "DB_PORT": os.getenv('DB_PORT', 'NOT_SET')
-        },
-        "expected_values": {
-            "DB_HOST": "farmer-cr...",
-            "DB_NAME": "farmer_crm",
-            "DB_USER": "postgres",
-            "DB_PASSWORD": "2hpxvrg...",
-            "DB_PORT": "5432"
-        },
-        "all_env_vars": {k: v for k, v in os.environ.items() if k.startswith('DB_')}
-    }
-
-@app.get("/api/debug/network")
-async def debug_network():
-    """Network connectivity test to AWS RDS"""
+# Enhanced debug endpoint to test all strategies
+@app.get("/api/debug/connection-strategies")
+async def debug_connection_strategies():
+    """Test all connection strategies"""
     host = os.getenv('DB_HOST')
+    database = os.getenv('DB_NAME', 'farmer_crm')
+    user = os.getenv('DB_USER', 'postgres')
+    password = os.getenv('DB_PASSWORD')
     port = int(os.getenv('DB_PORT', '5432'))
     
-    if not host:
-        return {"error": "DB_HOST not set", "status": "env_missing"}
+    strategies = []
     
-    try:
-        # Test network connectivity
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
-        result = sock.connect_ex((host, port))
-        sock.close()
-        
-        if result == 0:
-            return {
-                "network_status": "SUCCESS", 
-                "host": host, 
-                "port": port,
-                "message": "Can reach AWS RDS endpoint"
-            }
-        else:
-            return {
-                "network_status": "FAILED",
+    # Test each strategy individually
+    connection_configs = [
+        {"name": "SSL Required", "sslmode": "require", "database": database},
+        {"name": "SSL Preferred", "sslmode": "prefer", "database": database},
+        {"name": "SSL Disabled", "sslmode": "disable", "database": database},
+        {"name": "SSL Required + App Name", "sslmode": "require", "database": database, "application_name": "ava_olo"},
+        {"name": "Postgres DB + SSL", "sslmode": "require", "database": "postgres"},
+        {"name": "Postgres DB + No SSL", "sslmode": "disable", "database": "postgres"}
+    ]
+    
+    for config in connection_configs:
+        try:
+            conn_params = {
                 "host": host,
+                "user": user,
+                "password": password,
                 "port": port,
-                "error_code": result,
-                "message": "Cannot reach AWS RDS endpoint"
+                "connect_timeout": 5,
+                "database": config["database"],
+                "sslmode": config["sslmode"]
             }
-    except Exception as e:
-        return {
-            "network_status": "ERROR",
-            "host": host,
-            "port": port,
-            "error": str(e)
-        }
-
-@app.get("/api/debug/connection")
-async def debug_connection():
-    """Complete database connection diagnostic"""
-    try:
-        with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
-                
-                # Test basic query
-                cursor.execute("SELECT version()")
-                version = cursor.fetchone()[0]
-                
-                # Test farmer table
-                cursor.execute("SELECT COUNT(*) FROM farmers")
-                farmer_count = cursor.fetchone()[0]
-                
-                # Test reference farmer
-                cursor.execute("SELECT farm_name, email FROM farmers WHERE farm_name LIKE '%VRZEL%' LIMIT 1")
-                vrzel = cursor.fetchone()
-                
-                return {
-                    "connection_status": "SUCCESS",
-                    "postgres_version": version,
-                    "farmer_count": farmer_count,
-                    "reference_farmer": vrzel,
-                    "constitutional_compliance": True
-                }
+            
+            if "application_name" in config:
+                conn_params["application_name"] = config["application_name"]
+            
+            connection = psycopg2.connect(**conn_params)
+            cursor = connection.cursor()
+            
+            # Test basic query
+            cursor.execute("SELECT version()")
+            version = cursor.fetchone()[0]
+            
+            # Test if farmer_crm database exists (if connected to postgres)
+            if config["database"] == "postgres":
+                cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'farmer_crm'")
+                farmer_crm_exists = bool(cursor.fetchone())
             else:
-                return {
-                    "connection_status": "FAILED",
-                    "error": "No connection object returned",
-                    "check": "See logs for detailed error information"
-                }
-    except Exception as e:
-        return {
-            "connection_status": "ERROR",
-            "error": str(e),
-            "constitutional_note": "Error isolated - system remains stable"
-        }
-
-@app.get("/api/debug/complete")
-async def debug_complete():
-    """Complete diagnostic - all tests in one"""
-    
-    # Environment check
-    env_result = await debug_environment()
-    
-    # Network check  
-    network_result = await debug_network()
-    
-    # Connection check
-    connection_result = await debug_connection()
-    
-    # Summary
-    summary = {
-        "environment_ok": all([
-            env_result["environment_variables"]["DB_HOST"] != "NOT_SET",
-            env_result["environment_variables"]["DB_PASSWORD"] != "NOT_SET"
-        ]),
-        "network_ok": network_result.get("network_status") == "SUCCESS",
-        "connection_ok": connection_result.get("connection_status") == "SUCCESS"
-    }
+                farmer_crm_exists = True
+                
+            connection.close()
+            
+            strategies.append({
+                "strategy": config["name"],
+                "status": "SUCCESS",
+                "postgres_version": version[:50],  # Truncate for readability
+                "farmer_crm_exists": farmer_crm_exists
+            })
+            
+        except psycopg2.OperationalError as op_error:
+            strategies.append({
+                "strategy": config["name"],
+                "status": "FAILED",
+                "error": str(op_error)[:100]  # Truncate error
+            })
+        except Exception as e:
+            strategies.append({
+                "strategy": config["name"],
+                "status": "ERROR",
+                "error": str(e)[:100]
+            })
     
     return {
-        "summary": summary,
-        "environment": env_result,
-        "network": network_result, 
-        "connection": connection_result,
-        "next_steps": {
-            "if_env_failed": "Check AWS App Runner environment variables",
-            "if_network_failed": "Check RDS security groups and VPC settings",
-            "if_connection_failed": "Check database credentials and SSL settings"
+        "connection_strategies": strategies,
+        "summary": {
+            "any_successful": any(s["status"] == "SUCCESS" for s in strategies),
+            "farmer_crm_exists": any(s.get("farmer_crm_exists", False) for s in strategies if s["status"] == "SUCCESS")
         }
     }
 
-# Simplified database functions for testing
+# Test if farmer_crm database exists
+@app.get("/api/debug/database-exists")
+async def check_database_exists():
+    """Check if farmer_crm database exists"""
+    host = os.getenv('DB_HOST')
+    user = os.getenv('DB_USER', 'postgres')
+    password = os.getenv('DB_PASSWORD')
+    port = int(os.getenv('DB_PORT', '5432'))
+    
+    try:
+        # Connect to postgres database to check if farmer_crm exists
+        connection = psycopg2.connect(
+            host=host,
+            database='postgres',
+            user=user,
+            password=password,
+            port=port,
+            connect_timeout=10,
+            sslmode='require'
+        )
+        
+        cursor = connection.cursor()
+        
+        # Check if farmer_crm database exists
+        cursor.execute("SELECT 1 FROM pg_database WHERE datname = 'farmer_crm'")
+        farmer_crm_exists = bool(cursor.fetchone())
+        
+        # Get list of all databases
+        cursor.execute("SELECT datname FROM pg_database WHERE datistemplate = false")
+        databases = [row[0] for row in cursor.fetchall()]
+        
+        connection.close()
+        
+        return {
+            "farmer_crm_exists": farmer_crm_exists,
+            "available_databases": databases,
+            "recommendation": "Use 'postgres' database" if not farmer_crm_exists else "Use 'farmer_crm' database"
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "farmer_crm_exists": "unknown"
+        }
+
+# Updated constitutional query function
 async def execute_constitutional_query(query: str):
-    """Simplified query execution for debugging"""
+    """Execute query with working connection strategy"""
     try:
         with get_constitutional_db_connection() as conn:
             if not conn:
                 return {
                     "status": "connection_failed",
                     "error": "Could not connect to AWS RDS database",
-                    "debug_info": "Check /api/debug/complete for detailed diagnostics"
+                    "debug_info": "Check /api/debug/connection-strategies for detailed diagnostics"
                 }
                 
             cursor = conn.cursor()
@@ -266,81 +283,104 @@ async def execute_constitutional_query(query: str):
                 "status": "success",
                 "columns": columns,
                 "rows": json_results,
-                "row_count": len(results)
+                "row_count": len(results),
+                "constitutional_compliance": True
             }
             
     except Exception as e:
         return {
             "status": "error",
             "error": str(e),
-            "debug_info": "Check /api/debug/complete for detailed diagnostics"
+            "debug_info": "Check /api/debug/connection-strategies for detailed diagnostics"
         }
 
-# Keep existing routes but add debug info
+# Keep existing debug endpoints
+@app.get("/api/debug/complete")
+async def debug_complete():
+    """Complete diagnostic with enhanced connection testing"""
+    
+    # Test connection strategies
+    strategies_result = await debug_connection_strategies()
+    
+    # Check database existence
+    db_exists_result = await check_database_exists()
+    
+    # Summary
+    summary = {
+        "environment_ok": bool(os.getenv('DB_HOST') and os.getenv('DB_PASSWORD')),
+        "any_connection_works": strategies_result["summary"]["any_successful"],
+        "farmer_crm_exists": db_exists_result.get("farmer_crm_exists", False),
+        "recommended_action": "Use working connection strategy" if strategies_result["summary"]["any_successful"] else "Check credentials"
+    }
+    
+    return {
+        "summary": summary,
+        "connection_strategies": strategies_result,
+        "database_check": db_exists_result,
+        "next_steps": {
+            "if_no_connection_works": "Check AWS RDS credentials and user permissions",
+            "if_farmer_crm_missing": "Create farmer_crm database or use postgres database",
+            "if_connection_works": "Use the successful strategy for main application"
+        }
+    }
+
+# Simple working HTML templates
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_hub():
-    """Main hub with debug links"""
-    html = """
+    """Main hub with enhanced debug info"""
+    return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>AVA OLO Debug Mode</title>
+        <title>AVA OLO Enhanced Debug</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
             .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
             .debug { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0; }
             .card { border: 1px solid #ddd; padding: 20px; margin: 15px 0; border-radius: 8px; }
             a { color: #3498db; text-decoration: none; }
-            .debug-links { background: #e8f4f8; padding: 15px; border-radius: 5px; }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>🌾 AVA OLO Constitutional Hub - DEBUG MODE</h1>
+            <h1>🌾 AVA OLO Enhanced Debug Mode</h1>
             
             <div class="debug">
-                <strong>🔍 Debug Mode Active:</strong> Use the debug links below to diagnose AWS RDS connection issues.
+                <strong>🔍 Enhanced Debug Active:</strong> Testing multiple connection strategies to AWS RDS.
             </div>
             
-            <div class="debug-links">
-                <h3>🚨 Fast Debug Links:</h3>
+            <div class="card">
+                <h3>🚨 Enhanced Debug Links:</h3>
                 <ul>
-                    <li><a href="/api/debug/complete">Complete Diagnostic (START HERE)</a></li>
-                    <li><a href="/api/debug/environment">Environment Variables</a></li>
-                    <li><a href="/api/debug/network">Network Connectivity</a></li>
-                    <li><a href="/api/debug/connection">Database Connection</a></li>
+                    <li><a href="/api/debug/connection-strategies">Test All Connection Strategies</a></li>
+                    <li><a href="/api/debug/database-exists">Check if farmer_crm Database Exists</a></li>
+                    <li><a href="/api/debug/complete">Complete Enhanced Diagnostic</a></li>
                 </ul>
             </div>
             
             <div class="card">
                 <h3><a href="/database/">🗄️ Database Dashboard</a></h3>
-                <p>Test the database query interface (will show connection status)</p>
-            </div>
-            
-            <div class="card">
-                <h3><a href="/health/">🏥 Health Dashboard</a></h3>
-                <p>System health with database diagnostics</p>
+                <p>Test the database query interface with enhanced connection handling</p>
             </div>
         </div>
     </body>
     </html>
-    """
-    return HTMLResponse(content=html)
+    """)
 
 @app.get("/database/", response_class=HTMLResponse)
 async def database_dashboard():
-    """Database dashboard with debug info"""
+    """Database dashboard with enhanced debug"""
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Database Dashboard - DEBUG MODE</title>
+        <title>Database Dashboard - Enhanced Debug</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
             .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
             .debug { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; }
             .query-box { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }
-            textarea { width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+            textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
             button { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
             .results { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; }
             .error { background: #ffebee; }
@@ -352,21 +392,21 @@ async def database_dashboard():
     </head>
     <body>
         <div class="container">
-            <p><a href="/">← Back to Debug Hub</a></p>
-            <h1>🗄️ Database Dashboard - DEBUG MODE</h1>
+            <p><a href="/">← Back to Enhanced Debug Hub</a></p>
+            <h1>🗄️ Database Dashboard - Enhanced Debug</h1>
             
             <div class="debug">
-                <strong>🔍 Debug Mode:</strong> If queries fail, check 
-                <a href="/api/debug/complete">Complete Diagnostic</a> for detailed error analysis.
+                <strong>🔍 Enhanced Debug:</strong> Testing multiple AWS RDS connection strategies.
+                <a href="/api/debug/connection-strategies">Check Connection Strategies</a>
             </div>
             
             <div class="query-box">
-                <h3>Test AWS RDS Connection</h3>
+                <h3>Test Enhanced AWS RDS Connection</h3>
                 <form id="queryForm">
-                    <textarea id="queryInput" placeholder="SELECT COUNT(*) FROM farmers;">SELECT COUNT(*) FROM farmers;</textarea>
+                    <textarea id="queryInput" placeholder="SELECT version();">SELECT version();</textarea>
                     <br>
                     <button type="submit">Execute Query</button>
-                    <button type="button" onclick="testConnection()">Test Connection</button>
+                    <button type="button" onclick="testStrategies()">Test All Strategies</button>
                 </form>
             </div>
             
@@ -374,14 +414,14 @@ async def database_dashboard():
         </div>
         
         <script>
-            function testConnection() {
-                fetch('/api/debug/connection')
+            function testStrategies() {
+                fetch('/api/debug/connection-strategies')
                     .then(response => response.json())
                     .then(data => {
                         const resultsDiv = document.getElementById('queryResults');
                         resultsDiv.style.display = 'block';
-                        resultsDiv.className = data.connection_status === 'SUCCESS' ? 'results success' : 'results error';
-                        resultsDiv.innerHTML = '<h4>Connection Test:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                        resultsDiv.className = 'results';
+                        resultsDiv.innerHTML = '<h4>Connection Strategies Test:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
                     });
             }
             
@@ -425,10 +465,10 @@ async def database_dashboard():
     </html>
     """)
 
-# API Endpoints
+# API endpoint
 @app.post("/api/database/query")
 async def execute_query_api(request: Request):
-    """Execute query with debug info"""
+    """Execute query with enhanced connection handling"""
     try:
         data = await request.json()
         query = data.get('query', '').strip()
@@ -437,34 +477,8 @@ async def execute_query_api(request: Request):
         return {
             "status": "error",
             "error": str(e),
-            "debug_info": "Check /api/debug/complete for diagnostics"
+            "debug_info": "Check /api/debug/connection-strategies for diagnostics"
         }
-
-@app.get("/health/", response_class=HTMLResponse)
-async def health_dashboard():
-    """Health dashboard with debug info"""
-    return HTMLResponse(content="""
-    <!DOCTYPE html>
-    <html>
-    <head><title>Health Dashboard - DEBUG</title>
-    <style>body{font-family:Arial,sans-serif;margin:20px;}.container{max-width:800px;margin:0 auto;background:white;padding:30px;}.debug{background:#fff3cd;padding:15px;border-radius:5px;margin:15px 0;}</style>
-    </head>
-    <body>
-        <div class="container">
-            <p><a href="/">← Back to Debug Hub</a></p>
-            <h1>🏥 Health Dashboard - DEBUG MODE</h1>
-            
-            <div class="debug">
-                <strong>🔍 Debug Mode:</strong> Check <a href="/api/debug/complete">Complete Diagnostic</a> for AWS RDS status.
-            </div>
-            
-            <p><strong>System Status:</strong> Operational ✅</p>
-            <p><strong>Constitutional Compliance:</strong> Active ✅</p>
-            <p><strong>Debug Mode:</strong> AWS RDS diagnostics available</p>
-        </div>
-    </body>
-    </html>
-    """)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
