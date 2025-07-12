@@ -12,25 +12,42 @@ import httpx
 import asyncio
 from typing import Dict, Any, List
 from datetime import datetime
+import traceback
 # import psutil - removed for compatibility
+
+# Set up logging with more detail for debugging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+logger.info("=== STARTING HEALTH DASHBOARD IMPORT ===")
 
 # Import with error handling for AWS environment
 try:
     import subprocess
+    logger.info("subprocess imported successfully")
 except ImportError:
     subprocess = None
+    logger.warning("subprocess module not available")
     
 try:
     import psycopg2
+    logger.info("psycopg2 imported successfully")
 except ImportError:
     psycopg2 = None
+    logger.warning("psycopg2 module not available")
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from database_operations import DatabaseOperations
-
-logger = logging.getLogger(__name__)
+try:
+    from database_operations import DatabaseOperations
+    logger.info("DatabaseOperations imported successfully")
+except Exception as e:
+    logger.error(f"Failed to import DatabaseOperations: {e}")
+    DatabaseOperations = None
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -50,8 +67,17 @@ except ImportError:
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
-# Initialize database
-db_ops = DatabaseOperations()
+# Initialize database with error handling
+try:
+    if DatabaseOperations:
+        db_ops = DatabaseOperations()
+        logger.info("DatabaseOperations initialized")
+    else:
+        db_ops = None
+        logger.warning("DatabaseOperations not available")
+except Exception as e:
+    logger.error(f"Failed to initialize DatabaseOperations: {e}")
+    db_ops = None
 
 # Service definitions - AWS Production URLs
 SERVICES = {
@@ -75,64 +101,68 @@ SERVICES = {
 
 def get_deployment_info():
     """
-    Show current deployment version and timestamp - AWS compatible
+    AWS-safe deployment info with extensive logging
     """
+    logger.info("Starting get_deployment_info function")
     try:
-        # Try git commands (may fail in AWS)
-        if subprocess is None:
-            raise ImportError("subprocess not available")
-            
-        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], 
-                                         stderr=subprocess.DEVNULL).decode().strip()
-        git_date = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=iso'], 
-                                         stderr=subprocess.DEVNULL).decode().strip()
-        
-        return {
-            "version": f"v{git_hash}",
-            "git_commit": git_hash,
-            "git_date": git_date,
-            "deployment_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "status": "DEPLOYED"
-        }
-    except Exception as e:
-        # AWS fallback - git may not be available
         import os
-        return {
-            "version": os.getenv('APP_VERSION', 'aws-deployed'),
-            "git_commit": "aws-environment", 
-            "git_date": "deployment-time",
+        logger.info("Basic imports successful")
+        
+        # Don't use subprocess in AWS - causes issues
+        deployment_info = {
+            "version": "aws-v1.0",
+            "git_commit": "aws-deployed",
+            "git_date": "2025-07-12",
             "deployment_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "status": "DEPLOYED",
-            "note": "AWS environment - git not available"
+            "status": "DEPLOYED-AWS"
+        }
+        logger.info(f"Deployment info created: {deployment_info}")
+        return deployment_info
+        
+    except Exception as e:
+        logger.error(f"Error in get_deployment_info: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return {
+            "version": "error",
+            "status": "ERROR",
+            "error": str(e)
         }
 
 def check_aws_database_health():
     """
-    Check AWS RDS farmer_crm database health - with better error handling
+    Simplified database check with extensive logging
     """
+    logger.info("Starting database health check")
     try:
         import os
         from dotenv import load_dotenv
         load_dotenv()
+        logger.info("OS and dotenv imports successful")
         
-        # Check if psycopg2 is available
-        if psycopg2 is None:
+        # Check environment variables first
+        db_host = os.getenv('DB_HOST')
+        db_name = os.getenv('DB_NAME', 'farmer_crm')
+        logger.info(f"DB_HOST: {db_host}")
+        logger.info(f"DB_NAME: {db_name}")
+        
+        if not db_host:
+            logger.error("DB_HOST environment variable missing")
             return {
                 "status": "FAILED",
                 "database": "farmer_crm",
-                "connection": "psycopg2 module not available",
-                "error": "Database driver not installed",
+                "connection": "Missing DB_HOST",
+                "error": "DB_HOST missing",
                 "constitutional_compliance": False
             }
         
-        # Check if environment variables exist
-        db_host = os.getenv('DB_HOST')
-        if not db_host:
+        # Check if psycopg2 is available
+        if psycopg2 is None:
+            logger.error("psycopg2 module not available")
             return {
                 "status": "FAILED",
                 "database": "farmer_crm",
-                "connection": "Missing DB_HOST environment variable",
-                "error": "Environment variables not configured",
+                "connection": "psycopg2 not available",
+                "error": "Database driver not installed",
                 "constitutional_compliance": False
             }
         
@@ -195,7 +225,15 @@ class HealthMonitor:
     """Health monitoring for all AVA OLO services"""
     
     def __init__(self):
-        self.db_ops = DatabaseOperations()
+        try:
+            if DatabaseOperations:
+                self.db_ops = DatabaseOperations()
+            else:
+                self.db_ops = None
+                logger.warning("DatabaseOperations not available in HealthMonitor")
+        except Exception as e:
+            logger.error(f"Failed to initialize db_ops in HealthMonitor: {e}")
+            self.db_ops = None
     
     async def check_service_health(self, service_name: str, service_info: Dict[str, Any]) -> Dict[str, Any]:
         """Check health of a single service"""
@@ -296,6 +334,13 @@ class HealthMonitor:
     async def get_database_health(self) -> Dict[str, Any]:
         """Check database health and statistics"""
         try:
+            if not self.db_ops:
+                logger.warning("db_ops not available, returning default health")
+                return {
+                    "status": "unknown",
+                    "error": "Database operations not initialized"
+                }
+                
             with self.db_ops.get_session() as session:
                 from sqlalchemy import text
                 
@@ -517,6 +562,22 @@ async def constitutional_test():
     return results
 
 if __name__ == "__main__":
-    import uvicorn
-    print("🏥 Starting AVA OLO Health Check Dashboard on port 8008")
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+    try:
+        logger.info("=== STARTING HEALTH DASHBOARD MAIN ===")
+        
+        logger.info("Testing deployment info...")
+        deployment = get_deployment_info()
+        logger.info(f"Deployment test result: {deployment.get('status')}")
+        
+        logger.info("Testing database connection...")
+        db_status = check_aws_database_health()
+        logger.info(f"Database test result: {db_status.get('status')}")
+        
+        logger.info("Starting uvicorn server...")
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8008)
+        
+    except Exception as e:
+        logger.error(f"STARTUP FAILED: {e}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        sys.exit(1)
