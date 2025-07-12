@@ -1,114 +1,83 @@
-# AVA OLO PROJECT STRUCTURE
+# AVA OLO PROJECT STRUCTURE (CONSTITUTIONAL)
 
-## Git Repository Structure
+## 📜 MANDATORY READING
+Before ANY development:
+1. Read AVA_OLO_CONSTITUTION.md
+2. Read this PROJECT_STRUCTURE.md  
+3. NEVER create new folders without updating this document
 
-The AVA OLO Constitutional system consists of multiple Git repositories, each following the constitutional principle of Module Independence:
-
+## 📁 OFFICIAL FOLDER STRUCTURE
 ```
-ava-olo-constitutional/
-├── ava-olo-shared/                 # Shared documentation and constitution
-│   ├── AVA_OLO_CONSTITUTION.md    # Core 12 principles (mandatory reading)
-│   ├── SYSTEM_CONFIG.md           # System configuration and AWS URLs
-│   ├── STARTUP_CHECKLIST.md       # Development startup guide
-│   └── README.md                  # Overview
+ava-olo-monitoring-dashboards/ (THIS REPOSITORY)
+├── templates/              # HTML templates for all dashboards
+├── monitoring/             # Monitoring modules
+│   ├── config/            # Configuration files
+│   ├── core/              # Core monitoring logic
+│   ├── interfaces/        # API interfaces
+│   └── templates/         # Additional templates
+├── static/                # Static assets (CSS, JS, images)
+├── backup_*/              # Backup directories (DO NOT USE)
 │
-├── ava-olo-agricultural-core/      # Core agricultural logic
-│   ├── core/                      # Core modules (LLM router, database ops)
-│   ├── interfaces/                # API interfaces
-│   └── services/                  # Service implementations
+├── health_check_dashboard.py    # System health monitor
+├── business_dashboard.py        # Business KPIs
+├── database_explorer.py         # AI-driven database queries
+├── agronomic_approval.py        # Expert approval interface
+├── admin_dashboard.py           # Admin interface
+├── database_operations.py       # Shared database utilities
+├── config.py                    # Configuration settings
+├── llm_query_handler.py        # LLM-first query processing
 │
-├── ava-olo-monitoring-dashboards/  # THIS REPOSITORY - All monitoring tools
-│   ├── health_check_dashboard.py  # System health monitor
-│   ├── business_dashboard.py      # Business KPIs
-│   ├── database_explorer.py       # AI-driven database queries
-│   ├── agronomic_approval.py      # Expert approval interface
-│   ├── templates/                 # HTML templates for all dashboards
-│   └── database_operations.py     # Shared database utilities
-│
-├── ava-olo-api-gateway/           # API gateway service
-├── ava-olo-llm-router/            # LLM routing intelligence
-├── ava-olo-database-ops/          # Database operations
-├── ava-olo-document-search/       # RAG implementation
-├── ava-olo-web-search/            # External search integration
-├── ava-olo-mock-whatsapp/         # WhatsApp simulator
-├── ava-olo-agronomic-dashboard/   # Legacy - merged into monitoring
-└── ava-olo-business-dashboard/    # Legacy - merged into monitoring
+├── AVA_OLO_CONSTITUTION.md     # Core 12 principles
+├── SYSTEM_CONFIG.md            # System configuration
+├── PROJECT_STRUCTURE.md        # THIS FILE
+├── CONSTITUTIONAL_COMPLIANCE.md # Compliance guidelines
+└── README.md                   # Repository overview
 ```
 
-## AWS Deployment Structure
+## 🚨 FOLDER RULES (CONSTITUTIONAL)
 
-### Production URLs
-- **Monitoring Hub:** https://6pmgiripe.us-east-1.awsapprunner.com
-  - `/health/` - System health dashboard
-  - `/agronomic/` - Agronomic approval
-  - `/business/` - Business KPIs
-  - `/database/` - Database explorer
-  
-- **Agricultural Core:** https://3ksdvgdtud.us-east-1.awsapprunner.com
-  - Core API and LLM routing
+### ✅ ALLOWED ACTIONS
+- Modify files WITHIN existing folders
+- Add new files to appropriate existing folders
+- Update this PROJECT_STRUCTURE.md when changes needed
 
-### Repository Focus: ava-olo-monitoring-dashboards
+### ❌ FORBIDDEN ACTIONS  
+- Creating new top-level folders without constitutional review
+- Duplicating functionality in different folders
+- Moving files between folders without updating this document
 
-This repository contains all monitoring and dashboard components:
+## 📋 BEFORE CREATING ANY NEW FOLDER
+**MANDATORY CHECKLIST:**
+1. Does this functionality belong in existing folder?
+2. Does this violate MODULE INDEPENDENCE?
+3. Would this work for "mango in Bulgaria"?
+4. Is this LLM-first or hardcoded patterns?
+5. Update PROJECT_STRUCTURE.md if truly needed
 
-```
-ava-olo-monitoring-dashboards/
-├── health_check_dashboard.py      # System health monitoring
-├── business_dashboard.py          # Business metrics and KPIs
-├── database_explorer.py           # AI-driven database interface
-├── agronomic_approval.py          # Expert approval workflow
-├── database_operations.py         # Shared database utilities
-├── config.py                      # Configuration (AWS/local)
-├── templates/
-│   ├── health_dashboard.html
-│   ├── business_dashboard.html
-│   ├── database_explorer.html
-│   └── agronomic_dashboard.html
-├── monitoring/                    # Additional monitoring tools
-└── backup_*/                      # Backup directories
+## 🎯 CURRENT FOCUS: Database Dashboard
+We are currently working on LLM-first database dashboard.
+ALL dashboard work goes in existing monitoring structure - NO new folders!
 
-```
+## 📞 EMERGENCY RECOVERY
+If someone creates wrong structure:
+1. Show this PROJECT_STRUCTURE.md
+2. Point to constitutional violations  
+3. Move code to correct existing folders
+4. Delete unauthorized folders
 
-## Constitutional Compliance
+## 🌐 AWS DEPLOYMENT
+- **Platform:** AWS App Runner
+- **URLs:** https://6pmgiripe.us-east-1.awsapprunner.com/[dashboard]/
+- **Database:** AWS RDS PostgreSQL (farmer-crm-production)
+- **Repository:** ava-olo-monitoring-dashboards
 
-All modules follow the 12 principles from AVA_OLO_CONSTITUTION.md:
-
-1. **Universal Application** - Works for any crop/country
-2. **Module Independence** - Each dashboard operates independently
-3. **LLM Intelligence First** - AI-driven decisions, minimal hardcoding
-4. **PostgreSQL Only** - farmer-crm-production database
-5. **Farmer Privacy** - No personal data exposure
-6. **API Communication** - RESTful interfaces between services
-7. **Configuration Over Hardcoding** - Environment-based config
-8. **Error Resilience** - Graceful error handling
-9. **Scalability** - Distributed architecture
-10. **Monitoring** - Health dashboard tracks all services
-11. **Version Control** - Git-based development
-12. **Testing** - Mango compliance verification
-
-## Database Structure
-
-Production database: `farmer-crm-production` (AWS RDS)
-
-Key tables (no ava_ prefix per constitution):
-- farmers
-- fields
-- field_crops
-- messages
-- tasks
-- conversations
-
-## Development Workflow
-
-1. All dashboard development happens in `ava-olo-monitoring-dashboards`
-2. Push changes to main branch
-3. AWS App Runner automatically deploys
-4. Access via https://6pmgiripe.us-east-1.awsapprunner.com/[dashboard]/
-
-## Environment Variables (AWS App Runner)
-
-- DATABASE_URL
-- OPENAI_API_KEY
-- PERPLEXITY_API_KEY
-- PINECONE_API_KEY
-- AWS_REGION=us-east-1
+## 📁 SISTER REPOSITORIES (DO NOT MODIFY)
+Other repositories in the AVA OLO ecosystem:
+- ava-olo-agricultural-core
+- ava-olo-api-gateway
+- ava-olo-llm-router
+- ava-olo-database-ops
+- ava-olo-document-search
+- ava-olo-web-search
+- ava-olo-mock-whatsapp
+- ava-olo-shared
