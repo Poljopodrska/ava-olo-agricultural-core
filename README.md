@@ -3,10 +3,10 @@
 Constitutional monitoring and analytics dashboards for AVA OLO agricultural system.
 
 ## Dashboard Components
-- Agronomic Dashboard: Expert monitoring (port 8007)
-- Business Dashboard: Business analytics (port 8004)
-- Database Explorer: Data inspection (port 8005)
-- Health Monitor: System status (port 8008)
+- Agronomic Dashboard: Expert monitoring - https://6pmgiripe.us-east-1.awsapprunner.com/agronomic/
+- Business Dashboard: Business analytics - https://6pmgiripe.us-east-1.awsapprunner.com/business/
+- Database Explorer: Data inspection - https://6pmgiripe.us-east-1.awsapprunner.com/database/
+- Health Monitor: System status - https://6pmgiripe.us-east-1.awsapprunner.com/health/
 
 ## Constitutional Compliance
 - ✅ Error Isolation: Dashboard failures don't affect core agricultural system

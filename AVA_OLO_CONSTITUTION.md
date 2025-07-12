@@ -10,10 +10,10 @@ These 12 rules are MANDATORY for all development. Every decision must comply wit
 - LLM intelligence handles all language/crop variations
 
 ### 🗄️ POSTGRESQL ONLY: Single Database
-- Database: farmer_crm on WSL2 PostgreSQL (migrated from Windows)
-- Connection: localhost:5432
+- Database: farmer_crm on AWS RDS PostgreSQL  
+- Connection: AWS environment variables (DB_HOST, DB_NAME, etc.)
 - NO SQLite, NO multiple databases, NO exceptions
-- All modules use same PostgreSQL connection
+- All modules use same AWS RDS connection
 
 ### 🧠 LLM-FIRST: Maximum AI Intelligence
 - Minimal coding + Maximum LLM intelligence
