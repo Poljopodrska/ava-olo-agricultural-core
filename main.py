@@ -20,10 +20,10 @@ except ImportError:
 
 app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 
-# Constitutional AWS RDS Connection (WORKING VERSION)
+# Constitutional AWS RDS Connection (RESTORED WORKING VERSION)
 @contextmanager
 def get_constitutional_db_connection():
-    """Constitutional connection to AWS Aurora RDS PostgreSQL"""
+    """Constitutional connection with multiple strategies (from working debug version)"""
     connection = None
     try:
         host = os.getenv('DB_HOST')
@@ -32,20 +32,65 @@ def get_constitutional_db_connection():
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
         
-        # Use the working strategy (SSL required)
-        connection = psycopg2.connect(
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=10,
-            sslmode='require'
-        )
-        yield connection
+        print(f"DEBUG: Attempting connection to {host}:{port}/{database} as {user}")
+        
+        # Strategy 1: Try with SSL required (AWS RDS default)
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
+            print("DEBUG: Connected with SSL required")
+            yield connection
+            return
+        except psycopg2.OperationalError as ssl_error:
+            print(f"DEBUG: SSL required failed: {ssl_error}")
+        
+        # Strategy 2: Try with SSL preferred
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='prefer'
+            )
+            print("DEBUG: Connected with SSL preferred")
+            yield connection
+            return
+        except psycopg2.OperationalError as ssl_pref_error:
+            print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
+        
+        # Strategy 3: Try connecting to postgres database instead
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database='postgres',  # Fallback database
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
+            print("DEBUG: Connected to postgres database")
+            yield connection
+            return
+        except psycopg2.OperationalError as postgres_error:
+            print(f"DEBUG: Postgres database failed: {postgres_error}")
+            
+        # All strategies failed
+        print("DEBUG: All connection strategies failed")
+        yield None
         
     except Exception as e:
-        print(f"Database connection error: {e}")
+        print(f"DEBUG: Unexpected error: {e}")
         yield None
     finally:
         if connection:
@@ -471,12 +516,25 @@ async def api_field_tasks(farmer_id: int, field_id: int):
 async def api_natural_query(request: NaturalQueryRequest):
     return await llm_natural_language_query(request.question)
 
-# Debug endpoint
+# Debug endpoint with connection test
 @app.get("/api/debug/status")
 async def debug_status():
+    # Test database connection
+    db_status = "disconnected"
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                result = cursor.fetchone()
+                if result:
+                    db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+    
     return {
-        "database_connected": "AWS RDS PostgreSQL",
-        "llm_model": "GPT-4" if OPENAI_AVAILABLE else "Not Available",
+        "database_connected": f"AWS RDS PostgreSQL - {db_status}",
+        "llm_model": "GPT-4" if OPENAI_AVAILABLE else "Not Available", 
         "constitutional_compliance": True,
         "agricultural_focus": "Farmers, Fields, Tasks",
         "openai_key_configured": OPENAI_AVAILABLE
