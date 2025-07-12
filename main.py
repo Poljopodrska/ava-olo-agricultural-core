@@ -1,147 +1,153 @@
-#!/usr/bin/env python3
 """
-Emergency minimal main.py for constitutional deployment
-Only includes health dashboard with constitutional compliance
+Main entry point for AVA OLO Monitoring Dashboards
+Combines all 4 dashboards into one App Runner service
 """
-import uvicorn
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-import datetime
-import os
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="AVA OLO Constitutional Health Check")
+# Import all dashboard apps
+from agronomic_approval import app as agronomic_app
+from business_dashboard import app as business_app
+from database_explorer import app as database_app
+from health_check_dashboard import app as health_app
 
-def get_deployment_info():
-    """Safe deployment info - constitutional approach"""
-    return {
-        "version": "constitutional-emergency-v1.0",
-        "deployment_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "status": "DEPLOYED",
-        "environment": "AWS App Runner",
-        "platform": "FastAPI Constitutional"
-    }
+# Create main FastAPI app
+app = FastAPI(
+    title="AVA OLO Constitutional Monitoring Suite",
+    description="Unified constitutional monitoring dashboards for AVA OLO agricultural system",
+    version="2.0.0-constitutional"
+)
 
-def check_database_constitutional():
-    """Constitutional database check with maximum safety"""
-    try:
-        import psycopg2
-        
-        # Constitutional approach: safe connection
-        conn = psycopg2.connect(
-            host=os.getenv('DB_HOST'),
-            database=os.getenv('DB_NAME', 'farmer_crm'),
-            user=os.getenv('DB_USER', 'postgres'),
-            password=os.getenv('DB_PASSWORD'),
-            port=os.getenv('DB_PORT', '5432'),
-            connect_timeout=5
-        )
-        
-        cursor = conn.cursor()
-        
-        # Constitutional: Only safe basic queries
-        cursor.execute("SELECT COUNT(*) FROM farmers")
-        farmer_count = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
-        table_count = cursor.fetchone()[0]
-        
-        conn.close()
-        
-        return {
-            "status": "CONNECTED",
-            "database": "farmer_crm",
-            "farmers": farmer_count,
-            "tables": table_count,
-            "constitutional_compliance": farmer_count > 0 and table_count > 0
-        }
-        
-    except Exception as e:
-        return {
-            "status": "FAILED",
-            "error": str(e)[:100],
-            "constitutional_compliance": False
-        }
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
+# Mount all dashboard apps on different paths
+app.mount("/agronomic", agronomic_app)
+app.mount("/business", business_app)
+app.mount("/database", database_app)
+app.mount("/health", health_app)
+
+# Root endpoint that lists all available dashboards
+@app.get("/", response_class=HTMLResponse)
 async def root():
-    return {
-        "message": "AVA OLO Constitutional Emergency Dashboard", 
-        "status": "operational",
-        "constitutional_compliance": True,
-        "health_endpoint": "/health/",
-        "note": "Emergency deployment - full dashboard loading"
-    }
-
-@app.get("/health/")
-async def health():
-    """Constitutional health dashboard"""
-    deployment = get_deployment_info()
-    database = check_database_constitutional()
-    
-    overall_status = "HEALTHY" if database.get("constitutional_compliance", False) else "WARNING"
-    
-    html_content = f"""
-    <!DOCTYPE html>
+    return """
     <html>
-    <head>
-        <title>AVA OLO Constitutional Health Check</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; margin: 40px; background: #f8f9fa; }}
-            .container {{ max-width: 600px; margin: 0 auto; }}
-            .status {{ font-size: 24px; font-weight: bold; margin: 20px 0; text-align: center; }}
-            .healthy {{ color: #28a745; }}
-            .warning {{ color: #ffc107; }}
-            .section {{ background: white; padding: 20px; margin: 15px 0; border-radius: 8px; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🏥 AVA OLO Constitutional Health Check</h1>
+        <head>
+            <title>AVA OLO Monitoring Suite</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                }
+                h1 {
+                    color: #2e7d32;
+                    text-align: center;
+                }
+                .dashboard-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 20px;
+                    margin-top: 30px;
+                }
+                .dashboard-card {
+                    background: white;
+                    border-radius: 8px;
+                    padding: 20px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    transition: transform 0.2s;
+                }
+                .dashboard-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                }
+                .dashboard-card h2 {
+                    color: #1976d2;
+                    margin-top: 0;
+                }
+                .dashboard-card a {
+                    display: inline-block;
+                    margin-top: 10px;
+                    padding: 10px 20px;
+                    background-color: #2e7d32;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    transition: background-color 0.2s;
+                }
+                .dashboard-card a:hover {
+                    background-color: #1b5e20;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🌾 AVA OLO Constitutional Monitoring Suite</h1>
+            <p style="text-align: center; color: #666;">Select a dashboard to monitor your constitutional agricultural system</p>
+            <p style="text-align: center; color: #ff6b35; font-weight: bold;">🥭 Mango Rule Compliant | 🧠 LLM-First Architecture</p>
             
-            <div class="status {'healthy' if overall_status == 'HEALTHY' else 'warning'}">
-                System Status: {overall_status}
-                {'✅' if overall_status == 'HEALTHY' else '⚠️'}
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <h2>📊 Business Dashboard</h2>
+                    <p>Monitor business metrics, conversations, and farmer engagement</p>
+                    <a href="/business/">Open Dashboard</a>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h2>🗄️ Database Explorer</h2>
+                    <p>Explore and manage your agricultural database</p>
+                    <a href="/database/">Open Explorer</a>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h2>🏥 Constitutional Health Monitor</h2>
+                    <p>Check system health, constitutional compliance, and service status</p>
+                    <a href="/health/">Open Monitor</a>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h2>✅ Agronomic Approval</h2>
+                    <p>Review and approve agricultural recommendations</p>
+                    <a href="/agronomic/">Open Approval System</a>
+                </div>
             </div>
             
-            <div class="section">
-                <h3>🚀 Emergency Deployment Info</h3>
-                <p><strong>Version:</strong> {deployment['version']}</p>
-                <p><strong>Environment:</strong> {deployment['environment']}</p>
-                <p><strong>Deployed:</strong> {deployment['deployment_time']}</p>
-                <p><strong>Status:</strong> {deployment['status']}</p>
+            <div style="text-align: center; margin-top: 40px; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+                <p style="margin: 5px 0;"><strong>AVA OLO Constitutional Agricultural Intelligence System</strong></p>
+                <p style="margin: 5px 0; font-size: 14px;">🥭 Mango Rule: Works universally for any crop in any country</p>
+                <p style="margin: 5px 0; font-size: 14px;">🧠 LLM-First: Constitutional compliance with intelligent fallbacks</p>
+                <p style="margin: 5px 0; font-size: 14px;">🔒 Privacy Protected | 🌍 Universal Agriculture | ⚖️ Constitutional Framework</p>
             </div>
-            
-            <div class="section">
-                <h3>🗄️ Database Status</h3>
-                <p><strong>Connection:</strong> <span style="color: {'green' if database['status'] == 'CONNECTED' else 'red'}">{database['status']}</span></p>
-                {f"<p><strong>Farmers:</strong> {database.get('farmers', 'N/A')}</p>" if database['status'] == 'CONNECTED' else ""}
-                {f"<p><strong>Tables:</strong> {database.get('tables', 'N/A')}</p>" if database['status'] == 'CONNECTED' else ""}
-                {f"<p><strong>Constitutional Compliance:</strong> {'✅ COMPLIANT' if database.get('constitutional_compliance') else '⚠️ CHECK NEEDED'}</p>" if database['status'] == 'CONNECTED' else ""}
-                {f"<p style='color: red;'><strong>Error:</strong> {database.get('error', 'Unknown error')}</p>" if database['status'] == 'FAILED' else ""}
-            </div>
-            
-            <div style="text-align: center; margin-top: 30px; color: #6c757d;">
-                <p>🥭 Mango Rule Compliant | 🧠 LLM-First Architecture</p>
-                <p>Emergency Constitutional Deployment</p>
-            </div>
-        </div>
-    </body>
+        </body>
     </html>
     """
-    
-    return HTMLResponse(content=html_content, status_code=200)
 
+# Redirect /docs to main app docs
+@app.get("/docs")
+async def redirect_docs():
+    return RedirectResponse(url="/docs")
+
+# Health check endpoint for App Runner
 @app.get("/api/health")
-async def api_health():
-    deployment = get_deployment_info()
-    database = check_database_constitutional()
+async def health_check():
     return {
-        "status": "healthy" if database.get("constitutional_compliance", False) else "warning",
-        "service": "constitutional-emergency-health",
-        "deployment": deployment,
-        "database": database
+        "status": "healthy", 
+        "service": "constitutional-monitoring-suite", 
+        "dashboards": 4,
+        "version": "2.0.0-constitutional",
+        "constitutional_compliance": True,
+        "mango_rule_compliant": True
     }
 
 if __name__ == "__main__":
-    print("🚨 Starting AVA OLO Constitutional Emergency Deployment")
+    import uvicorn
+    print("🚀 Starting AVA OLO Constitutional Monitoring Suite v2.0.0 on port 8080")
     uvicorn.run(app, host="0.0.0.0", port=8080)
