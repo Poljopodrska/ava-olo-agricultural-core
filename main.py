@@ -119,22 +119,56 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers - COPY EXACT COUNT FARMERS CODE"""
+    """Standard Query: List all farmers - NOW GET REAL DATA"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) as farmer_count FROM farmers")
-                result = cursor.fetchone()
-                farmer_count = result[0]
                 
-                # Return count as "farmers list" for now to test
-                farmers = [
-                    {"farmer_id": 1, "farm_name": f"Found {farmer_count} farmers", "email": "test@test.com"},
-                    {"farmer_id": 2, "farm_name": "Generator test", "email": "working@test.com"}
-                ]
+                # First get the count (we know this works)
+                cursor.execute("SELECT COUNT(*) FROM farmers")
+                total_count = cursor.fetchone()[0]
                 
-                return {"status": "success", "farmers": farmers, "total": farmer_count}
+                # Now get real farmer data - step by step
+                try:
+                    # Try to get farmer IDs first
+                    cursor.execute("SELECT farmer_id FROM farmers LIMIT 10")
+                    ids_results = cursor.fetchall()
+                    
+                    # Now try to get names and emails separately
+                    farmers = []
+                    for id_row in ids_results:
+                        farmer_id = id_row[0]
+                        
+                        # Get farm name for this farmer
+                        try:
+                            cursor.execute("SELECT farm_name FROM farmers WHERE farmer_id = %s", (farmer_id,))
+                            name_result = cursor.fetchone()
+                            farm_name = name_result[0] if name_result and name_result[0] else f"Farmer {farmer_id}"
+                        except:
+                            farm_name = f"Farmer {farmer_id}"
+                        
+                        # Get email for this farmer
+                        try:
+                            cursor.execute("SELECT email FROM farmers WHERE farmer_id = %s", (farmer_id,))
+                            email_result = cursor.fetchone()
+                            email = email_result[0] if email_result and email_result[0] else "No email"
+                        except:
+                            email = "No email"
+                        
+                        farmers.append({
+                            "farmer_id": farmer_id,
+                            "farm_name": farm_name,
+                            "email": email
+                        })
+                    
+                    return {"status": "success", "farmers": farmers, "total": len(farmers), "total_in_db": total_count}
+                    
+                except Exception as query_error:
+                    # Fallback - just return count info
+                    farmers = [{"farmer_id": 1, "farm_name": f"Found {total_count} farmers", "email": f"Query error: {str(query_error)}"}]
+                    return {"status": "partial_success", "farmers": farmers, "total": 1}
+                    
             else:
                 return {"status": "connection_failed"}
     except Exception as e:
