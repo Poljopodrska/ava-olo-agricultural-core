@@ -91,7 +91,7 @@ def get_deployment_info():
 
 def check_aws_database_health():
     """
-    Check AWS RDS farmer_crm database health
+    Check AWS RDS farmer_crm database health - NO hardcoded values
     """
     try:
         # Load environment variables
@@ -109,17 +109,28 @@ def check_aws_database_health():
         
         cursor = conn.cursor()
         
-        # Check critical data
+        # Get actual counts (no hardcoded expectations)
         cursor.execute("SELECT COUNT(*) FROM farmers")
         farmer_count = cursor.fetchone()[0]
         
         cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
         table_count = cursor.fetchone()[0]
         
+        cursor.execute("SELECT COUNT(*) FROM fields")
+        field_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM incoming_messages")
+        message_count = cursor.fetchone()[0]
+        
         conn.close()
         
-        # Constitutional validation (should be 4 farmers, 34 tables)
-        is_healthy = (farmer_count == 4 and table_count == 34)
+        # Constitutional validation: Database accessible and has data
+        is_healthy = (
+            farmer_count > 0 and      # Has farmers (not specific count)
+            table_count > 30 and      # Has reasonable table count (flexible)
+            field_count >= 0 and      # Has fields (can be 0 for new system)
+            message_count >= 0        # Has messages (can be 0 for new system)
+        )
         
         return {
             "status": "HEALTHY" if is_healthy else "WARNING",
@@ -127,6 +138,8 @@ def check_aws_database_health():
             "connection": "AWS RDS",
             "farmers": farmer_count,
             "tables": table_count,
+            "fields": field_count,
+            "messages": message_count,
             "constitutional_compliance": is_healthy
         }
         

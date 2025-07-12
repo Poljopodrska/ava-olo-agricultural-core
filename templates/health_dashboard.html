@@ -147,6 +147,8 @@
             <p><strong>Connection:</strong> {{ database_status.connection }}</p>
             <p><strong>Farmers:</strong> {{ database_status.farmers }}</p>
             <p><strong>Tables:</strong> {{ database_status.tables }}</p>
+            <p><strong>Fields:</strong> {{ database_status.fields }}</p>
+            <p><strong>Messages:</strong> {{ database_status.messages }}</p>
             <p><strong>Constitutional Compliance:</strong> {{ database_status.constitutional_compliance }}</p>
             {% if database_status.error %}
             <p style="color: red;"><strong>Error:</strong> {{ database_status.error }}</p>
