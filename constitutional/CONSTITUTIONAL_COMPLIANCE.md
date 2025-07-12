@@ -79,7 +79,7 @@ Old files backed up in: `backup_[timestamp]/`
 New entry points:
 - Main app: `admin_dashboard.py`
 - API: `/api/natural-query`
-- UI: `http://localhost:8005/`
+- UI: `https://6pmgiripe.us-east-1.awsapprunner.com/database/`
 
 ### 6. **Usage Examples**
 
@@ -107,7 +107,7 @@ python3 test_constitutional_compliance.py
 python3 admin_dashboard.py
 
 # Access at
-http://localhost:8005/
+https://6pmgiripe.us-east-1.awsapprunner.com/database/
 ```
 
 ## 🎉 Constitutional Compliance Achieved!

@@ -9,6 +9,16 @@ Before ANY development:
 ## 📁 OFFICIAL FOLDER STRUCTURE
 ```
 ava-olo-monitoring-dashboards/ (THIS REPOSITORY)
+├── constitutional/         # ALL CONSTITUTIONAL DOCUMENTS (SINGLE SOURCE OF TRUTH)
+│   ├── AVA_OLO_CONSTITUTION.md     # Core 12 principles
+│   ├── SYSTEM_CONFIG.md            # System configuration
+│   ├── PROJECT_STRUCTURE.md        # THIS FILE
+│   ├── DEVELOPMENT_CHECKLIST.md    # Pre-development checks
+│   ├── STARTUP_CHECKLIST.md        # Startup verification
+│   ├── CONSTITUTIONAL_COMPLIANCE.md # Compliance guidelines
+│   ├── GIT_COMMANDS_CONSTITUTIONAL.md # Git workflow
+│   └── README.md                   # Constitutional guide
+│
 ├── templates/              # HTML templates for all dashboards
 ├── monitoring/             # Monitoring modules
 │   ├── config/            # Configuration files
@@ -26,11 +36,6 @@ ava-olo-monitoring-dashboards/ (THIS REPOSITORY)
 ├── database_operations.py       # Shared database utilities
 ├── config.py                    # Configuration settings
 ├── llm_query_handler.py        # LLM-first query processing
-│
-├── AVA_OLO_CONSTITUTION.md     # Core 12 principles
-├── SYSTEM_CONFIG.md            # System configuration
-├── PROJECT_STRUCTURE.md        # THIS FILE
-├── CONSTITUTIONAL_COMPLIANCE.md # Compliance guidelines
 └── README.md                   # Repository overview
 ```
 

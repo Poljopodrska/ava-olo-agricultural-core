@@ -2,6 +2,10 @@
 
 Constitutional monitoring and analytics dashboards for AVA OLO agricultural system.
 
+## 📜 Constitutional Documents
+All constitutional documents are located in the `constitutional/` directory.
+Start with [constitutional/AVA_OLO_CONSTITUTION.md](constitutional/AVA_OLO_CONSTITUTION.md).
+
 ## Dashboard Components
 - Agronomic Dashboard: Expert monitoring - https://6pmgiripe.us-east-1.awsapprunner.com/agronomic/
 - Business Dashboard: Business analytics - https://6pmgiripe.us-east-1.awsapprunner.com/business/
