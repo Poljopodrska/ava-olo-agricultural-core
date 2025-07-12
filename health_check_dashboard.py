@@ -13,6 +13,7 @@ import asyncio
 from typing import Dict, Any, List
 from datetime import datetime
 import subprocess
+import psycopg2
 # import psutil - removed for compatibility
 
 # Add parent directory to path
@@ -86,6 +87,56 @@ def get_deployment_info():
             "git_date": "unknown", 
             "deployment_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "status": "ERROR"
+        }
+
+def check_aws_database_health():
+    """
+    Check AWS RDS farmer_crm database health
+    """
+    try:
+        # Load environment variables
+        from dotenv import load_dotenv
+        load_dotenv()
+        
+        # Connect to AWS RDS using environment variables
+        conn = psycopg2.connect(
+            host=os.getenv('DB_HOST'),
+            database=os.getenv('DB_NAME', 'farmer_crm'),
+            user=os.getenv('DB_USER', 'postgres'),
+            password=os.getenv('DB_PASSWORD'),
+            port=os.getenv('DB_PORT', '5432')
+        )
+        
+        cursor = conn.cursor()
+        
+        # Check critical data
+        cursor.execute("SELECT COUNT(*) FROM farmers")
+        farmer_count = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
+        table_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        # Constitutional validation (should be 4 farmers, 34 tables)
+        is_healthy = (farmer_count == 4 and table_count == 34)
+        
+        return {
+            "status": "HEALTHY" if is_healthy else "WARNING",
+            "database": "farmer_crm",
+            "connection": "AWS RDS",
+            "farmers": farmer_count,
+            "tables": table_count,
+            "constitutional_compliance": is_healthy
+        }
+        
+    except Exception as e:
+        return {
+            "status": "FAILED",
+            "database": "farmer_crm",
+            "connection": "AWS RDS Connection Failed",
+            "error": str(e),
+            "constitutional_compliance": False
         }
 
 class HealthMonitor:
@@ -354,6 +405,7 @@ async def dashboard(request: Request):
     database_health = await monitor.get_database_health()
     constitutional_health = await monitor.test_constitutional_compliance()
     deployment_info = get_deployment_info()
+    database_status = check_aws_database_health()
     
     # Calculate overall health
     healthy_services = sum(1 for s in services_health if s["status"] == "healthy")
@@ -368,6 +420,7 @@ async def dashboard(request: Request):
             "database_health": database_health,
             "constitutional_health": constitutional_health,
             "deployment_info": deployment_info,
+            "database_status": database_status,
             "healthy_services": healthy_services,
             "total_services": total_services,
             "overall_health": "healthy" if healthy_services == total_services else "degraded",
@@ -383,6 +436,7 @@ async def api_health():
     database_health = await monitor.get_database_health()
     constitutional_health = await monitor.test_constitutional_compliance()
     deployment_info = get_deployment_info()
+    database_status = check_aws_database_health()
     
     return {
         "services": services_health,
@@ -390,6 +444,7 @@ async def api_health():
         "database": database_health,
         "constitutional": constitutional_health,
         "deployment": deployment_info,
+        "database_status": database_status,
         "timestamp": datetime.now().isoformat()
     }
 

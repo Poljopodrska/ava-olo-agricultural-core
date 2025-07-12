@@ -135,6 +135,24 @@
             <p><strong>Status:</strong> {{ deployment_info.status }}</p>
         </div>
         
+        <!-- AWS RDS Database Status -->
+        <div class="database-section" style="background: #f0fff0; padding: 15px; margin: 10px 0; border-radius: 5px;">
+            <h3>🗄️ AWS RDS Database</h3>
+            <p><strong>Status:</strong> 
+                <span style="color: {% if database_status.status == 'HEALTHY' %}green{% elif database_status.status == 'WARNING' %}orange{% else %}red{% endif %}">
+                    {{ database_status.status }}
+                </span>
+            </p>
+            <p><strong>Database:</strong> {{ database_status.database }}</p>
+            <p><strong>Connection:</strong> {{ database_status.connection }}</p>
+            <p><strong>Farmers:</strong> {{ database_status.farmers }}</p>
+            <p><strong>Tables:</strong> {{ database_status.tables }}</p>
+            <p><strong>Constitutional Compliance:</strong> {{ database_status.constitutional_compliance }}</p>
+            {% if database_status.error %}
+            <p style="color: red;"><strong>Error:</strong> {{ database_status.error }}</p>
+            {% endif %}
+        </div>
+        
         <div class="overall-status {{ overall_health }}">
             <span class="status-indicator {{ overall_health }}"></span>
             System Status: {{ overall_health|upper }} ({{ healthy_services }}/{{ total_services }} services healthy)
