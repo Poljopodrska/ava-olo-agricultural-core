@@ -46,11 +46,24 @@ except:
     TABLE_DESCRIPTIONS = {"en": {}, "sl": {}}
     AI_QUERY_EXAMPLES = {"en": [], "sl": []}
 
+# Import LLM handler for constitutional compliance
+try:
+    from llm_query_handler import LLMQueryHandler
+    LLM_AVAILABLE = True
+except ImportError:
+    LLM_AVAILABLE = False
+    logger.warning("LLM query handler not available")
+
 class DatabaseExplorer:
     """Enhanced database explorer with AI query capabilities"""
     
     def __init__(self):
         self.db_ops = DatabaseOperations()
+        # Initialize LLM handler for constitutional compliance
+        if LLM_AVAILABLE:
+            self.llm_handler = LLMQueryHandler(self.db_ops)
+        else:
+            self.llm_handler = None
     
     def get_table_groups(self) -> Dict[str, List[Dict[str, str]]]:
         """Get tables organized into logical groups"""
@@ -227,6 +240,11 @@ class DatabaseExplorer:
     
     async def convert_natural_language_to_sql(self, description: str) -> Dict[str, Any]:
         """Convert natural language query to SQL using LLM approach"""
+        # Use LLM handler if available (Constitutional Principle 3: LLM Intelligence First)
+        if self.llm_handler:
+            return await self.llm_handler.convert_natural_language_to_sql(description)
+        
+        # Fallback to existing pattern-based approach
         try:
             # Get available tables and their schemas
             with self.db_ops.get_session() as session:
@@ -1143,16 +1161,43 @@ async def ai_modify(query_description: str = Form(...)):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint with enhanced diagnostics"""
+    import datetime
+    
     db_healthy = await db_ops.health_check()
+    
+    # Check LLM connectivity for constitutional compliance
+    llm_connected = False
+    if explorer.llm_handler:
+        try:
+            llm_connected = await explorer.llm_handler.verify_llm_connectivity()
+        except:
+            llm_connected = False
+    
+    # Get last activity
+    last_activity = None
+    try:
+        with db_ops.get_session() as session:
+            from sqlalchemy import text
+            result = session.execute(
+                text("SELECT MAX(created_at) FROM incoming_messages")
+            ).scalar()
+            if result:
+                last_activity = result.strftime("%Y-%m-%d %H:%M:%S")
+    except:
+        pass
     
     return {
         "service": "Database Explorer",
         "status": "healthy",
+        "version": app.version,
         "database": "connected" if db_healthy else "disconnected",
-        "port": 8005,
-        "purpose": "Professional database exploration with AI querying",
-        "version": "3.0.0"
+        "purpose": "AI-driven database exploration (Constitutional LLM-first)",
+        "llm_connected": llm_connected,
+        "llm_type": "OpenAI GPT-4" if llm_connected else "Pattern matching fallback",
+        "last_activity": last_activity,
+        "dependencies_ok": db_healthy,
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
 # Add RDS inspection endpoints

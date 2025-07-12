@@ -42,14 +42,24 @@ templates = Jinja2Templates(directory="templates")
 # Initialize database
 db_ops = DatabaseOperations()
 
-# Service definitions
+# Service definitions - AWS Production URLs
 SERVICES = {
-    "API Gateway": {"url": "http://localhost:8000/health", "port": 8000},
-    "Mock WhatsApp": {"url": "http://localhost:8006/health", "port": 8006},
-    "Agronomic Dashboard": {"url": "http://localhost:8007/health", "port": 8007},
-    "Business Dashboard": {"url": "http://localhost:8004/health", "port": 8004},
-    "Database Explorer": {"url": "http://localhost:8005/health", "port": 8005},
-    "Admin Dashboard (Constitutional)": {"url": "http://localhost:8005/", "port": 8005},
+    "Agricultural Core": {
+        "url": "https://3ksdvgdtud.us-east-1.awsapprunner.com/health",
+        "description": "Core API and LLM routing"
+    },
+    "Agronomic Dashboard": {
+        "url": "https://6pmgiripe.us-east-1.awsapprunner.com/agronomic/health",
+        "description": "Expert approval interface"
+    },
+    "Business Dashboard": {
+        "url": "https://6pmgiripe.us-east-1.awsapprunner.com/business/health",
+        "description": "Business KPIs and metrics"
+    },
+    "Database Explorer": {
+        "url": "https://6pmgiripe.us-east-1.awsapprunner.com/database/health",
+        "description": "AI-driven database queries"
+    }
 }
 
 class HealthMonitor:
@@ -64,25 +74,38 @@ class HealthMonitor:
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(service_info["url"])
                 if response.status_code == 200:
-                    return {
+                    health_data = {
                         "name": service_name,
                         "status": "healthy",
-                        "port": service_info["port"],
+                        "url": service_info["url"],
+                        "description": service_info.get("description", ""),
                         "response_time": response.elapsed.total_seconds(),
                         "details": response.json() if response.headers.get("content-type", "").startswith("application/json") else None
                     }
+                    
+                    # Extract version and additional health info if available
+                    if health_data.get("details"):
+                        details = health_data["details"]
+                        health_data["version"] = details.get("version", "Unknown")
+                        health_data["llm_connected"] = details.get("llm_connected", None)
+                        health_data["last_activity"] = details.get("last_activity", None)
+                        health_data["dependencies_ok"] = details.get("dependencies_ok", None)
+                    
+                    return health_data
                 else:
                     return {
                         "name": service_name,
                         "status": "unhealthy",
-                        "port": service_info["port"],
+                        "url": service_info["url"],
+                        "description": service_info.get("description", ""),
                         "error": f"HTTP {response.status_code}"
                     }
         except Exception as e:
             return {
                 "name": service_name,
                 "status": "offline",
-                "port": service_info["port"],
+                "url": service_info["url"],
+                "description": service_info.get("description", ""),
                 "error": str(e)
             }
     

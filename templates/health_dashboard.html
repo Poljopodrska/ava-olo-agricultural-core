@@ -139,10 +139,12 @@
                     <span class="status-indicator {{ service.status }}"></span>
                     <span>Status: {{ service.status|upper }}</span>
                 </div>
+                {% if service.description %}
                 <div class="metric">
-                    <span>Port:</span>
-                    <span class="metric-value">{{ service.port }}</span>
+                    <span>Description:</span>
+                    <span class="metric-value">{{ service.description }}</span>
                 </div>
+                {% endif %}
                 {% if service.response_time %}
                 <div class="metric">
                     <span>Response Time:</span>
@@ -152,6 +154,26 @@
                 {% if service.error %}
                 <div style="color: #f44336; margin-top: 10px;">
                     Error: {{ service.error }}
+                </div>
+                {% endif %}
+                {% if service.version %}
+                <div class="metric">
+                    <span>Version:</span>
+                    <span class="metric-value">{{ service.version }}</span>
+                </div>
+                {% endif %}
+                {% if service.llm_connected is not none %}
+                <div class="metric">
+                    <span>LLM Connected:</span>
+                    <span class="metric-value" style="color: {% if service.llm_connected %}#4CAF50{% else %}#f44336{% endif %}">
+                        {{ "Yes" if service.llm_connected else "No" }}
+                    </span>
+                </div>
+                {% endif %}
+                {% if service.last_activity %}
+                <div class="metric">
+                    <span>Last Activity:</span>
+                    <span class="metric-value">{{ service.last_activity }}</span>
                 </div>
                 {% endif %}
             </div>
