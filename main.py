@@ -119,7 +119,7 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers - NOW GET REAL DATA"""
+    """Standard Query: List all farmers - DISCOVER ACTUAL SCHEMA"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
@@ -129,45 +129,57 @@ async def get_all_farmers():
                 cursor.execute("SELECT COUNT(*) FROM farmers")
                 total_count = cursor.fetchone()[0]
                 
-                # Now get real farmer data - step by step
+                # Discover the actual column structure
                 try:
-                    # Try to get farmer IDs first
-                    cursor.execute("SELECT farmer_id FROM farmers LIMIT 10")
-                    ids_results = cursor.fetchall()
+                    cursor.execute("""
+                        SELECT column_name, data_type 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'farmers' 
+                        ORDER BY ordinal_position
+                    """)
+                    columns_info = cursor.fetchall()
                     
-                    # Now try to get names and emails separately
-                    farmers = []
-                    for id_row in ids_results:
-                        farmer_id = id_row[0]
-                        
-                        # Get farm name for this farmer
-                        try:
-                            cursor.execute("SELECT farm_name FROM farmers WHERE farmer_id = %s", (farmer_id,))
-                            name_result = cursor.fetchone()
-                            farm_name = name_result[0] if name_result and name_result[0] else f"Farmer {farmer_id}"
-                        except:
-                            farm_name = f"Farmer {farmer_id}"
-                        
-                        # Get email for this farmer
-                        try:
-                            cursor.execute("SELECT email FROM farmers WHERE farmer_id = %s", (farmer_id,))
-                            email_result = cursor.fetchone()
-                            email = email_result[0] if email_result and email_result[0] else "No email"
-                        except:
-                            email = "No email"
-                        
-                        farmers.append({
-                            "farmer_id": farmer_id,
-                            "farm_name": farm_name,
-                            "email": email
-                        })
+                    # Get the actual column names
+                    column_names = [col[0] for col in columns_info]
                     
-                    return {"status": "success", "farmers": farmers, "total": len(farmers), "total_in_db": total_count}
-                    
-                except Exception as query_error:
-                    # Fallback - just return count info
-                    farmers = [{"farmer_id": 1, "farm_name": f"Found {total_count} farmers", "email": f"Query error: {str(query_error)}"}]
-                    return {"status": "partial_success", "farmers": farmers, "total": 1}
+                    # Try to get actual data using discovered columns
+                    if column_names:
+                        # Use the first few columns that exist
+                        select_columns = column_names[:3]  # First 3 columns
+                        select_query = f"SELECT {', '.join(select_columns)} FROM farmers LIMIT 5"
+                        
+                        cursor.execute(select_query)
+                        results = cursor.fetchall()
+                        
+                        farmers = []
+                        for i, row in enumerate(results):
+                            farmer_data = {"row_number": i + 1}
+                            for j, col_name in enumerate(select_columns):
+                                farmer_data[col_name] = row[j] if j < len(row) else "N/A"
+                            farmers.append(farmer_data)
+                        
+                        return {
+                            "status": "success", 
+                            "farmers": farmers, 
+                            "total": len(farmers),
+                            "total_in_db": total_count,
+                            "discovered_columns": column_names,
+                            "note": "Using actual database schema"
+                        }
+                    else:
+                        return {
+                            "status": "schema_discovery_failed",
+                            "farmers": [{"error": "Could not discover table structure"}],
+                            "total": 1
+                        }
+                        
+                except Exception as schema_error:
+                    # Fallback - just show we found farmers
+                    farmers = [
+                        {"info": f"Found {total_count} farmers in database"},
+                        {"error": f"Schema discovery failed: {str(schema_error)}"}
+                    ]
+                    return {"status": "partial_success", "farmers": farmers, "total": 2}
                     
             else:
                 return {"status": "connection_failed"}
@@ -466,11 +478,34 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        let html = `<h4>🌾 All Farmers (${data.total}):</h4><table><tr><th>ID</th><th>Farm Name</th><th>Email</th></tr>`;
-                        data.farmers.forEach(farmer => {
-                            html += `<tr><td>${farmer.farmer_id}</td><td>${farmer.farm_name}</td><td>${farmer.email}</td></tr>`;
-                        });
-                        html += '</table>';
+                        let html = `<h4>🌾 All Farmers (${data.total} of ${data.total_in_db}):</h4>`;
+                        
+                        // Show discovered columns
+                        if (data.discovered_columns) {
+                            html += `<p><strong>Discovered columns:</strong> ${data.discovered_columns.join(', ')}</p>`;
+                        }
+                        
+                        // Build table dynamically based on actual data
+                        if (data.farmers && data.farmers.length > 0) {
+                            html += '<table><tr>';
+                            // Get headers from first farmer object
+                            const headers = Object.keys(data.farmers[0]);
+                            headers.forEach(header => {
+                                html += `<th>${header}</th>`;
+                            });
+                            html += '</tr>';
+                            
+                            // Add data rows
+                            data.farmers.forEach(farmer => {
+                                html += '<tr>';
+                                headers.forEach(header => {
+                                    html += `<td>${farmer[header] || 'N/A'}</td>`;
+                                });
+                                html += '</tr>';
+                            });
+                            html += '</table>';
+                        }
+                        
                         showResults(html);
                     } else {
                         showResults(data, false);
