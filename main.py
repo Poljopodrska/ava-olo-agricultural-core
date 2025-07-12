@@ -378,6 +378,12 @@ AGRICULTURAL_DASHBOARD_HTML = """
             <p id="systemStatus">Loading system status...</p>
         </div>
         
+        <!-- Schema Discovery -->
+        <div class="section warning">
+            <h3>🔍 Schema Discovery</h3>
+            <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
+        </div>
+        
         <!-- PART 1: Standard Agricultural Queries -->
         <div class="section agricultural">
             <h2>📊 Part 1: Standard Agricultural Queries (Always Available)</h2>
@@ -601,6 +607,120 @@ async def agricultural_dashboard():
     """Agricultural Database Dashboard - Safe Version"""
     return HTMLResponse(content=AGRICULTURAL_DASHBOARD_HTML)
 
+# Add simple HTML interface to view schema
+@app.get("/schema/", response_class=HTMLResponse)
+async def schema_viewer():
+    """Simple schema viewer interface"""
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Database Schema Discovery</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+            .table-info { border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 8px; }
+            .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+            .column { background: #f9f9f9; padding: 8px; border-radius: 4px; font-size: 0.9em; }
+            button { background: #27ae60; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; }
+            button:hover { background: #219a52; }
+            .sample-data { background: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; }
+            pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔍 Database Schema Discovery</h1>
+            <p>Discover the structure of your agricultural database</p>
+            
+            <button onclick="discoverSchema()">🔍 Discover Complete Schema</button>
+            
+            <div id="schemaResults" style="margin-top: 20px;"></div>
+        </div>
+        
+        <script>
+            function discoverSchema() {
+                document.getElementById('schemaResults').innerHTML = '<p>🔍 Discovering schema...</p>';
+                
+                fetch('/api/debug/discover-schema')
+                    .then(response => response.json())
+                    .then(data => {
+                        let html = '<h2>Database Schema Discovery Results</h2>';
+                        
+                        if (data.status === 'success') {
+                            html += `<p><strong>Total Tables:</strong> ${data.summary.total_tables}</p>`;
+                            html += `<p><strong>Tables with Data:</strong> ${data.summary.tables_with_data}</p>`;
+                            
+                            // Show each table
+                            for (const [tableName, tableInfo] of Object.entries(data.schema_details)) {
+                                html += `<div class="table-info">`;
+                                html += `<h3>📊 Table: ${tableName}</h3>`;
+                                
+                                if (tableInfo.error) {
+                                    html += `<p style="color: red;">Error: ${tableInfo.error}</p>`;
+                                } else {
+                                    html += `<p><strong>Rows:</strong> ${tableInfo.row_count}</p>`;
+                                    
+                                    // Show columns
+                                    html += `<h4>Columns:</h4>`;
+                                    html += `<div class="columns">`;
+                                    tableInfo.columns.forEach(col => {
+                                        html += `<div class="column">
+                                            <strong>${col.name}</strong><br>
+                                            Type: ${col.type}<br>
+                                            Nullable: ${col.nullable}
+                                        </div>`;
+                                    });
+                                    html += `</div>`;
+                                    
+                                    // Show sample data
+                                    if (tableInfo.sample_data && tableInfo.sample_data.length > 0) {
+                                        html += `<h4>Sample Data:</h4>`;
+                                        html += `<div class="sample-data">`;
+                                        html += `<table border="1" style="width: 100%; border-collapse: collapse;">`;
+                                        
+                                        // Header
+                                        html += `<tr>`;
+                                        tableInfo.column_names.forEach(colName => {
+                                            html += `<th style="padding: 5px; background: #f0f0f0;">${colName}</th>`;
+                                        });
+                                        html += `</tr>`;
+                                        
+                                        // Data rows
+                                        tableInfo.sample_data.forEach(row => {
+                                            html += `<tr>`;
+                                            row.forEach(cell => {
+                                                html += `<td style="padding: 5px;">${cell || 'NULL'}</td>`;
+                                            });
+                                            html += `</tr>`;
+                                        });
+                                        
+                                        html += `</table>`;
+                                        html += `</div>`;
+                                    }
+                                    
+                                    // Generate simple query
+                                    html += `<h4>Simple Query:</h4>`;
+                                    html += `<pre>SELECT * FROM ${tableName} LIMIT 10;</pre>`;
+                                }
+                                
+                                html += `</div>`;
+                            }
+                        } else {
+                            html += `<p style="color: red;">Error: ${data.error}</p>`;
+                        }
+                        
+                        document.getElementById('schemaResults').innerHTML = html;
+                    })
+                    .catch(error => {
+                        document.getElementById('schemaResults').innerHTML = `<p style="color: red;">Request failed: ${error}</p>`;
+                    });
+            }
+        </script>
+    </body>
+    </html>
+    """)
+
 # PART 1: Standard Agricultural Query APIs (ALWAYS WORK)
 @app.get("/api/agricultural/farmer-count")
 async def api_farmer_count():
@@ -638,6 +758,77 @@ async def api_field_tasks(farmer_id: int, field_id: int):
 @app.post("/api/llm/natural-query")
 async def api_natural_query(request: NaturalQueryRequest):
     return await llm_natural_language_query(request.question)
+
+# Add this schema discovery endpoint to main.py
+@app.get("/api/debug/discover-schema")
+async def discover_complete_schema():
+    """Discover complete database schema - all tables and columns"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                # 1. Get all tables
+                cursor.execute("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    ORDER BY table_name
+                """)
+                tables = [row[0] for row in cursor.fetchall()]
+                
+                schema_info = {}
+                
+                # 2. For each table, get columns and sample data
+                for table in tables:
+                    try:
+                        # Get column information
+                        cursor.execute("""
+                            SELECT column_name, data_type, is_nullable, column_default
+                            FROM information_schema.columns 
+                            WHERE table_name = %s 
+                            ORDER BY ordinal_position
+                        """, (table,))
+                        columns = cursor.fetchall()
+                        
+                        # Get row count
+                        cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                        row_count = cursor.fetchone()[0]
+                        
+                        # Get sample data (first 2 rows)
+                        column_names = [col[0] for col in columns]
+                        if column_names:
+                            column_list = ', '.join(column_names)
+                            cursor.execute(f"SELECT {column_list} FROM {table} LIMIT 2")
+                            sample_data = cursor.fetchall()
+                        else:
+                            sample_data = []
+                        
+                        schema_info[table] = {
+                            "columns": [{"name": col[0], "type": col[1], "nullable": col[2], "default": col[3]} for col in columns],
+                            "row_count": row_count,
+                            "sample_data": sample_data,
+                            "column_names": column_names
+                        }
+                        
+                    except Exception as table_error:
+                        schema_info[table] = {"error": f"Could not analyze table: {str(table_error)}"}
+                
+                return {
+                    "status": "success",
+                    "database_name": "Connected to database",
+                    "tables": tables,
+                    "schema_details": schema_info,
+                    "summary": {
+                        "total_tables": len(tables),
+                        "tables_with_data": len([t for t in schema_info.values() if isinstance(t, dict) and t.get("row_count", 0) > 0])
+                    }
+                }
+                
+            else:
+                return {"status": "connection_failed"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 # Debug endpoint - check which database Count Farmers actually uses
 @app.get("/api/debug/status")
