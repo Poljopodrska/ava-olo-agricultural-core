@@ -126,6 +126,15 @@
     <div class="container">
         <h1>🏥 AVA OLO Health Check Dashboard</h1>
         
+        <!-- Add deployment version info -->
+        <div class="deployment-section" style="background: #f0f8ff; padding: 15px; margin: 10px 0; border-radius: 5px;">
+            <h3>🚀 Current Deployment</h3>
+            <p><strong>Version:</strong> {{ deployment_info.version }}</p>
+            <p><strong>Deployed:</strong> {{ deployment_info.deployment_time }}</p>
+            <p><strong>Git Commit:</strong> {{ deployment_info.git_commit }}</p>
+            <p><strong>Status:</strong> {{ deployment_info.status }}</p>
+        </div>
+        
         <div class="overall-status {{ overall_health }}">
             <span class="status-indicator {{ overall_health }}"></span>
             System Status: {{ overall_health|upper }} ({{ healthy_services }}/{{ total_services }} services healthy)

@@ -12,6 +12,7 @@ import httpx
 import asyncio
 from typing import Dict, Any, List
 from datetime import datetime
+import subprocess
 # import psutil - removed for compatibility
 
 # Add parent directory to path
@@ -61,6 +62,31 @@ SERVICES = {
         "description": "AI-driven database queries"
     }
 }
+
+def get_deployment_info():
+    """
+    Show current deployment version and timestamp
+    """
+    try:
+        # Get git commit info
+        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip()
+        git_date = subprocess.check_output(['git', 'log', '-1', '--format=%cd', '--date=iso']).decode().strip()
+        
+        return {
+            "version": f"v{git_hash}",
+            "git_commit": git_hash,
+            "git_date": git_date,
+            "deployment_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "DEPLOYED"
+        }
+    except Exception as e:
+        return {
+            "version": "unknown",
+            "git_commit": "unknown",
+            "git_date": "unknown", 
+            "deployment_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "status": "ERROR"
+        }
 
 class HealthMonitor:
     """Health monitoring for all AVA OLO services"""
@@ -327,6 +353,7 @@ async def dashboard(request: Request):
     system_metrics = await monitor.get_system_metrics()
     database_health = await monitor.get_database_health()
     constitutional_health = await monitor.test_constitutional_compliance()
+    deployment_info = get_deployment_info()
     
     # Calculate overall health
     healthy_services = sum(1 for s in services_health if s["status"] == "healthy")
@@ -340,6 +367,7 @@ async def dashboard(request: Request):
             "system_metrics": system_metrics,
             "database_health": database_health,
             "constitutional_health": constitutional_health,
+            "deployment_info": deployment_info,
             "healthy_services": healthy_services,
             "total_services": total_services,
             "overall_health": "healthy" if healthy_services == total_services else "degraded",
@@ -354,12 +382,14 @@ async def api_health():
     system_metrics = await monitor.get_system_metrics()
     database_health = await monitor.get_database_health()
     constitutional_health = await monitor.test_constitutional_compliance()
+    deployment_info = get_deployment_info()
     
     return {
         "services": services_health,
         "system": system_metrics,
         "database": database_health,
         "constitutional": constitutional_health,
+        "deployment": deployment_info,
         "timestamp": datetime.now().isoformat()
     }
 
