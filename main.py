@@ -136,7 +136,12 @@ def check_database_simple():
 
 @app.get("/")
 def root():
-    return {"message": "AVA OLO Health Dashboard", "version": "1.3"}
+    return {
+        "message": "AVA OLO Health Dashboard", 
+        "version": "1.3",
+        "health_endpoint": "/health/",
+        "note": "Visit /health/ for the full dashboard"
+    }
 
 @app.get("/health/", response_class=HTMLResponse)
 def health():
