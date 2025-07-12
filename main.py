@@ -119,34 +119,22 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers - EXACT SAME PATTERN AS COUNT FARMERS"""
+    """Standard Query: List all farmers - COPY EXACT COUNT FARMERS CODE"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                # Try the exact same pattern as get_farmer_count()
-                cursor.execute("SELECT COUNT(*) FROM farmers")
-                total_count = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) as farmer_count FROM farmers")
+                result = cursor.fetchone()
+                farmer_count = result[0]
                 
-                # Now try a simple query like Count Farmers
-                cursor.execute("SELECT farmer_id FROM farmers LIMIT 5")  # Just IDs first
-                results = cursor.fetchall()
+                # Return count as "farmers list" for now to test
+                farmers = [
+                    {"farmer_id": 1, "farm_name": f"Found {farmer_count} farmers", "email": "test@test.com"},
+                    {"farmer_id": 2, "farm_name": "Generator test", "email": "working@test.com"}
+                ]
                 
-                farmers = []
-                for r in results:
-                    farmers.append({
-                        "farmer_id": r[0], 
-                        "farm_name": "Loading...", 
-                        "email": "Loading..."
-                    })
-                
-                return {
-                    "status": "success", 
-                    "farmers": farmers, 
-                    "total": len(farmers),
-                    "total_in_db": total_count,
-                    "note": "Simplified query - same pattern as Count Farmers"
-                }
+                return {"status": "success", "farmers": farmers, "total": farmer_count}
             else:
                 return {"status": "connection_failed"}
     except Exception as e:
@@ -548,6 +536,22 @@ async def agricultural_dashboard():
 @app.get("/api/agricultural/farmer-count")
 async def api_farmer_count():
     return await get_farmer_count()
+
+# Add a test endpoint that's IDENTICAL to get_farmer_count
+@app.get("/api/agricultural/test-farmers")
+async def test_farmers_identical():
+    """Test endpoint - IDENTICAL to farmer count but different name"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as farmer_count FROM farmers")
+                result = cursor.fetchone()
+                return {"status": "success", "farmer_count": result[0], "test": "identical_to_count"}
+            else:
+                return {"status": "connection_failed"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 @app.get("/api/agricultural/farmers")
 async def api_all_farmers():
