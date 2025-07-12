@@ -119,46 +119,29 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers - NO CONTEXT MANAGER VERSION"""
-    connection = None
+    """Standard Query: List all farmers - USE SAME LOGIC AS COUNT FARMERS"""
     try:
-        # Direct connection without context manager
-        host = os.getenv('DB_HOST')
-        database = os.getenv('DB_NAME', 'farmer_crm')
-        user = os.getenv('DB_USER', 'postgres')
-        password = os.getenv('DB_PASSWORD')
-        port = int(os.getenv('DB_PORT', '5432'))
-        
-        connection = psycopg2.connect(
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=10,
-            sslmode='require'
-        )
-        
-        cursor = connection.cursor()
-        cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
-        results = cursor.fetchall()
-        cursor.close()
-        
-        farmers = []
-        for r in results:
-            farmers.append({
-                "farmer_id": r[0], 
-                "farm_name": r[1] if r[1] else "N/A", 
-                "email": r[2] if r[2] else "N/A"
-            })
-        
-        return {"status": "success", "farmers": farmers, "total": len(farmers)}
-        
+        # Use the SAME connection logic that works for Count Farmers
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
+                results = cursor.fetchall()
+                cursor.close()
+                
+                farmers = []
+                for r in results:
+                    farmers.append({
+                        "farmer_id": r[0], 
+                        "farm_name": r[1] if r[1] else "N/A", 
+                        "email": r[2] if r[2] else "N/A"
+                    })
+                
+                return {"status": "success", "farmers": farmers, "total": len(farmers)}
+            else:
+                return {"status": "connection_failed", "error": "No database connection"}
     except Exception as e:
-        return {"status": "error", "error": f"Direct connection failed: {str(e)}"}
-    finally:
-        if connection:
-            connection.close()
+        return {"status": "error", "error": f"Same logic as Count Farmers: {str(e)}"}
 
 async def get_farmer_fields(farmer_id: int):
     """Standard Query: List all fields of a specific farmer - FIXED VERSION"""
@@ -574,11 +557,13 @@ async def api_field_tasks(farmer_id: int, field_id: int):
 async def api_natural_query(request: NaturalQueryRequest):
     return await llm_natural_language_query(request.question)
 
-# Debug endpoint with enhanced OpenAI check
+# Debug endpoint - check which database Count Farmers actually uses
 @app.get("/api/debug/status")
 async def debug_status():
-    # Test database connection
+    # Test database connection with detailed info
     db_status = "disconnected"
+    actual_database = "unknown"
+    
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
@@ -587,6 +572,9 @@ async def debug_status():
                 result = cursor.fetchone()
                 if result:
                     db_status = "connected"
+                    # Check which database we're actually connected to
+                    cursor.execute("SELECT current_database()")
+                    actual_database = cursor.fetchone()[0]
     except Exception as e:
         db_status = f"error: {str(e)}"
     
@@ -601,6 +589,8 @@ async def debug_status():
     
     return {
         "database_connected": f"AWS RDS PostgreSQL - {db_status}",
+        "actual_database": actual_database,
+        "expected_database": os.getenv('DB_NAME', 'farmer_crm'),
         "llm_model": "GPT-4" if OPENAI_AVAILABLE else "Not Available", 
         "constitutional_compliance": True,
         "agricultural_focus": "Farmers, Fields, Tasks",
