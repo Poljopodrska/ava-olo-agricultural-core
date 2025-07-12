@@ -70,42 +70,74 @@ async def get_database_info():
         return {"status": f"aws_rds_error: {str(e)}", "farmer_count": "Error", "table_count": "Error", "tables": []}
 
 async def execute_constitutional_query(query: str):
-    """Execute database query with constitutional safety and LLM intelligence"""
+    """Execute database query with constitutional safety and LLM intelligence - FIXED"""
     try:
+        if not query or not query.strip():
+            return {
+                "status": "error",
+                "error": "Empty query provided"
+            }
+            
         with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
-                
-                # Constitutional safety - only allow SELECT queries for now
-                if not query.upper().strip().startswith('SELECT'):
-                    return {
-                        "status": "constitutional_protection",
-                        "message": "Only SELECT queries allowed for safety",
-                        "suggestion": "Try queries like: SELECT * FROM farmers LIMIT 5"
-                    }
-                
-                cursor.execute(query)
-                
-                # Get column names
-                columns = [desc[0] for desc in cursor.description] if cursor.description else []
-                
-                # Fetch results
-                results = cursor.fetchall()
-                
+            if not conn:
                 return {
-                    "status": "success",
-                    "columns": columns,
-                    "rows": results,
-                    "row_count": len(results),
-                    "constitutional_compliance": True
+                    "status": "connection_error",
+                    "error": "Could not connect to AWS RDS database",
+                    "constitutional_note": "Database connection failed but system remains stable"
                 }
-            else:
-                return {"status": "aws_rds_connection_failed"}
+                
+            cursor = conn.cursor()
+            
+            # Constitutional safety - only allow SELECT queries for now
+            query_upper = query.upper().strip()
+            if not query_upper.startswith('SELECT'):
+                return {
+                    "status": "constitutional_protection",
+                    "error": "Only SELECT queries allowed for safety",
+                    "suggestion": "Try queries like: SELECT * FROM farmers LIMIT 5"
+                }
+            
+            # Execute query
+            cursor.execute(query)
+            
+            # Get column names
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            
+            # Fetch results
+            results = cursor.fetchall()
+            
+            # Convert results to JSON-serializable format
+            json_results = []
+            for row in results:
+                json_row = []
+                for item in row:
+                    if item is None:
+                        json_row.append(None)
+                    else:
+                        json_row.append(str(item))
+                json_results.append(json_row)
+            
+            return {
+                "status": "success",
+                "columns": columns,
+                "rows": json_results,
+                "row_count": len(results),
+                "constitutional_compliance": True,
+                "query_executed": query
+            }
+            
+    except psycopg2.Error as db_error:
+        # Database-specific error
+        return {
+            "status": "database_error", 
+            "error": f"Database error: {str(db_error)}",
+            "constitutional_note": "Database error isolated - system remains operational"
+        }
     except Exception as e:
-        # Constitutional error isolation
+        # General error isolation
         return {
             "status": "error_isolated", 
-            "error": str(e),
+            "error": f"Query execution error: {str(e)}",
             "constitutional_note": "Error isolation prevents system crash"
         }
 
@@ -420,7 +452,8 @@ SELECT farm_name, email FROM farmers WHERE farm_name LIKE '%VRZEL%';"></textarea
                 } else {
                     resultsDiv.className = 'results error';
                     contentDiv.innerHTML = `
-                        <p><strong>Error:</strong> ${data.error || data.message}</p>
+                        <p><strong>Error:</strong> ${data.error || data.message || 'Unknown error'}</p>
+                        ${data.suggestion ? `<p><strong>Suggestion:</strong> ${data.suggestion}</p>` : ''}
                         ${data.constitutional_note ? `<p><em>${data.constitutional_note}</em></p>` : ''}
                     `;
                 }
@@ -623,9 +656,31 @@ async def get_db_info():
     return await get_database_info()
 
 @app.post("/api/database/query")
-async def execute_query(request: QueryRequest):
-    """Execute SQL query API with constitutional safety"""
-    return await execute_constitutional_query(request.query)
+async def execute_query(request: Request):
+    """Execute SQL query API with constitutional safety - FIXED VERSION"""
+    try:
+        # Get JSON data from request
+        data = await request.json()
+        query = data.get('query', '').strip()
+        
+        if not query:
+            return {
+                "status": "error",
+                "error": "No query provided",
+                "constitutional_note": "Please enter a SQL query"
+            }
+        
+        # Execute the constitutional query
+        result = await execute_constitutional_query(query)
+        return result
+        
+    except Exception as e:
+        # Constitutional error isolation
+        return {
+            "status": "error_isolated", 
+            "error": f"Request processing error: {str(e)}",
+            "constitutional_note": "Error isolation prevents system crash"
+        }
 
 @app.get("/agronomic/", response_class=HTMLResponse) 
 async def agronomic_dashboard():
@@ -650,6 +705,37 @@ async def agronomic_dashboard():
         """)
     except Exception as e:
         return JSONResponse({"error": str(e), "status": "agronomic_error"})
+
+# Test endpoints
+@app.get("/api/test")
+async def test_api():
+    """Simple API test endpoint"""
+    return {"status": "api_working", "message": "API is responsive"}
+
+@app.get("/api/database/test-connection")
+async def test_db_connection():
+    """Test database connection endpoint"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                result = cursor.fetchone()
+                return {
+                    "status": "connected",
+                    "test_query_result": result[0],
+                    "message": "AWS RDS connection successful"
+                }
+            else:
+                return {
+                    "status": "connection_failed",
+                    "message": "Could not establish connection to AWS RDS"
+                }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
 
 # Health check endpoint for AWS
 @app.get("/health")
