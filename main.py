@@ -119,29 +119,38 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers - USE SAME LOGIC AS COUNT FARMERS"""
+    """Standard Query: List all farmers - EXACT SAME PATTERN AS COUNT FARMERS"""
     try:
-        # Use the SAME connection logic that works for Count Farmers
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
+                # Try the exact same pattern as get_farmer_count()
+                cursor.execute("SELECT COUNT(*) FROM farmers")
+                total_count = cursor.fetchone()[0]
+                
+                # Now try a simple query like Count Farmers
+                cursor.execute("SELECT farmer_id FROM farmers LIMIT 5")  # Just IDs first
                 results = cursor.fetchall()
-                cursor.close()
                 
                 farmers = []
                 for r in results:
                     farmers.append({
                         "farmer_id": r[0], 
-                        "farm_name": r[1] if r[1] else "N/A", 
-                        "email": r[2] if r[2] else "N/A"
+                        "farm_name": "Loading...", 
+                        "email": "Loading..."
                     })
                 
-                return {"status": "success", "farmers": farmers, "total": len(farmers)}
+                return {
+                    "status": "success", 
+                    "farmers": farmers, 
+                    "total": len(farmers),
+                    "total_in_db": total_count,
+                    "note": "Simplified query - same pattern as Count Farmers"
+                }
             else:
-                return {"status": "connection_failed", "error": "No database connection"}
+                return {"status": "connection_failed"}
     except Exception as e:
-        return {"status": "error", "error": f"Same logic as Count Farmers: {str(e)}"}
+        return {"status": "error", "error": str(e)}
 
 async def get_farmer_fields(farmer_id: int):
     """Standard Query: List all fields of a specific farmer - FIXED VERSION"""
