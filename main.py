@@ -112,27 +112,37 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers"""
+    """Standard Query: List all farmers - FIXED VERSION"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
                 results = cursor.fetchall()
-                farmers = [{"farmer_id": r[0], "farm_name": r[1], "email": r[2]} for r in results]
+                cursor.close()  # Explicitly close cursor
+                
+                farmers = []
+                for r in results:
+                    farmers.append({
+                        "farmer_id": r[0], 
+                        "farm_name": r[1] if r[1] else "N/A", 
+                        "email": r[2] if r[2] else "N/A"
+                    })
+                
                 return {"status": "success", "farmers": farmers, "total": len(farmers)}
             else:
-                return {"status": "connection_failed"}
+                return {"status": "connection_failed", "error": "No database connection"}
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        return {"status": "error", "error": f"Database query failed: {str(e)}"}
 
 async def get_farmer_fields(farmer_id: int):
-    """Standard Query: List all fields of a specific farmer"""
+    """Standard Query: List all fields of a specific farmer - FIXED VERSION"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                # Constitutional safety - handle different schema possibilities
+                
+                # Try full query first, then fallback
                 try:
                     cursor.execute("""
                         SELECT field_id, field_name, area_hectares, location
@@ -141,8 +151,20 @@ async def get_farmer_fields(farmer_id: int):
                         ORDER BY field_name
                         LIMIT 20
                     """, (farmer_id,))
-                except psycopg2.Error:
-                    # Fallback if schema is different
+                    results = cursor.fetchall()
+                    cursor.close()
+                    
+                    fields = []
+                    for r in results:
+                        fields.append({
+                            "field_id": r[0],
+                            "field_name": r[1] if r[1] else "N/A",
+                            "area_hectares": r[2] if len(r) > 2 and r[2] else "N/A",
+                            "location": r[3] if len(r) > 3 and r[3] else "N/A"
+                        })
+                    
+                except psycopg2.Error as schema_error:
+                    # Fallback query with minimal columns
                     cursor.execute("""
                         SELECT field_id, field_name 
                         FROM fields 
@@ -150,26 +172,31 @@ async def get_farmer_fields(farmer_id: int):
                         ORDER BY field_name
                         LIMIT 20
                     """, (farmer_id,))
-                
-                results = cursor.fetchall()
-                
-                if len(results[0]) >= 4:
-                    fields = [{"field_id": r[0], "field_name": r[1], "area_hectares": r[2], "location": r[3]} for r in results]
-                else:
-                    fields = [{"field_id": r[0], "field_name": r[1], "area_hectares": "N/A", "location": "N/A"} for r in results]
+                    results = cursor.fetchall()
+                    cursor.close()
+                    
+                    fields = []
+                    for r in results:
+                        fields.append({
+                            "field_id": r[0],
+                            "field_name": r[1] if r[1] else "N/A",
+                            "area_hectares": "N/A",
+                            "location": "N/A"
+                        })
                 
                 return {"status": "success", "fields": fields, "total": len(fields)}
             else:
-                return {"status": "connection_failed"}
+                return {"status": "connection_failed", "error": "No database connection"}
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        return {"status": "error", "error": f"Database query failed: {str(e)}"}
 
 async def get_field_tasks(farmer_id: int, field_id: int):
-    """Standard Query: List all tasks on specific field of specific farmer"""
+    """Standard Query: List all tasks on specific field of specific farmer - FIXED VERSION"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
+                
                 try:
                     cursor.execute("""
                         SELECT task_id, task_name, task_type, status, due_date, description
@@ -178,41 +205,47 @@ async def get_field_tasks(farmer_id: int, field_id: int):
                         ORDER BY due_date DESC
                         LIMIT 20
                     """, (farmer_id, field_id))
-                except psycopg2.Error:
-                    # Fallback if schema is different
+                    results = cursor.fetchall()
+                    cursor.close()
+                    
+                    tasks = []
+                    for r in results:
+                        tasks.append({
+                            "task_id": r[0],
+                            "task_name": r[1] if r[1] else "N/A",
+                            "task_type": r[2] if len(r) > 2 and r[2] else "N/A",
+                            "status": r[3] if len(r) > 3 and r[3] else "N/A",
+                            "due_date": str(r[4]) if len(r) > 4 and r[4] else None,
+                            "description": r[5] if len(r) > 5 and r[5] else "N/A"
+                        })
+                    
+                except psycopg2.Error as schema_error:
+                    # Fallback query with minimal columns
                     cursor.execute("""
                         SELECT task_id, task_name 
                         FROM tasks 
                         WHERE farmer_id = %s AND field_id = %s 
                         LIMIT 20
                     """, (farmer_id, field_id))
-                
-                results = cursor.fetchall()
-                
-                if results and len(results[0]) >= 6:
-                    tasks = [{
-                        "task_id": r[0], 
-                        "task_name": r[1], 
-                        "task_type": r[2], 
-                        "status": r[3],
-                        "due_date": str(r[4]) if r[4] else None,
-                        "description": r[5]
-                    } for r in results]
-                else:
-                    tasks = [{
-                        "task_id": r[0], 
-                        "task_name": r[1], 
-                        "task_type": "N/A", 
-                        "status": "N/A",
-                        "due_date": None,
-                        "description": "N/A"
-                    } for r in results]
+                    results = cursor.fetchall()
+                    cursor.close()
+                    
+                    tasks = []
+                    for r in results:
+                        tasks.append({
+                            "task_id": r[0],
+                            "task_name": r[1] if r[1] else "N/A",
+                            "task_type": "N/A",
+                            "status": "N/A",
+                            "due_date": None,
+                            "description": "N/A"
+                        })
                 
                 return {"status": "success", "tasks": tasks, "total": len(tasks)}
             else:
-                return {"status": "connection_failed"}
+                return {"status": "connection_failed", "error": "No database connection"}
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        return {"status": "error", "error": f"Database query failed: {str(e)}"}
 
 # PART 2: LLM Query Assistant (SAFE VERSION)
 async def llm_natural_language_query(user_question: str):
