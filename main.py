@@ -11,12 +11,19 @@ from pydantic import BaseModel
 # Constitutional Error Isolation - Import OpenAI safely
 try:
     import openai
-    OPENAI_AVAILABLE = bool(os.getenv('OPENAI_API_KEY'))
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+    OPENAI_AVAILABLE = bool(OPENAI_API_KEY and len(OPENAI_API_KEY) > 10)
     if OPENAI_AVAILABLE:
-        openai.api_key = os.getenv('OPENAI_API_KEY')
-except ImportError:
+        openai.api_key = OPENAI_API_KEY
+        print(f"DEBUG: OpenAI configured with key: {OPENAI_API_KEY[:10]}...")
+    else:
+        print(f"DEBUG: OpenAI key issue - Key present: {bool(OPENAI_API_KEY)}, Length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
+except ImportError as import_error:
     OPENAI_AVAILABLE = False
-    print("OpenAI not available - LLM features disabled")
+    print(f"DEBUG: OpenAI import failed: {import_error}")
+except Exception as config_error:
+    OPENAI_AVAILABLE = False
+    print(f"DEBUG: OpenAI config failed: {config_error}")
 
 app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 
@@ -112,28 +119,46 @@ async def get_farmer_count():
         return {"status": "error", "error": str(e)}
 
 async def get_all_farmers():
-    """Standard Query: List all farmers - FIXED VERSION"""
+    """Standard Query: List all farmers - NO CONTEXT MANAGER VERSION"""
+    connection = None
     try:
-        with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
-                results = cursor.fetchall()
-                cursor.close()  # Explicitly close cursor
-                
-                farmers = []
-                for r in results:
-                    farmers.append({
-                        "farmer_id": r[0], 
-                        "farm_name": r[1] if r[1] else "N/A", 
-                        "email": r[2] if r[2] else "N/A"
-                    })
-                
-                return {"status": "success", "farmers": farmers, "total": len(farmers)}
-            else:
-                return {"status": "connection_failed", "error": "No database connection"}
+        # Direct connection without context manager
+        host = os.getenv('DB_HOST')
+        database = os.getenv('DB_NAME', 'farmer_crm')
+        user = os.getenv('DB_USER', 'postgres')
+        password = os.getenv('DB_PASSWORD')
+        port = int(os.getenv('DB_PORT', '5432'))
+        
+        connection = psycopg2.connect(
+            host=host,
+            database=database,
+            user=user,
+            password=password,
+            port=port,
+            connect_timeout=10,
+            sslmode='require'
+        )
+        
+        cursor = connection.cursor()
+        cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
+        results = cursor.fetchall()
+        cursor.close()
+        
+        farmers = []
+        for r in results:
+            farmers.append({
+                "farmer_id": r[0], 
+                "farm_name": r[1] if r[1] else "N/A", 
+                "email": r[2] if r[2] else "N/A"
+            })
+        
+        return {"status": "success", "farmers": farmers, "total": len(farmers)}
+        
     except Exception as e:
-        return {"status": "error", "error": f"Database query failed: {str(e)}"}
+        return {"status": "error", "error": f"Direct connection failed: {str(e)}"}
+    finally:
+        if connection:
+            connection.close()
 
 async def get_farmer_fields(farmer_id: int):
     """Standard Query: List all fields of a specific farmer - FIXED VERSION"""
@@ -549,7 +574,7 @@ async def api_field_tasks(farmer_id: int, field_id: int):
 async def api_natural_query(request: NaturalQueryRequest):
     return await llm_natural_language_query(request.question)
 
-# Debug endpoint with connection test
+# Debug endpoint with enhanced OpenAI check
 @app.get("/api/debug/status")
 async def debug_status():
     # Test database connection
@@ -565,12 +590,22 @@ async def debug_status():
     except Exception as e:
         db_status = f"error: {str(e)}"
     
+    # Enhanced OpenAI check
+    openai_key = os.getenv('OPENAI_API_KEY')
+    openai_debug = {
+        "key_present": bool(openai_key),
+        "key_length": len(openai_key) if openai_key else 0,
+        "key_preview": openai_key[:10] + "..." if openai_key and len(openai_key) > 10 else "N/A",
+        "available": OPENAI_AVAILABLE
+    }
+    
     return {
         "database_connected": f"AWS RDS PostgreSQL - {db_status}",
         "llm_model": "GPT-4" if OPENAI_AVAILABLE else "Not Available", 
         "constitutional_compliance": True,
         "agricultural_focus": "Farmers, Fields, Tasks",
-        "openai_key_configured": OPENAI_AVAILABLE
+        "openai_key_configured": OPENAI_AVAILABLE,
+        "openai_debug": openai_debug
     }
 
 if __name__ == "__main__":
