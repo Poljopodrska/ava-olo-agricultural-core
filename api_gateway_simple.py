@@ -328,4 +328,4 @@ async def get_conversation_details(conversation_id: int):
 if __name__ == "__main__":
     import uvicorn
     print("🚀 Starting Simple AVA OLO API Gateway on port 8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
