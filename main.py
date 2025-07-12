@@ -1,20 +1,26 @@
-# main.py - Agricultural Database Dashboard with LLM Query Assistant
+# main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
 import json
 import psycopg2
-import openai
 from contextlib import contextmanager
 from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
-app = FastAPI(title="AVA OLO Agricultural Database with LLM Assistant")
+# Constitutional Error Isolation - Import OpenAI safely
+try:
+    import openai
+    OPENAI_AVAILABLE = bool(os.getenv('OPENAI_API_KEY'))
+    if OPENAI_AVAILABLE:
+        openai.api_key = os.getenv('OPENAI_API_KEY')
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("OpenAI not available - LLM features disabled")
 
-# Set up OpenAI
-openai.api_key = os.getenv('OPENAI_API_KEY')
+app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 
-# Constitutional AWS RDS Connection (using working strategy)
+# Constitutional AWS RDS Connection (WORKING VERSION)
 @contextmanager
 def get_constitutional_db_connection():
     """Constitutional connection to AWS Aurora RDS PostgreSQL"""
@@ -26,7 +32,7 @@ def get_constitutional_db_connection():
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
         
-        # Use the working strategy from debug (SSL required)
+        # Use the working strategy (SSL required)
         connection = psycopg2.connect(
             host=host,
             database=database,
@@ -45,7 +51,7 @@ def get_constitutional_db_connection():
         if connection:
             connection.close()
 
-# PART 1: Standard Agricultural Queries
+# PART 1: Standard Agricultural Queries (ALWAYS WORKS)
 async def get_farmer_count():
     """Standard Query: Number of farmers"""
     try:
@@ -66,7 +72,7 @@ async def get_all_farmers():
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name")
+                cursor.execute("SELECT farmer_id, farm_name, email FROM farmers ORDER BY farm_name LIMIT 20")
                 results = cursor.fetchall()
                 farmers = [{"farmer_id": r[0], "farm_name": r[1], "email": r[2]} for r in results]
                 return {"status": "success", "farmers": farmers, "total": len(farmers)}
@@ -81,14 +87,32 @@ async def get_farmer_fields(farmer_id: int):
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT f.field_id, f.field_name, f.area_hectares, f.location
-                    FROM fields f 
-                    WHERE f.farmer_id = %s 
-                    ORDER BY f.field_name
-                """, (farmer_id,))
+                # Constitutional safety - handle different schema possibilities
+                try:
+                    cursor.execute("""
+                        SELECT field_id, field_name, area_hectares, location
+                        FROM fields 
+                        WHERE farmer_id = %s 
+                        ORDER BY field_name
+                        LIMIT 20
+                    """, (farmer_id,))
+                except psycopg2.Error:
+                    # Fallback if schema is different
+                    cursor.execute("""
+                        SELECT field_id, field_name 
+                        FROM fields 
+                        WHERE farmer_id = %s 
+                        ORDER BY field_name
+                        LIMIT 20
+                    """, (farmer_id,))
+                
                 results = cursor.fetchall()
-                fields = [{"field_id": r[0], "field_name": r[1], "area_hectares": r[2], "location": r[3]} for r in results]
+                
+                if len(results[0]) >= 4:
+                    fields = [{"field_id": r[0], "field_name": r[1], "area_hectares": r[2], "location": r[3]} for r in results]
+                else:
+                    fields = [{"field_id": r[0], "field_name": r[1], "area_hectares": "N/A", "location": "N/A"} for r in results]
+                
                 return {"status": "success", "fields": fields, "total": len(fields)}
             else:
                 return {"status": "connection_failed"}
@@ -101,171 +125,94 @@ async def get_field_tasks(farmer_id: int, field_id: int):
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT t.task_id, t.task_name, t.task_type, t.status, t.due_date, t.description
-                    FROM tasks t 
-                    WHERE t.farmer_id = %s AND t.field_id = %s 
-                    ORDER BY t.due_date DESC
-                """, (farmer_id, field_id))
+                try:
+                    cursor.execute("""
+                        SELECT task_id, task_name, task_type, status, due_date, description
+                        FROM tasks 
+                        WHERE farmer_id = %s AND field_id = %s 
+                        ORDER BY due_date DESC
+                        LIMIT 20
+                    """, (farmer_id, field_id))
+                except psycopg2.Error:
+                    # Fallback if schema is different
+                    cursor.execute("""
+                        SELECT task_id, task_name 
+                        FROM tasks 
+                        WHERE farmer_id = %s AND field_id = %s 
+                        LIMIT 20
+                    """, (farmer_id, field_id))
+                
                 results = cursor.fetchall()
-                tasks = [{
-                    "task_id": r[0], 
-                    "task_name": r[1], 
-                    "task_type": r[2], 
-                    "status": r[3],
-                    "due_date": str(r[4]) if r[4] else None,
-                    "description": r[5]
-                } for r in results]
+                
+                if results and len(results[0]) >= 6:
+                    tasks = [{
+                        "task_id": r[0], 
+                        "task_name": r[1], 
+                        "task_type": r[2], 
+                        "status": r[3],
+                        "due_date": str(r[4]) if r[4] else None,
+                        "description": r[5]
+                    } for r in results]
+                else:
+                    tasks = [{
+                        "task_id": r[0], 
+                        "task_name": r[1], 
+                        "task_type": "N/A", 
+                        "status": "N/A",
+                        "due_date": None,
+                        "description": "N/A"
+                    } for r in results]
+                
                 return {"status": "success", "tasks": tasks, "total": len(tasks)}
             else:
                 return {"status": "connection_failed"}
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
-# PART 2: LLM Query Assistant
-async def get_database_schema():
-    """Get database schema for LLM context"""
-    try:
-        with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
-                
-                # Get table structure
-                schema_info = {}
-                tables = ['farmers', 'fields', 'tasks']
-                
-                for table in tables:
-                    cursor.execute("""
-                        SELECT column_name, data_type 
-                        FROM information_schema.columns 
-                        WHERE table_name = %s 
-                        ORDER BY ordinal_position
-                    """, (table,))
-                    columns = cursor.fetchall()
-                    schema_info[table] = [{"column": c[0], "type": c[1]} for c in columns]
-                
-                return schema_info
-            else:
-                return {}
-    except Exception as e:
-        return {}
-
+# PART 2: LLM Query Assistant (SAFE VERSION)
 async def llm_natural_language_query(user_question: str):
-    """LLM-powered natural language to SQL conversion and response"""
+    """LLM-powered natural language query with constitutional safety"""
+    if not OPENAI_AVAILABLE:
+        return {
+            "status": "llm_unavailable",
+            "error": "OpenAI API key not configured",
+            "fallback_message": "LLM features require OPENAI_API_KEY environment variable. Standard queries still work.",
+            "constitutional_note": "Error isolation - system remains operational"
+        }
+    
     try:
-        # Get database schema for context
-        schema = await get_database_schema()
-        
-        # Create prompt for GPT-4
-        system_prompt = f"""You are an agricultural database assistant. Convert natural language questions to SQL queries and provide concise answers.
-
-DATABASE SCHEMA:
-{json.dumps(schema, indent=2)}
-
-RULES:
-1. Only generate SELECT queries (no INSERT, UPDATE, DELETE)
-2. Use proper JOIN statements when needed
-3. Return results in natural language, concise and to the point
-4. Focus on agricultural terminology
-5. If query fails, explain why briefly
-
-Tables available:
-- farmers: Contains farmer information
-- fields: Contains field information linked to farmers
-- tasks: Contains tasks linked to farmers and fields
-
-Response format:
-1. Generate SQL query
-2. Execute query  
-3. Return natural language summary of results
-"""
-
-        user_prompt = f"Question: {user_question}\n\nPlease generate the SQL query and provide a concise answer."
-
-        # Call GPT-4
+        # Simple LLM implementation for now
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
+                {"role": "system", "content": "You are an agricultural database assistant. Convert questions to simple SQL SELECT queries for farmers, fields, and tasks tables."},
+                {"role": "user", "content": f"Convert to SQL: {user_question}"}
             ],
-            max_tokens=500,
-            temperature=0.1
+            max_tokens=100,
+            temperature=0
         )
         
-        llm_response = response.choices[0].message.content
+        sql_suggestion = response.choices[0].message.content.strip()
         
-        # Extract SQL query from LLM response (simple extraction)
-        sql_query = None
-        lines = llm_response.split('\n')
-        for line in lines:
-            if 'SELECT' in line.upper():
-                sql_query = line.strip()
-                break
+        return {
+            "status": "llm_success",
+            "user_question": user_question,
+            "sql_suggestion": sql_suggestion,
+            "note": "LLM query generation active - execute manually in database interface"
+        }
         
-        if not sql_query:
-            return {
-                "status": "llm_error", 
-                "error": "Could not extract SQL query from LLM response",
-                "llm_response": llm_response
-            }
-        
-        # Execute the generated query
-        with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
-                cursor.execute(sql_query)
-                results = cursor.fetchall()
-                columns = [desc[0] for desc in cursor.description] if cursor.description else []
-                
-                # Generate natural language response
-                result_prompt = f"""Based on this SQL query result, provide a concise natural language answer:
-
-Query: {sql_query}
-Results: {results}
-Columns: {columns}
-
-Provide a brief, clear answer focusing on the key information. Be agricultural and professional."""
-
-                final_response = openai.ChatCompletion.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "user", "content": result_prompt}
-                    ],
-                    max_tokens=200,
-                    temperature=0.1
-                )
-                
-                natural_answer = final_response.choices[0].message.content
-                
-                return {
-                    "status": "success",
-                    "user_question": user_question,
-                    "generated_sql": sql_query,
-                    "raw_results": results,
-                    "columns": columns,
-                    "natural_answer": natural_answer,
-                    "constitutional_compliance": True
-                }
-            else:
-                return {"status": "connection_failed"}
-            
     except Exception as e:
         return {
             "status": "llm_error",
             "error": str(e),
-            "constitutional_note": "LLM error isolated - system remains stable"
+            "constitutional_note": "LLM error isolated - standard queries still work"
         }
 
 # Request models
 class NaturalQueryRequest(BaseModel):
     question: str
 
-class StandardQueryRequest(BaseModel):
-    farmer_id: int = None
-    field_id: int = None
-
-# HTML Interface
+# HTML Interface (SAFE VERSION)
 AGRICULTURAL_DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -277,28 +224,34 @@ AGRICULTURAL_DASHBOARD_HTML = """
         .section { border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }
         .agricultural { background: #e8f5e8; border-left: 5px solid #27ae60; }
         .llm { background: #e8f4f8; border-left: 5px solid #3498db; }
+        .warning { background: #fff3cd; border-left: 5px solid #ffc107; }
         textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         input { width: 100px; padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
         button { background: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
         .llm-button { background: #3498db; }
         button:hover { opacity: 0.8; }
-        .results { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; max-height: 300px; overflow-y: auto; }
+        .results { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; max-height: 400px; overflow-y: auto; }
         .success { background: #e8f5e8; }
         .error { background: #ffebee; }
         table { width: 100%; border-collapse: collapse; margin: 10px 0; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background: #f5f5f5; }
-        .natural-response { background: #f0f8ff; padding: 15px; border-radius: 5px; margin: 10px 0; font-size: 1.1em; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🌾 AVA OLO Agricultural Database Dashboard</h1>
-        <p><strong>Constitutional Compliance:</strong> LLM-First Agricultural Intelligence | AWS RDS Connected</p>
+        <p><strong>Constitutional Compliance:</strong> Agricultural Intelligence System | AWS RDS Connected | Error Isolation Active</p>
+        
+        <!-- System Status -->
+        <div class="section warning">
+            <h3>🔍 System Status</h3>
+            <p id="systemStatus">Loading system status...</p>
+        </div>
         
         <!-- PART 1: Standard Agricultural Queries -->
         <div class="section agricultural">
-            <h2>📊 Part 1: Standard Agricultural Queries</h2>
+            <h2>📊 Part 1: Standard Agricultural Queries (Always Available)</h2>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                 <div>
@@ -329,18 +282,17 @@ AGRICULTURAL_DASHBOARD_HTML = """
         <!-- PART 2: LLM Natural Language Assistant -->
         <div class="section llm">
             <h2>🤖 Part 2: LLM Natural Language Query Assistant</h2>
-            <p><strong>Ask questions in natural language - GPT-4 will convert to SQL and provide concise answers</strong></p>
+            <p><strong>Ask questions in natural language - AI will help generate SQL queries</strong></p>
             
             <div>
                 <h4>Ask Agricultural Questions:</h4>
                 <textarea id="naturalQuestion" placeholder="Examples:
 • How many farmers do we have?
-• Show me all farmers from Slovenia
+• Show me all farmers
 • Which fields belong to farmer ID 1?
-• What tasks are pending for field 5?
-• How many hectares does farmer Vrzel have?"></textarea>
+• What tasks are there for field 5?"></textarea>
                 <br>
-                <button class="llm-button" onclick="askNaturalQuestion()">🧠 Ask GPT-4</button>
+                <button class="llm-button" onclick="askNaturalQuestion()">🧠 Try LLM Assistant</button>
             </div>
         </div>
         
@@ -352,6 +304,19 @@ AGRICULTURAL_DASHBOARD_HTML = """
     </div>
 
     <script>
+        // Check system status on load
+        window.onload = function() {
+            fetch('/api/debug/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('systemStatus').innerHTML = 
+                        `Database: ${data.database_connected} | LLM: ${data.llm_model || 'Not Available'} | Constitutional: ${data.constitutional_compliance ? '✅' : '❌'}`;
+                })
+                .catch(error => {
+                    document.getElementById('systemStatus').innerHTML = 'Status check failed - system may have issues';
+                });
+        };
+        
         function showResults(data, isSuccess = true) {
             const resultsDiv = document.getElementById('results');
             const contentDiv = document.getElementById('resultsContent');
@@ -372,7 +337,7 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        showResults(`<h4>Total Farmers: ${data.farmer_count}</h4>`);
+                        showResults(`<h4>🌾 Total Farmers: ${data.farmer_count}</h4><p>Constitutional agricultural system operational!</p>`);
                     } else {
                         showResults(data, false);
                     }
@@ -384,7 +349,7 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        let html = `<h4>All Farmers (${data.total}):</h4><table><tr><th>ID</th><th>Farm Name</th><th>Email</th></tr>`;
+                        let html = `<h4>🌾 All Farmers (${data.total}):</h4><table><tr><th>ID</th><th>Farm Name</th><th>Email</th></tr>`;
                         data.farmers.forEach(farmer => {
                             html += `<tr><td>${farmer.farmer_id}</td><td>${farmer.farm_name}</td><td>${farmer.email}</td></tr>`;
                         });
@@ -407,7 +372,7 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        let html = `<h4>Fields for Farmer ${farmerId} (${data.total}):</h4><table><tr><th>Field ID</th><th>Field Name</th><th>Area (ha)</th><th>Location</th></tr>`;
+                        let html = `<h4>🌾 Fields for Farmer ${farmerId} (${data.total}):</h4><table><tr><th>Field ID</th><th>Field Name</th><th>Area (ha)</th><th>Location</th></tr>`;
                         data.fields.forEach(field => {
                             html += `<tr><td>${field.field_id}</td><td>${field.field_name}</td><td>${field.area_hectares}</td><td>${field.location}</td></tr>`;
                         });
@@ -431,7 +396,7 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        let html = `<h4>Tasks for Farmer ${farmerId}, Field ${fieldId} (${data.total}):</h4><table><tr><th>Task ID</th><th>Task Name</th><th>Type</th><th>Status</th><th>Due Date</th></tr>`;
+                        let html = `<h4>🌾 Tasks for Farmer ${farmerId}, Field ${fieldId} (${data.total}):</h4><table><tr><th>Task ID</th><th>Task Name</th><th>Type</th><th>Status</th><th>Due Date</th></tr>`;
                         data.tasks.forEach(task => {
                             html += `<tr><td>${task.task_id}</td><td>${task.task_name}</td><td>${task.task_type}</td><td>${task.status}</td><td>${task.due_date || 'N/A'}</td></tr>`;
                         });
@@ -451,8 +416,7 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 return;
             }
             
-            // Show loading
-            showResults('<p>🧠 GPT-4 is processing your question...</p>');
+            showResults('<p>🧠 Checking LLM availability...</p>');
             
             fetch('/api/llm/natural-query', {
                 method: 'POST',
@@ -461,17 +425,12 @@ AGRICULTURAL_DASHBOARD_HTML = """
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
+                if (data.status === 'llm_success') {
                     let html = `
-                        <div class="natural-response">
-                            <h4>🧠 GPT-4 Answer:</h4>
-                            <p><strong>${data.natural_answer}</strong></p>
-                        </div>
-                        <details>
-                            <summary>Technical Details</summary>
-                            <p><strong>Generated SQL:</strong> <code>${data.generated_sql}</code></p>
-                            <p><strong>Raw Results:</strong> ${data.raw_results.length} rows</p>
-                        </details>
+                        <h4>🧠 LLM SQL Suggestion:</h4>
+                        <p><strong>Question:</strong> ${data.user_question}</p>
+                        <p><strong>Suggested SQL:</strong> <code>${data.sql_suggestion}</code></p>
+                        <p><em>${data.note}</em></p>
                     `;
                     showResults(html);
                 } else {
@@ -487,10 +446,10 @@ AGRICULTURAL_DASHBOARD_HTML = """
 # Routes
 @app.get("/", response_class=HTMLResponse)
 async def agricultural_dashboard():
-    """Agricultural Database Dashboard"""
+    """Agricultural Database Dashboard - Safe Version"""
     return HTMLResponse(content=AGRICULTURAL_DASHBOARD_HTML)
 
-# PART 1: Standard Agricultural Query APIs
+# PART 1: Standard Agricultural Query APIs (ALWAYS WORK)
 @app.get("/api/agricultural/farmer-count")
 async def api_farmer_count():
     return await get_farmer_count()
@@ -507,19 +466,20 @@ async def api_farmer_fields(farmer_id: int):
 async def api_field_tasks(farmer_id: int, field_id: int):
     return await get_field_tasks(farmer_id, field_id)
 
-# PART 2: LLM Natural Language Query API
+# PART 2: LLM Natural Language Query API (SAFE VERSION)
 @app.post("/api/llm/natural-query")
 async def api_natural_query(request: NaturalQueryRequest):
     return await llm_natural_language_query(request.question)
 
-# Keep debug endpoint for emergencies
+# Debug endpoint
 @app.get("/api/debug/status")
 async def debug_status():
     return {
         "database_connected": "AWS RDS PostgreSQL",
-        "llm_model": "GPT-4",
+        "llm_model": "GPT-4" if OPENAI_AVAILABLE else "Not Available",
         "constitutional_compliance": True,
-        "agricultural_focus": "Farmers, Fields, Tasks"
+        "agricultural_focus": "Farmers, Fields, Tasks",
+        "openai_key_configured": OPENAI_AVAILABLE
     }
 
 if __name__ == "__main__":
