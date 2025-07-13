@@ -4,6 +4,7 @@ import os
 import json
 import psycopg2
 from contextlib import contextmanager
+from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
@@ -613,24 +614,55 @@ AGRICULTURAL_DASHBOARD_HTML = """
             
             showResults('<p>🧠 Checking LLM availability...</p>');
             
-            fetch('/api/llm/natural-query', {
+            fetch('/api/natural-query', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: question })
+                body: JSON.stringify({ query: question })
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'llm_success') {
+                if (data.status === 'success') {
                     let html = `
-                        <h4>🧠 LLM SQL Suggestion:</h4>
-                        <p><strong>Question:</strong> ${data.user_question}</p>
-                        <p><strong>Suggested SQL:</strong> <code>${data.sql_suggestion}</code></p>
-                        <p><em>${data.note}</em></p>
+                        <h4>🧠 LLM Query Result:</h4>
+                        <p><strong>Your Question:</strong> ${data.original_query}</p>
+                        <p><strong>Generated SQL:</strong></p>
+                        <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">${data.sql_query || 'No SQL generated'}</pre>
                     `;
+                    
+                    // If query was executed
+                    if (data.execution_result && data.execution_result.status === 'success') {
+                        html += `<h5>📊 Query Results (${data.execution_result.row_count} rows):</h5>`;
+                        
+                        if (data.execution_result.data && data.execution_result.data.length > 0) {
+                            html += '<table style="width: 100%; margin-top: 10px;">';
+                            
+                            // Headers
+                            const headers = Object.keys(data.execution_result.data[0]);
+                            html += '<tr>';
+                            headers.forEach(h => html += `<th>${h}</th>`);
+                            html += '</tr>';
+                            
+                            // Data
+                            data.execution_result.data.forEach(row => {
+                                html += '<tr>';
+                                headers.forEach(h => html += `<td>${row[h] || 'null'}</td>`);
+                                html += '</tr>';
+                            });
+                            html += '</table>';
+                        }
+                    } else if (data.execution_result && data.execution_result.error) {
+                        html += `<p style="color: red;">Execution Error: ${data.execution_result.error}</p>`;
+                    }
+                    
                     showResults(html);
+                } else if (data.status === 'unavailable') {
+                    showResults(`<p style="color: orange;">🔔 ${data.error}<br>${data.fallback}</p>`);
                 } else {
                     showResults(data, false);
                 }
+            })
+            .catch(error => {
+                showResults(`<p style="color: red;">Request failed: ${error}</p>`);
             });
         }
         
@@ -1417,6 +1449,20 @@ async def get_system_status():
         status["llm"]["message"] = "OpenAI API configured"
         status["llm"]["icon"] = "✅"
     
+    # Check constitutional compliance
+    try:
+        compliance = await check_constitutional_compliance()
+        if compliance.get("fully_compliant"):
+            status["constitutional"]["status"] = "compliant"
+            status["constitutional"]["message"] = f"All {compliance['total_principles']} principles implemented"
+            status["constitutional"]["icon"] = "✅"
+        else:
+            status["constitutional"]["status"] = "partial"
+            status["constitutional"]["message"] = f"{compliance['compliant']}/{compliance['total_principles']} principles compliant"
+            status["constitutional"]["icon"] = "⚠️"
+    except:
+        pass
+    
     return status
 
 # Essential schema endpoint for quick reference
@@ -1494,7 +1540,17 @@ from db_connection_fixed import (
     get_field_with_crops,
     get_farmer_fields as async_get_farmer_fields,
     get_field_tasks as async_get_field_tasks,
-    get_all_farmers as async_get_all_farmers
+    get_all_farmers as async_get_all_farmers,
+    get_constitutional_db_connection as async_get_db_connection
+)
+
+# Import LLM integration functions
+from llm_integration import (
+    test_llm_connection,
+    process_natural_language_query,
+    execute_llm_generated_query,
+    test_mango_compliance_queries,
+    check_constitutional_compliance
 )
 
 # New API endpoints using correct async functions
@@ -1517,6 +1573,74 @@ async def api_get_farmer_complete(farmer_id: int):
 async def api_get_field_complete(field_id: int):
     """API endpoint for complete field information"""
     return await get_field_with_crops(field_id)
+
+# LLM Integration Endpoints
+@app.get("/api/llm-status")
+async def check_llm_status():
+    """Check LLM connection status"""
+    return await test_llm_connection()
+
+@app.post("/api/natural-query")
+async def process_natural_query(request: Dict[str, Any]):
+    """
+    Process natural language queries
+    🥭 Constitutional: Supports any language, any crop
+    """
+    
+    query = request.get("query", "")
+    farmer_id = request.get("farmer_id")
+    
+    if not query:
+        return {"error": "No query provided"}
+    
+    # Get farmer context if provided
+    farmer_context = None
+    if farmer_id:
+        try:
+            conn = await async_get_db_connection()
+            if conn:
+                farmer = await conn.fetchrow("SELECT * FROM farmers WHERE id = $1", farmer_id)
+                if farmer:
+                    farmer_context = dict(farmer)
+                await conn.close()
+        except:
+            pass
+    
+    # Process with LLM
+    llm_result = await process_natural_language_query(query, farmer_context)
+    
+    if llm_result.get("ready_to_execute") and llm_result.get("sql_query"):
+        # Execute the generated SQL
+        conn = await async_get_db_connection()
+        if conn:
+            execution_result = await execute_llm_generated_query(llm_result["sql_query"], conn)
+            await conn.close()
+            llm_result["execution_result"] = execution_result
+    
+    return llm_result
+
+@app.get("/api/test-mango-compliance")
+async def test_mango_compliance():
+    """
+    🥭 Test constitutional mango compliance
+    Test if LLM can handle Bulgarian mango farmer
+    """
+    
+    results = await test_mango_compliance_queries()
+    
+    return {
+        "test_name": "Mango Rule Compliance Test",
+        "constitutional_principle": "🥭 Works for any crop in any country",
+        "test_results": results,
+        "overall_compliance": all(r["success"] for r in results)
+    }
+
+@app.get("/api/constitutional-compliance")
+async def get_constitutional_compliance():
+    """
+    Check all 13 constitutional principles
+    """
+    return await check_constitutional_compliance()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
