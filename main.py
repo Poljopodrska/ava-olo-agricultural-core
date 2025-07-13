@@ -2185,69 +2185,106 @@ async def process_natural_query(request: Dict[str, Any]):
     llm_result = await process_natural_language_query(query, farmer_context)
     
     if llm_result.get("ready_to_execute") and llm_result.get("sql_query"):
-        # Execute the generated SQL
+        # Execute the generated SQL in a safe way
+        conn = None
+        cursor = None
         try:
-            # Use the synchronous connection that works
-            with get_constitutional_db_connection() as conn:
-                if conn:
-                    # Execute the query synchronously
-                    cursor = conn.cursor()
-                    sql_query = llm_result["sql_query"]
-                    sql_upper = sql_query.strip().upper()
+            # Get connection without context manager to avoid async issues
+            host = os.getenv('DB_HOST')
+            database = os.getenv('DB_NAME', 'farmer_crm')
+            user = os.getenv('DB_USER', 'postgres')
+            password = os.getenv('DB_PASSWORD')
+            port = int(os.getenv('DB_PORT', '5432'))
+            
+            # Try connection with SSL first, then without
+            try:
+                conn = psycopg2.connect(
+                    host=host,
+                    database=database,
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='require'
+                )
+            except psycopg2.OperationalError:
+                # Fallback to SSL preferred if required fails
+                conn = psycopg2.connect(
+                    host=host,
+                    database=database,
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='prefer'
+                )
+            
+            cursor = conn.cursor()
+            sql_query = llm_result["sql_query"]
+            sql_upper = sql_query.strip().upper()
+            
+            # Determine operation type
+            operation_type = "SELECT"
+            if sql_upper.startswith('INSERT'):
+                operation_type = "INSERT"
+            elif sql_upper.startswith('UPDATE'):
+                operation_type = "UPDATE"
+            elif sql_upper.startswith('DELETE'):
+                operation_type = "DELETE"
+            elif sql_upper.startswith('BEGIN'):
+                operation_type = "TRANSACTION"
+            
+            # Safety check for UPDATE/DELETE
+            if operation_type in ['UPDATE', 'DELETE'] and 'WHERE' not in sql_upper:
+                llm_result["execution_result"] = {
+                    "status": "error",
+                    "error": f"{operation_type} without WHERE clause is too dangerous",
+                    "requires_confirmation": True,
+                    "operation_type": operation_type
+                }
+            else:
+                # Execute the query
+                cursor.execute(sql_query)
+                
+                if operation_type == "SELECT":
+                    # Get column names
+                    columns = [desc[0] for desc in cursor.description] if cursor.description else []
                     
-                    # Determine operation type
-                    operation_type = "SELECT"
-                    if sql_upper.startswith('INSERT'):
-                        operation_type = "INSERT"
-                    elif sql_upper.startswith('UPDATE'):
-                        operation_type = "UPDATE"
-                    elif sql_upper.startswith('DELETE'):
-                        operation_type = "DELETE"
-                    elif sql_upper.startswith('BEGIN'):
-                        operation_type = "TRANSACTION"
+                    # Fetch all results
+                    rows = cursor.fetchall()
                     
-                    # Safety check for UPDATE/DELETE
-                    if operation_type in ['UPDATE', 'DELETE'] and 'WHERE' not in sql_upper:
-                        llm_result["execution_result"] = {
-                            "status": "error",
-                            "error": f"{operation_type} without WHERE clause is too dangerous",
-                            "requires_confirmation": True,
-                            "operation_type": operation_type
-                        }
-                    else:
-                        cursor.execute(sql_query)
-                        
-                        if operation_type == "SELECT":
-                            # Get column names
-                            columns = [desc[0] for desc in cursor.description] if cursor.description else []
-                            
-                            # Fetch all results
-                            rows = cursor.fetchall()
-                            
-                            # Convert to list of dicts
-                            data = []
-                            for row in rows:
-                                data.append(dict(zip(columns, row)))
-                            
-                            llm_result["execution_result"] = {
-                                "status": "success",
-                                "operation_type": operation_type,
-                                "row_count": len(rows),
-                                "data": data
-                            }
-                        else:
-                            # For INSERT, UPDATE, DELETE
-                            conn.commit()  # Important: commit the transaction
-                            affected_rows = cursor.rowcount
-                            
-                            llm_result["execution_result"] = {
-                                "status": "success",
-                                "operation_type": operation_type,
-                                "affected_rows": affected_rows,
-                                "message": f"{operation_type} executed successfully"
-                            }
+                    # Convert to list of dicts
+                    data = []
+                    for row in rows:
+                        data.append(dict(zip(columns, row)))
+                    
+                    llm_result["execution_result"] = {
+                        "status": "success",
+                        "operation_type": operation_type,
+                        "row_count": len(rows),
+                        "data": data
+                    }
                 else:
-                    llm_result["execution_result"] = {"error": "Database connection failed"}
+                    # For INSERT, UPDATE, DELETE
+                    conn.commit()  # Important: commit the transaction
+                    affected_rows = cursor.rowcount
+                    
+                    llm_result["execution_result"] = {
+                        "status": "success",
+                        "operation_type": operation_type,
+                        "affected_rows": affected_rows,
+                        "message": f"{operation_type} executed successfully"
+                    }
+                    
+        except psycopg2.OperationalError as op_error:
+            # Connection error
+            error_msg = str(op_error)
+            print(f"ERROR: Connection error during LLM query execution: {error_msg}")
+            llm_result["execution_result"] = {
+                "error": f"Database connection error: {error_msg}",
+                "hint": "Check database connection settings"
+            }
+            
         except psycopg2.Error as db_error:
             # Database-specific error
             error_msg = str(db_error)
@@ -2269,12 +2306,28 @@ async def process_natural_query(request: Dict[str, Any]):
             
             # Rollback on error
             if conn:
-                conn.rollback()
-                
+                try:
+                    conn.rollback()
+                except:
+                    pass
+                    
         except Exception as e:
             # General error
             print(f"ERROR: General error during LLM query execution: {str(e)}")
             llm_result["execution_result"] = {"error": f"Execution error: {str(e)}"}
+            
+        finally:
+            # Clean up connections
+            if cursor:
+                try:
+                    cursor.close()
+                except:
+                    pass
+            if conn:
+                try:
+                    conn.close()
+                except:
+                    pass
     
     return llm_result
 
