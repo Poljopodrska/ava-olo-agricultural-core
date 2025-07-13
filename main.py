@@ -830,6 +830,76 @@ async def discover_complete_schema():
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
+# Diagnostics endpoint for troubleshooting
+@app.get("/api/diagnostics")
+async def run_diagnostics():
+    """Run database connection diagnostics"""
+    import subprocess
+    import sys
+    
+    try:
+        # Run psycopg2 diagnostics
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                # Get current database
+                cursor.execute("SELECT current_database()")
+                current_db = cursor.fetchone()[0]
+                
+                # Get all tables
+                cursor.execute("""
+                    SELECT tablename 
+                    FROM pg_tables 
+                    WHERE schemaname = 'public' 
+                    ORDER BY tablename
+                """)
+                tables = [row[0] for row in cursor.fetchall()]
+                
+                # Get farmers table columns
+                cursor.execute("""
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'farmers' 
+                    ORDER BY ordinal_position
+                """)
+                farmers_columns = cursor.fetchall()
+                
+                # Get sample farmer data
+                cursor.execute("SELECT * FROM farmers LIMIT 1")
+                sample_farmer = cursor.fetchone()
+                farmers_col_names = [desc[0] for desc in cursor.description]
+                
+                return {
+                    "status": "success",
+                    "current_database": current_db,
+                    "tables": tables,
+                    "farmers_columns": [{"name": col[0], "type": col[1]} for col in farmers_columns],
+                    "farmers_column_names": farmers_col_names,
+                    "sample_farmer_data": dict(zip(farmers_col_names, sample_farmer)) if sample_farmer else None,
+                    "environment": {
+                        "DB_HOST": "SET" if os.getenv('DB_HOST') else "MISSING",
+                        "DB_NAME": os.getenv('DB_NAME', 'Not set'),
+                        "DB_USER": os.getenv('DB_USER', 'Not set'),
+                        "DB_PORT": os.getenv('DB_PORT', '5432')
+                    }
+                }
+            else:
+                return {"status": "connection_failed", "error": "Could not establish database connection"}
+                
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "environment": {
+                "DB_HOST": "SET" if os.getenv('DB_HOST') else "MISSING",
+                "DB_NAME": os.getenv('DB_NAME', 'Not set'),
+                "DB_USER": os.getenv('DB_USER', 'Not set'),
+                "DB_PORT": os.getenv('DB_PORT', '5432')
+            }
+        }
+
 # Debug endpoint - check which database Count Farmers actually uses
 @app.get("/api/debug/status")
 async def debug_status():

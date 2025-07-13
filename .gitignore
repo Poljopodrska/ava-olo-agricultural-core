@@ -15,6 +15,7 @@ awscliv2.zip
 *.log
 
 # Environment
+.env
 .env.local
 .env.production
 
