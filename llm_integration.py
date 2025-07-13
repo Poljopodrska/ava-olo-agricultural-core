@@ -272,11 +272,58 @@ ORDER BY total_fertilizer_used DESC;
 
 ## 🎯 **OUTPUT RULES**
 1. Return ONLY the SQL query wrapped in ```sql``` code blocks
-2. Generate only SELECT queries for safety
+2. Generate SELECT, INSERT, UPDATE, or DELETE queries as appropriate
 3. Always use proper JOINs and foreign keys
 4. Handle NULL values with COALESCE when appropriate
 5. Use DISTINCT to avoid duplicates when joining multiple tables
 6. Include ORDER BY for better result presentation
+
+## 🔧 **DATA MODIFICATION OPERATIONS**
+
+You can generate INSERT, UPDATE, and DELETE statements in addition to SELECT queries.
+
+### **Data Entry Examples:**
+- "Add farmer John Smith from Croatia" → Generate INSERT INTO farmers
+- "I sprayed Prosaro on Field A today using 2.5L" → Generate INSERT INTO tasks + inventory_deductions + task_fields
+- "Update my corn yield expectation to 12 t/ha" → Generate UPDATE field_crops
+- "Remove task 123" → Generate DELETE FROM tasks WHERE id = 123
+
+### **Multi-table Operations:**
+For complex entries like recording activities, generate multiple related INSERTs wrapped in a transaction:
+```sql
+BEGIN;
+-- 1. Insert the task
+INSERT INTO tasks (task_type, description, date_performed, quantity, status, crop_name)
+VALUES ('spray', 'Prosaro application', CURRENT_DATE, 2.5, 'completed', 'wheat')
+RETURNING id;
+
+-- 2. Link to field (assuming we know field_id)
+INSERT INTO task_fields (task_id, field_id)
+VALUES (currval('tasks_id_seq'), 5);
+
+-- 3. Record inventory usage (assuming we know inventory_id)
+INSERT INTO inventory_deductions (task_id, inventory_id, quantity_used)
+VALUES (currval('tasks_id_seq'), 23, 2.5);
+COMMIT;
+```
+
+### **Smart Defaults:**
+- Use CURRENT_DATE for date_performed when "today" is mentioned
+- Use NOW() for timestamps
+- Generate appropriate foreign key lookups with subqueries when IDs are unknown
+- Handle farmer_id context (current logged-in farmer if provided)
+- Use RETURNING id for multi-table inserts
+
+### **Safety Rules:**
+- For UPDATEs, ALWAYS include specific WHERE clauses
+- For DELETEs, be very specific about what to delete
+- Use transactions (BEGIN/COMMIT) for multi-table operations
+- When field/product names are ambiguous, use LIKE matching with confirmation
+
+### **Context-Aware Queries:**
+If farmer context is provided, use it:
+- "Add field" → INSERT INTO fields (farmer_id, ...) VALUES ([context_farmer_id], ...)
+- "My fields" → SELECT ... WHERE farmer_id = [context_farmer_id]
 
 ## 🥭 **CONSTITUTIONAL MANGO RULE**
 This system MUST work for any farmer, any crop, any country, any language!"""
@@ -359,35 +406,71 @@ async def execute_llm_generated_query(sql_query: str, conn) -> Dict[str, Any]:
     if not sql_query:
         return {"error": "No SQL query provided"}
     
-    # Safety check: Only allow SELECT queries
-    if not sql_query.strip().upper().startswith('SELECT'):
-        return {"error": "Only SELECT queries allowed for safety"}
+    # Determine operation type
+    sql_upper = sql_query.strip().upper()
+    operation_type = "SELECT"
     
-    # Additional safety: Block potentially dangerous operations
-    dangerous_keywords = ['DROP', 'DELETE', 'UPDATE', 'INSERT', 'ALTER', 'CREATE', 'TRUNCATE', 'EXEC', 'EXECUTE']
-    sql_upper = sql_query.upper()
+    if sql_upper.startswith('INSERT'):
+        operation_type = "INSERT"
+    elif sql_upper.startswith('UPDATE'):
+        operation_type = "UPDATE"
+    elif sql_upper.startswith('DELETE'):
+        operation_type = "DELETE"
+    elif sql_upper.startswith('BEGIN'):
+        operation_type = "TRANSACTION"
     
+    # Safety check: Block dangerous operations without WHERE clause
+    if operation_type in ['UPDATE', 'DELETE']:
+        if 'WHERE' not in sql_upper:
+            return {
+                "error": f"{operation_type} without WHERE clause is too dangerous",
+                "requires_confirmation": True,
+                "operation_type": operation_type
+            }
+    
+    # Additional safety: Block schema-altering operations
+    dangerous_keywords = ['DROP TABLE', 'ALTER TABLE', 'CREATE TABLE', 'TRUNCATE', 'DROP DATABASE']
     for keyword in dangerous_keywords:
         if keyword in sql_upper:
-            return {"error": f"Query contains dangerous keyword: {keyword}"}
+            return {"error": f"Schema-altering operation not allowed: {keyword}"}
     
     try:
         if not conn:
             return {"error": "Database connection required"}
         
-        # Execute the query
-        result = await conn.fetch(sql_query)
-        
-        return {
-            "status": "success",
-            "sql_executed": sql_query,
-            "row_count": len(result),
-            "data": [dict(row) for row in result[:100]]  # Limit to 100 rows for safety
-        }
+        # For SELECT queries, use fetch
+        if operation_type == "SELECT":
+            result = await conn.fetch(sql_query)
+            return {
+                "status": "success",
+                "operation_type": operation_type,
+                "sql_executed": sql_query,
+                "row_count": len(result),
+                "data": [dict(row) for row in result[:100]]  # Limit to 100 rows
+            }
+        else:
+            # For INSERT, UPDATE, DELETE, use execute
+            result = await conn.execute(sql_query)
+            # Extract affected rows count from result string
+            affected_rows = 0
+            if result:
+                import re
+                match = re.search(r'(\d+)', result)
+                if match:
+                    affected_rows = int(match.group(1))
+            
+            return {
+                "status": "success",
+                "operation_type": operation_type,
+                "sql_executed": sql_query,
+                "affected_rows": affected_rows,
+                "message": f"{operation_type} executed successfully"
+            }
         
     except Exception as e:
         return {
             "status": "error",
+            "operation_type": operation_type,
             "sql_attempted": sql_query,
             "error": str(e)[:200]
         }

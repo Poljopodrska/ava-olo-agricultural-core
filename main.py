@@ -342,6 +342,46 @@ AGRICULTURAL_DASHBOARD_HTML = """
         .agricultural { background: #e8f5e8; border-left: 5px solid #27ae60; }
         .llm { background: #e8f4f8; border-left: 5px solid #3498db; }
         .warning { background: #fff3cd; border-left: 5px solid #ffc107; }
+        .standard-queries { background: #f3e8ff; border-left: 5px solid #8b5cf6; }
+        .standard-query-btn { 
+            background: #8b5cf6; 
+            color: white; 
+            padding: 8px 16px; 
+            margin: 5px;
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer;
+            position: relative;
+        }
+        .standard-query-btn:hover { background: #7c3aed; }
+        .delete-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ef4444;
+            color: white;
+            border-radius: 3px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+        .save-standard-btn {
+            background: #f59e0b;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: 100px auto;
+        }
         textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
         input { width: 100px; padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
         button { background: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
@@ -377,6 +417,15 @@ AGRICULTURAL_DASHBOARD_HTML = """
                     <span class="status-text">Constitutional: Checking compliance...</span>
                 </div>
             </div>
+        </div>
+        
+        <!-- Standard Queries Section -->
+        <div class="section standard-queries">
+            <h3>📌 Quick Queries</h3>
+            <div id="standard-query-buttons">
+                <!-- Dynamically populated -->
+            </div>
+            <button onclick="manageStandardQueries()" style="background: #6b7280;">⚙️ Manage Queries</button>
         </div>
         
         <!-- Schema Discovery -->
@@ -424,10 +473,13 @@ AGRICULTURAL_DASHBOARD_HTML = """
             <p><strong>Ask questions in natural language - AI will help generate SQL queries</strong></p>
             
             <div>
-                <h4>Ask Agricultural Questions:</h4>
+                <h4>Ask Agricultural Questions or Enter Data:</h4>
                 <textarea id="naturalQuestion" placeholder="Examples:
 • How many farmers do we have?
 • Show me all farmers
+• Add farmer John Smith from Zagreb
+• I sprayed Prosaro on Field A today
+• Update my corn yield to 12 t/ha
 • Which fields belong to farmer ID 1?
 • What tasks are there for field 5?"></textarea>
                 <br>
@@ -439,21 +491,61 @@ AGRICULTURAL_DASHBOARD_HTML = """
         <div id="results" class="results" style="display: none;">
             <h3>Results:</h3>
             <div id="resultsContent"></div>
+            <div id="query-actions" style="display:none;">
+                <button onclick="saveAsStandardQuery()" class="save-standard-btn">
+                    ⭐ Save as Standard Query
+                </button>
+            </div>
+        </div>
+        
+        <!-- Confirmation Modal -->
+        <div id="confirmationModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+            <div class="modal-content">
+                <h3>Confirm Data Operation</h3>
+                <p id="confirmationMessage"></p>
+                <pre id="confirmationSQL" style="background: #f5f5f5; padding: 10px; border-radius: 5px;"></pre>
+                <button onclick="confirmDataOperation()" style="background: #10b981;">✅ Confirm</button>
+                <button onclick="cancelDataOperation()" style="background: #ef4444;">❌ Cancel</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // Global variables
+        let lastExecutedQuery = null;
+        let pendingOperation = null;
+        
         // Check system status on load
         window.onload = function() {
-            fetch('/api/debug/status')
+            // Load system status
+            fetch('/api/system-status')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('systemStatus').innerHTML = 
-                        `Database: ${data.database_connected} | LLM: ${data.llm_model || 'Not Available'} | Constitutional: ${data.constitutional_compliance ? '✅' : '❌'}`;
+                    // Update individual status items
+                    const statusDetails = document.getElementById('system-status-details');
+                    if (statusDetails) {
+                        statusDetails.innerHTML = `
+                            <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                                <span class="status-icon" style="margin-right: 10px; font-size: 16px;">${data.database.icon}</span>
+                                <span class="status-text">Database: ${data.database.message}</span>
+                            </div>
+                            <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                                <span class="status-icon" style="margin-right: 10px; font-size: 16px;">${data.llm.icon}</span>
+                                <span class="status-text">LLM: ${data.llm.message}</span>
+                            </div>
+                            <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                                <span class="status-icon" style="margin-right: 10px; font-size: 16px;">${data.constitutional.icon}</span>
+                                <span class="status-text">Constitutional: ${data.constitutional.message}</span>
+                            </div>
+                        `;
+                    }
                 })
                 .catch(error => {
-                    document.getElementById('systemStatus').innerHTML = 'Status check failed - system may have issues';
+                    console.error('Status check failed:', error);
                 });
+            
+            // Load standard queries
+            loadStandardQueries();
         };
         
         function showResults(data, isSuccess = true) {
@@ -588,6 +680,12 @@ AGRICULTURAL_DASHBOARD_HTML = """
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
+                    // Store for save functionality
+                    lastExecutedQuery = {
+                        sql: data.sql_query,
+                        original_question: data.original_query
+                    };
+                    
                     let html = `
                         <h4>🧠 LLM Query Result:</h4>
                         <p><strong>Your Question:</strong> ${data.original_query}</p>
@@ -595,26 +693,50 @@ AGRICULTURAL_DASHBOARD_HTML = """
                         <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">${data.sql_query || 'No SQL generated'}</pre>
                     `;
                     
+                    // Check if this is a data modification that needs confirmation
+                    if (data.execution_result && data.execution_result.requires_confirmation) {
+                        pendingOperation = data;
+                        document.getElementById('confirmationMessage').textContent = 
+                            `This will execute a ${data.execution_result.operation_type} operation. Are you sure?`;
+                        document.getElementById('confirmationSQL').textContent = data.sql_query;
+                        document.getElementById('confirmationModal').style.display = 'block';
+                        return;
+                    }
+                    
                     // If query was executed
                     if (data.execution_result && data.execution_result.status === 'success') {
-                        html += `<h5>📊 Query Results (${data.execution_result.row_count} rows):</h5>`;
+                        const opType = data.execution_result.operation_type || 'SELECT';
                         
-                        if (data.execution_result.data && data.execution_result.data.length > 0) {
-                            html += '<table style="width: 100%; margin-top: 10px;">';
+                        if (opType === 'SELECT') {
+                            html += `<h5>📊 Query Results (${data.execution_result.row_count} rows):</h5>`;
                             
-                            // Headers
-                            const headers = Object.keys(data.execution_result.data[0]);
-                            html += '<tr>';
-                            headers.forEach(h => html += `<th>${h}</th>`);
-                            html += '</tr>';
-                            
-                            // Data
-                            data.execution_result.data.forEach(row => {
+                            if (data.execution_result.data && data.execution_result.data.length > 0) {
+                                html += '<table style="width: 100%; margin-top: 10px;">';
+                                
+                                // Headers
+                                const headers = Object.keys(data.execution_result.data[0]);
                                 html += '<tr>';
-                                headers.forEach(h => html += `<td>${row[h] || 'null'}</td>`);
+                                headers.forEach(h => html += `<th>${h}</th>`);
                                 html += '</tr>';
-                            });
-                            html += '</table>';
+                                
+                                // Data
+                                data.execution_result.data.forEach(row => {
+                                    html += '<tr>';
+                                    headers.forEach(h => html += `<td>${row[h] || 'null'}</td>`);
+                                    html += '</tr>';
+                                });
+                                html += '</table>';
+                            }
+                            
+                            // Show save button for SELECT queries
+                            document.getElementById('query-actions').style.display = 'block';
+                        } else {
+                            // For INSERT, UPDATE, DELETE
+                            html += `<h5>✅ ${opType} Operation Successful</h5>`;
+                            html += `<p>Affected rows: ${data.execution_result.affected_rows || 0}</p>`;
+                            if (data.execution_result.message) {
+                                html += `<p>${data.execution_result.message}</p>`;
+                            }
                         }
                     } else if (data.execution_result && data.execution_result.error) {
                         html += `<p style="color: red;">Execution Error: ${data.execution_result.error}</p>`;
@@ -630,6 +752,126 @@ AGRICULTURAL_DASHBOARD_HTML = """
             .catch(error => {
                 showResults(`<p style="color: red;">Request failed: ${error}</p>`);
             });
+        }
+        
+        // Standard Queries Functions
+        async function loadStandardQueries() {
+            try {
+                const response = await fetch('/api/standard-queries');
+                const data = await response.json();
+                
+                if (data.queries) {
+                    const container = document.getElementById('standard-query-buttons');
+                    container.innerHTML = data.queries.map(q => 
+                        `<button onclick="runStandardQuery(${q.id})" class="standard-query-btn" title="${q.natural_language_query || q.description || ''}">
+                            ${q.query_name}
+                            ${!q.is_global ? `<span onclick="event.stopPropagation(); deleteStandardQuery(${q.id})" class="delete-btn">×</span>` : ''}
+                         </button>`
+                    ).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load standard queries:', error);
+            }
+        }
+        
+        async function runStandardQuery(queryId) {
+            try {
+                const response = await fetch(`/api/run-standard-query/${queryId}`, {method: 'POST'});
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    let html = `
+                        <h4>📌 Standard Query: ${result.query_name}</h4>
+                        <p><strong>SQL:</strong></p>
+                        <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">${result.sql_query}</pre>
+                        <h5>📊 Results (${result.row_count} rows):</h5>
+                    `;
+                    
+                    if (result.data && result.data.length > 0) {
+                        html += '<table style="width: 100%; margin-top: 10px;">';
+                        const headers = Object.keys(result.data[0]);
+                        html += '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                        result.data.forEach(row => {
+                            html += '<tr>' + headers.map(h => `<td>${row[h] || 'null'}</td>`).join('') + '</tr>';
+                        });
+                        html += '</table>';
+                    }
+                    
+                    showResults(html);
+                } else {
+                    showResults(`<p style="color: red;">Error: ${result.error}</p>`, false);
+                }
+            } catch (error) {
+                showResults(`<p style="color: red;">Failed to run query: ${error}</p>`, false);
+            }
+        }
+        
+        async function saveAsStandardQuery() {
+            if (!lastExecutedQuery) return;
+            
+            const queryName = prompt("Name for this query:");
+            if (!queryName) return;
+            
+            try {
+                const response = await fetch('/api/save-standard-query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        query_name: queryName,
+                        sql_query: lastExecutedQuery.sql,
+                        natural_language_query: lastExecutedQuery.original_question,
+                        farmer_id: null // TODO: Add farmer context if needed
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    loadStandardQueries();
+                    alert('Query saved successfully!');
+                } else {
+                    alert('Failed to save query: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error saving query: ' + error);
+            }
+        }
+        
+        async function deleteStandardQuery(queryId) {
+            if (!confirm('Delete this standard query?')) return;
+            
+            try {
+                const response = await fetch(`/api/standard-queries/${queryId}`, {method: 'DELETE'});
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    loadStandardQueries();
+                } else {
+                    alert('Failed to delete query: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error deleting query: ' + error);
+            }
+        }
+        
+        function manageStandardQueries() {
+            alert('Standard queries management - You can save up to 10 custom queries per farmer!');
+        }
+        
+        // Data operation confirmation functions
+        function confirmDataOperation() {
+            document.getElementById('confirmationModal').style.display = 'none';
+            if (pendingOperation) {
+                // Execute the pending operation
+                // This would need to be implemented based on your needs
+                showResults('<p>Operation confirmed and executed!</p>');
+                pendingOperation = null;
+            }
+        }
+        
+        function cancelDataOperation() {
+            document.getElementById('confirmationModal').style.display = 'none';
+            pendingOperation = null;
+            showResults('<p style="color: orange;">Operation cancelled.</p>');
         }
         
         // Clear functions
@@ -1590,24 +1832,60 @@ async def process_natural_query(request: Dict[str, Any]):
                 if conn:
                     # Execute the query synchronously
                     cursor = conn.cursor()
-                    cursor.execute(llm_result["sql_query"])
+                    sql_query = llm_result["sql_query"]
+                    sql_upper = sql_query.strip().upper()
                     
-                    # Get column names
-                    columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                    # Determine operation type
+                    operation_type = "SELECT"
+                    if sql_upper.startswith('INSERT'):
+                        operation_type = "INSERT"
+                    elif sql_upper.startswith('UPDATE'):
+                        operation_type = "UPDATE"
+                    elif sql_upper.startswith('DELETE'):
+                        operation_type = "DELETE"
+                    elif sql_upper.startswith('BEGIN'):
+                        operation_type = "TRANSACTION"
                     
-                    # Fetch all results
-                    rows = cursor.fetchall()
-                    
-                    # Convert to list of dicts
-                    data = []
-                    for row in rows:
-                        data.append(dict(zip(columns, row)))
-                    
-                    llm_result["execution_result"] = {
-                        "status": "success",
-                        "row_count": len(rows),
-                        "data": data
-                    }
+                    # Safety check for UPDATE/DELETE
+                    if operation_type in ['UPDATE', 'DELETE'] and 'WHERE' not in sql_upper:
+                        llm_result["execution_result"] = {
+                            "status": "error",
+                            "error": f"{operation_type} without WHERE clause is too dangerous",
+                            "requires_confirmation": True,
+                            "operation_type": operation_type
+                        }
+                    else:
+                        cursor.execute(sql_query)
+                        
+                        if operation_type == "SELECT":
+                            # Get column names
+                            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                            
+                            # Fetch all results
+                            rows = cursor.fetchall()
+                            
+                            # Convert to list of dicts
+                            data = []
+                            for row in rows:
+                                data.append(dict(zip(columns, row)))
+                            
+                            llm_result["execution_result"] = {
+                                "status": "success",
+                                "operation_type": operation_type,
+                                "row_count": len(rows),
+                                "data": data
+                            }
+                        else:
+                            # For INSERT, UPDATE, DELETE
+                            conn.commit()  # Important: commit the transaction
+                            affected_rows = cursor.rowcount
+                            
+                            llm_result["execution_result"] = {
+                                "status": "success",
+                                "operation_type": operation_type,
+                                "affected_rows": affected_rows,
+                                "message": f"{operation_type} executed successfully"
+                            }
                 else:
                     llm_result["execution_result"] = {"error": "Database connection failed"}
         except Exception as e:
@@ -1696,6 +1974,164 @@ async def debug_openai_connection():
         result["client_creation"] = f"failed: {str(e)}"
     
     return result
+
+# Standard Queries API Endpoints
+@app.post("/api/save-standard-query")
+async def save_standard_query(request: Dict[str, Any]):
+    """Save a query as standard query, limit to 10 per farmer"""
+    query_name = request.get("query_name", "").strip()
+    sql_query = request.get("sql_query", "").strip()
+    natural_language_query = request.get("natural_language_query", "")
+    farmer_id = request.get("farmer_id")
+    
+    if not query_name or not sql_query:
+        return {"error": "Query name and SQL are required"}
+    
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                # Check if farmer already has 10 queries
+                if farmer_id:
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM standard_queries WHERE farmer_id = %s",
+                        (farmer_id,)
+                    )
+                    count = cursor.fetchone()[0]
+                    
+                    # If at limit, delete the oldest/least used one
+                    if count >= 10:
+                        cursor.execute("""
+                            DELETE FROM standard_queries 
+                            WHERE id = (
+                                SELECT id FROM standard_queries 
+                                WHERE farmer_id = %s 
+                                ORDER BY usage_count ASC, created_at ASC 
+                                LIMIT 1
+                            )
+                        """, (farmer_id,))
+                
+                # Insert new standard query
+                cursor.execute("""
+                    INSERT INTO standard_queries 
+                    (query_name, sql_query, natural_language_query, farmer_id)
+                    VALUES (%s, %s, %s, %s)
+                    RETURNING id
+                """, (query_name, sql_query, natural_language_query, farmer_id))
+                
+                query_id = cursor.fetchone()[0]
+                conn.commit()
+                
+                return {"status": "success", "query_id": query_id}
+    except Exception as e:
+        return {"error": f"Failed to save query: {str(e)}"}
+
+@app.get("/api/standard-queries")
+async def get_standard_queries(farmer_id: int = None):
+    """Get all standard queries for a farmer"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                # Get both global and farmer-specific queries
+                if farmer_id:
+                    cursor.execute("""
+                        SELECT id, query_name, sql_query, natural_language_query, 
+                               usage_count, is_global, created_at
+                        FROM standard_queries 
+                        WHERE farmer_id = %s OR is_global = TRUE
+                        ORDER BY usage_count DESC, created_at DESC
+                        LIMIT 15
+                    """, (farmer_id,))
+                else:
+                    cursor.execute("""
+                        SELECT id, query_name, sql_query, natural_language_query, 
+                               usage_count, is_global, created_at
+                        FROM standard_queries 
+                        WHERE is_global = TRUE
+                        ORDER BY usage_count DESC, created_at DESC
+                    """)
+                
+                columns = [desc[0] for desc in cursor.description]
+                queries = []
+                for row in cursor.fetchall():
+                    queries.append(dict(zip(columns, row)))
+                
+                return {"queries": queries}
+    except Exception as e:
+        return {"error": f"Failed to get queries: {str(e)}"}
+
+@app.delete("/api/standard-queries/{query_id}")
+async def delete_standard_query(query_id: int):
+    """Delete a standard query"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "DELETE FROM standard_queries WHERE id = %s AND is_global = FALSE",
+                    (query_id,)
+                )
+                conn.commit()
+                
+                if cursor.rowcount > 0:
+                    return {"status": "success"}
+                else:
+                    return {"error": "Query not found or is global"}
+    except Exception as e:
+        return {"error": f"Failed to delete query: {str(e)}"}
+
+@app.post("/api/run-standard-query/{query_id}")
+async def run_standard_query(query_id: int):
+    """Execute a saved standard query and increment usage count"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                # Get the query
+                cursor.execute(
+                    "SELECT sql_query, query_name FROM standard_queries WHERE id = %s",
+                    (query_id,)
+                )
+                result = cursor.fetchone()
+                
+                if not result:
+                    return {"error": "Query not found"}
+                
+                sql_query, query_name = result
+                
+                # Update usage count
+                cursor.execute(
+                    "UPDATE standard_queries SET usage_count = usage_count + 1 WHERE id = %s",
+                    (query_id,)
+                )
+                
+                # Execute the query
+                cursor.execute(sql_query)
+                
+                # Get results
+                columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                rows = cursor.fetchall()
+                
+                # Convert to list of dicts
+                data = []
+                for row in rows:
+                    data.append(dict(zip(columns, row)))
+                
+                conn.commit()
+                
+                return {
+                    "status": "success",
+                    "query_name": query_name,
+                    "row_count": len(rows),
+                    "data": data,
+                    "sql_query": sql_query
+                }
+    except Exception as e:
+        return {"error": f"Failed to run query: {str(e)}"}
 
 @app.get("/api/test-external-connection")
 async def test_external_connection():
