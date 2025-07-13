@@ -1690,26 +1690,34 @@ async def test_external_connection():
     # Test 2: Can we reach external HTTP?
     try:
         import httpx  # Using httpx since it's already in requirements
-        async with httpx.AsyncClient() as client:
-            response = await client.get('https://httpbin.org/get', timeout=5.0)
+        async with httpx.AsyncClient(verify=False) as client:  # Disable SSL verification for testing
+            response = await client.get('https://httpbin.org/get', timeout=10.0)  # Increased timeout
             results["external_http"] = f"✅ Success: {response.status_code}"
+    except httpx.ConnectTimeout:
+        results["external_http"] = "❌ Connection timeout - network routing issue"
+    except httpx.ReadTimeout:
+        results["external_http"] = "❌ Read timeout - slow connection"
     except Exception as e:
-        results["external_http"] = f"❌ Failed: {str(e)}"
+        results["external_http"] = f"❌ Failed: {type(e).__name__}: {str(e)}"
     
     # Test 3: Can we reach OpenAI specifically?
     api_key = os.getenv('OPENAI_API_KEY')
     if api_key:
         try:
             import httpx
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=False) as client:  # Disable SSL for testing
                 response = await client.get(
                     'https://api.openai.com/v1/models', 
                     headers={'Authorization': f'Bearer {api_key}'}, 
-                    timeout=5.0
+                    timeout=10.0  # Increased timeout
                 )
                 results["openai_api"] = f"✅ Success: {response.status_code}"
+        except httpx.ConnectTimeout:
+            results["openai_api"] = "❌ Connection timeout to OpenAI"
+        except httpx.ReadTimeout:
+            results["openai_api"] = "❌ Read timeout from OpenAI"
         except Exception as e:
-            results["openai_api"] = f"❌ Failed: {str(e)}"
+            results["openai_api"] = f"❌ Failed: {type(e).__name__}: {str(e)}"
     else:
         results["openai_api"] = "❌ No API key found"
     
