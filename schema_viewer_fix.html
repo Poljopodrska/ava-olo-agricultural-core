@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Schema Discovery</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+        .table-info { border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 8px; }
+        .columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+        .column { background: #f9f9f9; padding: 8px; border-radius: 4px; font-size: 0.9em; }
+        button { background: #27ae60; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; }
+        button:hover { background: #219a52; }
+        .sample-data { background: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        #schemaCopy { width: 100%; height: 400px; font-family: monospace; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Database Schema Discovery</h1>
+        <p>Discover the structure of your agricultural database</p>
+        
+        <button onclick="discoverSchema()">🔍 Discover Complete Schema</button>
+        
+        <div id="schemaResults" style="margin-top: 20px;"></div>
+    </div>
+    
+    <script>
+        function discoverSchema() {
+            document.getElementById('schemaResults').innerHTML = '<p>🔍 Discovering schema...</p>';
+            
+            fetch('/api/debug/discover-schema')
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<h2>Database Schema Discovery Results</h2>';
+                    
+                    if (data.status === 'success') {
+                        html += '<p><strong>Total Tables:</strong> ' + data.summary.total_tables + '</p>';
+                        html += '<p><strong>Tables with Data:</strong> ' + data.summary.tables_with_data + '</p>';
+                        
+                        // Show each table
+                        for (const [tableName, tableInfo] of Object.entries(data.schema_details)) {
+                            html += '<div class="table-info">';
+                            html += '<h3>📊 Table: ' + tableName + '</h3>';
+                            
+                            if (tableInfo.error) {
+                                html += '<p style="color: red;">Error: ' + tableInfo.error + '</p>';
+                            } else {
+                                html += '<p><strong>Rows:</strong> ' + tableInfo.row_count + '</p>';
+                                
+                                // Show columns
+                                html += '<h4>Columns:</h4>';
+                                html += '<div class="columns">';
+                                tableInfo.columns.forEach(col => {
+                                    html += '<div class="column">';
+                                    html += '<strong>' + col.name + '</strong><br>';
+                                    html += 'Type: ' + col.type + '<br>';
+                                    html += 'Nullable: ' + col.nullable;
+                                    html += '</div>';
+                                });
+                                html += '</div>';
+                                
+                                // Show sample data
+                                if (tableInfo.sample_data && tableInfo.sample_data.length > 0) {
+                                    html += '<h4>Sample Data:</h4>';
+                                    html += '<div class="sample-data">';
+                                    html += '<table border="1" style="width: 100%; border-collapse: collapse;">';
+                                    
+                                    // Header
+                                    html += '<tr>';
+                                    tableInfo.column_names.forEach(colName => {
+                                        html += '<th style="padding: 5px; background: #f0f0f0;">' + colName + '</th>';
+                                    });
+                                    html += '</tr>';
+                                    
+                                    // Data rows
+                                    tableInfo.sample_data.forEach(row => {
+                                        html += '<tr>';
+                                        row.forEach(cell => {
+                                            html += '<td style="padding: 5px;">' + (cell || 'NULL') + '</td>';
+                                        });
+                                        html += '</tr>';
+                                    });
+                                    
+                                    html += '</table>';
+                                    html += '</div>';
+                                }
+                                
+                                // Generate simple query
+                                html += '<h4>Simple Query:</h4>';
+                                html += '<pre>SELECT * FROM ' + tableName + ' LIMIT 10;</pre>';
+                            }
+                            
+                            html += '</div>';
+                        }
+                        
+                        // Add copyable text version at the bottom
+                        html += '<hr style="margin: 40px 0;">';
+                        html += '<h2>📋 Copyable Schema Summary</h2>';
+                        html += '<p>Copy this text to share the schema:</p>';
+                        html += '<textarea id="schemaCopy" readonly>';
+                        
+                        // Build copyable text
+                        let schemaText = 'DATABASE SCHEMA SUMMARY\n';
+                        schemaText += '======================\n\n';
+                        
+                        for (const [tableName, tableInfo] of Object.entries(data.schema_details)) {
+                            if (!tableInfo.error) {
+                                schemaText += 'TABLE: ' + tableName + '\n';
+                                schemaText += 'Rows: ' + tableInfo.row_count + '\n';
+                                schemaText += 'Columns:\n';
+                                
+                                tableInfo.columns.forEach(col => {
+                                    schemaText += '  - ' + col.name + ' (' + col.type + ') ';
+                                    schemaText += (col.nullable === 'NO' ? 'NOT NULL' : 'NULL') + '\n';
+                                });
+                                
+                                schemaText += '\n';
+                            }
+                        }
+                        
+                        // Add relationships section
+                        schemaText += 'KEY RELATIONSHIPS:\n';
+                        schemaText += '==================\n';
+                        
+                        // Try to identify foreign keys
+                        for (const [tableName, tableInfo] of Object.entries(data.schema_details)) {
+                            if (!tableInfo.error && tableInfo.columns) {
+                                tableInfo.columns.forEach(col => {
+                                    if (col.name.endsWith('_id') && col.name !== 'id') {
+                                        schemaText += tableName + '.' + col.name;
+                                        schemaText += ' -> likely references ';
+                                        schemaText += col.name.replace('_id', 's') + '.id\n';
+                                    }
+                                });
+                            }
+                        }
+                        
+                        html += schemaText;
+                        html += '</textarea>';
+                        html += '<br><button onclick="copySchema()" style="margin-top: 10px;">📋 Copy to Clipboard</button>';
+                        
+                    } else {
+                        html += '<p style="color: red;">Error: ' + data.error + '</p>';
+                    }
+                    
+                    document.getElementById('schemaResults').innerHTML = html;
+                })
+                .catch(error => {
+                    document.getElementById('schemaResults').innerHTML = '<p style="color: red;">Request failed: ' + error + '</p>';
+                });
+        }
+        
+        function copySchema() {
+            const textarea = document.getElementById('schemaCopy');
+            textarea.select();
+            document.execCommand('copy');
+            alert('Schema copied to clipboard!');
+        }
+    </script>
+</body>
+</html>

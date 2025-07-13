@@ -777,6 +777,15 @@ async def diagnostics_viewer():
 @app.get("/schema/", response_class=HTMLResponse)
 async def schema_viewer():
     """Simple schema viewer interface"""
+    # Read the fixed HTML file
+    with open('schema_viewer_fix.html', 'r') as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
+
+# Old version kept for reference
+@app.get("/schema-old/", response_class=HTMLResponse)
+async def schema_viewer_old():
+    """Old schema viewer interface"""
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html>
