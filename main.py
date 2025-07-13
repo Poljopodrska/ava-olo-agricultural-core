@@ -1584,11 +1584,16 @@ async def process_natural_query(request: Dict[str, Any]):
     
     if llm_result.get("ready_to_execute") and llm_result.get("sql_query"):
         # Execute the generated SQL
-        conn = await async_get_db_connection()
-        if conn:
-            execution_result = await execute_llm_generated_query(llm_result["sql_query"], conn)
-            await conn.close()
-            llm_result["execution_result"] = execution_result
+        try:
+            conn = await async_get_db_connection()
+            if conn:
+                execution_result = await execute_llm_generated_query(llm_result["sql_query"], conn)
+                await conn.close()
+                llm_result["execution_result"] = execution_result
+            else:
+                llm_result["execution_result"] = {"error": "Database connection failed"}
+        except Exception as e:
+            llm_result["execution_result"] = {"error": f"Execution error: {str(e)}"}
     
     return llm_result
 
