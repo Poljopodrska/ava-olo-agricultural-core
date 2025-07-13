@@ -10,21 +10,23 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 # Constitutional Error Isolation - Import OpenAI safely
-try:
-    import openai
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    OPENAI_AVAILABLE = bool(OPENAI_API_KEY and len(OPENAI_API_KEY) > 10)
-    if OPENAI_AVAILABLE:
-        openai.api_key = OPENAI_API_KEY
-        print(f"DEBUG: OpenAI configured with key: {OPENAI_API_KEY[:10]}...")
-    else:
-        print(f"DEBUG: OpenAI key issue - Key present: {bool(OPENAI_API_KEY)}, Length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
-except ImportError as import_error:
-    OPENAI_AVAILABLE = False
-    print(f"DEBUG: OpenAI import failed: {import_error}")
-except Exception as config_error:
-    OPENAI_AVAILABLE = False
-    print(f"DEBUG: OpenAI config failed: {config_error}")
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+OPENAI_AVAILABLE = False
+
+# Check if API key exists
+if OPENAI_API_KEY and len(OPENAI_API_KEY) > 10:
+    try:
+        # For OpenAI 1.x, we just need to check if import works
+        # The actual client is created in llm_integration.py
+        from openai import OpenAI
+        OPENAI_AVAILABLE = True
+        print(f"DEBUG: OpenAI available with key: {OPENAI_API_KEY[:10]}...")
+    except ImportError as e:
+        print(f"DEBUG: OpenAI import failed: {e}")
+    except Exception as e:
+        print(f"DEBUG: OpenAI setup error: {e}")
+else:
+    print(f"DEBUG: OpenAI key issue - Present: {bool(OPENAI_API_KEY)}, Length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
 
 app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 
@@ -320,44 +322,7 @@ async def get_field_tasks(farmer_id: int, field_id: int):
     except Exception as e:
         return {"status": "error", "error": f"Database query failed: {str(e)}"}
 
-# PART 2: LLM Query Assistant (SAFE VERSION)
-async def llm_natural_language_query(user_question: str):
-    """LLM-powered natural language query with constitutional safety"""
-    if not OPENAI_AVAILABLE:
-        return {
-            "status": "llm_unavailable",
-            "error": "OpenAI API key not configured",
-            "fallback_message": "LLM features require OPENAI_API_KEY environment variable. Standard queries still work.",
-            "constitutional_note": "Error isolation - system remains operational"
-        }
-    
-    try:
-        # Simple LLM implementation for now
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are an agricultural database assistant. Convert questions to simple SQL SELECT queries for farmers, fields, and tasks tables."},
-                {"role": "user", "content": f"Convert to SQL: {user_question}"}
-            ],
-            max_tokens=100,
-            temperature=0
-        )
-        
-        sql_suggestion = response.choices[0].message.content.strip()
-        
-        return {
-            "status": "llm_success",
-            "user_question": user_question,
-            "sql_suggestion": sql_suggestion,
-            "note": "LLM query generation active - execute manually in database interface"
-        }
-        
-    except Exception as e:
-        return {
-            "status": "llm_error",
-            "error": str(e),
-            "constitutional_note": "LLM error isolated - standard queries still work"
-        }
+# PART 2: LLM Query Assistant is now in llm_integration.py
 
 # Request models
 class NaturalQueryRequest(BaseModel):
@@ -1110,10 +1075,7 @@ async def api_farmer_fields(farmer_id: int):
 async def api_field_tasks(farmer_id: int, field_id: int):
     return await get_field_tasks(farmer_id, field_id)
 
-# PART 2: LLM Natural Language Query API (SAFE VERSION)
-@app.post("/api/llm/natural-query")
-async def api_natural_query(request: NaturalQueryRequest):
-    return await llm_natural_language_query(request.question)
+# PART 2: LLM Natural Language Query API moved to new endpoints below
 
 # Add this schema discovery endpoint to main.py
 @app.get("/api/debug/discover-schema")
