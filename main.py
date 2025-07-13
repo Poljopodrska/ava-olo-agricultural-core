@@ -739,7 +739,13 @@ AGRICULTURAL_DASHBOARD_HTML = """
                             }
                         }
                     } else if (data.execution_result && data.execution_result.error) {
-                        html += `<p style="color: red;">Execution Error: ${data.execution_result.error}</p>`;
+                        html += `<div style="background: #ffebee; padding: 15px; border-radius: 5px; margin: 10px 0;">`;
+                        html += `<p style="color: red; margin: 0;"><strong>Execution Error:</strong></p>`;
+                        html += `<p style="color: #c62828; margin: 5px 0;">${data.execution_result.error}</p>`;
+                        if (data.execution_result.hint) {
+                            html += `<p style="color: #666; margin: 5px 0;"><strong>Hint:</strong> ${data.execution_result.hint}</p>`;
+                        }
+                        html += `</div>`;
                     }
                     
                     showResults(html);
@@ -2242,7 +2248,32 @@ async def process_natural_query(request: Dict[str, Any]):
                             }
                 else:
                     llm_result["execution_result"] = {"error": "Database connection failed"}
+        except psycopg2.Error as db_error:
+            # Database-specific error
+            error_msg = str(db_error)
+            print(f"ERROR: Database error during LLM query execution: {error_msg}")
+            
+            # Extract useful error info
+            if "null value in column" in error_msg:
+                llm_result["execution_result"] = {
+                    "error": f"Database error: Missing required field. {error_msg}",
+                    "hint": "Make sure all required fields are included in the INSERT statement"
+                }
+            elif "violates foreign key constraint" in error_msg:
+                llm_result["execution_result"] = {
+                    "error": f"Database error: Invalid reference. {error_msg}",
+                    "hint": "Check that referenced IDs exist in related tables"
+                }
+            else:
+                llm_result["execution_result"] = {"error": f"Database error: {error_msg}"}
+            
+            # Rollback on error
+            if conn:
+                conn.rollback()
+                
         except Exception as e:
+            # General error
+            print(f"ERROR: General error during LLM query execution: {str(e)}")
             llm_result["execution_result"] = {"error": f"Execution error: {str(e)}"}
     
     return llm_result

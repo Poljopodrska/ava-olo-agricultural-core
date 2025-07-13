@@ -283,10 +283,25 @@ ORDER BY total_fertilizer_used DESC;
 You can generate INSERT, UPDATE, and DELETE statements in addition to SELECT queries.
 
 ### **Data Entry Examples:**
-- "Add farmer John Smith from Croatia" → Generate INSERT INTO farmers
+- "Add farmer John Smith from Croatia" → Generate INSERT INTO farmers with ALL required fields:
+  ```sql
+  INSERT INTO farmers (farm_name, manager_name, manager_last_name, city, country, phone, wa_phone_number, email, state_farm_number)
+  VALUES ('Smith Farm', 'John', 'Smith', 'Zagreb', 'Croatia', NULL, NULL, NULL, NULL);
+  ```
+- "Add farmer Nazif Avdić wa number 334556" → Generate:
+  ```sql
+  INSERT INTO farmers (farm_name, manager_name, manager_last_name, city, country, phone, wa_phone_number, email, state_farm_number)
+  VALUES ('Avdić Farm', 'Nazif', 'Avdić', NULL, NULL, NULL, '334556', NULL, NULL);
+  ```
 - "I sprayed Prosaro on Field A today using 2.5L" → Generate INSERT INTO tasks + inventory_deductions + task_fields
 - "Update my corn yield expectation to 12 t/ha" → Generate UPDATE field_crops
 - "Remove task 123" → Generate DELETE FROM tasks WHERE id = 123
+
+IMPORTANT: For farmers table, ALWAYS include these columns in INSERT:
+- farm_name (can be derived from manager name + ' Farm' if not specified)
+- manager_name (first name)
+- manager_last_name (last name if provided, otherwise NULL)
+- Other fields can be NULL if not specified
 
 ### **Multi-table Operations:**
 For complex entries like recording activities, generate multiple related INSERTs wrapped in a transaction:
