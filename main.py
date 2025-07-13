@@ -145,12 +145,12 @@ async def get_all_farmers():
                     # Try to get actual data using discovered columns
                     if column_names:
                         # Use actual column names discovered from schema
-                        # Prioritize id, name, email if they exist
-                        preferred_columns = ['id', 'name', 'email']
+                        # Fixed: Use correct column names from schema
+                        preferred_columns = ['id', 'farm_name', 'manager_name', 'email', 'city', 'country']
                         select_columns = [col for col in preferred_columns if col in column_names]
                         if not select_columns:
-                            select_columns = column_names[:3]  # Fallback to first 3 columns
-                        select_query = f"SELECT {', '.join(select_columns)} FROM farmers LIMIT 5"
+                            select_columns = column_names[:5]  # Fallback to first 5 columns
+                        select_query = f"SELECT {', '.join(select_columns)} FROM farmers LIMIT 10"
                         
                         cursor.execute(select_query)
                         results = cursor.fetchall()
@@ -197,10 +197,10 @@ async def get_farmer_fields(farmer_id: int):
             if conn:
                 cursor = conn.cursor()
                 
-                # Try full query first, then fallback
+                # FIXED: Use correct column names from schema
                 try:
                     cursor.execute("""
-                        SELECT field_id, field_name, area_hectares, location
+                        SELECT id, field_name, area_ha, country, notes
                         FROM fields 
                         WHERE farmer_id = %s 
                         ORDER BY field_name
@@ -214,14 +214,15 @@ async def get_farmer_fields(farmer_id: int):
                         fields.append({
                             "field_id": r[0],
                             "field_name": r[1] if r[1] else "N/A",
-                            "area_hectares": r[2] if len(r) > 2 and r[2] else "N/A",
-                            "location": r[3] if len(r) > 3 and r[3] else "N/A"
+                            "area_ha": r[2] if len(r) > 2 and r[2] else "N/A",
+                            "country": r[3] if len(r) > 3 and r[3] else "N/A",
+                            "notes": r[4] if len(r) > 4 and r[4] else "N/A"
                         })
                     
                 except psycopg2.Error as schema_error:
                     # Fallback query with minimal columns
                     cursor.execute("""
-                        SELECT field_id, field_name 
+                        SELECT id, field_name 
                         FROM fields 
                         WHERE farmer_id = %s 
                         ORDER BY field_name
@@ -235,8 +236,9 @@ async def get_farmer_fields(farmer_id: int):
                         fields.append({
                             "field_id": r[0],
                             "field_name": r[1] if r[1] else "N/A",
-                            "area_hectares": "N/A",
-                            "location": "N/A"
+                            "area_ha": "N/A",
+                            "country": "N/A",
+                            "notes": "N/A"
                         })
                 
                 return {"status": "success", "fields": fields, "total": len(fields)}
@@ -246,20 +248,30 @@ async def get_farmer_fields(farmer_id: int):
         return {"status": "error", "error": f"Database query failed: {str(e)}"}
 
 async def get_field_tasks(farmer_id: int, field_id: int):
-    """Standard Query: List all tasks on specific field of specific farmer - FIXED VERSION"""
+    """Standard Query: List all tasks on specific field - FIXED VERSION using task_fields junction"""
     try:
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
                 
                 try:
+                    # FIXED: Use task_fields junction table
                     cursor.execute("""
-                        SELECT task_id, task_name, task_type, status, due_date, description
-                        FROM tasks 
-                        WHERE farmer_id = %s AND field_id = %s 
-                        ORDER BY due_date DESC
+                        SELECT 
+                            t.id, 
+                            t.task_type, 
+                            t.description, 
+                            t.status, 
+                            t.date_performed, 
+                            t.crop_name,
+                            t.quantity,
+                            t.rate_per_ha
+                        FROM tasks t
+                        INNER JOIN task_fields tf ON t.id = tf.task_id
+                        WHERE tf.field_id = %s 
+                        ORDER BY t.date_performed DESC
                         LIMIT 20
-                    """, (farmer_id, field_id))
+                    """, (field_id,))
                     results = cursor.fetchall()
                     cursor.close()
                     
@@ -267,21 +279,24 @@ async def get_field_tasks(farmer_id: int, field_id: int):
                     for r in results:
                         tasks.append({
                             "task_id": r[0],
-                            "task_name": r[1] if r[1] else "N/A",
-                            "task_type": r[2] if len(r) > 2 and r[2] else "N/A",
+                            "task_type": r[1] if r[1] else "N/A",
+                            "description": r[2] if len(r) > 2 and r[2] else "N/A",
                             "status": r[3] if len(r) > 3 and r[3] else "N/A",
-                            "due_date": str(r[4]) if len(r) > 4 and r[4] else None,
-                            "description": r[5] if len(r) > 5 and r[5] else "N/A"
+                            "date_performed": str(r[4]) if len(r) > 4 and r[4] else None,
+                            "crop_name": r[5] if len(r) > 5 and r[5] else "N/A",
+                            "quantity": r[6] if len(r) > 6 and r[6] else "N/A",
+                            "rate_per_ha": r[7] if len(r) > 7 and r[7] else "N/A"
                         })
                     
                 except psycopg2.Error as schema_error:
                     # Fallback query with minimal columns
                     cursor.execute("""
-                        SELECT task_id, task_name 
-                        FROM tasks 
-                        WHERE farmer_id = %s AND field_id = %s 
+                        SELECT t.id, t.task_type 
+                        FROM tasks t
+                        INNER JOIN task_fields tf ON t.id = tf.task_id
+                        WHERE tf.field_id = %s 
                         LIMIT 20
-                    """, (farmer_id, field_id))
+                    """, (field_id,))
                     results = cursor.fetchall()
                     cursor.close()
                     
@@ -289,11 +304,13 @@ async def get_field_tasks(farmer_id: int, field_id: int):
                     for r in results:
                         tasks.append({
                             "task_id": r[0],
-                            "task_name": r[1] if r[1] else "N/A",
-                            "task_type": "N/A",
+                            "task_type": r[1] if r[1] else "N/A",
+                            "description": "N/A",
                             "status": "N/A",
-                            "due_date": None,
-                            "description": "N/A"
+                            "date_performed": None,
+                            "crop_name": "N/A",
+                            "quantity": "N/A",
+                            "rate_per_ha": "N/A"
                         })
                 
                 return {"status": "success", "tasks": tasks, "total": len(tasks)}
@@ -1334,6 +1351,36 @@ async def get_essential_schema():
                 return {"status": "connection_failed"}
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+# Import async functions from db_connection_fixed
+from db_connection_fixed import (
+    get_farmer_with_fields_and_tasks,
+    get_field_with_crops,
+    get_farmer_fields as async_get_farmer_fields,
+    get_field_tasks as async_get_field_tasks,
+    get_all_farmers as async_get_all_farmers
+)
+
+# New API endpoints using correct async functions
+@app.get("/api/farmers/{farmer_id}/fields")
+async def api_get_farmer_fields(farmer_id: int):
+    """API endpoint for farmer's fields using async function"""
+    return await async_get_farmer_fields(farmer_id)
+
+@app.get("/api/fields/{field_id}/tasks") 
+async def api_get_field_tasks(field_id: int):
+    """API endpoint for field's tasks using async function"""
+    return await async_get_field_tasks(field_id)
+
+@app.get("/api/farmers/{farmer_id}/complete")
+async def api_get_farmer_complete(farmer_id: int):
+    """API endpoint for complete farmer information"""
+    return await get_farmer_with_fields_and_tasks(farmer_id)
+
+@app.get("/api/fields/{field_id}/complete")
+async def api_get_field_complete(field_id: int):
+    """API endpoint for complete field information"""
+    return await get_field_with_crops(field_id)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)

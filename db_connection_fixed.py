@@ -158,17 +158,27 @@ async def get_farmer_count():
         return {"error": str(e)}
 
 async def get_all_farmers():
-    """Get all farmers using CORRECT column names"""
+    """Get all farmers using CORRECT column names from schema"""
     conn = await get_constitutional_db_connection()
     if not conn:
         return {"error": "Database connection failed"}
     
     try:
-        # Use actual column names: id, name, email (not farmer_id, farm_name)
+        # FIXED: Use actual column names from farmers table
         farmers = await conn.fetch("""
-            SELECT id, name, email, created_at
+            SELECT 
+                id,
+                state_farm_number,
+                farm_name,
+                manager_name,
+                manager_last_name,
+                email,
+                phone,
+                wa_phone_number,
+                city,
+                country
             FROM farmers 
-            ORDER BY created_at DESC
+            ORDER BY farm_name, manager_name
         """)
         
         await conn.close()
@@ -183,24 +193,35 @@ async def get_all_farmers():
         return {"error": str(e)}
 
 async def get_farmer_fields(farmer_id: int):
-    """Get fields for a farmer using CORRECT foreign key"""
+    """Get fields for a farmer using CORRECT foreign key: farmer_id"""
     conn = await get_constitutional_db_connection()
     if not conn:
         return {"error": "Database connection failed"}
     
     try:
-        # First, check what the actual foreign key column is called
+        # FIXED: Use farmer_id (confirmed from schema)
         fields = await conn.fetch("""
-            SELECT * FROM fields 
-            WHERE farmer_id = $1 OR owner_id = $1 
-            LIMIT 10
+            SELECT 
+                id,
+                field_name,
+                area_ha,
+                latitude,
+                longitude,
+                blok_id,
+                raba,
+                country,
+                notes
+            FROM fields 
+            WHERE farmer_id = $1 
+            ORDER BY field_name
         """, farmer_id)
         
         await conn.close()
         
         return {
             "fields": [dict(row) for row in fields],
-            "count": len(fields)
+            "count": len(fields),
+            "farmer_id": farmer_id
         }
         
     except Exception as e:
@@ -208,24 +229,161 @@ async def get_farmer_fields(farmer_id: int):
         return {"error": str(e)}
 
 async def get_field_tasks(field_id: int):
-    """Get tasks for a field using CORRECT foreign key"""
+    """Get tasks for a field using CORRECT relationship: task_fields junction table"""
     conn = await get_constitutional_db_connection()
     if not conn:
         return {"error": "Database connection failed"}
     
     try:
+        # FIXED: Use task_fields junction table to link fields and tasks
         tasks = await conn.fetch("""
-            SELECT * FROM tasks 
-            WHERE field_id = $1 
-            ORDER BY created_at DESC
-            LIMIT 20
+            SELECT 
+                t.id,
+                t.task_type,
+                t.description,
+                t.quantity,
+                t.date_performed,
+                t.status,
+                t.notes,
+                t.crop_name,
+                t.rate_per_ha,
+                t.rate_unit
+            FROM tasks t
+            INNER JOIN task_fields tf ON t.id = tf.task_id
+            WHERE tf.field_id = $1 
+            ORDER BY t.date_performed DESC, t.id DESC
+            LIMIT 50
         """, field_id)
         
         await conn.close()
         
         return {
             "tasks": [dict(row) for row in tasks],
-            "count": len(tasks)
+            "count": len(tasks),
+            "field_id": field_id
+        }
+        
+    except Exception as e:
+        await conn.close()
+        return {"error": str(e)}
+
+async def get_farmer_with_fields_and_tasks(farmer_id: int):
+    """
+    Get complete farmer information with fields and recent tasks
+    🥭 Constitutional: Works for any farmer (Bulgarian mango farmers included!)
+    """
+    conn = await get_constitutional_db_connection()
+    if not conn:
+        return {"error": "Database connection failed"}
+    
+    try:
+        # Get farmer info
+        farmer = await conn.fetchrow("""
+            SELECT * FROM farmers WHERE id = $1
+        """, farmer_id)
+        
+        if not farmer:
+            await conn.close()
+            return {"error": "Farmer not found"}
+        
+        # Get farmer's fields
+        fields = await conn.fetch("""
+            SELECT 
+                id, field_name, area_ha, country
+            FROM fields 
+            WHERE farmer_id = $1 
+            ORDER BY field_name
+        """, farmer_id)
+        
+        # Get recent tasks for this farmer's fields
+        recent_tasks = await conn.fetch("""
+            SELECT 
+                t.id,
+                t.task_type,
+                t.date_performed,
+                t.crop_name,
+                f.field_name
+            FROM tasks t
+            INNER JOIN task_fields tf ON t.id = tf.task_id
+            INNER JOIN fields f ON tf.field_id = f.id
+            WHERE f.farmer_id = $1 
+            ORDER BY t.date_performed DESC
+            LIMIT 20
+        """, farmer_id)
+        
+        await conn.close()
+        
+        return {
+            "farmer": dict(farmer),
+            "fields": [dict(row) for row in fields],
+            "recent_tasks": [dict(row) for row in recent_tasks],
+            "field_count": len(fields),
+            "recent_task_count": len(recent_tasks)
+        }
+        
+    except Exception as e:
+        await conn.close()
+        return {"error": str(e)}
+
+async def get_field_with_crops(field_id: int):
+    """
+    Get field information with crop history
+    """
+    conn = await get_constitutional_db_connection()
+    if not conn:
+        return {"error": "Database connection failed"}
+    
+    try:
+        # Get field info
+        field = await conn.fetchrow("""
+            SELECT 
+                f.*,
+                fa.farm_name,
+                fa.manager_name
+            FROM fields f
+            LEFT JOIN farmers fa ON f.farmer_id = fa.id
+            WHERE f.id = $1
+        """, field_id)
+        
+        if not field:
+            await conn.close()
+            return {"error": "Field not found"}
+        
+        # Get crop history for this field
+        crops = await conn.fetch("""
+            SELECT 
+                crop_name,
+                variety,
+                expected_yield_t_ha,
+                start_year_int,
+                start_date,
+                end_date
+            FROM field_crops 
+            WHERE field_id = $1 
+            ORDER BY start_year_int DESC, start_date DESC
+        """, field_id)
+        
+        # Get soil data if available
+        soil_data = await conn.fetch("""
+            SELECT 
+                analysis_date,
+                ph,
+                p2o5_mg_100g,
+                k2o_mg_100g,
+                organic_matter_percent,
+                analysis_institution
+            FROM field_soil_data 
+            WHERE field_id = $1 
+            ORDER BY analysis_date DESC
+        """, field_id)
+        
+        await conn.close()
+        
+        return {
+            "field": dict(field),
+            "crops": [dict(row) for row in crops],
+            "soil_data": [dict(row) for row in soil_data],
+            "crop_count": len(crops)
         }
         
     except Exception as e:
