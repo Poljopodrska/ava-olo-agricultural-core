@@ -876,11 +876,63 @@ async def schema_viewer():
                             html += `<p style="color: red;">Error: ${data.error}</p>`;
                         }
                         
+                        // Add copyable text version at the bottom
+                        if (data.status === 'success' && data.schema_details) {
+                            html += '<hr style="margin: 40px 0;">';
+                            html += '<h2>📋 Copyable Schema Summary</h2>';
+                            html += '<p>Copy this text to share the schema:</p>';
+                            html += '<textarea id="schemaCopy" style="width: 100%; height: 400px; font-family: monospace; padding: 10px; border: 1px solid #ddd; border-radius: 5px;" readonly>';
+                            
+                            // Build copyable text
+                            let schemaText = 'DATABASE SCHEMA SUMMARY\n';
+                            schemaText += '======================\n\n';
+                            
+                            for (const [tableName, tableInfo] of Object.entries(data.schema_details)) {
+                                if (!tableInfo.error) {
+                                    schemaText += `TABLE: ${tableName}\n`;
+                                    schemaText += `Rows: ${tableInfo.row_count}\n`;
+                                    schemaText += `Columns:\n`;
+                                    
+                                    tableInfo.columns.forEach(col => {
+                                        schemaText += `  - ${col.name} (${col.type}) ${col.nullable === 'NO' ? 'NOT NULL' : 'NULL'}\n`;
+                                    });
+                                    
+                                    schemaText += '\n';
+                                }
+                            }
+                            
+                            // Add relationships section
+                            schemaText += 'KEY RELATIONSHIPS:\n';
+                            schemaText += '==================\n';
+                            
+                            // Try to identify foreign keys
+                            for (const [tableName, tableInfo] of Object.entries(data.schema_details)) {
+                                if (!tableInfo.error && tableInfo.columns) {
+                                    tableInfo.columns.forEach(col => {
+                                        if (col.name.endsWith('_id') && col.name !== 'id') {
+                                            schemaText += `${tableName}.${col.name} -> likely references ${col.name.replace('_id', 's')}.id\n`;
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            html += schemaText;
+                            html += '</textarea>';
+                            html += '<button onclick="copySchema()" style="margin-top: 10px;">📋 Copy to Clipboard</button>';
+                        }
+                        
                         document.getElementById('schemaResults').innerHTML = html;
                     })
                     .catch(error => {
                         document.getElementById('schemaResults').innerHTML = `<p style="color: red;">Request failed: ${error}</p>`;
                     });
+            }
+            
+            function copySchema() {
+                const textarea = document.getElementById('schemaCopy');
+                textarea.select();
+                document.execCommand('copy');
+                alert('Schema copied to clipboard!');
             }
         </script>
     </body>
@@ -1204,6 +1256,75 @@ async def debug_status():
         "openai_key_configured": OPENAI_AVAILABLE,
         "openai_debug": openai_debug
     }
+
+# Essential schema endpoint for quick reference
+@app.get("/api/essential-schema")
+async def get_essential_schema():
+    """
+    Get essential schema for farmers, fields, tasks relationships
+    🎯 Purpose: Focus on tables needed for dashboard
+    """
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                essential_tables = ['farmers', 'fields', 'tasks', 'field_crops']
+                schema = {}
+                
+                for table_name in essential_tables:
+                    try:
+                        # Check if table exists
+                        cursor.execute("""
+                            SELECT EXISTS (
+                                SELECT FROM information_schema.tables 
+                                WHERE table_schema = 'public' 
+                                AND table_name = %s
+                            )
+                        """, (table_name,))
+                        exists = cursor.fetchone()[0]
+                        
+                        if not exists:
+                            schema[table_name] = {"exists": False}
+                            continue
+                        
+                        # Get columns
+                        cursor.execute("""
+                            SELECT column_name, data_type, is_nullable
+                            FROM information_schema.columns 
+                            WHERE table_name = %s 
+                            ORDER BY ordinal_position
+                        """, (table_name,))
+                        columns = cursor.fetchall()
+                        
+                        # Get row count
+                        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                        row_count = cursor.fetchone()[0]
+                        
+                        # Get sample data (first 2 rows)
+                        column_names = [col[0] for col in columns]
+                        if column_names:
+                            cursor.execute(f"SELECT {', '.join(column_names)} FROM {table_name} LIMIT 2")
+                            sample_data = cursor.fetchall()
+                        else:
+                            sample_data = []
+                        
+                        schema[table_name] = {
+                            "exists": True,
+                            "columns": column_names,
+                            "column_details": [{"name": col[0], "type": col[1], "nullable": col[2]} for col in columns],
+                            "row_count": row_count,
+                            "sample_data": [dict(zip(column_names, row)) for row in sample_data]
+                        }
+                        
+                    except Exception as table_error:
+                        schema[table_name] = {"error": str(table_error)}
+                
+                return {"status": "success", "schema": schema}
+            else:
+                return {"status": "connection_failed"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
