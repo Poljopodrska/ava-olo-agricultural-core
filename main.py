@@ -380,8 +380,9 @@ AGRICULTURAL_DASHBOARD_HTML = """
         
         <!-- Schema Discovery -->
         <div class="section warning">
-            <h3>🔍 Schema Discovery</h3>
+            <h3>🔍 Database Tools</h3>
             <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
+            <p><a href="/diagnostics/">Run Connection Diagnostics</a> - Test database connections and configurations</p>
         </div>
         
         <!-- PART 1: Standard Agricultural Queries -->
@@ -606,6 +607,167 @@ AGRICULTURAL_DASHBOARD_HTML = """
 async def agricultural_dashboard():
     """Agricultural Database Dashboard - Safe Version"""
     return HTMLResponse(content=AGRICULTURAL_DASHBOARD_HTML)
+
+# Add diagnostics viewer page
+@app.get("/diagnostics/", response_class=HTMLResponse)
+async def diagnostics_viewer():
+    """Visual diagnostics interface"""
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Database Connection Diagnostics</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
+            .section { border: 1px solid #ddd; margin: 15px 0; padding: 15px; border-radius: 8px; }
+            .success { background: #e8f5e8; border-left: 5px solid #27ae60; }
+            .error { background: #ffebee; border-left: 5px solid #e74c3c; }
+            .warning { background: #fff3cd; border-left: 5px solid #ffc107; }
+            .info { background: #e3f2fd; border-left: 5px solid #2196f3; }
+            button { background: #27ae60; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; }
+            button:hover { background: #219a52; }
+            pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background: #f5f5f5; }
+            .recommendation { margin: 10px 0; padding: 10px; border-radius: 5px; }
+            .recommendation.fix { background: #fff3cd; }
+            .recommendation.critical { background: #ffebee; }
+            .recommendation.info { background: #e3f2fd; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🔍 Database Connection Diagnostics</h1>
+            <p>Comprehensive testing of database connections and configurations</p>
+            
+            <button onclick="runDiagnostics()">🔧 Run Complete Diagnostics</button>
+            
+            <div id="diagnosticsResults" style="margin-top: 20px;"></div>
+        </div>
+        
+        <script>
+            function runDiagnostics() {
+                document.getElementById('diagnosticsResults').innerHTML = '<p>🔍 Running diagnostics...</p>';
+                
+                fetch('/api/diagnostics')
+                    .then(response => response.json())
+                    .then(data => {
+                        let html = '<h2>Diagnostic Results</h2>';
+                        
+                        // 1. Environment Variables
+                        html += '<div class="section">';
+                        html += '<h3>📋 Environment Variables</h3>';
+                        html += '<table>';
+                        html += '<tr><th>Variable</th><th>Status</th><th>Value/Length</th></tr>';
+                        
+                        for (const [varName, info] of Object.entries(data.environment_check || {})) {
+                            const status = info.present ? '✅' : '❌';
+                            const value = info.value !== '***' ? info.value : `Length: ${info.length}`;
+                            html += `<tr>
+                                <td>${varName}</td>
+                                <td>${status}</td>
+                                <td>${value || 'Not set'}</td>
+                            </tr>`;
+                        }
+                        html += '</table>';
+                        html += '</div>';
+                        
+                        // 2. psycopg2 Test Results
+                        if (data.psycopg2_test) {
+                            const test = data.psycopg2_test;
+                            const statusClass = test.status === 'success' ? 'success' : 'error';
+                            html += `<div class="section ${statusClass}">`;
+                            html += '<h3>🔌 Current Connection Test (psycopg2)</h3>';
+                            
+                            if (test.status === 'success') {
+                                html += `<p>✅ <strong>Connected to database:</strong> ${test.database}</p>`;
+                                html += `<p><strong>Farmer count:</strong> ${test.farmer_count}</p>`;
+                                
+                                if (test.farmers_columns && test.farmers_columns.length > 0) {
+                                    html += '<p><strong>Farmers table columns:</strong></p>';
+                                    html += '<ul>';
+                                    test.farmers_columns.forEach(col => {
+                                        html += `<li>${col.name} (${col.type})</li>`;
+                                    });
+                                    html += '</ul>';
+                                }
+                            } else {
+                                html += `<p>❌ <strong>Status:</strong> ${test.status}</p>`;
+                                if (test.error) {
+                                    html += `<p><strong>Error:</strong> ${test.error}</p>`;
+                                }
+                            }
+                            html += '</div>';
+                        }
+                        
+                        // 3. AsyncPG Tests
+                        if (data.asyncpg_tests && data.asyncpg_tests.length > 0) {
+                            html += '<div class="section">';
+                            html += '<h3>🧪 Additional Connection Tests (asyncpg)</h3>';
+                            
+                            data.asyncpg_tests.forEach(test => {
+                                const testClass = test.status === 'success' ? 'success' : 'error';
+                                html += `<div class="section ${testClass}">`;
+                                html += `<h4>Database: ${test.database} (SSL: ${test.ssl})</h4>`;
+                                
+                                if (test.status === 'success') {
+                                    html += `<p>✅ Connected successfully</p>`;
+                                    html += `<p>Tables in database: ${test.table_count}</p>`;
+                                    html += `<p>Farmers table exists: ${test.farmers_table_exists ? 'Yes' : 'No'}</p>`;
+                                    
+                                    if (test.farmer_count !== undefined) {
+                                        html += `<p>Farmers: ${test.farmer_count}</p>`;
+                                    }
+                                    
+                                    if (test.farmer_columns) {
+                                        html += `<p>Columns: ${test.farmer_columns.join(', ')}</p>`;
+                                    }
+                                } else {
+                                    html += `<p>❌ Failed: ${test.error || 'Unknown error'}</p>`;
+                                }
+                                
+                                html += '</div>';
+                            });
+                            
+                            html += '</div>';
+                        }
+                        
+                        // 4. Recommendations
+                        if (data.recommendations && data.recommendations.length > 0) {
+                            html += '<div class="section">';
+                            html += '<h3>💡 Recommendations</h3>';
+                            
+                            data.recommendations.forEach(rec => {
+                                html += `<div class="recommendation ${rec.type}">`;
+                                html += `<strong>${rec.message}</strong><br>`;
+                                html += `Action: ${rec.action}`;
+                                html += '</div>';
+                            });
+                            
+                            html += '</div>';
+                        }
+                        
+                        // 5. Raw JSON
+                        html += '<div class="section">';
+                        html += '<h3>📄 Raw Diagnostic Data</h3>';
+                        html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                        html += '</div>';
+                        
+                        document.getElementById('diagnosticsResults').innerHTML = html;
+                    })
+                    .catch(error => {
+                        document.getElementById('diagnosticsResults').innerHTML = 
+                            `<div class="section error">
+                                <p>❌ Diagnostic request failed: ${error}</p>
+                            </div>`;
+                    });
+            }
+        </script>
+    </body>
+    </html>
+    """)
 
 # Add simple HTML interface to view schema
 @app.get("/schema/", response_class=HTMLResponse)
@@ -833,30 +995,39 @@ async def discover_complete_schema():
 # Diagnostics endpoint for troubleshooting
 @app.get("/api/diagnostics")
 async def run_diagnostics():
-    """Run database connection diagnostics"""
-    import subprocess
-    import sys
+    """Run enhanced database connection diagnostics"""
+    import asyncio
+    import asyncpg
+    import json
     
+    diagnostics = {
+        "environment_check": {},
+        "psycopg2_test": {},
+        "asyncpg_tests": [],
+        "recommendations": []
+    }
+    
+    # 1. Environment Check
+    required_vars = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'DB_PORT']
+    for var in required_vars:
+        value = os.getenv(var)
+        diagnostics["environment_check"][var] = {
+            "present": bool(value),
+            "length": len(value) if value else 0,
+            "value": value if var not in ['DB_PASSWORD'] and value else "***"
+        }
+    
+    # 2. Test with psycopg2 (current connection method)
     try:
-        # Run psycopg2 diagnostics
         with get_constitutional_db_connection() as conn:
             if conn:
                 cursor = conn.cursor()
-                
-                # Get current database
                 cursor.execute("SELECT current_database()")
                 current_db = cursor.fetchone()[0]
                 
-                # Get all tables
-                cursor.execute("""
-                    SELECT tablename 
-                    FROM pg_tables 
-                    WHERE schemaname = 'public' 
-                    ORDER BY tablename
-                """)
-                tables = [row[0] for row in cursor.fetchall()]
+                cursor.execute("SELECT COUNT(*) FROM farmers")
+                farmer_count = cursor.fetchone()[0]
                 
-                # Get farmers table columns
                 cursor.execute("""
                     SELECT column_name, data_type 
                     FROM information_schema.columns 
@@ -865,40 +1036,113 @@ async def run_diagnostics():
                 """)
                 farmers_columns = cursor.fetchall()
                 
-                # Get sample farmer data
-                cursor.execute("SELECT * FROM farmers LIMIT 1")
-                sample_farmer = cursor.fetchone()
-                farmers_col_names = [desc[0] for desc in cursor.description]
-                
-                return {
+                diagnostics["psycopg2_test"] = {
                     "status": "success",
-                    "current_database": current_db,
-                    "tables": tables,
-                    "farmers_columns": [{"name": col[0], "type": col[1]} for col in farmers_columns],
-                    "farmers_column_names": farmers_col_names,
-                    "sample_farmer_data": dict(zip(farmers_col_names, sample_farmer)) if sample_farmer else None,
-                    "environment": {
-                        "DB_HOST": "SET" if os.getenv('DB_HOST') else "MISSING",
-                        "DB_NAME": os.getenv('DB_NAME', 'Not set'),
-                        "DB_USER": os.getenv('DB_USER', 'Not set'),
-                        "DB_PORT": os.getenv('DB_PORT', '5432')
-                    }
+                    "database": current_db,
+                    "farmer_count": farmer_count,
+                    "farmers_columns": [{"name": col[0], "type": col[1]} for col in farmers_columns]
                 }
             else:
-                return {"status": "connection_failed", "error": "Could not establish database connection"}
-                
+                diagnostics["psycopg2_test"] = {"status": "connection_failed"}
     except Exception as e:
-        return {
+        diagnostics["psycopg2_test"] = {
             "status": "error",
             "error": str(e),
-            "error_type": type(e).__name__,
-            "environment": {
-                "DB_HOST": "SET" if os.getenv('DB_HOST') else "MISSING",
-                "DB_NAME": os.getenv('DB_NAME', 'Not set'),
-                "DB_USER": os.getenv('DB_USER', 'Not set'),
-                "DB_PORT": os.getenv('DB_PORT', '5432')
-            }
+            "error_type": type(e).__name__
         }
+    
+    # 3. Test with asyncpg for more detailed diagnostics
+    try:
+        # Test different configurations
+        env_host = os.getenv('DB_HOST', '')
+        env_user = os.getenv('DB_USER', 'postgres')
+        env_password = os.getenv('DB_PASSWORD', '')
+        env_port = os.getenv('DB_PORT', '5432')
+        env_db = os.getenv('DB_NAME', 'postgres')
+        
+        # Test configurations
+        test_configs = [
+            {"database": env_db, "ssl": "require"},
+            {"database": "postgres", "ssl": "require"},
+            {"database": "farmer_crm", "ssl": "require"},
+        ]
+        
+        for config in test_configs:
+            test_result = {
+                "database": config["database"],
+                "ssl": config["ssl"],
+                "status": "unknown"
+            }
+            
+            try:
+                dsn = f"postgresql://{env_user}:{env_password}@{env_host}:{env_port}/{config['database']}?sslmode={config['ssl']}"
+                
+                # Attempt async connection
+                conn = await asyncpg.connect(dsn, timeout=5)
+                
+                # Test queries
+                table_count = await conn.fetchval(
+                    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'"
+                )
+                
+                # Check for farmers table
+                farmers_exists = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM information_schema.tables WHERE table_name='farmers')"
+                )
+                
+                if farmers_exists:
+                    farmer_count = await conn.fetchval("SELECT COUNT(*) FROM farmers")
+                    test_result["farmer_count"] = farmer_count
+                    
+                    # Get column names
+                    columns = await conn.fetch("""
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = 'farmers' ORDER BY ordinal_position
+                    """)
+                    test_result["farmer_columns"] = [row['column_name'] for row in columns]
+                
+                await conn.close()
+                
+                test_result["status"] = "success"
+                test_result["table_count"] = table_count
+                test_result["farmers_table_exists"] = farmers_exists
+                
+            except Exception as e:
+                test_result["status"] = "failed"
+                test_result["error"] = str(e)[:200]
+            
+            diagnostics["asyncpg_tests"].append(test_result)
+    
+    except Exception as e:
+        diagnostics["asyncpg_error"] = str(e)
+    
+    # 4. Generate recommendations
+    if diagnostics["psycopg2_test"].get("status") == "success":
+        diagnostics["recommendations"].append({
+            "type": "info",
+            "message": "psycopg2 connection works",
+            "action": "Continue using current connection method"
+        })
+        
+        # Check column names
+        columns = [col["name"] for col in diagnostics["psycopg2_test"].get("farmers_columns", [])]
+        if columns and "farmer_id" not in columns and "id" in columns:
+            diagnostics["recommendations"].append({
+                "type": "fix",
+                "message": "Primary key is 'id' not 'farmer_id'",
+                "action": "Update all queries to use 'id' instead of 'farmer_id'"
+            })
+    
+    # Check environment variables
+    missing_vars = [var for var, info in diagnostics["environment_check"].items() if not info["present"]]
+    if missing_vars:
+        diagnostics["recommendations"].append({
+            "type": "critical",
+            "message": f"Missing environment variables: {missing_vars}",
+            "action": "Set these variables in AWS App Runner configuration"
+        })
+    
+    return diagnostics
 
 # Debug endpoint - check which database Count Farmers actually uses
 @app.get("/api/debug/status")
