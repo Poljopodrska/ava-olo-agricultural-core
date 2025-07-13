@@ -3,6 +3,7 @@ import uvicorn
 import os
 import json
 import psycopg2
+from datetime import datetime
 from contextlib import contextmanager
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Form, Request
@@ -1672,6 +1673,72 @@ async def debug_openai_connection():
         result["client_creation"] = f"failed: {str(e)}"
     
     return result
+
+@app.get("/api/test-external-connection")
+async def test_external_connection():
+    """Test if App Runner can reach external APIs"""
+    
+    results = {}
+    
+    # Test 1: Can we import OpenAI?
+    try:
+        from openai import AsyncOpenAI
+        results["openai_import"] = "✅ Success"
+    except Exception as e:
+        results["openai_import"] = f"❌ Failed: {str(e)}"
+    
+    # Test 2: Can we reach external HTTP?
+    try:
+        import httpx  # Using httpx since it's already in requirements
+        async with httpx.AsyncClient() as client:
+            response = await client.get('https://httpbin.org/get', timeout=5.0)
+            results["external_http"] = f"✅ Success: {response.status_code}"
+    except Exception as e:
+        results["external_http"] = f"❌ Failed: {str(e)}"
+    
+    # Test 3: Can we reach OpenAI specifically?
+    api_key = os.getenv('OPENAI_API_KEY')
+    if api_key:
+        try:
+            import httpx
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    'https://api.openai.com/v1/models', 
+                    headers={'Authorization': f'Bearer {api_key}'}, 
+                    timeout=5.0
+                )
+                results["openai_api"] = f"✅ Success: {response.status_code}"
+        except Exception as e:
+            results["openai_api"] = f"❌ Failed: {str(e)}"
+    else:
+        results["openai_api"] = "❌ No API key found"
+    
+    # Test 4: Basic DNS resolution
+    try:
+        import socket
+        socket.gethostbyname('api.openai.com')
+        results["dns_resolution"] = "✅ Can resolve api.openai.com"
+    except Exception as e:
+        results["dns_resolution"] = f"❌ DNS failed: {str(e)}"
+    
+    # Test 5: Environment check
+    results["environment"] = {
+        "api_key_present": bool(api_key),
+        "api_key_format": api_key.startswith('sk-') if api_key else False,
+        "db_name": os.getenv('DB_NAME', 'not_set'),
+        "db_host": bool(os.getenv('DB_HOST'))
+    }
+    
+    return {
+        "test_name": "AWS App Runner External Connectivity Test",
+        "timestamp": str(datetime.now()) if 'datetime' in globals() else "unknown",
+        "results": results,
+        "summary": {
+            "total_tests": len(results) - 1,  # Exclude environment from count
+            "passed": len([r for r in results.values() if isinstance(r, str) and "✅" in r]),
+            "failed": len([r for r in results.values() if isinstance(r, str) and "❌" in r])
+        }
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
