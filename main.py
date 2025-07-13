@@ -807,32 +807,45 @@ AGRICULTURAL_DASHBOARD_HTML = """
         }
         
         async function saveAsStandardQuery() {
-            if (!lastExecutedQuery) return;
+            if (!lastExecutedQuery) {
+                console.error('No query to save');
+                alert('No query to save. Please run a query first.');
+                return;
+            }
             
             const queryName = prompt("Name for this query:");
             if (!queryName) return;
+            
+            const requestData = {
+                query_name: queryName,
+                sql_query: lastExecutedQuery.sql,
+                natural_language_query: lastExecutedQuery.original_question,
+                farmer_id: null // TODO: Add farmer context if needed
+            };
+            
+            console.log('Saving standard query:', requestData);
             
             try {
                 const response = await fetch('/api/save-standard-query', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        query_name: queryName,
-                        sql_query: lastExecutedQuery.sql,
-                        natural_language_query: lastExecutedQuery.original_question,
-                        farmer_id: null // TODO: Add farmer context if needed
-                    })
+                    body: JSON.stringify(requestData)
                 });
                 
+                console.log('Response status:', response.status);
                 const result = await response.json();
+                console.log('Response data:', result);
+                
                 if (result.status === 'success') {
                     loadStandardQueries();
                     alert('Query saved successfully!');
                 } else {
-                    alert('Failed to save query: ' + result.error);
+                    console.error('Save failed:', result.error);
+                    alert('Failed to save query: ' + (result.error || 'Unknown error'));
                 }
             } catch (error) {
-                alert('Error saving query: ' + error);
+                console.error('Error saving query:', error);
+                alert('Error saving query: ' + error.message);
             }
         }
         
@@ -1979,19 +1992,53 @@ async def debug_openai_connection():
 @app.post("/api/save-standard-query")
 async def save_standard_query(request: Dict[str, Any]):
     """Save a query as standard query, limit to 10 per farmer"""
-    query_name = request.get("query_name", "").strip()
-    sql_query = request.get("sql_query", "").strip()
-    natural_language_query = request.get("natural_language_query", "")
-    farmer_id = request.get("farmer_id")
+    # Debug logging
+    print(f"DEBUG: Received save-standard-query request: {request}")
+    
+    # Validate input
+    try:
+        query_name = request.get("query_name", "").strip()
+        sql_query = request.get("sql_query", "").strip()
+        natural_language_query = request.get("natural_language_query", "")
+        farmer_id = request.get("farmer_id")
+    except Exception as e:
+        print(f"ERROR: Failed to parse request: {e}")
+        return {"error": f"Invalid request format: {str(e)}"}
     
     if not query_name or not sql_query:
         return {"error": "Query name and SQL are required"}
     
+    # Limit query name length
+    if len(query_name) > 255:
+        return {"error": "Query name too long (max 255 characters)"}
+    
+    conn = None
     try:
         with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
+            if not conn:
+                return {"error": "Database connection failed"}
                 
+            cursor = conn.cursor()
+            
+            # First check if table exists
+            try:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'standard_queries'
+                    )
+                """)
+                table_exists = cursor.fetchone()[0]
+                
+                if not table_exists:
+                    print("WARNING: standard_queries table does not exist")
+                    return {"error": "Standard queries table not found. Please run the migration."}
+            except Exception as table_check_error:
+                print(f"ERROR: Failed to check table existence: {table_check_error}")
+                return {"error": "Failed to verify database schema"}
+            
+            try:
                 # Check if farmer already has 10 queries
                 if farmer_id:
                     cursor.execute(
@@ -2011,6 +2058,7 @@ async def save_standard_query(request: Dict[str, Any]):
                                 LIMIT 1
                             )
                         """, (farmer_id,))
+                        print(f"DEBUG: Deleted oldest query for farmer {farmer_id}")
                 
                 # Insert new standard query
                 cursor.execute("""
@@ -2023,8 +2071,22 @@ async def save_standard_query(request: Dict[str, Any]):
                 query_id = cursor.fetchone()[0]
                 conn.commit()
                 
+                print(f"SUCCESS: Saved standard query with ID {query_id}")
                 return {"status": "success", "query_id": query_id}
+                
+            except psycopg2.Error as db_error:
+                print(f"ERROR: Database error: {db_error}")
+                if conn:
+                    conn.rollback()
+                return {"error": f"Database error: {str(db_error)}"}
+                
+    except psycopg2.OperationalError as conn_error:
+        print(f"ERROR: Connection error: {conn_error}")
+        return {"error": "Database connection failed"}
     except Exception as e:
+        print(f"ERROR: Unexpected error in save-standard-query: {e}")
+        if conn:
+            conn.rollback()
         return {"error": f"Failed to save query: {str(e)}"}
 
 @app.get("/api/standard-queries")
@@ -2032,9 +2094,29 @@ async def get_standard_queries(farmer_id: int = None):
     """Get all standard queries for a farmer"""
     try:
         with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
+            if not conn:
+                return {"error": "Database connection failed", "queries": []}
                 
+            cursor = conn.cursor()
+            
+            # Check if table exists first
+            try:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'standard_queries'
+                    )
+                """)
+                table_exists = cursor.fetchone()[0]
+                
+                if not table_exists:
+                    print("INFO: standard_queries table does not exist yet")
+                    return {"queries": [], "info": "Standard queries not yet initialized"}
+            except Exception:
+                return {"queries": [], "error": "Failed to verify database schema"}
+            
+            try:
                 # Get both global and farmer-specific queries
                 if farmer_id:
                     cursor.execute("""
@@ -2057,19 +2139,51 @@ async def get_standard_queries(farmer_id: int = None):
                 columns = [desc[0] for desc in cursor.description]
                 queries = []
                 for row in cursor.fetchall():
-                    queries.append(dict(zip(columns, row)))
+                    query_dict = dict(zip(columns, row))
+                    # Convert datetime to string for JSON serialization
+                    if query_dict.get('created_at'):
+                        query_dict['created_at'] = str(query_dict['created_at'])
+                    queries.append(query_dict)
                 
                 return {"queries": queries}
+                
+            except psycopg2.Error as db_error:
+                print(f"ERROR: Database error in get-standard-queries: {db_error}")
+                return {"error": f"Database error: {str(db_error)}", "queries": []}
+                
     except Exception as e:
-        return {"error": f"Failed to get queries: {str(e)}"}
+        print(f"ERROR: Unexpected error in get-standard-queries: {e}")
+        return {"error": f"Failed to get queries: {str(e)}", "queries": []}
 
 @app.delete("/api/standard-queries/{query_id}")
 async def delete_standard_query(query_id: int):
     """Delete a standard query"""
     try:
         with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
+            if not conn:
+                print("ERROR: Database connection failed in delete_standard_query")
+                return {"error": "Database connection failed"}
+            
+            cursor = conn.cursor()
+            
+            # Check if table exists first
+            try:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'standard_queries'
+                    )
+                """)
+                if not cursor.fetchone()[0]:
+                    print("ERROR: standard_queries table does not exist")
+                    return {"error": "Standard queries table not found. Please run migration."}
+            except Exception as e:
+                print(f"ERROR: Failed to check table existence: {e}")
+                return {"error": f"Failed to verify table: {str(e)}"}
+            
+            # Delete the query
+            try:
                 cursor.execute(
                     "DELETE FROM standard_queries WHERE id = %s AND is_global = FALSE",
                     (query_id,)
@@ -2077,10 +2191,18 @@ async def delete_standard_query(query_id: int):
                 conn.commit()
                 
                 if cursor.rowcount > 0:
+                    print(f"SUCCESS: Deleted standard query {query_id}")
                     return {"status": "success"}
                 else:
+                    print(f"WARNING: Query {query_id} not found or is global")
                     return {"error": "Query not found or is global"}
+            except psycopg2.Error as e:
+                conn.rollback()
+                print(f"ERROR: Database error in delete: {e}")
+                return {"error": f"Database error: {str(e)}"}
+                
     except Exception as e:
+        print(f"ERROR: Delete standard query exception: {e}")
         return {"error": f"Failed to delete query: {str(e)}"}
 
 @app.post("/api/run-standard-query/{query_id}")
@@ -2088,10 +2210,30 @@ async def run_standard_query(query_id: int):
     """Execute a saved standard query and increment usage count"""
     try:
         with get_constitutional_db_connection() as conn:
-            if conn:
-                cursor = conn.cursor()
-                
-                # Get the query
+            if not conn:
+                print("ERROR: Database connection failed in run_standard_query")
+                return {"error": "Database connection failed"}
+            
+            cursor = conn.cursor()
+            
+            # Check if table exists first
+            try:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'standard_queries'
+                    )
+                """)
+                if not cursor.fetchone()[0]:
+                    print("ERROR: standard_queries table does not exist")
+                    return {"error": "Standard queries table not found. Please run migration."}
+            except Exception as e:
+                print(f"ERROR: Failed to check table existence: {e}")
+                return {"error": f"Failed to verify table: {str(e)}"}
+            
+            # Get the query
+            try:
                 cursor.execute(
                     "SELECT sql_query, query_name FROM standard_queries WHERE id = %s",
                     (query_id,)
@@ -2099,17 +2241,28 @@ async def run_standard_query(query_id: int):
                 result = cursor.fetchone()
                 
                 if not result:
+                    print(f"WARNING: Standard query {query_id} not found")
                     return {"error": "Query not found"}
                 
                 sql_query, query_name = result
+                print(f"DEBUG: Running standard query '{query_name}': {sql_query[:100]}...")
                 
-                # Update usage count
+            except psycopg2.Error as e:
+                print(f"ERROR: Failed to fetch query: {e}")
+                return {"error": f"Failed to fetch query: {str(e)}"}
+            
+            # Update usage count
+            try:
                 cursor.execute(
                     "UPDATE standard_queries SET usage_count = usage_count + 1 WHERE id = %s",
                     (query_id,)
                 )
-                
-                # Execute the query
+            except Exception as e:
+                print(f"WARNING: Failed to update usage count: {e}")
+                # Continue anyway, this is not critical
+            
+            # Execute the query
+            try:
                 cursor.execute(sql_query)
                 
                 # Get results
@@ -2123,6 +2276,7 @@ async def run_standard_query(query_id: int):
                 
                 conn.commit()
                 
+                print(f"SUCCESS: Executed standard query {query_id}, returned {len(rows)} rows")
                 return {
                     "status": "success",
                     "query_name": query_name,
@@ -2130,8 +2284,191 @@ async def run_standard_query(query_id: int):
                     "data": data,
                     "sql_query": sql_query
                 }
+                
+            except psycopg2.Error as e:
+                conn.rollback()
+                print(f"ERROR: Failed to execute query: {e}")
+                return {"error": f"Query execution failed: {str(e)}"}
+                
     except Exception as e:
+        print(f"ERROR: Run standard query exception: {e}")
         return {"error": f"Failed to run query: {str(e)}"}
+
+@app.get("/api/test-standard-queries-table")
+async def test_standard_queries_table():
+    """Test if standard_queries table exists and show its structure"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if not conn:
+                print("ERROR: Database connection failed in test_standard_queries_table")
+                return {"error": "Database connection failed"}
+                
+            cursor = conn.cursor()
+            
+            # Check if table exists
+            try:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'standard_queries'
+                    )
+                """)
+                table_exists = cursor.fetchone()[0]
+                print(f"DEBUG: standard_queries table exists: {table_exists}")
+            except Exception as e:
+                print(f"ERROR: Failed to check table existence: {e}")
+                return {"error": f"Failed to check table existence: {str(e)}"}
+            
+            result = {"table_exists": table_exists}
+            
+            if table_exists:
+                # Get table structure
+                try:
+                    cursor.execute("""
+                        SELECT column_name, data_type, is_nullable, column_default
+                        FROM information_schema.columns
+                        WHERE table_name = 'standard_queries'
+                        ORDER BY ordinal_position
+                    """)
+                    columns = cursor.fetchall()
+                    result["columns"] = [
+                        {
+                            "name": col[0],
+                            "type": col[1],
+                            "nullable": col[2],
+                            "default": col[3]
+                        }
+                        for col in columns
+                    ]
+                    print(f"DEBUG: Found {len(columns)} columns")
+                except Exception as e:
+                    print(f"ERROR: Failed to get column info: {e}")
+                    result["column_error"] = str(e)
+                
+                # Get row count
+                try:
+                    cursor.execute("SELECT COUNT(*) FROM standard_queries")
+                    result["row_count"] = cursor.fetchone()[0]
+                    print(f"DEBUG: Found {result['row_count']} rows")
+                    
+                    # Get sample data if any
+                    if result["row_count"] > 0:
+                        cursor.execute("""
+                            SELECT id, query_name, is_global, usage_count 
+                            FROM standard_queries 
+                            ORDER BY created_at DESC 
+                            LIMIT 5
+                        """)
+                        samples = cursor.fetchall()
+                        result["sample_queries"] = [
+                            {
+                                "id": row[0],
+                                "name": row[1],
+                                "is_global": row[2],
+                                "usage_count": row[3]
+                            }
+                            for row in samples
+                        ]
+                except Exception as e:
+                    print(f"ERROR: Failed to get row count: {e}")
+                    result["count_error"] = str(e)
+            else:
+                result["migration_needed"] = True
+                result["migration_sql"] = """
+                    CREATE TABLE IF NOT EXISTS standard_queries (
+                        id SERIAL PRIMARY KEY,
+                        query_name VARCHAR(255) NOT NULL,
+                        sql_query TEXT NOT NULL,
+                        description TEXT,
+                        natural_language_query TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        farmer_id INTEGER REFERENCES farmers(id) ON DELETE CASCADE,
+                        usage_count INTEGER DEFAULT 0,
+                        is_global BOOLEAN DEFAULT FALSE
+                    );
+                """
+                result["action_required"] = "Run the migration SQL to create the standard_queries table"
+            
+            print(f"SUCCESS: Test completed, table exists: {table_exists}")
+            return result
+            
+    except Exception as e:
+        print(f"ERROR: Test standard queries table exception: {e}")
+        import traceback
+        print(f"TRACEBACK: {traceback.format_exc()}")
+        return {"error": f"Test failed: {str(e)}", "traceback": traceback.format_exc()}
+
+@app.post("/api/initialize-standard-queries")
+async def initialize_standard_queries():
+    """Initialize the standard queries table if it doesn't exist"""
+    try:
+        with get_constitutional_db_connection() as conn:
+            if not conn:
+                print("ERROR: Database connection failed in initialize_standard_queries")
+                return {"error": "Database connection failed"}
+                
+            cursor = conn.cursor()
+            
+            # Check if table already exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'standard_queries'
+                )
+            """)
+            table_exists = cursor.fetchone()[0]
+            
+            if table_exists:
+                print("INFO: standard_queries table already exists")
+                return {"status": "already_exists", "message": "Standard queries table already exists"}
+            
+            # Create the table
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS standard_queries (
+                        id SERIAL PRIMARY KEY,
+                        query_name VARCHAR(255) NOT NULL,
+                        sql_query TEXT NOT NULL,
+                        description TEXT,
+                        natural_language_query TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        farmer_id INTEGER REFERENCES farmers(id) ON DELETE CASCADE,
+                        usage_count INTEGER DEFAULT 0,
+                        is_global BOOLEAN DEFAULT FALSE
+                    )
+                """)
+                
+                # Create indexes
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_standard_queries_farmer ON standard_queries(farmer_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_standard_queries_usage ON standard_queries(usage_count DESC)")
+                
+                # Insert default global queries
+                cursor.execute("""
+                    INSERT INTO standard_queries (query_name, sql_query, description, natural_language_query, is_global) VALUES
+                    ('Total Farmers', 'SELECT COUNT(*) as farmer_count FROM farmers', 'Get total number of farmers', 'How many farmers do we have?', TRUE),
+                    ('All Fields', 'SELECT f.farm_name, fi.field_name, fi.area_ha FROM farmers f JOIN fields fi ON f.id = fi.farmer_id ORDER BY f.farm_name, fi.field_name', 'List all fields with farmer names', 'Show me all fields', TRUE),
+                    ('Recent Tasks', 'SELECT t.date_performed, f.farm_name, fi.field_name, t.task_type, t.description FROM tasks t JOIN task_fields tf ON t.id = tf.task_id JOIN fields fi ON tf.field_id = fi.id JOIN farmers f ON fi.farmer_id = f.id WHERE t.date_performed >= CURRENT_DATE - INTERVAL ''7 days'' ORDER BY t.date_performed DESC', 'Tasks performed in last 7 days', 'What happened in the last week?', TRUE)
+                """)
+                
+                conn.commit()
+                
+                print("SUCCESS: Created standard_queries table and added default queries")
+                return {
+                    "status": "success",
+                    "message": "Standard queries table created successfully",
+                    "defaults_added": 3
+                }
+                
+            except psycopg2.Error as e:
+                conn.rollback()
+                print(f"ERROR: Failed to create table: {e}")
+                return {"error": f"Failed to create table: {str(e)}"}
+                
+    except Exception as e:
+        print(f"ERROR: Initialize standard queries exception: {e}")
+        return {"error": f"Failed to initialize: {str(e)}"}
 
 @app.get("/api/test-external-connection")
 async def test_external_connection():
