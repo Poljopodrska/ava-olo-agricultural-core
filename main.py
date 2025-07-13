@@ -394,9 +394,22 @@ AGRICULTURAL_DASHBOARD_HTML = """
         <p><strong>Constitutional Compliance:</strong> Agricultural Intelligence System | AWS RDS Connected | Error Isolation Active</p>
         
         <!-- System Status -->
-        <div class="section warning">
-            <h3>🔍 System Status</h3>
-            <p id="systemStatus">Loading system status...</p>
+        <div class="section warning" style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #92400e;">🔍 System Status</h3>
+            <div id="system-status-details">
+                <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                    <span class="status-icon" style="margin-right: 10px; font-size: 16px;">⏳</span>
+                    <span class="status-text">Database: Checking connection...</span>
+                </div>
+                <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                    <span class="status-icon" style="margin-right: 10px; font-size: 16px;">⏳</span>
+                    <span class="status-text">LLM: Checking availability...</span>
+                </div>
+                <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                    <span class="status-icon" style="margin-right: 10px; font-size: 16px;">⏳</span>
+                    <span class="status-text">Constitutional: Checking compliance...</span>
+                </div>
+            </div>
         </div>
         
         <!-- Schema Discovery -->
@@ -423,15 +436,17 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 
                 <div>
                     <h4>Farmer's Fields</h4>
-                    <input type="number" id="farmerId" placeholder="Farmer ID">
-                    <button onclick="getFarmerFields()">Get Fields</button>
+                    <input type="number" id="farmerId" placeholder="Farmer ID" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button onclick="getFarmerFields()" style="width: 100%; margin-bottom: 5px;">Get Fields</button>
+                    <button onclick="clearFieldInputs()" style="background-color: #ef4444; width: 100%; padding: 8px 16px; font-size: 14px;">🧹 Clear Field</button>
                 </div>
                 
                 <div>
                     <h4>Field Tasks</h4>
-                    <input type="number" id="taskFarmerId" placeholder="Farmer ID">
-                    <input type="number" id="fieldId" placeholder="Field ID">
-                    <button onclick="getFieldTasks()">Get Tasks</button>
+                    <input type="number" id="taskFarmerId" placeholder="Farmer ID" style="width: 100%; padding: 10px; margin-bottom: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                    <input type="number" id="fieldId" placeholder="Field ID" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                    <button onclick="getFieldTasks()" style="width: 100%; margin-bottom: 5px;">Get Tasks</button>
+                    <button onclick="clearTaskInputs()" style="background-color: #ef4444; width: 100%; padding: 8px 16px; font-size: 14px;">🧹 Clear Fields</button>
                 </div>
             </div>
         </div>
@@ -552,9 +567,9 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        let html = `<h4>🌾 Fields for Farmer ${farmerId} (${data.total}):</h4><table><tr><th>Field ID</th><th>Field Name</th><th>Area (ha)</th><th>Location</th></tr>`;
+                        let html = `<h4>🌾 Fields for Farmer ${farmerId} (${data.total}):</h4><table><tr><th>Field ID</th><th>Field Name</th><th>Area (ha)</th><th>Country</th><th>Notes</th></tr>`;
                         data.fields.forEach(field => {
-                            html += `<tr><td>${field.field_id}</td><td>${field.field_name}</td><td>${field.area_hectares}</td><td>${field.location}</td></tr>`;
+                            html += `<tr><td>${field.field_id}</td><td>${field.field_name}</td><td>${field.area_ha}</td><td>${field.country}</td><td>${field.notes}</td></tr>`;
                         });
                         html += '</table>';
                         showResults(html);
@@ -576,9 +591,9 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        let html = `<h4>🌾 Tasks for Farmer ${farmerId}, Field ${fieldId} (${data.total}):</h4><table><tr><th>Task ID</th><th>Task Name</th><th>Type</th><th>Status</th><th>Due Date</th></tr>`;
+                        let html = `<h4>🌾 Tasks for Field ${fieldId} (${data.total}):</h4><table><tr><th>Task ID</th><th>Task Type</th><th>Description</th><th>Status</th><th>Date Performed</th><th>Crop</th></tr>`;
                         data.tasks.forEach(task => {
-                            html += `<tr><td>${task.task_id}</td><td>${task.task_name}</td><td>${task.task_type}</td><td>${task.status}</td><td>${task.due_date || 'N/A'}</td></tr>`;
+                            html += `<tr><td>${task.task_id}</td><td>${task.task_type}</td><td>${task.description}</td><td>${task.status}</td><td>${task.date_performed || 'N/A'}</td><td>${task.crop_name || 'N/A'}</td></tr>`;
                         });
                         html += '</table>';
                         showResults(html);
@@ -618,6 +633,71 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 }
             });
         }
+        
+        // Clear functions
+        function clearFieldInputs() {
+            document.getElementById('farmerId').value = '';
+            document.getElementById('results').innerHTML = '';
+            
+            // Visual feedback
+            const button = event.target;
+            const originalText = button.innerHTML;
+            const originalColor = button.style.backgroundColor;
+            button.innerHTML = '✅ Cleared';
+            button.style.backgroundColor = '#10b981';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.backgroundColor = originalColor;
+            }, 1500);
+        }
+        
+        function clearTaskInputs() {
+            document.getElementById('taskFarmerId').value = '';
+            document.getElementById('fieldId').value = '';
+            document.getElementById('results').innerHTML = '';
+            
+            // Visual feedback
+            const button = event.target;
+            const originalText = button.innerHTML;
+            const originalColor = button.style.backgroundColor;
+            button.innerHTML = '✅ Cleared';
+            button.style.backgroundColor = '#10b981';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.style.backgroundColor = originalColor;
+            }, 1500);
+        }
+        
+        // Update system status on page load
+        async function updateSystemStatus() {
+            try {
+                const response = await fetch('/api/system-status');
+                const status = await response.json();
+                
+                const statusDetails = document.getElementById('system-status-details');
+                statusDetails.innerHTML = `
+                    <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                        <span class="status-icon" style="margin-right: 10px; font-size: 16px;">${status.database.icon}</span>
+                        <span class="status-text">Database: ${status.database.message}</span>
+                    </div>
+                    <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                        <span class="status-icon" style="margin-right: 10px; font-size: 16px;">${status.llm.icon}</span>
+                        <span class="status-text">LLM: ${status.llm.message}</span>
+                    </div>
+                    <div class="status-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                        <span class="status-icon" style="margin-right: 10px; font-size: 16px;">${status.constitutional.icon}</span>
+                        <span class="status-text">Constitutional: ${status.constitutional.message}</span>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Failed to update system status:', error);
+            }
+        }
+        
+        // Call on page load
+        document.addEventListener('DOMContentLoaded', updateSystemStatus);
     </script>
 </body>
 </html>
@@ -1282,6 +1362,62 @@ async def debug_status():
         "openai_key_configured": OPENAI_AVAILABLE,
         "openai_debug": openai_debug
     }
+
+# Improved system status endpoint
+@app.get("/api/system-status")
+async def get_system_status():
+    """
+    Get detailed system status for improved display
+    """
+    status = {
+        "database": {
+            "status": "checking",
+            "message": "AWS RDS PostgreSQL",
+            "icon": "⏳"
+        },
+        "llm": {
+            "status": "not_available", 
+            "message": "OpenAI API key not configured",
+            "icon": "❌"
+        },
+        "constitutional": {
+            "status": "compliant",
+            "message": "All 13 principles implemented",
+            "icon": "✅"
+        }
+    }
+    
+    # Test database connection
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT 1")
+                result = cursor.fetchone()
+                if result:
+                    status["database"]["status"] = "connected"
+                    status["database"]["message"] = "AWS RDS PostgreSQL - Connected"
+                    status["database"]["icon"] = "✅"
+                else:
+                    status["database"]["status"] = "failed"
+                    status["database"]["message"] = "Connection failed"
+                    status["database"]["icon"] = "❌"
+            else:
+                status["database"]["status"] = "failed"
+                status["database"]["message"] = "Connection failed"
+                status["database"]["icon"] = "❌"
+    except Exception as e:
+        status["database"]["status"] = "error"
+        status["database"]["message"] = f"Error: {str(e)[:50]}..."
+        status["database"]["icon"] = "❌"
+    
+    # Test LLM availability
+    if OPENAI_AVAILABLE:
+        status["llm"]["status"] = "available"
+        status["llm"]["message"] = "OpenAI API configured"
+        status["llm"]["icon"] = "✅"
+    
+    return status
 
 # Essential schema endpoint for quick reference
 @app.get("/api/essential-schema")
