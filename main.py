@@ -2123,18 +2123,33 @@ async def save_standard_query(request: Dict[str, Any]):
                         print(f"DEBUG: Deleted oldest query for farmer {farmer_id}")
                 
                 # Insert new standard query
-                cursor.execute("""
-                    INSERT INTO standard_queries 
-                    (query_name, sql_query, natural_language_query, farmer_id)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id
-                """, (query_name, sql_query, natural_language_query, farmer_id))
+                if farmer_id:
+                    # Save as farmer-specific query
+                    cursor.execute("""
+                        INSERT INTO standard_queries 
+                        (query_name, sql_query, natural_language_query, farmer_id, is_global)
+                        VALUES (%s, %s, %s, %s, FALSE)
+                        RETURNING id
+                    """, (query_name, sql_query, natural_language_query, farmer_id))
+                else:
+                    # Save as user-created global query (not system default)
+                    cursor.execute("""
+                        INSERT INTO standard_queries 
+                        (query_name, sql_query, natural_language_query, is_global)
+                        VALUES (%s, %s, %s, FALSE)
+                        RETURNING id
+                    """, (query_name, sql_query, natural_language_query))
                 
                 query_id = cursor.fetchone()[0]
                 conn.commit()
                 
+                # Verify the save
+                cursor.execute("SELECT query_name, is_global, farmer_id FROM standard_queries WHERE id = %s", (query_id,))
+                saved_query = cursor.fetchone()
                 print(f"SUCCESS: Saved standard query with ID {query_id}")
-                return {"status": "success", "query_id": query_id}
+                print(f"DEBUG: Saved query details - Name: {saved_query[0]}, Global: {saved_query[1]}, Farmer: {saved_query[2]}")
+                
+                return {"status": "success", "query_id": query_id, "query_name": query_name}
                 
             except psycopg2.Error as db_error:
                 print(f"ERROR: Database error: {db_error}")
@@ -2190,12 +2205,13 @@ async def get_standard_queries(farmer_id: int = None):
                         LIMIT 15
                     """, (farmer_id,))
                 else:
+                    # When no farmer_id, show all queries (both global and user-created)
                     cursor.execute("""
                         SELECT id, query_name, sql_query, natural_language_query, 
                                usage_count, is_global, created_at
                         FROM standard_queries 
-                        WHERE is_global = TRUE
-                        ORDER BY usage_count DESC, created_at DESC
+                        WHERE farmer_id IS NULL  -- Include both global and non-farmer-specific queries
+                        ORDER BY is_global DESC, usage_count DESC, created_at DESC
                     """)
                 
                 columns = [desc[0] for desc in cursor.description]
