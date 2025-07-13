@@ -61,7 +61,7 @@ async def test_llm_connection() -> Dict[str, Any]:
     try:
         # Test basic LLM functionality
         response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Using GPT-3.5 for cost efficiency
+            model="gpt-4",  # Using GPT-4 for better performance
             messages=[
                 {
                     "role": "system", 
@@ -78,7 +78,7 @@ async def test_llm_connection() -> Dict[str, Any]:
         
         return {
             "status": "connected",
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4",
             "test_response": response.choices[0].message.content,
             "constitutional_compliance": "compliant - LLM available for farmer queries"
         }
@@ -167,7 +167,7 @@ ORDER BY t.date_performed DESC
 """
 
         response = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",  # Using GPT-4 for better SQL generation
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": query}

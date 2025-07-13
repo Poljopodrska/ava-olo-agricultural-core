@@ -1405,11 +1405,21 @@ async def get_system_status():
         status["database"]["message"] = f"Error: {str(e)[:50]}..."
         status["database"]["icon"] = "❌"
     
-    # Test LLM availability
-    if OPENAI_AVAILABLE:
-        status["llm"]["status"] = "available"
-        status["llm"]["message"] = "OpenAI API configured"
-        status["llm"]["icon"] = "✅"
+    # Test LLM availability with actual connection test
+    try:
+        llm_test = await test_llm_connection()
+        if llm_test.get("status") == "connected":
+            status["llm"]["status"] = "available"
+            status["llm"]["message"] = "OpenAI GPT-4 connected"
+            status["llm"]["icon"] = "✅"
+        else:
+            status["llm"]["status"] = "failed"
+            status["llm"]["message"] = llm_test.get("error", "Connection failed")[:50]
+            status["llm"]["icon"] = "❌"
+    except Exception as e:
+        status["llm"]["status"] = "error"
+        status["llm"]["message"] = f"Test failed: {str(e)[:30]}"
+        status["llm"]["icon"] = "❌"
     
     # Check constitutional compliance
     try:
@@ -1603,6 +1613,65 @@ async def get_constitutional_compliance():
     Check all 13 constitutional principles
     """
     return await check_constitutional_compliance()
+
+@app.get("/api/debug-openai")
+async def debug_openai_connection():
+    """Debug what's happening with OpenAI connection"""
+    import asyncio
+    
+    # Check environment
+    api_key = os.getenv('OPENAI_API_KEY')
+    
+    result = {
+        "api_key_exists": bool(api_key),
+        "api_key_format": api_key.startswith('sk-') if api_key else False,
+        "api_key_length": len(api_key) if api_key else 0,
+        "environment_check": "passed" if api_key and api_key.startswith('sk-') else "failed"
+    }
+    
+    # Try importing OpenAI
+    try:
+        from openai import AsyncOpenAI
+        result["openai_import"] = "success"
+        
+        # Try creating client (no API call yet)
+        if api_key:
+            client = AsyncOpenAI(api_key=api_key)
+            result["client_creation"] = "success"
+            
+            # Try very simple API call with shorter timeout
+            try:
+                response = await asyncio.wait_for(
+                    client.chat.completions.create(
+                        model="gpt-4",
+                        messages=[{"role": "user", "content": "Hi"}],
+                        max_tokens=3,
+                        timeout=3  # Very short timeout
+                    ),
+                    timeout=5.0  # Even shorter overall timeout
+                )
+                result["api_call"] = "success"
+                result["response"] = response.choices[0].message.content
+                result["model_used"] = "gpt-4"
+                
+            except asyncio.TimeoutError:
+                result["api_call"] = "timeout_error"
+                result["note"] = "API call timed out - may be network/AWS restriction"
+            except Exception as e:
+                result["api_call"] = f"error: {str(e)}"
+                result["error_details"] = {
+                    "type": type(e).__name__,
+                    "message": str(e)[:200]
+                }
+        else:
+            result["client_creation"] = "skipped - no API key"
+            
+    except ImportError as e:
+        result["openai_import"] = f"failed: {str(e)}"
+    except Exception as e:
+        result["client_creation"] = f"failed: {str(e)}"
+    
+    return result
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
