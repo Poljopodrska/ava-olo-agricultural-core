@@ -1,0 +1,53 @@
+# Example NGINX configuration for routing dashboards
+# This would be used if deploying with a reverse proxy
+
+upstream main_app {
+    server localhost:8080;
+}
+
+upstream business_dashboard {
+    server localhost:8004;
+}
+
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # Main front page and database dashboard
+    location / {
+        proxy_pass http://main_app;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Database dashboard specific route
+    location /database-dashboard {
+        proxy_pass http://main_app;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Business dashboard route
+    location /business-dashboard {
+        # Rewrite to remove the prefix
+        rewrite ^/business-dashboard(.*)$ $1 break;
+        proxy_pass http://business_dashboard;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # API routes for business dashboard
+    location /api/business/ {
+        proxy_pass http://business_dashboard/api/business/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

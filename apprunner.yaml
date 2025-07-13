@@ -1,0 +1,29 @@
+version: 1.0
+runtime: python3
+build:
+  commands:
+    pre-build:
+      - echo "Installing dependencies"
+    build:
+      - pip install -r requirements.txt
+    post-build:
+      - echo "Build completed"
+run:
+  runtime-version: 3.9
+  command: python main.py
+  network:
+    port: 8080
+    env: PORT
+  env:
+    - name: DB_HOST
+      value: "your-db-host"
+    - name: DB_NAME
+      value: "farmer_crm"
+    - name: DB_USER
+      value: "postgres"
+    - name: DB_PASSWORD
+      value: "your-password"
+    - name: DB_PORT
+      value: "5432"
+    - name: OPENAI_API_KEY
+      value: "your-openai-key"
