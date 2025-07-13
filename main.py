@@ -1585,13 +1585,31 @@ async def process_natural_query(request: Dict[str, Any]):
     if llm_result.get("ready_to_execute") and llm_result.get("sql_query"):
         # Execute the generated SQL
         try:
-            conn = await async_get_db_connection()
-            if conn:
-                execution_result = await execute_llm_generated_query(llm_result["sql_query"], conn)
-                await conn.close()
-                llm_result["execution_result"] = execution_result
-            else:
-                llm_result["execution_result"] = {"error": "Database connection failed"}
+            # Use the synchronous connection that works
+            with get_constitutional_db_connection() as conn:
+                if conn:
+                    # Execute the query synchronously
+                    cursor = conn.cursor()
+                    cursor.execute(llm_result["sql_query"])
+                    
+                    # Get column names
+                    columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                    
+                    # Fetch all results
+                    rows = cursor.fetchall()
+                    
+                    # Convert to list of dicts
+                    data = []
+                    for row in rows:
+                        data.append(dict(zip(columns, row)))
+                    
+                    llm_result["execution_result"] = {
+                        "status": "success",
+                        "row_count": len(rows),
+                        "data": data
+                    }
+                else:
+                    llm_result["execution_result"] = {"error": "Database connection failed"}
         except Exception as e:
             llm_result["execution_result"] = {"error": f"Execution error: {str(e)}"}
     
