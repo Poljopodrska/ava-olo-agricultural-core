@@ -144,8 +144,12 @@ async def get_all_farmers():
                     
                     # Try to get actual data using discovered columns
                     if column_names:
-                        # Use the first few columns that exist
-                        select_columns = column_names[:3]  # First 3 columns
+                        # Use actual column names discovered from schema
+                        # Prioritize id, name, email if they exist
+                        preferred_columns = ['id', 'name', 'email']
+                        select_columns = [col for col in preferred_columns if col in column_names]
+                        if not select_columns:
+                            select_columns = column_names[:3]  # Fallback to first 3 columns
                         select_query = f"SELECT {', '.join(select_columns)} FROM farmers LIMIT 5"
                         
                         cursor.execute(select_query)
@@ -1075,10 +1079,26 @@ async def run_diagnostics():
             }
             
             try:
-                dsn = f"postgresql://{env_user}:{env_password}@{env_host}:{env_port}/{config['database']}?sslmode={config['ssl']}"
+                # Build connection parameters (not URL) to fix IPv6 error
+                connection_params = {
+                    'host': env_host,
+                    'port': int(env_port),
+                    'user': env_user,
+                    'password': env_password,
+                    'database': config['database'],
+                    'server_settings': {
+                        'application_name': 'ava_olo_dashboard'
+                    }
+                }
+                
+                # Add SSL configuration
+                if config['ssl'] != 'disable':
+                    connection_params['ssl'] = config['ssl']
+                else:
+                    connection_params['ssl'] = False
                 
                 # Attempt async connection
-                conn = await asyncpg.connect(dsn, timeout=5)
+                conn = await asyncpg.connect(**connection_params, timeout=5)
                 
                 # Test queries
                 table_count = await conn.fetchval(

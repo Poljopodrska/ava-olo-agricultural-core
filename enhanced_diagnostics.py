@@ -93,13 +93,28 @@ async def diagnose_connection_comprehensive():
                 }
                 
                 try:
-                    # Build connection string
-                    dsn = f"postgresql://{env_user}:{env_password}@{host}:{env_port}/{db_name}?sslmode={ssl_mode}"
+                    # Build connection parameters (not URL) to fix IPv6 error
+                    connection_params = {
+                        'host': host,
+                        'port': int(env_port),
+                        'user': env_user,
+                        'password': env_password,
+                        'database': db_name,
+                        'server_settings': {
+                            'application_name': 'ava_olo_diagnostics'
+                        }
+                    }
+                    
+                    # Add SSL configuration
+                    if ssl_mode != 'disable':
+                        connection_params['ssl'] = ssl_mode
+                    else:
+                        connection_params['ssl'] = False
                     
                     # Attempt connection with timeout
                     print(f"  Connecting with SSL {ssl_mode}...")
                     conn = await asyncio.wait_for(
-                        asyncpg.connect(dsn), 
+                        asyncpg.connect(**connection_params), 
                         timeout=10.0
                     )
                     
