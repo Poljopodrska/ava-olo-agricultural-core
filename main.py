@@ -760,17 +760,32 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 const response = await fetch('/api/standard-queries');
                 const data = await response.json();
                 
-                if (data.queries) {
-                    const container = document.getElementById('standard-query-buttons');
+                const container = document.getElementById('standard-query-buttons');
+                
+                if (data.error && data.error.includes('Standard queries table not found')) {
+                    // Table doesn't exist - show initialize button
+                    container.innerHTML = `
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                            <p style="margin: 0 0 10px 0; color: #856404;">⚠️ Standard queries table not found.</p>
+                            <button onclick="initializeStandardQueries()" style="background: #28a745;">🔧 Initialize Standard Queries</button>
+                        </div>
+                    `;
+                } else if (data.queries && data.queries.length > 0) {
+                    // Show query buttons
                     container.innerHTML = data.queries.map(q => 
                         `<button onclick="runStandardQuery(${q.id})" class="standard-query-btn" title="${q.natural_language_query || q.description || ''}">
                             ${q.query_name}
                             ${!q.is_global ? `<span onclick="event.stopPropagation(); deleteStandardQuery(${q.id})" class="delete-btn">×</span>` : ''}
                          </button>`
                     ).join('');
+                } else {
+                    // No queries yet
+                    container.innerHTML = '<p style="color: #666;">No standard queries available yet.</p>';
                 }
             } catch (error) {
                 console.error('Failed to load standard queries:', error);
+                const container = document.getElementById('standard-query-buttons');
+                container.innerHTML = '<p style="color: red;">Failed to load standard queries</p>';
             }
         }
         
@@ -839,6 +854,26 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 if (result.status === 'success') {
                     loadStandardQueries();
                     alert('Query saved successfully!');
+                } else if (result.error && result.error.includes('Standard queries table not found')) {
+                    console.error('Table missing:', result.error);
+                    if (confirm('Standard queries table not found. Would you like to initialize it now?')) {
+                        await initializeStandardQueries();
+                        // Try saving again after initialization
+                        setTimeout(async () => {
+                            const retryResponse = await fetch('/api/save-standard-query', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify(requestData)
+                            });
+                            const retryResult = await retryResponse.json();
+                            if (retryResult.status === 'success') {
+                                loadStandardQueries();
+                                alert('Query saved successfully!');
+                            } else {
+                                alert('Failed to save query after initialization: ' + (retryResult.error || 'Unknown error'));
+                            }
+                        }, 1000);
+                    }
                 } else {
                     console.error('Save failed:', result.error);
                     alert('Failed to save query: ' + (result.error || 'Unknown error'));
@@ -863,6 +898,33 @@ AGRICULTURAL_DASHBOARD_HTML = """
                 }
             } catch (error) {
                 alert('Error deleting query: ' + error);
+            }
+        }
+        
+        async function initializeStandardQueries() {
+            if (!confirm('Initialize the standard queries table? This will create the table and add default queries.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/initialize-standard-queries', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('✅ Standard queries table initialized successfully!');
+                    loadStandardQueries(); // Reload the queries
+                } else if (result.status === 'already_exists') {
+                    alert('ℹ️ ' + result.message);
+                    loadStandardQueries();
+                } else {
+                    alert('❌ Failed to initialize: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('❌ Error initializing standard queries: ' + error.message);
             }
         }
         
