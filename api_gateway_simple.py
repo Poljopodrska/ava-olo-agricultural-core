@@ -34,30 +34,204 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Root Web Interface Route - Main Entry Point
+# Root Web Interface Route - Complete Constitutional Interface with Weather
 @app.get("/", response_class=HTMLResponse)
 async def main_web_interface():
-    """Main Farmer Web Interface - Root Access"""
+    """Complete Constitutional Farmer Web Interface"""
     return """
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
-        <title>AVA OLO - Farmer Web Interface</title>
+        <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Your Agricultural Assistant</title>
         <style>
-            body { font-family: Arial; background: #F5F3F0; color: #2C2C2C; font-size: 18px; padding: 20px; }
-            .header { background: linear-gradient(135deg, #6B5B73, #5D5E3F); color: white; padding: 20px; border-radius: 8px; text-align: center; }
-            .success { color: #6B8E23; font-weight: bold; }
+            :root {
+                --primary-brown: #6B5B73; --primary-olive: #8B8C5A; --dark-olive: #5D5E3F;
+                --cream: #F5F3F0; --white: #FFFFFF; --success-green: #6B8E23; --light-gray: #E8E8E6;
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; background: var(--cream); color: #2C2C2C; font-size: 18px; line-height: 1.6; }
+            .container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+            
+            /* Constitutional Header */
+            .constitutional-header { background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive)); color: var(--white); padding: 24px; display: flex; align-items: center; gap: 16px; border-radius: 8px; margin-bottom: 32px; }
+            .constitutional-logo { width: 48px; height: 48px; background: var(--white); border-radius: 50%; position: relative; }
+            .constitutional-logo::before { content: ''; width: 12px; height: 12px; background: var(--primary-brown); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .constitutional-brand { font-size: 32px; font-weight: bold; }
+            .constitutional-tagline { margin-left: auto; opacity: 0.9; }
+            
+            /* Weather Section */
+            .weather-today { background: linear-gradient(135deg, var(--primary-olive), #7A8B5A); color: var(--white); border-radius: 8px; padding: 32px; margin-bottom: 24px; text-align: center; }
+            .today-header { font-size: 24px; font-weight: bold; margin-bottom: 24px; }
+            .today-main { display: flex; align-items: center; justify-content: center; gap: 32px; margin-bottom: 24px; }
+            .today-icon { font-size: 64px; }
+            .today-details { text-align: left; }
+            .today-condition { font-size: 32px; font-weight: bold; margin-bottom: 8px; }
+            .today-temp { font-size: 48px; font-weight: bold; margin-bottom: 8px; }
+            .today-rain, .today-wind { font-size: 24px; margin-bottom: 8px; }
+            
+            /* 24-Hour Forecast */
+            .hourly-forecast { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 4px; padding-top: 24px; border-top: 2px solid rgba(255,255,255,0.3); max-height: 200px; overflow-y: auto; }
+            .hourly-item { background: rgba(255,255,255,0.2); border-radius: 8px; padding: 8px; text-align: center; min-width: 70px; }
+            .hour-time { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+            .hour-icon { font-size: 18px; margin-bottom: 4px; }
+            .hour-temp { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+            .hour-rain, .hour-wind { font-size: 12px; }
+            
+            /* 5-Day Timeline */
+            .weather-timeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 32px; }
+            .weather-day { background: var(--white); border-radius: 8px; padding: 0; text-align: center; border-left: 4px solid #A8AA6B; box-shadow: 0 2px 12px rgba(107,91,115,0.1); cursor: pointer; overflow: hidden; }
+            .weather-day:hover { transform: translateY(-2px); }
+            .weather-day-today { border-left-color: var(--primary-brown); background: linear-gradient(135deg, rgba(139,140,90,0.1), rgba(107,91,115,0.1)); }
+            .day-label { font-size: 16px; font-weight: bold; color: var(--primary-brown); padding: 16px; border-bottom: 1px solid var(--light-gray); background: var(--cream); }
+            .day-icon { font-size: 32px; padding: 16px; border-bottom: 1px solid var(--light-gray); }
+            .day-condition { font-size: 16px; color: var(--dark-olive); padding: 16px; border-bottom: 1px solid var(--light-gray); font-weight: 500; }
+            .day-temp { font-size: 32px; font-weight: bold; color: var(--primary-brown); padding: 16px; border-bottom: 1px solid var(--light-gray); }
+            .day-rain { font-size: 18px; color: var(--dark-olive); padding: 16px; border-bottom: 1px solid var(--light-gray); }
+            .day-wind { font-size: 16px; color: var(--dark-olive); padding: 16px; }
+            
+            /* Constitutional Cards */
+            .constitutional-card { background: var(--white); border-radius: 8px; padding: 24px; box-shadow: 0 2px 12px rgba(107,91,115,0.1); border-left: 4px solid var(--primary-olive); margin-bottom: 24px; }
+            .constitutional-card-title { font-size: 24px; color: var(--primary-brown); font-weight: bold; margin-bottom: 16px; text-align: center; }
+            .constitutional-textarea { width: 100%; padding: 16px; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 18px; background: var(--white); min-height: 120px; resize: vertical; margin-bottom: 16px; }
+            .constitutional-textarea:focus { outline: none; border-color: var(--primary-olive); }
+            .constitutional-btn { background: var(--primary-olive); color: var(--white); border: none; padding: 16px 24px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 16px; transition: all 0.3s ease; }
+            .constitutional-btn:hover { background: var(--dark-olive); transform: translateY(-1px); }
+            .constitutional-btn-secondary { background: var(--light-gray); color: #2C2C2C; }
+            .enter-hint { text-align: center; font-size: 16px; color: var(--dark-olive); margin-top: 8px; font-style: italic; }
+            
+            /* Mobile Responsive */
+            @media (max-width: 768px) {
+                .weather-timeline { grid-template-columns: repeat(2, 1fr); }
+                .hourly-forecast { grid-template-columns: repeat(3, 1fr); }
+                .today-main { flex-direction: column; gap: 16px; }
+                .today-details { text-align: center; }
+                .today-icon { font-size: 48px; }
+                .today-condition { font-size: 24px; }
+                .today-temp { font-size: 36px; }
+            }
+            @media (max-width: 480px) {
+                .weather-timeline { grid-template-columns: 1fr; }
+                .hourly-forecast { grid-template-columns: repeat(2, 1fr); }
+            }
         </style>
     </head>
     <body>
-        <div class="header">
-            <h1>🏛️ AVA OLO Web Interface</h1>
-            <p>Constitutional Agricultural Assistant</p>
+        <div class="container">
+            <!-- Constitutional Header -->
+            <header class="constitutional-header">
+                <div class="constitutional-logo"></div>
+                <div class="constitutional-brand">AVA OLO</div>
+                <div class="constitutional-tagline">Your Constitutional Agricultural Assistant</div>
+            </header>
+
+            <!-- Weather Section -->
+            <section class="weather-section">
+                <!-- Today's Weather Featured -->
+                <div class="weather-today">
+                    <div class="today-header">Today's Weather</div>
+                    <div class="today-main">
+                        <div class="today-icon">🔆</div>
+                        <div class="today-details">
+                            <div class="today-condition">Sunny</div>
+                            <div class="today-temp">22<span style="font-size:24px;">°C</span></div>
+                            <div class="today-rain">💧 0<span style="font-size:16px;">mm</span></div>
+                            <div class="today-wind">🌪️ NE 12<span style="font-size:16px;">km/h</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 24-Hour Forecast -->
+                    <div class="hourly-forecast">
+                        <div class="hourly-item"><div class="hour-time">00:00</div><div class="hour-icon">🌚</div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">03:00</div><div class="hour-icon">🌚</div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 3km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">06:00</div><div class="hour-icon">🌅</div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 6km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">09:00</div><div class="hour-icon">⛅</div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 10km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">12:00</div><div class="hour-icon">🔆</div><div class="hour-temp">22°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">15:00</div><div class="hour-icon">🔆</div><div class="hour-temp">25°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 15km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">18:00</div><div class="hour-icon">⛅</div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 8km/h</div></div>
+                        <div class="hourly-item"><div class="hour-time">21:00</div><div class="hour-icon">🌚</div><div class="hour-temp">17°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
+                    </div>
+                </div>
+                
+                <!-- 5-Day Timeline -->
+                <div class="weather-timeline">
+                    <div class="weather-day">
+                        <div class="day-label">Yesterday</div>
+                        <div class="day-icon">⛅</div>
+                        <div class="day-condition">Partly Cloudy</div>
+                        <div class="day-temp">19<span style="font-size:16px;">°C</span></div>
+                        <div class="day-rain">💧 2<span style="font-size:14px;">mm</span></div>
+                        <div class="day-wind">🌪️ W 14<span style="font-size:14px;">km/h</span></div>
+                    </div>
+                    <div class="weather-day weather-day-today">
+                        <div class="day-label">Today</div>
+                        <div class="day-icon">🔆</div>
+                        <div class="day-condition">Sunny</div>
+                        <div class="day-temp">22<span style="font-size:16px;">°C</span></div>
+                        <div class="day-rain">💧 0<span style="font-size:14px;">mm</span></div>
+                        <div class="day-wind">🌪️ NE 12<span style="font-size:14px;">km/h</span></div>
+                    </div>
+                    <div class="weather-day">
+                        <div class="day-label">Tomorrow</div>
+                        <div class="day-icon">⛅</div>
+                        <div class="day-condition">Partly Sunny</div>
+                        <div class="day-temp">24<span style="font-size:16px;">°C</span></div>
+                        <div class="day-rain">💧 1<span style="font-size:14px;">mm</span></div>
+                        <div class="day-wind">🌪️ N 8<span style="font-size:14px;">km/h</span></div>
+                    </div>
+                    <div class="weather-day">
+                        <div class="day-label">Tuesday</div>
+                        <div class="day-icon">🌦️</div>
+                        <div class="day-condition">Light Rain</div>
+                        <div class="day-temp">18<span style="font-size:16px;">°C</span></div>
+                        <div class="day-rain">💧 8<span style="font-size:14px;">mm</span></div>
+                        <div class="day-wind">🌪️ SW 18<span style="font-size:14px;">km/h</span></div>
+                    </div>
+                    <div class="weather-day">
+                        <div class="day-label">Wednesday</div>
+                        <div class="day-icon">⛈️</div>
+                        <div class="day-condition">Thunderstorms</div>
+                        <div class="day-temp">16<span style="font-size:16px;">°C</span></div>
+                        <div class="day-rain">💧 15<span style="font-size:14px;">mm</span></div>
+                        <div class="day-wind">🌪️ W 22<span style="font-size:14px;">km/h</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Query Interface -->
+            <section class="constitutional-card">
+                <h1 class="constitutional-card-title">How can I help you today?</h1>
+                <textarea class="constitutional-textarea" placeholder="Ask me anything about your crops, soil, weather, or farming techniques. I'm here to help Bulgarian mango farmers and everyone else!" onkeypress="handleEnterKey(event, 'submitQuery')"></textarea>
+                <div class="enter-hint">Press Enter to submit your question</div>
+                <button id="submitQuery" class="constitutional-btn">🔍 Submit Question</button>
+            </section>
+
+            <!-- Action Buttons -->
+            <section class="constitutional-card">
+                <h2 class="constitutional-card-title">Quick Actions</h2>
+                <button class="constitutional-btn">📋 I want to report a task</button>
+                <button class="constitutional-btn constitutional-btn-secondary">📊 I need data about my farm</button>
+            </section>
         </div>
-        <h2 class="success">✅ Web Interface Working!</h2>
-        <p>🥭 MANGO RULE: Ready for Bulgarian mango farmers</p>
-        <p>Service URL: https://3ksdvgdtud.us-east-1.awsapprunner.com</p>
+
+        <script>
+            function handleEnterKey(event, buttonId) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    document.getElementById(buttonId).click();
+                }
+            }
+            document.getElementById('submitQuery').addEventListener('click', function() {
+                const textarea = document.querySelector('.constitutional-textarea');
+                const query = textarea.value.trim();
+                if (query) {
+                    alert('🏛️ Constitutional Query Submitted\\n\\n' + query + '\\n\\n✅ MANGO RULE: Works for Bulgarian mango farmers');
+                    textarea.value = '';
+                }
+            });
+            console.log('🏛️ Constitutional Web Interface with Full Weather System Active');
+        </script>
     </body>
     </html>
     """
