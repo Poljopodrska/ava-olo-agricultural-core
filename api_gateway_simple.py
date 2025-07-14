@@ -1399,6 +1399,70 @@ try:
                 "message": f"Migration failed: {str(e)}"
             }
     
+    @app.post("/api/v1/auth/migrate-direct")
+    async def run_direct_migration():
+        """Direct migration using the exact working pattern"""
+        try:
+            # Import what we need
+            from config_manager import config
+            import asyncpg
+            import os
+            
+            # Direct asyncpg connection (no SSL specified, like working code)
+            conn = await asyncpg.connect(
+                host=config.db_host,
+                port=config.db_port,
+                user=config.db_user,
+                password=config.db_password,
+                database=config.db_name
+            )
+            
+            # Test connection
+            version = await conn.fetchval("SELECT version()")
+            logger.info(f"Connected to database: {version[:50]}...")
+            
+            # Read migration SQL
+            migration_path = os.path.join(os.path.dirname(__file__), 'database', 'auth_schema.sql')
+            
+            if not os.path.exists(migration_path):
+                await conn.close()
+                return {
+                    "success": False,
+                    "message": f"Migration file not found: {migration_path}"
+                }
+            
+            with open(migration_path, 'r') as f:
+                migration_sql = f.read()
+            
+            # Split into individual statements and execute
+            statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
+            
+            for statement in statements:
+                if statement:
+                    try:
+                        await conn.execute(statement)
+                        logger.info(f"Executed: {statement[:50]}...")
+                    except Exception as e:
+                        if "already exists" in str(e):
+                            logger.info(f"Table/index already exists, skipping")
+                        else:
+                            raise e
+            
+            await conn.close()
+            
+            return {
+                "success": True,
+                "message": "Migration completed successfully",
+                "database_version": version[:50] if version else "Unknown"
+            }
+            
+        except Exception as e:
+            logger.error(f"Direct migration failed: {e}")
+            return {
+                "success": False,
+                "message": f"Migration failed: {str(e)[:200]}"
+            }
+    
     @app.post("/api/v1/auth/migrate-simple")
     async def run_simple_migration():
         """Simple migration using async pattern"""
