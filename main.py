@@ -140,15 +140,16 @@ async def root():
         <p class="status">✅ Service is running!</p>
         <div class="links">
             <h3>Available Dashboards:</h3>
-            <a href="/database-explorer">Database Explorer</a>
-            <a href="/business-dashboard">Business Dashboard</a>
-            <a href="/health">Health Check</a>
+            <a href="./database-explorer">Database Explorer</a>
+            <a href="./business-dashboard">Business Dashboard</a>
+            <a href="./health">Health Check</a>
         </div>
     </body>
     </html>
     """)
 
-@app.get("/health")
+@app.get("/health", response_class=JSONResponse)
+@app.get("/health/", response_class=JSONResponse)
 async def health():
     """Health check endpoint"""
     db_status = "unknown"
@@ -161,15 +162,192 @@ async def health():
     except:
         db_status = "error"
     
-    return {
+    return JSONResponse(content={
         "status": "healthy",
         "service": "monitoring-dashboards",
         "database": db_status,
         "openai": "available" if OPENAI_AVAILABLE else "not available"
-    }
+    })
 
-# We'll add the rest of the application gradually
-# For now, let's just get it running
+# Database Explorer functionality
+@app.get("/database-explorer", response_class=HTMLResponse)
+@app.get("/database-explorer/", response_class=HTMLResponse)
+async def database_explorer():
+    """Database Explorer - Natural Language Query Interface"""
+    
+    html_content = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AVA OLO Database Explorer</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 20px;
+                background-color: #f5f3f0;
+                color: #3e2e1e;
+            }
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+            .header {
+                background-color: #8b4513;
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+            }
+            .query-box {
+                background: white;
+                border: 1px solid #d4a574;
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+            textarea {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #d4a574;
+                border-radius: 4px;
+                font-size: 16px;
+                resize: vertical;
+                min-height: 100px;
+            }
+            button {
+                background-color: #556b2f;
+                color: white;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 4px;
+                font-size: 16px;
+                cursor: pointer;
+                margin-top: 10px;
+            }
+            button:hover {
+                background-color: #3e4e1f;
+            }
+            .results {
+                background: white;
+                border: 1px solid #d4a574;
+                border-radius: 8px;
+                padding: 20px;
+                min-height: 200px;
+            }
+            .back-link {
+                color: #8b4513;
+                text-decoration: none;
+                margin-bottom: 20px;
+                display: inline-block;
+            }
+            .loading {
+                color: #666;
+                font-style: italic;
+            }
+            pre {
+                background: #f5f5f5;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="/" class="back-link">← Back to Dashboard</a>
+            
+            <div class="header">
+                <h1>🔍 Database Explorer</h1>
+                <p>Ask questions about your agricultural data in natural language</p>
+            </div>
+            
+            <div class="query-box">
+                <h3>Enter your question:</h3>
+                <textarea id="query" placeholder="Examples:
+- Show me all farmers in Croatia
+- How many hectares of tomatoes do we have?
+- List farmers who joined this month
+- What crops are grown in Serbia?"></textarea>
+                <button onclick="executeQuery()">🔍 Search Database</button>
+            </div>
+            
+            <div class="results" id="results">
+                <p style="color: #999;">Results will appear here...</p>
+            </div>
+        </div>
+        
+        <script>
+            async function executeQuery() {
+                const query = document.getElementById('query').value;
+                const resultsDiv = document.getElementById('results');
+                
+                if (!query.trim()) {
+                    alert('Please enter a question');
+                    return;
+                }
+                
+                resultsDiv.innerHTML = '<p class="loading">Processing your query...</p>';
+                
+                try {
+                    const response = await fetch('/api/database/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query: query })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        resultsDiv.innerHTML = `<div style="color: red;">Error: ${data.error}</div>`;
+                    } else {
+                        resultsDiv.innerHTML = `
+                            <h3>Results:</h3>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        `;
+                    }
+                } catch (error) {
+                    resultsDiv.innerHTML = `<div style="color: red;">Error: ${error.message}</div>`;
+                }
+            }
+            
+            // Allow Enter key to submit
+            document.getElementById('query').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    executeQuery();
+                }
+            });
+        </script>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html_content)
+
+# API endpoint for database queries
+@app.post("/api/database/query")
+async def api_database_query(request: Request):
+    """Process natural language database queries"""
+    try:
+        body = await request.json()
+        query = body.get('query', '')
+        
+        # For now, return a simple response
+        # We'll add the LLM integration later
+        return JSONResponse(content={
+            "query": query,
+            "message": "Database query functionality will be added soon",
+            "status": "pending"
+        })
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
