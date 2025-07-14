@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO - Your Agricultural Assistant</title>
+    <link rel="stylesheet" href="/static/css/constitutional-web.css">
+</head>
+<body>
+    <!-- Constitutional Header with Atomic Logo -->
+    <div class="container">
+        <header class="constitutional-header">
+            <div class="constitutional-logo">
+                <div class="electron electron1"></div>
+                <div class="electron electron2"></div>
+                <div class="electron electron3"></div>
+            </div>
+            <div class="constitutional-brand">AVA OLO</div>
+            <div class="constitutional-tagline">Your Constitutional Agricultural Assistant</div>
+        </header>
+
+        <!-- Weather Section with 24-hour forecast -->
+        <section class="weather-section">
+            <div class="weather-today">
+                <div class="today-header">Today's Weather</div>
+                <div class="weather-temp">{{ weather_data.current_temp | default('--') }}°C</div>
+                <div class="weather-condition">{{ weather_data.condition | default('Loading...') }}</div>
+                
+                <!-- 24-hour forecast grid -->
+                <div class="hourly-forecast" id="hourly-forecast">
+                    {% for hour in weather_data.hourly_forecast | default([]) %}
+                    <div class="hour-item">
+                        <div class="hour-time">{{ hour.time }}</div>
+                        <div class="hour-icon">{{ hour.icon }}</div>
+                        <div class="hour-temp">{{ hour.temp }}°</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- 5-day weather forecast -->
+            <div class="weather-timeline">
+                {% for day in weather_data.daily_forecast | default([]) %}
+                <div class="weather-day" onclick="showDayDetails('{{ day.date }}')">
+                    <div class="day-header">{{ day.day_name }}</div>
+                    <div class="day-icon">{{ day.icon }}</div>
+                    <div class="day-temp">
+                        <span class="temp-high">{{ day.temp_high }}°</span>
+                        <span class="temp-low">{{ day.temp_low }}°</span>
+                    </div>
+                    <div class="day-condition">{{ day.condition }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Main Query Interface -->
+        <section class="constitutional-card">
+            <h1>How can I help you today?</h1>
+            <form id="query-form" action="/web/query" method="POST">
+                <textarea 
+                    class="constitutional-textarea" 
+                    name="query"
+                    id="query-input"
+                    placeholder="Ask me anything about your crops, soil, weather, or farming techniques..."
+                    onkeypress="handleEnterKey(event, 'submit-query')"
+                    required></textarea>
+                {% if farmer_data %}
+                <input type="hidden" name="farmer_id" value="{{ farmer_data.id }}">
+                {% endif %}
+                <button type="submit" id="submit-query" class="constitutional-btn">Submit Question</button>
+            </form>
+            
+            <!-- Response area -->
+            <div id="response-area" class="response-area" style="display: none;">
+                <h2>AVA OLO's Response:</h2>
+                <div id="response-content"></div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <section class="constitutional-card">
+            <button class="constitutional-btn" onclick="reportTask()">📋 I want to report a task</button>
+            <button class="constitutional-btn" onclick="getFarmData()">📊 I need data about my farm</button>
+        </section>
+        
+        <!-- Recent Activities (if farmer logged in) -->
+        {% if farmer_data and recent_activities %}
+        <section class="constitutional-card">
+            <h2>Recent Activities</h2>
+            <div class="activities-list">
+                {% for activity in recent_activities %}
+                <div class="activity-item">
+                    <span class="activity-time">{{ activity.time }}</span>
+                    <span class="activity-description">{{ activity.description }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </div>
+
+    <script src="/static/js/constitutional-web.js"></script>
+    <script>
+        // Initialize real-time weather updates
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏛️ Constitutional Web Interface Active');
+            
+            // Update weather every 10 minutes
+            setInterval(updateWeather, 600000);
+            
+            // Load weather immediately if farmer is logged in
+            {% if farmer_data %}
+            updateWeather();
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

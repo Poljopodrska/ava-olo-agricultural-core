@@ -1,0 +1,436 @@
+/* Constitutional Design System - EXACT colors and styling */
+:root {
+    --primary-brown: #6B5B73;
+    --primary-olive: #8B8C5A;
+    --dark-olive: #5D5E3F;
+    --light-olive: #A8AA6B;
+    --accent-green: #7A8B5A;
+    --cream: #F5F3F0;
+    --white: #FFFFFF;
+    --dark-charcoal: #2C2C2C;
+    --light-gray: #E8E8E6;
+    --success-green: #6B8E23;
+    --font-large: 18px;    /* CONSTITUTIONAL: 18px minimum */
+    --font-medium: 16px;
+    --font-heading: 24px;
+    --font-title: 32px;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 12px rgba(107, 91, 115, 0.1);
+}
+
+/* Constitutional reset and base styles */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: var(--cream);
+    color: var(--dark-charcoal);
+    font-size: var(--font-large);
+    line-height: 1.5;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+}
+
+/* Constitutional Header with Atomic Logo */
+.constitutional-header {
+    background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
+    color: var(--white);
+    padding: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    box-shadow: var(--box-shadow);
+    margin-bottom: var(--spacing-xl);
+    border-radius: var(--border-radius);
+    flex-wrap: wrap;
+}
+
+.constitutional-logo {
+    width: 48px; 
+    height: 48px;
+    background: var(--white);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Atomic electron orbits */
+.electron {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: var(--primary-brown);
+    border-radius: 50%;
+}
+
+.electron1 {
+    animation: orbit1 3s linear infinite;
+}
+
+.electron2 {
+    animation: orbit2 3s linear infinite;
+}
+
+.electron3 {
+    animation: orbit3 3s linear infinite;
+}
+
+@keyframes orbit1 {
+    from { transform: rotate(0deg) translateX(20px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(20px) rotate(-360deg); }
+}
+
+@keyframes orbit2 {
+    from { transform: rotate(120deg) translateX(20px) rotate(-120deg); }
+    to { transform: rotate(480deg) translateX(20px) rotate(-480deg); }
+}
+
+@keyframes orbit3 {
+    from { transform: rotate(240deg) translateX(20px) rotate(-240deg); }
+    to { transform: rotate(600deg) translateX(20px) rotate(-600deg); }
+}
+
+.constitutional-logo::before {
+    content: ''; 
+    width: 12px; 
+    height: 12px;
+    background: var(--primary-brown);
+    border-radius: 50%;
+    position: absolute;
+    z-index: 3;
+}
+
+.constitutional-brand {
+    font-size: var(--font-title);
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.constitutional-tagline {
+    font-size: var(--font-medium);
+    opacity: 0.9;
+    flex: 1;
+}
+
+/* Constitutional Cards and Components */
+.constitutional-card {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    box-shadow: var(--box-shadow);
+    border-left: 4px solid var(--primary-olive);
+    margin-bottom: var(--spacing-lg);
+}
+
+.constitutional-card h1 {
+    font-size: var(--font-heading);
+    color: var(--primary-brown);
+    margin-bottom: var(--spacing-md);
+}
+
+.constitutional-card h2 {
+    font-size: calc(var(--font-heading) * 0.9);
+    color: var(--primary-brown);
+    margin-bottom: var(--spacing-md);
+}
+
+.constitutional-btn {
+    background: var(--primary-olive);
+    color: var(--white);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-large);
+    font-weight: bold;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.constitutional-btn:hover {
+    background: var(--dark-olive);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(107, 91, 115, 0.2);
+}
+
+.constitutional-btn:active {
+    transform: translateY(0);
+}
+
+.constitutional-textarea {
+    width: 100%;
+    padding: var(--spacing-md);
+    border: 2px solid var(--light-gray);
+    border-radius: var(--border-radius);
+    font-size: var(--font-large);
+    background: var(--white);
+    transition: all 0.3s ease;
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.constitutional-textarea:focus {
+    outline: none;
+    border-color: var(--primary-olive);
+    box-shadow: 0 0 0 3px rgba(139, 140, 90, 0.1);
+}
+
+/* Weather-specific styling with 24-hour forecast */
+.weather-section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.weather-today {
+    background: linear-gradient(135deg, var(--primary-olive), var(--accent-green));
+    color: var(--white);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+    box-shadow: var(--box-shadow);
+}
+
+.today-header {
+    font-size: var(--font-heading);
+    font-weight: bold;
+    margin-bottom: var(--spacing-md);
+}
+
+.weather-temp {
+    font-size: calc(var(--font-title) * 1.5);
+    font-weight: bold;
+    margin-bottom: var(--spacing-sm);
+}
+
+.weather-condition {
+    font-size: var(--font-medium);
+    opacity: 0.9;
+}
+
+.hourly-forecast {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-lg);
+    padding-top: var(--spacing-lg);
+    border-top: 2px solid rgba(255, 255, 255, 0.3);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.hour-item {
+    text-align: center;
+    padding: var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease;
+}
+
+.hour-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.hour-time {
+    font-size: calc(var(--font-medium) * 0.9);
+    margin-bottom: var(--spacing-xs);
+}
+
+.hour-icon {
+    font-size: var(--font-heading);
+    margin-bottom: var(--spacing-xs);
+}
+
+.hour-temp {
+    font-size: var(--font-medium);
+    font-weight: bold;
+}
+
+.weather-timeline {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--spacing-md);
+}
+
+.weather-day {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    text-align: center;
+    border-left: 4px solid var(--light-olive);
+    box-shadow: var(--box-shadow);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.weather-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(107, 91, 115, 0.2);
+}
+
+.day-header {
+    font-size: var(--font-medium);
+    font-weight: bold;
+    color: var(--primary-brown);
+    margin-bottom: var(--spacing-sm);
+}
+
+.day-icon {
+    font-size: calc(var(--font-title) * 1.2);
+    margin-bottom: var(--spacing-sm);
+}
+
+.day-temp {
+    margin-bottom: var(--spacing-sm);
+}
+
+.temp-high {
+    font-size: var(--font-medium);
+    font-weight: bold;
+    color: var(--dark-charcoal);
+}
+
+.temp-low {
+    font-size: calc(var(--font-medium) * 0.9);
+    color: #666;
+    margin-left: var(--spacing-xs);
+}
+
+.day-condition {
+    font-size: calc(var(--font-medium) * 0.9);
+    color: #666;
+}
+
+/* Response area */
+.response-area {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: var(--light-gray);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--success-green);
+}
+
+#response-content {
+    font-size: var(--font-large);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Activities list */
+.activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.activity-item {
+    display: flex;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm);
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.activity-time {
+    font-size: calc(var(--font-medium) * 0.9);
+    color: #666;
+    min-width: 120px;
+}
+
+.activity-description {
+    flex: 1;
+    font-size: var(--font-medium);
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '...';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: var(--spacing-md);
+    }
+    
+    .weather-timeline { 
+        grid-template-columns: repeat(2, 1fr); 
+    }
+    
+    .hourly-forecast { 
+        grid-template-columns: repeat(3, 1fr); 
+    }
+    
+    .constitutional-header {
+        text-align: center;
+    }
+    
+    .constitutional-brand {
+        font-size: calc(var(--font-title) * 0.9);
+    }
+    
+    .constitutional-tagline {
+        font-size: calc(var(--font-medium) * 0.9);
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .weather-timeline { 
+        grid-template-columns: 1fr; 
+    }
+    
+    .hourly-forecast { 
+        grid-template-columns: repeat(2, 1fr); 
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--light-gray);
+    border-radius: var(--border-radius);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-olive);
+    border-radius: var(--border-radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-olive);
+}
