@@ -99,21 +99,18 @@ async def main_web_interface():
             .day-rain { font-size: 24px; color: var(--dark-olive); padding: 16px; border-bottom: 1px solid var(--light-gray); font-weight: bold; }
             .day-wind { font-size: 20px; color: var(--dark-olive); padding: 16px; font-weight: bold; }
             
-            /* Schematic Weather Pictograms */
+            /* SVG Weather Icons */
             .weather-icon {
-                font-family: monospace;
-                font-weight: bold;
-                line-height: 1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                flex-direction: column;
-                text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-                filter: contrast(1.2);
             }
-            .today-icon .weather-icon { font-size: 48px; }
-            .hour-icon .weather-icon { font-size: 16px; }
-            .day-icon .weather-icon { font-size: 24px; }
+            .weather-icon svg {
+                filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.2));
+            }
+            .today-icon .weather-icon svg { width: 64px; height: 64px; }
+            .hour-icon .weather-icon svg { width: 24px; height: 24px; }
+            .day-icon .weather-icon svg { width: 32px; height: 32px; }
             
             /* Constitutional Cards */
             .constitutional-card { background: var(--white); border-radius: 8px; padding: 24px; box-shadow: 0 2px 12px rgba(107,91,115,0.1); border-left: 4px solid var(--primary-olive); margin-bottom: 24px; }
@@ -157,7 +154,21 @@ async def main_web_interface():
                     <div class="today-header">Today's Weather</div>
                     <div class="today-main">
                         <div class="today-icon">
-                            <div class="weather-icon">○</div>
+                            <div class="weather-icon">
+                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="5" fill="#9CAF88" stroke="#8B4513" stroke-width="2"/>
+                                    <g stroke="#8B4513" stroke-width="2" stroke-linecap="round">
+                                        <line x1="12" y1="1" x2="12" y2="3"/>
+                                        <line x1="12" y1="21" x2="12" y2="23"/>
+                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                        <line x1="1" y1="12" x2="3" y2="12"/>
+                                        <line x1="21" y1="12" x2="23" y2="12"/>
+                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                                    </g>
+                                </svg>
+                            </div>
                         </div>
                         <div class="today-details">
                             <div class="today-condition">Sunny</div>
@@ -179,78 +190,15 @@ async def main_web_interface():
                         </div>
                         <div class="hourly-slider-container">
                             <div class="hourly-slider" id="hourlySlider">
-                                <!-- All 24 hours -->
-                                <div class="hourly-square"><div class="hour-time">00:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">01:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">13°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 4km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">02:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 3km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">03:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 3km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">04:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">11°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 4km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">05:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">11°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 5km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">06:00</div><div class="hour-icon"><div class="weather-icon">◐</div></div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 6km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">07:00</div><div class="hour-icon"><div class="weather-icon">◐</div></div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 7km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">08:00</div><div class="hour-icon"><div class="weather-icon">⌈⌈</div></div><div class="hour-temp">16°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 8km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">09:00</div><div class="hour-icon"><div class="weather-icon">⌈⌈</div></div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 10km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">10:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">20°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 11km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">11:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">12:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">22°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">13:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">23°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 13km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">14:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">24°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 14km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">15:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">25°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 15km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">16:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">24°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 14km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">17:00</div><div class="hour-icon"><div class="weather-icon">○⌈</div></div><div class="hour-temp">23°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 12km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">18:00</div><div class="hour-icon"><div class="weather-icon">○⌈</div></div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 8km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">19:00</div><div class="hour-icon"><div class="weather-icon">○⌈</div></div><div class="hour-temp">20°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 7km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">20:00</div><div class="hour-icon"><div class="weather-icon">◐</div></div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">21:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">17°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">22:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">16°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 5km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">23:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">15°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
+                                <!-- All 24 hours will be populated by JavaScript -->
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 5-Day Timeline -->
-                <div class="weather-timeline">
-                    <div class="weather-day">
-                        <div class="day-label">Yesterday</div>
-                        <div class="day-icon"><div class="weather-icon">○⌈</div></div>
-                        <div class="day-condition">Partly Cloudy</div>
-                        <div class="day-temp">19<span style="font-size:16px;">°C</span></div>
-                        <div class="day-rain">💧 2<span style="font-size:14px;">mm</span></div>
-                        <div class="day-wind">🌪️ W 14<span style="font-size:14px;">km/h</span></div>
-                    </div>
-                    <div class="weather-day weather-day-today">
-                        <div class="day-label">Today</div>
-                        <div class="day-icon"><div class="weather-icon">○</div></div>
-                        <div class="day-condition">Sunny</div>
-                        <div class="day-temp">22<span style="font-size:16px;">°C</span></div>
-                        <div class="day-rain">💧 0<span style="font-size:14px;">mm</span></div>
-                        <div class="day-wind">🌪️ NE 12<span style="font-size:14px;">km/h</span></div>
-                    </div>
-                    <div class="weather-day">
-                        <div class="day-label">Tomorrow</div>
-                        <div class="day-icon"><div class="weather-icon">○⌈</div></div>
-                        <div class="day-condition">Partly Sunny</div>
-                        <div class="day-temp">24<span style="font-size:16px;">°C</span></div>
-                        <div class="day-rain">💧 1<span style="font-size:14px;">mm</span></div>
-                        <div class="day-wind">🌪️ N 8<span style="font-size:14px;">km/h</span></div>
-                    </div>
-                    <div class="weather-day">
-                        <div class="day-label">Tuesday</div>
-                        <div class="day-icon"><div class="weather-icon">⌈<br>··</div></div>
-                        <div class="day-condition">Light Rain</div>
-                        <div class="day-temp">18<span style="font-size:16px;">°C</span></div>
-                        <div class="day-rain">💧 8<span style="font-size:14px;">mm</span></div>
-                        <div class="day-wind">🌪️ SW 18<span style="font-size:14px;">km/h</span></div>
-                    </div>
-                    <div class="weather-day">
-                        <div class="day-label">Wednesday</div>
-                        <div class="day-icon"><div class="weather-icon">⌈<br>↯</div></div>
-                        <div class="day-condition">Thunderstorms</div>
-                        <div class="day-temp">16<span style="font-size:16px;">°C</span></div>
-                        <div class="day-rain">💧 15<span style="font-size:14px;">mm</span></div>
-                        <div class="day-wind">🌪️ W 22<span style="font-size:14px;">km/h</span></div>
-                    </div>
+                <div class="weather-timeline" id="weatherTimeline">
+                    <!-- 5-day timeline will be populated by JavaScript -->
                 </div>
             </section>
 
@@ -317,9 +265,204 @@ async def main_web_interface():
             // Initialize slider to show 8AM-4PM on load
             document.addEventListener('DOMContentLoaded', function() {
                 resetSlider();
+                populateHourlyForecast();
+                populate5DayTimeline();
             });
+            
+            // Populate hourly forecast with SVG icons
+            function populateHourlyForecast() {
+                const slider = document.getElementById('hourlySlider');
+                const hours = [
+                    {time: '00:00', icon: 'night', temp: '14°C', rain: 0, wind: 'E 5km/h'},
+                    {time: '01:00', icon: 'night', temp: '13°C', rain: 0, wind: 'E 4km/h'},
+                    {time: '02:00', icon: 'night', temp: '12°C', rain: 0, wind: 'E 3km/h'},
+                    {time: '03:00', icon: 'night', temp: '12°C', rain: 0, wind: 'NE 3km/h'},
+                    {time: '04:00', icon: 'night', temp: '11°C', rain: 0, wind: 'NE 4km/h'},
+                    {time: '05:00', icon: 'night', temp: '11°C', rain: 0, wind: 'NE 5km/h'},
+                    {time: '06:00', icon: 'dawn', temp: '12°C', rain: 0, wind: 'NE 6km/h'},
+                    {time: '07:00', icon: 'dawn', temp: '14°C', rain: 0, wind: 'NE 7km/h'},
+                    {time: '08:00', icon: 'cloudy', temp: '16°C', rain: 0, wind: 'NE 8km/h'},
+                    {time: '09:00', icon: 'cloudy', temp: '18°C', rain: 0, wind: 'NE 10km/h'},
+                    {time: '10:00', icon: 'sunny', temp: '20°C', rain: 0, wind: 'NE 11km/h'},
+                    {time: '11:00', icon: 'sunny', temp: '21°C', rain: 0, wind: 'NE 12km/h'},
+                    {time: '12:00', icon: 'sunny', temp: '22°C', rain: 0, wind: 'NE 12km/h'},
+                    {time: '13:00', icon: 'sunny', temp: '23°C', rain: 0, wind: 'E 13km/h'},
+                    {time: '14:00', icon: 'sunny', temp: '24°C', rain: 0, wind: 'E 14km/h'},
+                    {time: '15:00', icon: 'sunny', temp: '25°C', rain: 0, wind: 'E 15km/h'},
+                    {time: '16:00', icon: 'sunny', temp: '24°C', rain: 0, wind: 'E 14km/h'},
+                    {time: '17:00', icon: 'partly-cloudy', temp: '23°C', rain: 0, wind: 'E 12km/h'},
+                    {time: '18:00', icon: 'partly-cloudy', temp: '21°C', rain: 0, wind: 'E 8km/h'},
+                    {time: '19:00', icon: 'partly-cloudy', temp: '20°C', rain: 0, wind: 'SE 7km/h'},
+                    {time: '20:00', icon: 'dawn', temp: '18°C', rain: 0, wind: 'SE 6km/h'},
+                    {time: '21:00', icon: 'night', temp: '17°C', rain: 0, wind: 'SE 6km/h'},
+                    {time: '22:00', icon: 'night', temp: '16°C', rain: 0, wind: 'SE 5km/h'},
+                    {time: '23:00', icon: 'night', temp: '15°C', rain: 0, wind: 'E 5km/h'}
+                ];
+                
+                let html = '';
+                hours.forEach(hour => {
+                    let iconHtml = '';
+                    switch(hour.icon) {
+                        case 'sunny': iconHtml = getSunnyIcon(); break;
+                        case 'cloudy': iconHtml = getCloudyIcon(); break;
+                        case 'partly-cloudy': iconHtml = getPartlyCloudyIcon(); break;
+                        case 'night': iconHtml = getNightIcon(); break;
+                        case 'dawn': iconHtml = getDawnIcon(); break;
+                    }
+                    
+                    html += `<div class="hourly-square">
+                        <div class="hour-time">${hour.time}</div>
+                        <div class="hour-icon"><div class="weather-icon">${iconHtml}</div></div>
+                        <div class="hour-temp">${hour.temp}</div>
+                        <div class="hour-rain">💧 ${hour.rain}mm</div>
+                        <div class="hour-wind">🌪️ ${hour.wind}</div>
+                    </div>`;
+                });
+                
+                slider.innerHTML = html;
+            }
+            
+            // Populate 5-day timeline with SVG icons
+            function populate5DayTimeline() {
+                const timeline = document.getElementById('weatherTimeline');
+                const days = [
+                    {label: 'Yesterday', icon: 'partly-cloudy', condition: 'Partly Cloudy', temp: 19, rain: 2, wind: 'W 14km/h'},
+                    {label: 'Today', icon: 'sunny', condition: 'Sunny', temp: 22, rain: 0, wind: 'NE 12km/h', today: true},
+                    {label: 'Tomorrow', icon: 'partly-cloudy', condition: 'Partly Sunny', temp: 24, rain: 1, wind: 'N 8km/h'},
+                    {label: 'Tuesday', icon: 'rain-moderate', condition: 'Light Rain', temp: 18, rain: 8, wind: 'SW 18km/h'},
+                    {label: 'Wednesday', icon: 'thunderstorm', condition: 'Thunderstorms', temp: 16, rain: 15, wind: 'W 22km/h'}
+                ];
+                
+                let html = '';
+                days.forEach(day => {
+                    let iconHtml = '';
+                    switch(day.icon) {
+                        case 'sunny': iconHtml = getSunnyIcon(); break;
+                        case 'cloudy': iconHtml = getCloudyIcon(); break;
+                        case 'partly-cloudy': iconHtml = getPartlyCloudyIcon(); break;
+                        case 'rain-light': iconHtml = getRainIcon('light'); break;
+                        case 'rain-moderate': iconHtml = getRainIcon('moderate'); break;
+                        case 'rain-heavy': iconHtml = getRainIcon('heavy'); break;
+                        case 'thunderstorm': iconHtml = getThunderstormIcon(); break;
+                    }
+                    
+                    html += `<div class="weather-day${day.today ? ' weather-day-today' : ''}">
+                        <div class="day-label">${day.label}</div>
+                        <div class="day-icon"><div class="weather-icon">${iconHtml}</div></div>
+                        <div class="day-condition">${day.condition}</div>
+                        <div class="day-temp">${day.temp}<span style="font-size:16px;">°C</span></div>
+                        <div class="day-rain">💧 ${day.rain}<span style="font-size:14px;">mm</span></div>
+                        <div class="day-wind">🌪️ ${day.wind}</div>
+                    </div>`;
+                });
+                
+                timeline.innerHTML = html;
+            }
 
             console.log('🏛️ Constitutional Web Interface with Enhanced Weather System Active');
+            
+            // SVG Weather Icon Functions
+            function getSunnyIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="5" fill="#9CAF88" stroke="#8B4513" stroke-width="2"/>
+                    <g stroke="#8B4513" stroke-width="2" stroke-linecap="round">
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </g>
+                </svg>`;
+            }
+            
+            function getCloudyIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
+                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                </svg>`;
+            }
+            
+            function getPartlyCloudyIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <g>
+                        <circle cx="10" cy="10" r="3" fill="#9CAF88" stroke="#8B4513" stroke-width="1.5"/>
+                        <g stroke="#8B4513" stroke-width="1.5" stroke-linecap="round" opacity="0.8">
+                            <line x1="10" y1="4" x2="10" y2="5"/>
+                            <line x1="15" y1="10" x2="16" y2="10"/>
+                            <line x1="14.5" y1="5.5" x2="15.5" y2="4.5"/>
+                        </g>
+                        <path d="M16 12h-0.8A5 5 0 1 0 10 17h6a3 3 0 0 0 0-6z" 
+                              fill="#E8E8E6" stroke="#8B4513" stroke-width="1.5" stroke-linejoin="round"/>
+                    </g>
+                </svg>`;
+            }
+            
+            function getRainIcon(intensity = 'moderate') {
+                const drops = intensity === 'light' ? 2 : intensity === 'heavy' ? 4 : 3;
+                let dropPaths = '';
+                for (let i = 0; i < drops; i++) {
+                    const x = 8 + (i * 3);
+                    dropPaths += `<line x1="${x}" y1="13" x2="${x-1}" y2="16" stroke="#5D5E3F" stroke-width="1.5" stroke-linecap="round"/>`;
+                }
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
+                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                    ${dropPaths}
+                </svg>`;
+            }
+            
+            function getThunderstormIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
+                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                    <path d="M13 16l-3 5 3-5h-3l3-5" 
+                          fill="none" stroke="#8B4513" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+                </svg>`;
+            }
+            
+            function getSnowIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
+                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                    <g fill="#8B4513">
+                        <circle cx="8" cy="14" r="1"/>
+                        <circle cx="12" cy="13" r="1"/>
+                        <circle cx="16" cy="14" r="1"/>
+                        <circle cx="10" cy="16" r="1"/>
+                        <circle cx="14" cy="16" r="1"/>
+                    </g>
+                </svg>`;
+            }
+            
+            function getFogIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <g stroke="#8B4513" stroke-width="2" stroke-linecap="round">
+                        <line x1="4" y1="8" x2="20" y2="8" opacity="0.8"/>
+                        <line x1="4" y1="12" x2="20" y2="12"/>
+                        <line x1="4" y1="16" x2="20" y2="16" opacity="0.6"/>
+                    </g>
+                </svg>`;
+            }
+            
+            function getNightIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" 
+                          fill="#9CAF88" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                </svg>`;
+            }
+            
+            function getDawnIcon() {
+                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <g>
+                        <path d="M12 15a5 5 0 0 0 0-10v10z" fill="#9CAF88" stroke="#8B4513" stroke-width="2"/>
+                        <line x1="4" y1="18" x2="20" y2="18" stroke="#8B4513" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="6" y1="21" x2="18" y2="21" stroke="#8B4513" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                    </g>
+                </svg>`;
+            }
         </script>
     </body>
     </html>
