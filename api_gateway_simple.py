@@ -1446,6 +1446,41 @@ except ImportError as e:
             "message": "Authentication system not loaded - using compatibility mode",
             "fallback_mode": True
         }
+    
+    @app.get("/api/v1/auth/test-secrets")
+    async def test_secrets():
+        """Test AWS Secrets Manager integration"""
+        import os
+        result = {
+            "aws_secret_name": os.getenv("AWS_SECRET_NAME"),
+            "aws_region": os.getenv("AWS_REGION", "us-east-1"),
+            "aws_default_region": os.getenv("AWS_DEFAULT_REGION"),
+            "secrets_manager_test": "not_run"
+        }
+        
+        if result["aws_secret_name"]:
+            try:
+                from implementation.secrets_manager import get_database_config, get_cached_secret
+                
+                # Test fetching the secret
+                secret_data = get_cached_secret(result["aws_secret_name"])
+                if secret_data:
+                    result["secrets_manager_test"] = "success"
+                    result["secret_keys"] = list(secret_data.keys())
+                    result["db_config_from_secrets"] = bool(secret_data.get("DB_PASSWORD"))
+                else:
+                    result["secrets_manager_test"] = "failed - no data"
+                    
+                # Test getting database config
+                db_config = get_database_config()
+                result["db_config_source"] = "secrets" if secret_data else "env"
+                
+            except Exception as e:
+                result["secrets_manager_test"] = f"error: {str(e)}"
+        else:
+            result["secrets_manager_test"] = "skipped - AWS_SECRET_NAME not set"
+            
+        return result
 
 
 if __name__ == "__main__":

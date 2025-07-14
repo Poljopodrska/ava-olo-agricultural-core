@@ -20,9 +20,11 @@ def get_cached_secret(secret_name: str) -> Optional[Dict[str, Any]]:
         
         # Create a Secrets Manager client
         session = boto3.session.Session()
+        # Try multiple region environment variables
+        region = os.getenv('AWS_REGION') or os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         client = session.client(
             service_name='secretsmanager',
-            region_name=os.getenv('AWS_REGION', 'us-east-1')
+            region_name=region
         )
         
         # Get the secret
