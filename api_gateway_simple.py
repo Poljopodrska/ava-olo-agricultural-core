@@ -1320,7 +1320,7 @@ try:
             raise HTTPException(status_code=500, detail="Failed to load conversations")
     
     @app.post("/api/v1/auth/migrate")
-    def run_aurora_migration():
+    async def run_aurora_migration():
         """Run Aurora database migration for authentication tables"""
         try:
             # First test if we can connect using config manager (which works)
@@ -1394,6 +1394,60 @@ try:
                     
         except Exception as e:
             logger.error(f"Migration error: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Migration failed: {str(e)}"
+            }
+    
+    @app.post("/api/v1/auth/migrate-simple")
+    async def run_simple_migration():
+        """Simple migration using async pattern"""
+        try:
+            # Use the async database operations that work
+            from database_operations import ConstitutionalDatabaseOperations
+            
+            # Create async db ops
+            db = ConstitutionalDatabaseOperations()
+            
+            # Test connection with a simple query
+            result = await db.health_check()
+            
+            if not result:
+                return {"success": False, "message": "Database connection failed"}
+            
+            # Now run the migration SQL directly
+            from implementation.secrets_manager import get_database_config
+            import asyncpg
+            
+            db_config = get_database_config()
+            
+            # Use asyncpg like the working endpoints
+            conn = await asyncpg.connect(
+                host=db_config['host'],
+                port=db_config['port'],
+                user=db_config['user'],
+                password=db_config['password'],
+                database=db_config['database']
+            )
+            
+            # Read and execute migration SQL
+            import os
+            migration_path = os.path.join(os.path.dirname(__file__), 'database', 'auth_schema.sql')
+            
+            with open(migration_path, 'r') as f:
+                migration_sql = f.read()
+            
+            # Execute migration
+            await conn.execute(migration_sql)
+            await conn.close()
+            
+            return {
+                "success": True,
+                "message": "Migration completed successfully"
+            }
+            
+        except Exception as e:
+            logger.error(f"Simple migration failed: {e}")
             return {
                 "success": False,
                 "message": f"Migration failed: {str(e)}"
