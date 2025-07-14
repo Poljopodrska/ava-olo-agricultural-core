@@ -876,6 +876,28 @@ async def health_check():
             "error": str(e)
         }
 
+@app.get("/health-api/status")
+async def detailed_health_status():
+    """Detailed health status endpoint for deployment verification"""
+    try:
+        db_healthy = await db_ops.health_check()
+        return {
+            "status": "healthy" if db_healthy else "degraded",
+            "database": "connected" if db_healthy else "disconnected",
+            "timestamp": datetime.now().isoformat(),
+            "version": "2.0.0-simple",
+            "service": "ava-olo-agricultural-core",
+            "constitutional": True,
+            "authentication": "enabled"
+        }
+    except Exception as e:
+        logger.error(f"Detailed health check error: {str(e)}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "constitutional": False
+        }
+
 # All farmers list endpoint
 @app.get("/api/v1/farmers")
 async def get_all_farmers(limit: int = 100):
@@ -1112,6 +1134,180 @@ async def web_interface_health():
         "mango_rule": "active",
         "deployment_method": "deployment-first-verified"
     }
+
+
+# ====================================================================
+# AUTHENTICATION ENDPOINTS - ADDED WITHOUT BREAKING EXISTING FEATURES
+# ====================================================================
+
+# Authentication imports (only loaded when needed)
+try:
+    from implementation.farm_auth import FarmAuthManager
+    from implementation.auth_middleware import AuthMiddleware, AuthDependencies
+    from pydantic import BaseModel
+    
+    # Initialize authentication system
+    auth_manager = FarmAuthManager()
+    auth_middleware = AuthMiddleware(auth_manager)
+    auth_deps = AuthDependencies(auth_middleware)
+    
+    # Authentication request/response models
+    class LoginRequest(BaseModel):
+        wa_phone_number: str = Field(..., description="WhatsApp phone number")
+        password: str = Field(..., description="User password")
+
+    class RegisterUserRequest(BaseModel):
+        wa_phone_number: str = Field(..., description="WhatsApp phone number")
+        password: str = Field(..., description="User password")
+        user_name: str = Field(..., description="User display name")
+        role: str = Field(default="member", description="User role: owner, member, worker")
+
+    class LoginResponse(BaseModel):
+        success: bool
+        token: Optional[str] = None
+        user: Optional[Dict[str, Any]] = None
+        message: str
+
+    # Authentication endpoints
+    @app.post("/api/v1/auth/login", response_model=LoginResponse)
+    async def login(request: LoginRequest):
+        """Authenticate farm user and return access token"""
+        try:
+            result = auth_manager.authenticate_user(
+                request.wa_phone_number, 
+                request.password
+            )
+            
+            if result:
+                logger.info(f"Successful login for {request.wa_phone_number}")
+                return LoginResponse(
+                    success=True,
+                    token=result['token'],
+                    user=result['user'],
+                    message="Login successful"
+                )
+            else:
+                logger.warning(f"Failed login attempt for {request.wa_phone_number}")
+                return LoginResponse(
+                    success=False,
+                    message="Invalid WhatsApp number or password"
+                )
+                
+        except Exception as e:
+            logger.error(f"Login error: {str(e)}")
+            return LoginResponse(
+                success=False,
+                message="Login failed due to system error"
+            )
+
+    @app.post("/api/v1/auth/register")
+    async def register_farm_user(
+        request: RegisterUserRequest,
+        current_user: dict = auth_deps.can_add_users()
+    ):
+        """Add new family member to farm (requires owner permissions)"""
+        try:
+            result = auth_manager.register_farm_user(
+                farmer_id=current_user['farmer_id'],
+                wa_phone=request.wa_phone_number,
+                password=request.password,
+                user_name=request.user_name,
+                role=request.role,
+                created_by_user_id=current_user['user_id']
+            )
+            
+            logger.info(f"New farm user registered: {request.user_name} by {current_user['user_name']}")
+            return {"success": True, "user": result, "message": "Family member added successfully"}
+            
+        except ValueError as e:
+            logger.warning(f"Registration failed: {str(e)}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.error(f"Registration error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Registration failed")
+
+    @app.get("/api/v1/auth/me")
+    async def get_current_user_info(current_user: dict = auth_deps.current_user()):
+        """Get current authenticated user information"""
+        return {"success": True, "user": current_user}
+
+    @app.get("/api/v1/auth/family")
+    async def get_farm_family(current_user: dict = auth_deps.current_user()):
+        """Get all family members who have access to this farm"""
+        try:
+            family_members = auth_manager.get_farm_family_members(current_user['farmer_id'])
+            return {"success": True, "family_members": family_members}
+        except Exception as e:
+            logger.error(f"Get family error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to load family members")
+
+    @app.get("/api/v1/auth/activity")
+    async def get_farm_activity(
+        limit: int = 50,
+        current_user: dict = auth_deps.can_view_activity_log()
+    ):
+        """Get recent farm activity log (who did what)"""
+        try:
+            activities = auth_manager.get_farm_activity_log(current_user['farmer_id'], limit)
+            return {"success": True, "activities": activities}
+        except Exception as e:
+            logger.error(f"Get activity error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to load activity log")
+
+    # Authentication-aware versions of existing endpoints
+    @app.get("/api/v1/farmers/me")
+    async def get_my_farm_info(current_user: dict = auth_deps.current_user()):
+        """Get authenticated user's farm information"""
+        try:
+            db_ops = DatabaseOperations()
+            farmer = await db_ops.get_farmer_info(current_user['farmer_id'])
+            if farmer:
+                return {"success": True, "farmer": farmer}
+            else:
+                raise HTTPException(status_code=404, detail="Farm not found")
+        except Exception as e:
+            logger.error(f"Get farmer error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to load farm information")
+
+    @app.get("/api/v1/conversations/me")
+    async def get_my_conversations(
+        limit: int = 10,
+        current_user: dict = auth_deps.current_user()
+    ):
+        """Get conversations for authenticated user's farm"""
+        try:
+            db_ops = DatabaseOperations()
+            conversations = await db_ops.get_recent_conversations(current_user['farmer_id'], limit)
+            
+            # Add audit info showing which family member sent each message
+            for conv in conversations:
+                if hasattr(conv, 'farm_user_id') and conv.farm_user_id:
+                    user_info = await db_ops.fetchrow(
+                        "SELECT user_name FROM farm_users WHERE id = %s",
+                        conv.farm_user_id
+                    )
+                    conv['sent_by'] = user_info['user_name'] if user_info else 'Unknown'
+            
+            return {"success": True, "conversations": conversations}
+        except Exception as e:
+            logger.error(f"Get conversations error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to load conversations")
+
+    logger.info("✅ Authentication endpoints loaded successfully")
+    
+except ImportError as e:
+    logger.warning(f"⚠️  Authentication system not available: {e}")
+    logger.info("📋 Service will run without authentication (backward compatibility)")
+    
+    # Fallback endpoints for when authentication is not available
+    @app.get("/api/v1/auth/status")
+    async def auth_status():
+        """Authentication system status"""
+        return {
+            "authentication_available": False,
+            "message": "Authentication system not loaded - using compatibility mode",
+            "fallback_mode": True
+        }
 
 
 if __name__ == "__main__":

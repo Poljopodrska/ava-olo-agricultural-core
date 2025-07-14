@@ -2,11 +2,15 @@ version: 1.0
 runtime: python311
 build:
   commands:
+    pre-build:
+      - echo "Installing dependencies for AVA OLO Agricultural Core with Authentication"
     build:
       - pip install -r requirements.txt
+    post-build:
+      - echo "Build completed - Authentication system ready"
 run:
   runtime-version: 3.11
-  command: python app.py
+  command: python api_gateway_simple.py
   network:
     port: 8080
     env: PORT
@@ -18,12 +22,30 @@ run:
     - name: DB_USER
       value: "postgres"
     - name: DB_PASSWORD
-      value: "from-environment"
+      value: "2hpzvrg_xP~qNbz1[_NppSK$e*O1"
     - name: DB_PORT
       value: "5432"
     - name: DATABASE_URL
       value: "postgresql://postgres:2hpzvrg_xP~qNbz1[_NppSK$e*O1@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
     - name: OPENAI_API_KEY
-      value: "from-environment"
+      value: "REPLACE_WITH_ACTUAL_OPENAI_API_KEY"
+    - name: JWT_SECRET
+      value: "constitutional-ava-olo-production-secret-key-2024"
+    - name: JWT_EXPIRY_HOURS
+      value: "24"
     - name: PERPLEXITY_API_KEY
-      value: "from-environment"
+      value: "REPLACE_WITH_ACTUAL_PERPLEXITY_API_KEY"
+    - name: PINECONE_API_KEY
+      value: "REPLACE_WITH_ACTUAL_PINECONE_API_KEY"
+    - name: PINECONE_ENV
+      value: "eu-west-1"
+    - name: PINECONE_HOST
+      value: "https://pivka-crm-eu-nwo7tyx.svc.apu-57e2-42f6.pinecone.io"
+    - name: PINECONE_INDEX_NAME
+      value: "pivka-crm-eu"
+    - name: AWS_REGION
+      value: "us-east-1"
+    - name: APP_ENV
+      value: "production"
+    - name: ENABLE_CONSTITUTIONAL_CHECKS
+      value: "true"
