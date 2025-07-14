@@ -7,7 +7,7 @@ from datetime import datetime
 from contextlib import contextmanager
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 # Constitutional Error Isolation - Import OpenAI safely
@@ -2984,6 +2984,498 @@ async def test_external_connection():
             "failed": len([r for r in results.values() if isinstance(r, str) and "❌" in r])
         }
     }
+
+# Business Dashboard Integration
+# Add business analytics class and endpoints
+
+class BusinessAnalytics:
+    """Business analytics and KPI calculations"""
+    
+    def get_database_overview(self) -> Dict[str, Any]:
+        """Get database overview metrics"""
+        try:
+            with get_constitutional_db_connection() as conn:
+                if not conn:
+                    return {
+                        "total_farmers": 0,
+                        "total_hectares": 0.0,
+                        "hectares_breakdown": {
+                            "herbal_crops": 0.0,
+                            "vineyards": 0.0,
+                            "orchards": 0.0,
+                            "others": 0.0
+                        }
+                    }
+                
+                cursor = conn.cursor()
+                
+                # Total farmers
+                cursor.execute("SELECT COUNT(*) FROM farmers WHERE manager_name IS NOT NULL")
+                total_farmers = cursor.fetchone()[0] or 0
+                
+                # Total hectares
+                cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
+                total_hectares = float(cursor.fetchone()[0] or 0)
+                
+                # Hectares by crop type
+                cursor.execute("""
+                    SELECT 
+                        CASE 
+                            WHEN LOWER(fc.crop_name) SIMILAR TO '%(grape|wine|vine)%' THEN 'vineyards'
+                            WHEN LOWER(fc.crop_name) SIMILAR TO '%(apple|pear|cherry|plum|fruit|peach|apricot)%' THEN 'orchards'
+                            WHEN LOWER(fc.crop_name) SIMILAR TO '%(wheat|corn|barley|oat|soy|sunflower|maize|rye)%' THEN 'herbal_crops'
+                            ELSE 'others'
+                        END as crop_category,
+                        COALESCE(SUM(f.area_ha), 0) as total_area
+                    FROM fields f
+                    LEFT JOIN field_crops fc ON f.id = fc.field_id
+                    GROUP BY crop_category
+                """)
+                
+                breakdown = {
+                    "herbal_crops": 0.0,
+                    "vineyards": 0.0,
+                    "orchards": 0.0,
+                    "others": 0.0
+                }
+                
+                for row in cursor.fetchall():
+                    if row[0] and row[0] in breakdown:
+                        breakdown[row[0]] = float(row[1])
+                
+                return {
+                    "total_farmers": total_farmers,
+                    "total_hectares": round(total_hectares, 2),
+                    "hectares_breakdown": breakdown
+                }
+                
+        except Exception as e:
+            print(f"Error getting database overview: {e}")
+            return {
+                "total_farmers": 0,
+                "total_hectares": 0.0,
+                "hectares_breakdown": {
+                    "herbal_crops": 0.0,
+                    "vineyards": 0.0,
+                    "orchards": 0.0,
+                    "others": 0.0
+                }
+            }
+    
+    def get_growth_trends(self) -> Dict[str, Dict[str, Any]]:
+        """Get growth trends for 24h, 7d, 30d"""
+        try:
+            with get_constitutional_db_connection() as conn:
+                if not conn:
+                    return {
+                        "24h": {"new_farmers": 0, "unsubscribed_farmers": 0, "new_hectares": 0},
+                        "7d": {"new_farmers": 0, "unsubscribed_farmers": 0, "new_hectares": 0},
+                        "30d": {"new_farmers": 0, "unsubscribed_farmers": 0, "new_hectares": 0}
+                    }
+                
+                cursor = conn.cursor()
+                trends = {}
+                
+                # Check if created_at columns exist
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'farmers' AND column_name = 'created_at'
+                """)
+                has_created_at = cursor.fetchone() is not None
+                
+                for period_name, days in [("24h", 1), ("7d", 7), ("30d", 30)]:
+                    start_date = datetime.now() - timedelta(days=days)
+                    
+                    if has_created_at:
+                        # New farmers
+                        cursor.execute(
+                            "SELECT COUNT(*) FROM farmers WHERE created_at >= %s",
+                            (start_date,)
+                        )
+                        new_farmers = cursor.fetchone()[0] or 0
+                        
+                        # New hectares
+                        cursor.execute(
+                            "SELECT COALESCE(SUM(area_ha), 0) FROM fields WHERE created_at >= %s",
+                            (start_date,)
+                        )
+                        new_hectares = float(cursor.fetchone()[0] or 0)
+                    else:
+                        new_farmers = 0
+                        new_hectares = 0.0
+                    
+                    trends[period_name] = {
+                        "new_farmers": new_farmers,
+                        "unsubscribed_farmers": 0,
+                        "new_hectares": round(new_hectares, 2)
+                    }
+                
+                return trends
+                
+        except Exception as e:
+            print(f"Error getting growth trends: {e}")
+            return {
+                "24h": {"new_farmers": 0, "unsubscribed_farmers": 0, "new_hectares": 0},
+                "7d": {"new_farmers": 0, "unsubscribed_farmers": 0, "new_hectares": 0},
+                "30d": {"new_farmers": 0, "unsubscribed_farmers": 0, "new_hectares": 0}
+            }
+    
+    def get_activity_stream(self, limit: int = 20) -> List[Dict[str, str]]:
+        """Get recent activity stream from incoming_messages"""
+        try:
+            with get_constitutional_db_connection() as conn:
+                if not conn:
+                    return []
+                
+                cursor = conn.cursor()
+                
+                cursor.execute("""
+                    SELECT 
+                        im.timestamp,
+                        CONCAT(LEFT(f.manager_name, 1), LEFT(f.manager_last_name, 1), '.') as anonymized_name,
+                        LEFT(im.message_text, 50) || CASE WHEN LENGTH(im.message_text) > 50 THEN '...' ELSE '' END as message_preview,
+                        im.role as message_type
+                    FROM incoming_messages im
+                    JOIN farmers f ON im.farmer_id = f.id
+                    ORDER BY im.timestamp DESC
+                    LIMIT %s
+                """, (limit,))
+                
+                activities = []
+                for row in cursor.fetchall():
+                    activities.append({
+                        "timestamp": row[0].strftime("%Y-%m-%d %H:%M:%S") if row[0] else "",
+                        "farmer_name": row[1] or "Anonymous",
+                        "message_preview": row[2] or "",
+                        "message_type": row[3] or "unknown"
+                    })
+                
+                return activities
+                
+        except Exception as e:
+            print(f"Error getting activity stream: {e}")
+            return []
+
+# Initialize analytics
+analytics = BusinessAnalytics()
+
+# Business Dashboard HTML
+BUSINESS_DASHBOARD_HTML = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 AVA OLO Business Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2e7d32;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .activity-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-time {
+            color: #666;
+            font-size: 0.8rem;
+        }
+        
+        .section {
+            grid-column: span 2;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f5f5f5;
+            font-weight: 600;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin: 20px;
+            padding: 10px 20px;
+            background: #2e7d32;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        
+        .back-link:hover {
+            background: #1e5e20;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">📊 AVA OLO Business Dashboard</div>
+        <div class="refresh-timer">Last updated: <span id="current-time"></span></div>
+    </div>
+    
+    <a href="/" class="back-link">← Back to Hub</a>
+    
+    <div class="dashboard-grid">
+        <!-- Database Overview -->
+        <div class="metric-card">
+            <h3>📈 Database Overview</h3>
+            <div class="metric-label">Total Farmers</div>
+            <div class="metric-value" id="total-farmers">Loading...</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-label">Total Hectares</div>
+            <div class="metric-value" id="total-hectares">Loading...</div>
+            <div id="hectare-breakdown" style="margin-top: 10px;"></div>
+        </div>
+        
+        <!-- Growth Trends -->
+        <div class="metric-card section">
+            <h3>📊 Growth Trends</h3>
+            <table id="growth-trends">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>New Farmers</th>
+                        <th>New Hectares</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Activity Stream -->
+        <div class="metric-card">
+            <h3>💬 Activity Stream</h3>
+            <div id="activity-stream" style="max-height: 400px; overflow-y: auto;">
+                Loading...
+            </div>
+        </div>
+        
+        <!-- Simple Chart -->
+        <div class="metric-card section">
+            <h3>📈 Farmer Growth Chart</h3>
+            <div class="chart-container">
+                <canvas id="growth-chart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Update current time
+        function updateTime() {
+            document.getElementById('current-time').textContent = new Date().toLocaleString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+        
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Database Overview
+                const overviewResponse = await fetch('/api/business/database-overview');
+                const overview = await overviewResponse.json();
+                
+                document.getElementById('total-farmers').textContent = overview.total_farmers;
+                document.getElementById('total-hectares').textContent = overview.total_hectares.toFixed(1);
+                
+                const breakdownHtml = `
+                    <div>🌾 Herbal Crops: ${overview.hectares_breakdown.herbal_crops.toFixed(1)} ha</div>
+                    <div>🍇 Vineyards: ${overview.hectares_breakdown.vineyards.toFixed(1)} ha</div>
+                    <div>🍎 Orchards: ${overview.hectares_breakdown.orchards.toFixed(1)} ha</div>
+                    <div>🌱 Others: ${overview.hectares_breakdown.others.toFixed(1)} ha</div>
+                `;
+                document.getElementById('hectare-breakdown').innerHTML = breakdownHtml;
+                
+                // Growth Trends
+                const trendsResponse = await fetch('/api/business/growth-trends');
+                const trends = await trendsResponse.json();
+                
+                const trendsHtml = `
+                    <tr>
+                        <td>Last 24 Hours</td>
+                        <td>+${trends['24h'].new_farmers}</td>
+                        <td>+${trends['24h'].new_hectares}</td>
+                    </tr>
+                    <tr>
+                        <td>Last 7 Days</td>
+                        <td>+${trends['7d'].new_farmers}</td>
+                        <td>+${trends['7d'].new_hectares}</td>
+                    </tr>
+                    <tr>
+                        <td>Last 30 Days</td>
+                        <td>+${trends['30d'].new_farmers}</td>
+                        <td>+${trends['30d'].new_hectares}</td>
+                    </tr>
+                `;
+                document.querySelector('#growth-trends tbody').innerHTML = trendsHtml;
+                
+                // Activity Stream
+                const activityResponse = await fetch('/api/business/activity-stream');
+                const activities = await activityResponse.json();
+                
+                let activityHtml = '';
+                activities.forEach(activity => {
+                    activityHtml += `
+                        <div class="activity-item">
+                            <div class="activity-time">${activity.timestamp}</div>
+                            <div><strong>${activity.farmer_name}</strong>: ${activity.message_preview}</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('activity-stream').innerHTML = activityHtml || '<p>No recent activity</p>';
+                
+                // Simple Chart
+                const ctx = document.getElementById('growth-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['30 days ago', '20 days ago', '10 days ago', 'Today'],
+                        datasets: [{
+                            label: 'Total Farmers',
+                            data: [
+                                overview.total_farmers - trends['30d'].new_farmers,
+                                overview.total_farmers - trends['7d'].new_farmers,
+                                overview.total_farmers - trends['24h'].new_farmers,
+                                overview.total_farmers
+                            ],
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+        
+        // Load data on page load
+        loadDashboardData();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadDashboardData, 30000);
+    </script>
+</body>
+</html>
+"""
+
+# Add Business Dashboard Routes
+@app.get("/business-dashboard", response_class=HTMLResponse)
+async def business_dashboard_page():
+    """Business Dashboard Page"""
+    return HTMLResponse(content=BUSINESS_DASHBOARD_HTML)
+
+# Business Dashboard API Endpoints
+@app.get("/api/business/database-overview")
+async def api_database_overview():
+    """Get database overview metrics"""
+    return analytics.get_database_overview()
+
+@app.get("/api/business/growth-trends")
+async def api_growth_trends():
+    """Get growth trends"""
+    return analytics.get_growth_trends()
+
+@app.get("/api/business/activity-stream")
+async def api_activity_stream(limit: int = 20):
+    """Get activity stream"""
+    return analytics.get_activity_stream(limit)
+
+# Add redirects for common dashboard URLs
+@app.get("/business")
+async def redirect_business():
+    """Redirect /business to /business-dashboard"""
+    return RedirectResponse(url="/business-dashboard", status_code=302)
+
+@app.get("/admin")
+async def redirect_admin():
+    """Redirect /admin to /admin-dashboard"""
+    return RedirectResponse(url="/admin-dashboard", status_code=302)
+
+@app.get("/agronomic")
+async def redirect_agronomic():
+    """Redirect /agronomic to /agronomic-dashboard"""
+    return RedirectResponse(url="/agronomic-dashboard", status_code=302)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
