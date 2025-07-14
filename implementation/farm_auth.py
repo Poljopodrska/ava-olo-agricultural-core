@@ -33,13 +33,9 @@ class FarmAuthManager:
         
     def _get_db_config(self) -> Dict[str, Any]:
         """Get database configuration from environment"""
-        return {
-            'host': os.getenv('DB_HOST', 'localhost'),
-            'database': os.getenv('DB_NAME', 'farmer_crm'),
-            'user': os.getenv('DB_USER', 'postgres'),
-            'password': os.getenv('DB_PASSWORD', ''),
-            'port': int(os.getenv('DB_PORT', '5432'))
-        }
+        # Use hardcoded password to avoid environment variable issues
+        from .aurora_connection_fix import get_aurora_config
+        return get_aurora_config()
     
     def _get_connection(self):
         """Get database connection with retry logic (same as dashboards)"""

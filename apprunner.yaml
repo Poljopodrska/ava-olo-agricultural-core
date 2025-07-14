@@ -22,7 +22,7 @@ run:
     - name: DB_USER
       value: "postgres"
     - name: DB_PASSWORD
-      value: "2hpzvrg_xP~qNbz1[_NppSK$e*O1"
+      value: '2hpzvrg_xP~qNbz1[_NppSK$e*O1'
     - name: DB_PORT
       value: "5432"
     - name: DATABASE_URL
