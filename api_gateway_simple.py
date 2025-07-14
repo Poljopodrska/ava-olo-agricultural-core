@@ -1381,6 +1381,56 @@ try:
                 "message": f"Migration failed: {str(e)}"
             }
 
+    # Diagnostic endpoints for production password issue
+    @app.get("/api/v1/auth/diagnose-env")
+    async def diagnose_environment():
+        """Diagnose environment variables for debugging"""
+        return {
+            "DB_HOST": os.getenv('DB_HOST', 'not-set'),
+            "DB_NAME": os.getenv('DB_NAME', 'not-set'),
+            "DB_USER": os.getenv('DB_USER', 'not-set'),
+            "DB_PASSWORD_LENGTH": len(os.getenv('DB_PASSWORD', '')),
+            "DB_PASSWORD_PREVIEW": os.getenv('DB_PASSWORD', '')[:10] + "..." if os.getenv('DB_PASSWORD') else 'not-set',
+            "DB_PASSWORD_HAS_DOLLAR": '$' in os.getenv('DB_PASSWORD', ''),
+            "DB_PORT": os.getenv('DB_PORT', 'not-set'),
+            "JWT_SECRET_SET": bool(os.getenv('JWT_SECRET'))
+        }
+    
+    @app.get("/api/v1/auth/test-connections")
+    async def test_db_connections():
+        """Test different database connection methods"""
+        results = []
+        
+        # Test 1: Environment variable as-is
+        try:
+            auth_manager = get_auth_manager()
+            conn = auth_manager._get_connection()
+            if conn:
+                conn.close()
+                results.append({"method": "auth_manager", "success": True})
+            else:
+                results.append({"method": "auth_manager", "success": False, "error": "No connection"})
+        except Exception as e:
+            results.append({"method": "auth_manager", "success": False, "error": str(e)[:100]})
+        
+        # Test 2: Direct with environment
+        try:
+            import psycopg2
+            conn = psycopg2.connect(
+                host=os.getenv('DB_HOST'),
+                database=os.getenv('DB_NAME'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+                port=int(os.getenv('DB_PORT', '5432')),
+                connect_timeout=5
+            )
+            conn.close()
+            results.append({"method": "env_direct", "success": True})
+        except Exception as e:
+            results.append({"method": "env_direct", "success": False, "error": str(e)[:100]})
+        
+        return {"tests": results}
+    
     logger.info("✅ Authentication endpoints loaded successfully")
     
 except ImportError as e:
