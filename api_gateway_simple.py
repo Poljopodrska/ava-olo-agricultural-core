@@ -1431,6 +1431,91 @@ try:
             
         return result
     
+    @app.get("/api/v1/auth/test-secrets-detailed")
+    async def test_secrets_detailed():
+        """Test AWS Secrets Manager with detailed password info"""
+        import os
+        from implementation.secrets_manager import get_database_config, get_cached_secret
+        
+        result = {"tests": []}
+        
+        # Test 1: Direct environment variables
+        env_test = {
+            "method": "environment_variables",
+            "db_password_length": len(os.getenv('DB_PASSWORD', '')),
+            "db_password_preview": os.getenv('DB_PASSWORD', '')[:5] + "..." + os.getenv('DB_PASSWORD', '')[-5:] if os.getenv('DB_PASSWORD') else 'not-set',
+            "has_dollar": '$' in os.getenv('DB_PASSWORD', ''),
+            "has_special_chars": any(c in os.getenv('DB_PASSWORD', '') for c in '~[]{}$&*')
+        }
+        result["tests"].append(env_test)
+        
+        # Test 2: Secrets Manager
+        try:
+            secret_name = os.getenv("AWS_SECRET_NAME")
+            if secret_name:
+                secret_data = get_cached_secret(secret_name)
+                if secret_data:
+                    sm_password = secret_data.get('DB_PASSWORD', '')
+                    sm_test = {
+                        "method": "secrets_manager",
+                        "secret_retrieved": True,
+                        "db_password_length": len(sm_password),
+                        "db_password_preview": sm_password[:5] + "..." + sm_password[-5:] if sm_password else 'not-set',
+                        "has_dollar": '$' in sm_password,
+                        "has_special_chars": any(c in sm_password for c in '~[]{}$&*'),
+                        "matches_env": sm_password == os.getenv('DB_PASSWORD', '')
+                    }
+                else:
+                    sm_test = {"method": "secrets_manager", "error": "No secret data retrieved"}
+            else:
+                sm_test = {"method": "secrets_manager", "error": "AWS_SECRET_NAME not set"}
+            result["tests"].append(sm_test)
+        except Exception as e:
+            result["tests"].append({"method": "secrets_manager", "error": str(e)})
+            
+        # Test 3: What auth manager gets
+        try:
+            db_config = get_database_config()
+            auth_test = {
+                "method": "auth_manager_config",
+                "db_password_length": len(db_config.get('password', '')),
+                "db_password_preview": db_config['password'][:5] + "..." + db_config['password'][-5:] if db_config.get('password') else 'not-set',
+                "has_dollar": '$' in db_config.get('password', ''),
+                "config_source": "secrets" if get_cached_secret(os.getenv("AWS_SECRET_NAME", "")) else "env"
+            }
+            result["tests"].append(auth_test)
+        except Exception as e:
+            result["tests"].append({"method": "auth_manager_config", "error": str(e)})
+            
+        # Test 4: Direct psycopg2 with Secrets Manager password
+        try:
+            import psycopg2
+            db_config = get_database_config()
+            
+            # Try connecting with the password from Secrets Manager
+            conn = psycopg2.connect(
+                host=db_config['host'],
+                database=db_config['database'],
+                user=db_config['user'],
+                password=db_config['password'],
+                port=db_config['port'],
+                connect_timeout=5
+            )
+            conn.close()
+            result["tests"].append({
+                "method": "direct_psycopg2_secrets", 
+                "success": True,
+                "password_source": "secrets_manager"
+            })
+        except Exception as e:
+            result["tests"].append({
+                "method": "direct_psycopg2_secrets", 
+                "error": str(e),
+                "password_source": "secrets_manager"
+            })
+            
+        return result
+    
     @app.get("/api/v1/auth/test-connections")
     async def test_db_connections():
         """Test different database connection methods"""
