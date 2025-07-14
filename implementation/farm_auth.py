@@ -27,15 +27,25 @@ class FarmAuthManager:
     def __init__(self, db_config: Dict[str, Any] = None):
         """Initialize authentication manager"""
         self.db_config = db_config or self._get_db_config()
-        self.jwt_secret = os.getenv('JWT_SECRET', 'constitutional-farm-secret-key-change-in-production')
+        # Get JWT secret from Secrets Manager or environment
+        try:
+            from .secrets_manager import get_jwt_secret
+            self.jwt_secret = get_jwt_secret()
+        except ImportError:
+            self.jwt_secret = os.getenv('JWT_SECRET', 'constitutional-farm-secret-key-change-in-production')
         self.jwt_expiry_hours = int(os.getenv('JWT_EXPIRY_HOURS', '24'))
         self.connection = None
         
     def _get_db_config(self) -> Dict[str, Any]:
-        """Get database configuration from environment"""
-        # Use hardcoded password to avoid environment variable issues
-        from .aurora_connection_fix import get_aurora_config
-        return get_aurora_config()
+        """Get database configuration from Secrets Manager or environment"""
+        try:
+            from .secrets_manager import get_database_config
+            return get_database_config()
+        except ImportError:
+            # Fallback if secrets_manager not available
+            logger.warning("Secrets manager not available, using aurora_connection_fix")
+            from .aurora_connection_fix import get_aurora_config
+            return get_aurora_config()
     
     def _get_connection(self):
         """Get database connection with retry logic (same as dashboards)"""
