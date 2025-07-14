@@ -30,3 +30,4 @@ Thumbs.db
 
 # Git token file
 .git-token.env
+.env
