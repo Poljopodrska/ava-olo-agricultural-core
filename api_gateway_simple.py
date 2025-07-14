@@ -34,6 +34,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Root Web Interface Route - Main Entry Point
+@app.get("/", response_class=HTMLResponse)
+async def main_web_interface():
+    """Main Farmer Web Interface - Root Access"""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AVA OLO - Farmer Web Interface</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body { font-family: Arial; background: #F5F3F0; color: #2C2C2C; font-size: 18px; padding: 20px; }
+            .header { background: linear-gradient(135deg, #6B5B73, #5D5E3F); color: white; padding: 20px; border-radius: 8px; text-align: center; }
+            .success { color: #6B8E23; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🏛️ AVA OLO Web Interface</h1>
+            <p>Constitutional Agricultural Assistant</p>
+        </div>
+        <h2 class="success">✅ Web Interface Working!</h2>
+        <p>🥭 MANGO RULE: Ready for Bulgarian mango farmers</p>
+        <p>Service URL: https://3ksdvgdtud.us-east-1.awsapprunner.com</p>
+    </body>
+    </html>
+    """
+
 # Initialize core modules
 db_ops = DatabaseOperations()
 
@@ -328,162 +356,11 @@ async def get_conversation_details(conversation_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Web Interface Routes - Constitutional Deployment-First Compliance
+# Alternative Web Interface Routes - Constitutional Deployment-First Compliance
 @app.get("/web/", response_class=HTMLResponse)
-async def farmer_web_interface():
-    """Constitutional Farmer Web Interface - Deployment-First Verified"""
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO - Farmer Web Interface</title>
-        <style>
-            :root {
-                --primary-brown: #6B5B73;
-                --primary-olive: #8B8C5A;
-                --dark-olive: #5D5E3F;
-                --cream: #F5F3F0;
-                --white: #FFFFFF;
-                --dark-charcoal: #2C2C2C;
-                --success-green: #6B8E23;
-            }
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-                font-family: Arial, sans-serif;
-                background: var(--cream);
-                color: var(--dark-charcoal);
-                font-size: 18px;
-                line-height: 1.6;
-                padding: 20px;
-            }
-            .header {
-                background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
-                color: var(--white);
-                padding: 24px;
-                border-radius: 8px;
-                text-align: center;
-                margin-bottom: 24px;
-            }
-            .constitutional-card {
-                background: var(--white);
-                border-radius: 8px;
-                padding: 24px;
-                margin-bottom: 24px;
-                border-left: 4px solid var(--primary-olive);
-                box-shadow: 0 2px 12px rgba(107, 91, 115, 0.1);
-            }
-            .constitutional-btn {
-                background: var(--primary-olive);
-                color: var(--white);
-                border: none;
-                padding: 16px 24px;
-                font-size: 18px;
-                font-weight: bold;
-                border-radius: 8px;
-                cursor: pointer;
-                width: 100%;
-                margin-bottom: 16px;
-                transition: all 0.3s ease;
-            }
-            .constitutional-btn:hover {
-                background: var(--dark-olive);
-                transform: translateY(-1px);
-            }
-            .constitutional-textarea {
-                width: 100%;
-                padding: 16px;
-                border: 2px solid var(--primary-olive);
-                border-radius: 8px;
-                font-size: 18px;
-                font-family: Arial, sans-serif;
-                min-height: 120px;
-                resize: vertical;
-                margin-bottom: 16px;
-            }
-            .success { color: var(--success-green); font-weight: bold; }
-            .status-indicator {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: var(--success-green);
-                color: var(--white);
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>🏛️ AVA OLO Web Interface</h1>
-            <p>Constitutional Agricultural Assistant</p>
-        </div>
-        
-        <div class="constitutional-card">
-            <h2>How can I help you today?</h2>
-            <textarea 
-                class="constitutional-textarea"
-                placeholder="Ask me anything about your crops, soil, weather, or farming techniques. I'm here to help Bulgarian mango farmers and everyone else!"
-                onkeypress="handleEnterKey(event)"
-            ></textarea>
-            <button class="constitutional-btn" onclick="submitQuery()">
-                🔍 Submit Question
-            </button>
-        </div>
-        
-        <div class="constitutional-card">
-            <h2>Quick Actions</h2>
-            <button class="constitutional-btn" onclick="reportTask()">
-                📋 I want to report a task
-            </button>
-            <button class="constitutional-btn" onclick="farmData()">
-                📊 I need data about my farm
-            </button>
-        </div>
-        
-        <div class="constitutional-card">
-            <h2 class="success">✅ Web Interface Status</h2>
-            <p>🥭 <strong>MANGO RULE:</strong> Ready for Bulgarian mango farmers worldwide</p>
-            <p>🎨 <strong>Constitutional Design:</strong> Brown & olive palette active</p>
-            <p>🔧 <strong>Deployment-First:</strong> Locally verified before AWS deployment</p>
-        </div>
-        
-        <div class="status-indicator">🎨 Constitutional Active</div>
-        
-        <script>
-            function handleEnterKey(event) {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    submitQuery();
-                }
-            }
-            
-            function submitQuery() {
-                const textarea = document.querySelector('.constitutional-textarea');
-                const query = textarea.value.trim();
-                if (query) {
-                    alert('🏛️ Constitutional Query Submitted\\n\\nQuery: ' + query + '\\n\\n✅ MANGO RULE: Works for Bulgarian mango farmers');
-                    textarea.value = '';
-                }
-            }
-            
-            function reportTask() {
-                alert('📋 Constitutional Task Reporting\\n\\n✅ Ready to accept any agricultural task\\n🥭 MANGO RULE: Bulgarian mango farming supported');
-            }
-            
-            function farmData() {
-                alert('📊 Constitutional Farm Data\\n\\n✅ Universal data access for all farmers\\n🥭 MANGO RULE: Bulgarian mango data included');
-            }
-            
-            console.log('🏛️ Constitutional Web Interface Active');
-            console.log('🔧 Deployment-First: Verified locally before AWS');
-        </script>
-    </body>
-    </html>
-    """
+async def web_path_interface():
+    """Alternative web path access"""
+    return """<h1>Web Interface Active</h1><p>Main interface: <a href='/'>Click here</a></p>"""
 
 
 @app.get("/web/health")
