@@ -52,8 +52,24 @@ class FarmAuthManager:
         if self.connection and not self.connection.closed:
             return self.connection
         
-        # Try different SSL modes in order of preference (same as dashboards)
-        ssl_modes = ['require', 'prefer', 'disable']
+        # First try without SSL mode specified (like LLM engine)
+        try:
+            self.connection = psycopg2.connect(
+                host=self.db_config['host'],
+                database=self.db_config['database'],
+                user=self.db_config['user'],
+                password=self.db_config['password'],
+                port=self.db_config['port'],
+                connect_timeout=10,
+                cursor_factory=RealDictCursor
+            )
+            logger.info("Connected to Aurora (default SSL mode)")
+            return self.connection
+        except Exception as e:
+            logger.warning(f"Default connection failed: {e}")
+        
+        # Then try different SSL modes in order of preference
+        ssl_modes = ['prefer', 'disable', 'require']
         
         for ssl_mode in ssl_modes:
             try:
@@ -75,7 +91,8 @@ class FarmAuthManager:
                     logger.warning(f"SSL mode {ssl_mode} failed, trying next...")
                     continue
                 else:
-                    raise e
+                    logger.warning(f"Connection failed with {ssl_mode}: {e}")
+                    continue
                     
         raise Exception("Failed to connect to database with all SSL modes")
     

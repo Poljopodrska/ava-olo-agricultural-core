@@ -13,6 +13,17 @@ def get_aurora_password():
 
 def get_aurora_config():
     """Get complete Aurora configuration"""
+    # Try environment variables first (what actually works)
+    if os.getenv('DB_HOST'):
+        return {
+            'host': os.getenv('DB_HOST'),
+            'database': os.getenv('DB_NAME'),
+            'user': os.getenv('DB_USER'),
+            'password': os.getenv('DB_PASSWORD'),
+            'port': int(os.getenv('DB_PORT', '5432'))
+        }
+    
+    # Fallback to hardcoded
     return {
         'host': 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com',
         'database': 'farmer_crm',
