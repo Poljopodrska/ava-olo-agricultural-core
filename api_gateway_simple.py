@@ -1516,6 +1516,41 @@ try:
             
         return result
     
+    @app.get("/api/v1/auth/test-simple-connection")
+    async def test_simple_connection():
+        """Test simple database connection like regular endpoints"""
+        try:
+            # Test 1: Use the same connection as regular endpoints
+            db_ops = DatabaseOperations()
+            farmers = db_ops.get_all_farmers(limit=1)
+            
+            result = {
+                "regular_connection": "success" if farmers is not None else "failed",
+                "farmers_found": len(farmers) if farmers else 0
+            }
+            
+            # Test 2: Try auth manager connection
+            try:
+                auth_manager = get_auth_manager()
+                # Just initialize, don't connect yet
+                result["auth_manager_initialized"] = True
+                result["auth_db_config_keys"] = list(auth_manager.db_config.keys())
+                
+                # Now try to connect
+                conn = auth_manager._get_connection()
+                if conn:
+                    result["auth_connection"] = "success"
+                    conn.close()
+                else:
+                    result["auth_connection"] = "failed - no connection"
+            except Exception as e:
+                result["auth_connection"] = f"failed - {str(e)[:100]}"
+                
+            return result
+            
+        except Exception as e:
+            return {"error": str(e)}
+    
     @app.get("/api/v1/auth/test-connections")
     async def test_db_connections():
         """Test different database connection methods"""
