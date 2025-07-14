@@ -99,6 +99,22 @@ async def main_web_interface():
             .day-rain { font-size: 24px; color: var(--dark-olive); padding: 16px; border-bottom: 1px solid var(--light-gray); font-weight: bold; }
             .day-wind { font-size: 20px; color: var(--dark-olive); padding: 16px; font-weight: bold; }
             
+            /* Schematic Weather Pictograms */
+            .weather-icon {
+                font-family: monospace;
+                font-weight: bold;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-direction: column;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+                filter: contrast(1.2);
+            }
+            .today-icon .weather-icon { font-size: 48px; }
+            .hour-icon .weather-icon { font-size: 16px; }
+            .day-icon .weather-icon { font-size: 24px; }
+            
             /* Constitutional Cards */
             .constitutional-card { background: var(--white); border-radius: 8px; padding: 24px; box-shadow: 0 2px 12px rgba(107,91,115,0.1); border-left: 4px solid var(--primary-olive); margin-bottom: 24px; }
             .constitutional-card-title { font-size: 24px; color: var(--primary-brown); font-weight: bold; margin-bottom: 16px; text-align: center; }
@@ -140,7 +156,9 @@ async def main_web_interface():
                 <div class="weather-today">
                     <div class="today-header">Today's Weather</div>
                     <div class="today-main">
-                        <div class="today-icon">☀️</div>
+                        <div class="today-icon">
+                            <div class="weather-icon">○</div>
+                        </div>
                         <div class="today-details">
                             <div class="today-condition">Sunny</div>
                             <div class="today-temp">22<span style="font-size:24px;">°C</span></div>
@@ -162,30 +180,30 @@ async def main_web_interface():
                         <div class="hourly-slider-container">
                             <div class="hourly-slider" id="hourlySlider">
                                 <!-- All 24 hours -->
-                                <div class="hourly-square"><div class="hour-time">00:00</div><div class="hour-icon">🌙</div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">01:00</div><div class="hour-icon">🌙</div><div class="hour-temp">13°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 4km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">02:00</div><div class="hour-icon">🌙</div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 3km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">03:00</div><div class="hour-icon">🌙</div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 3km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">04:00</div><div class="hour-icon">🌙</div><div class="hour-temp">11°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 4km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">05:00</div><div class="hour-icon">🌙</div><div class="hour-temp">11°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 5km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">06:00</div><div class="hour-icon">🌄</div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 6km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">07:00</div><div class="hour-icon">🌄</div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 7km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">08:00</div><div class="hour-icon">☁️</div><div class="hour-temp">16°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 8km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">09:00</div><div class="hour-icon">☁️</div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 10km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">10:00</div><div class="hour-icon">☀️</div><div class="hour-temp">20°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 11km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">11:00</div><div class="hour-icon">☀️</div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">12:00</div><div class="hour-icon">☀️</div><div class="hour-temp">22°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">13:00</div><div class="hour-icon">☀️</div><div class="hour-temp">23°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 13km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">14:00</div><div class="hour-icon">☀️</div><div class="hour-temp">24°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 14km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">15:00</div><div class="hour-icon">☀️</div><div class="hour-temp">25°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 15km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">16:00</div><div class="hour-icon">☀️</div><div class="hour-temp">24°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 14km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">17:00</div><div class="hour-icon">☁️</div><div class="hour-temp">23°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 12km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">18:00</div><div class="hour-icon">☁️</div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 8km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">19:00</div><div class="hour-icon">☁️</div><div class="hour-temp">20°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 7km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">20:00</div><div class="hour-icon">🌄</div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">21:00</div><div class="hour-icon">🌙</div><div class="hour-temp">17°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">22:00</div><div class="hour-icon">🌙</div><div class="hour-temp">16°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 5km/h</div></div>
-                                <div class="hourly-square"><div class="hour-time">23:00</div><div class="hour-icon">🌙</div><div class="hour-temp">15°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">00:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">01:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">13°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 4km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">02:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 3km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">03:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 3km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">04:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">11°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 4km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">05:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">11°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 5km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">06:00</div><div class="hour-icon"><div class="weather-icon">◐</div></div><div class="hour-temp">12°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 6km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">07:00</div><div class="hour-icon"><div class="weather-icon">◐</div></div><div class="hour-temp">14°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 7km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">08:00</div><div class="hour-icon"><div class="weather-icon">⌈⌈</div></div><div class="hour-temp">16°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 8km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">09:00</div><div class="hour-icon"><div class="weather-icon">⌈⌈</div></div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 10km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">10:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">20°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 11km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">11:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">12:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">22°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ NE 12km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">13:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">23°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 13km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">14:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">24°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 14km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">15:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">25°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 15km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">16:00</div><div class="hour-icon"><div class="weather-icon">○</div></div><div class="hour-temp">24°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 14km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">17:00</div><div class="hour-icon"><div class="weather-icon">○⌈</div></div><div class="hour-temp">23°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 12km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">18:00</div><div class="hour-icon"><div class="weather-icon">○⌈</div></div><div class="hour-temp">21°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 8km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">19:00</div><div class="hour-icon"><div class="weather-icon">○⌈</div></div><div class="hour-temp">20°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 7km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">20:00</div><div class="hour-icon"><div class="weather-icon">◐</div></div><div class="hour-temp">18°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">21:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">17°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 6km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">22:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">16°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ SE 5km/h</div></div>
+                                <div class="hourly-square"><div class="hour-time">23:00</div><div class="hour-icon"><div class="weather-icon">◑</div></div><div class="hour-temp">15°C</div><div class="hour-rain">💧 0mm</div><div class="hour-wind">🌪️ E 5km/h</div></div>
                             </div>
                         </div>
                     </div>
@@ -195,7 +213,7 @@ async def main_web_interface():
                 <div class="weather-timeline">
                     <div class="weather-day">
                         <div class="day-label">Yesterday</div>
-                        <div class="day-icon">☁️</div>
+                        <div class="day-icon"><div class="weather-icon">○⌈</div></div>
                         <div class="day-condition">Partly Cloudy</div>
                         <div class="day-temp">19<span style="font-size:16px;">°C</span></div>
                         <div class="day-rain">💧 2<span style="font-size:14px;">mm</span></div>
@@ -203,7 +221,7 @@ async def main_web_interface():
                     </div>
                     <div class="weather-day weather-day-today">
                         <div class="day-label">Today</div>
-                        <div class="day-icon">☀️</div>
+                        <div class="day-icon"><div class="weather-icon">○</div></div>
                         <div class="day-condition">Sunny</div>
                         <div class="day-temp">22<span style="font-size:16px;">°C</span></div>
                         <div class="day-rain">💧 0<span style="font-size:14px;">mm</span></div>
@@ -211,7 +229,7 @@ async def main_web_interface():
                     </div>
                     <div class="weather-day">
                         <div class="day-label">Tomorrow</div>
-                        <div class="day-icon">☁️</div>
+                        <div class="day-icon"><div class="weather-icon">○⌈</div></div>
                         <div class="day-condition">Partly Sunny</div>
                         <div class="day-temp">24<span style="font-size:16px;">°C</span></div>
                         <div class="day-rain">💧 1<span style="font-size:14px;">mm</span></div>
@@ -219,7 +237,7 @@ async def main_web_interface():
                     </div>
                     <div class="weather-day">
                         <div class="day-label">Tuesday</div>
-                        <div class="day-icon">🌧</div>
+                        <div class="day-icon"><div class="weather-icon">⌈<br>··</div></div>
                         <div class="day-condition">Light Rain</div>
                         <div class="day-temp">18<span style="font-size:16px;">°C</span></div>
                         <div class="day-rain">💧 8<span style="font-size:14px;">mm</span></div>
@@ -227,7 +245,7 @@ async def main_web_interface():
                     </div>
                     <div class="weather-day">
                         <div class="day-label">Wednesday</div>
-                        <div class="day-icon">⚡</div>
+                        <div class="day-icon"><div class="weather-icon">⌈<br>↯</div></div>
                         <div class="day-condition">Thunderstorms</div>
                         <div class="day-temp">16<span style="font-size:16px;">°C</span></div>
                         <div class="day-rain">💧 15<span style="font-size:14px;">mm</span></div>
