@@ -7,7 +7,7 @@ from datetime import datetime
 from contextlib import contextmanager
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 # Construct DATABASE_URL from individual components if not set
@@ -343,7 +343,7 @@ class NaturalQueryRequest(BaseModel):
     question: str
 
 # HTML Interface (SAFE VERSION)
-AGRICULTURAL_DASHBOARD_HTML = """
+DASHBOARD_LANDING_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -1033,9 +1033,208 @@ AGRICULTURAL_DASHBOARD_HTML = """
 
 # Routes
 @app.get("/", response_class=HTMLResponse)
-async def agricultural_dashboard():
-    """Agricultural Database Dashboard - Safe Version"""
-    return HTMLResponse(content=AGRICULTURAL_DASHBOARD_HTML)
+async def dashboard_landing():
+    """Dashboard Landing Page with 3-Dashboard Navigation"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AVA OLO Agricultural Dashboards</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #F5F3F0; 
+            color: #2C2C2C;
+            margin: 0;
+            padding: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        .constitutional-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .constitutional-header {
+            background: linear-gradient(135deg, #6B5B73, #5D5E3F);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .constitutional-title {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            font-weight: bold;
+        }
+        .constitutional-subtitle {
+            margin: 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            padding: 40px;
+        }
+        .constitutional-card {
+            background: white;
+            border: 2px solid #8B8C5A;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .constitutional-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        .constitutional-card h2 {
+            color: #6B5B73;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        .constitutional-card p {
+            color: #5D5E3F;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+        }
+        .constitutional-button {
+            background: linear-gradient(135deg, #8B8C5A, #6B5B73);
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.1em;
+            display: inline-block;
+            transition: background 0.3s ease;
+        }
+        .constitutional-button:hover {
+            background: linear-gradient(135deg, #6B5B73, #5D5E3F);
+            text-decoration: none;
+            color: white;
+        }
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+            .constitutional-title {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="constitutional-container">
+        <header class="constitutional-header">
+            <h1 class="constitutional-title">🌾 AVA OLO Dashboard Hub</h1>
+            <p class="constitutional-subtitle">Agricultural Intelligence Platform</p>
+        </header>
+        
+        <main class="dashboard-grid">
+            <div class="constitutional-card">
+                <h2>📊 Business Dashboard</h2>
+                <p>Financial metrics and business intelligence</p>
+                <a href="/business-dashboard" class="constitutional-button">Enter Dashboard</a>
+            </div>
+            
+            <div class="constitutional-card">
+                <h2>🌱 Agronomic Dashboard</h2>
+                <p>Crop analytics and agricultural insights</p>
+                <a href="/agronomic-dashboard" class="constitutional-button">Enter Dashboard</a>
+            </div>
+            
+            <div class="constitutional-card">
+                <h2>💾 Database Dashboard</h2>
+                <p>Data management and queries</p>
+                <a href="/database-dashboard" class="constitutional-button">Enter Dashboard</a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+""")
+
+# Database Dashboard Route - Keep existing functionality  
+@app.get("/database-dashboard", response_class=HTMLResponse)
+async def database_dashboard():
+    """Agricultural Database Dashboard - Full Functionality"""
+    return HTMLResponse(content=DASHBOARD_LANDING_HTML)
+
+# Business Dashboard Placeholder
+@app.get("/business-dashboard", response_class=HTMLResponse)
+async def business_dashboard():
+    """Business Dashboard - Coming Soon"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Business Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #F5F3F0; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; text-align: center; }
+        .back-link { color: #6B5B73; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        h1 { color: #6B5B73; margin-bottom: 20px; }
+        p { color: #5D5E3F; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Dashboard Hub</a>
+        <h1>📊 Business Dashboard</h1>
+        <p>Coming Soon - Business Analytics</p>
+        <p>This dashboard is under development.</p>
+    </div>
+</body>
+</html>
+""")
+
+# Agronomic Dashboard Placeholder
+@app.get("/agronomic-dashboard", response_class=HTMLResponse)
+async def agronomic_dashboard():
+    """Agronomic Dashboard - Coming Soon"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Agronomic Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #F5F3F0; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; text-align: center; }
+        .back-link { color: #6B5B73; text-decoration: none; margin-bottom: 20px; display: inline-block; }
+        h1 { color: #6B5B73; margin-bottom: 20px; }
+        p { color: #5D5E3F; font-size: 1.1em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Dashboard Hub</a>
+        <h1>🌱 Agronomic Dashboard</h1>
+        <p>Coming Soon - Crop Analytics</p>
+        <p>This dashboard is under development.</p>
+    </div>
+</body>
+</html>
+""")
+
+# Legacy redirects
+@app.get("/business")
+async def redirect_business():
+    return RedirectResponse(url="/business-dashboard", status_code=302)
+
+@app.get("/agronomic")
+async def redirect_agronomic():
+    return RedirectResponse(url="/agronomic-dashboard", status_code=302)
+
+@app.get("/database")
+async def redirect_database():
+    return RedirectResponse(url="/database-dashboard", status_code=302)
 
 # Add diagnostics viewer page
 @app.get("/diagnostics/", response_class=HTMLResponse)
