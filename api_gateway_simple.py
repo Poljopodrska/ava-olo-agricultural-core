@@ -1483,6 +1483,46 @@ try:
             "secrets_has_dollar": '$' in secrets_pw
         }
     
+    @app.get("/api/v1/auth/test-llm-engine-connection")
+    def test_llm_engine_connection():
+        """Test using the exact LLM engine that works"""
+        try:
+            # Import and use the LLM engine directly
+            from llm_first_database_engine import LLMDatabaseQueryEngine
+            from config_manager import config
+            
+            # Create engine
+            engine = LLMDatabaseQueryEngine()
+            
+            # Force initialization (this is what works for farmers)
+            engine._initialize_database()
+            
+            # Test the connection
+            with engine.db_connection.cursor() as cursor:
+                cursor.execute("SELECT version()")
+                version = cursor.fetchone()
+            
+            return {
+                "connection": "success",
+                "db_version": str(version),
+                "connection_info": {
+                    "host": config.db_host,
+                    "database": config.db_name,
+                    "user": config.db_user,
+                    "password_length": len(config.db_password)
+                }
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "connection_info": {
+                    "host": config.db_host,
+                    "database": config.db_name,
+                    "user": config.db_user,
+                    "password_length": len(config.db_password) if hasattr(config, 'db_password') else 0
+                }
+            }
+    
     @app.get("/api/v1/auth/test-sync-connection")
     def test_sync_connection():
         """Test sync connection without async"""
