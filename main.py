@@ -19,11 +19,62 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    """Basic health check"""
+    """Comprehensive diagnostic information"""
+    import_status = {}
+    env_status = {}
+    
+    # Check critical environment variables
+    critical_vars = [
+        "DATABASE_URL",
+        "OPENAI_API_KEY", 
+        "AWS_REGION",
+        "APP_ENV",
+        "DB_HOST",
+        "DB_NAME",
+        "DB_USER",
+        "DB_PASSWORD",
+        "DB_PORT"
+    ]
+    
+    for var in critical_vars:
+        value = os.getenv(var)
+        env_status[var] = {
+            "exists": value is not None,
+            "length": len(value) if value else 0,
+            "preview": value[:15] + "..." if value and len(value) > 15 else value
+        }
+    
+    # Test imports
+    test_imports = [
+        ("psycopg2", "import psycopg2"),
+        ("openai", "import openai"),
+        ("asyncpg", "import asyncpg"),
+        ("dotenv", "from dotenv import load_dotenv")
+    ]
+    
+    for name, import_cmd in test_imports:
+        try:
+            exec(import_cmd)
+            import_status[name] = "✅ OK"
+        except Exception as e:
+            import_status[name] = f"❌ {str(e)}"
+    
+    # Check dotenv
+    try:
+        from dotenv import load_dotenv
+        env_file_exists = os.path.exists('.env')
+        dotenv_status = f"File exists: {env_file_exists}"
+    except:
+        dotenv_status = "Failed to import dotenv"
+    
     return {
-        "status": "running",
-        "mode": "diagnostic",
-        "message": "AVA OLO Monitoring Dashboards is operational"
+        "status": "diagnostic",
+        "python_version": sys.version,
+        "working_directory": os.getcwd(),
+        "environment_variables": env_status,
+        "import_tests": import_status,
+        "dotenv_status": dotenv_status,
+        "message": "Diagnostic information - check environment_variables section"
     }
 
 @app.get("/health")
