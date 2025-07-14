@@ -396,15 +396,19 @@ def extract_sql_from_response(llm_response: str) -> Optional[str]:
         if match:
             return match.group(1).strip()
         
-        # Pattern for SQL without code blocks
-        sql_pattern = r'(SELECT.*?;)'
+        # Pattern for SQL without code blocks (SELECT, INSERT, UPDATE, DELETE)
+        sql_pattern = r'((SELECT|INSERT|UPDATE|DELETE).*?;)'
         match = re.search(sql_pattern, llm_response, re.DOTALL | re.IGNORECASE)
         
         if match:
             return match.group(1).strip()
         
         # If the whole response looks like SQL
-        if llm_response.strip().upper().startswith('SELECT'):
+        response_upper = llm_response.strip().upper()
+        if (response_upper.startswith('SELECT') or 
+            response_upper.startswith('INSERT') or 
+            response_upper.startswith('UPDATE') or 
+            response_upper.startswith('DELETE')):
             return llm_response.strip()
         
         return None

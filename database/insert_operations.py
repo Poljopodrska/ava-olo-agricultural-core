@@ -108,6 +108,73 @@ class ConstitutionalInsertOperations:
             logger.error(f"Unexpected error inserting farmer: {e}")
             return False, f"Unexpected error: {str(e)}", None
     
+    async def insert_field(self, field_data: Dict[str, Any]) -> Tuple[bool, str, Optional[int]]:
+        """
+        Insert new field data with constitutional validation
+        
+        Args:
+            field_data: Dictionary containing field information
+            
+        Returns:
+            Tuple of (success, message, field_id)
+        """
+        try:
+            with self.get_db_connection() as connection:
+                cursor = connection.cursor()
+                
+                # Use existing fields table structure - no table creation needed
+                
+                # Constitutional insert: Support all field types globally
+                insert_query = """
+                INSERT INTO fields (
+                    farmer_id,
+                    field_name,
+                    area_ha,
+                    latitude,
+                    longitude,
+                    country,
+                    notes,
+                    blok_id,
+                    raba,
+                    created_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                ) RETURNING id
+                """
+                
+                values = (
+                    field_data.get('farmer_id'),
+                    field_data.get('field_name'),
+                    field_data.get('area_ha'),
+                    field_data.get('latitude'),
+                    field_data.get('longitude'),
+                    field_data.get('country'),
+                    field_data.get('notes'),
+                    field_data.get('blok_id'),
+                    field_data.get('raba'),
+                    datetime.now()
+                )
+                
+                cursor.execute(insert_query, values)
+                field_id = cursor.fetchone()[0]
+                connection.commit()
+                
+                # Privacy-first logging
+                logger.info(f"Field created successfully: field_id={field_id}")
+                
+                success_msg = f"Field '{field_data.get('field_name')}' added successfully! ID: {field_id}"
+                if field_data.get('area_ha'):
+                    success_msg += f" Area: {field_data.get('area_ha')} ha"
+                
+                return True, success_msg, field_id
+                
+        except psycopg2.Error as e:
+            logger.error(f"Database error inserting field: {e}")
+            return False, f"Database error: {str(e)}", None
+        except Exception as e:
+            logger.error(f"Unexpected error inserting field: {e}")
+            return False, f"Unexpected error: {str(e)}", None
+
     async def insert_crop(self, crop_data: Dict[str, Any]) -> Tuple[bool, str, Optional[int]]:
         """
         Insert new crop data with constitutional validation
@@ -129,25 +196,7 @@ class ConstitutionalInsertOperations:
             with self.get_db_connection() as connection:
                 cursor = connection.cursor()
                 
-                # Check if crops table exists, create if not
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS crops (
-                        crop_id SERIAL PRIMARY KEY,
-                        farmer_id INTEGER REFERENCES farmers(farmer_id),
-                        crop_name VARCHAR(100) NOT NULL,
-                        variety VARCHAR(100),
-                        planting_date DATE,
-                        expected_harvest_date DATE,
-                        field_size_hectares DECIMAL(10,2),
-                        planting_method VARCHAR(50),
-                        growth_stage VARCHAR(50),
-                        notes TEXT,
-                        country VARCHAR(100),
-                        climate_zone VARCHAR(50),
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
+                # Use existing field_crops table structure - no table creation needed
                 
                 # Constitutional insert: Support all crops globally
                 insert_query = """
@@ -220,22 +269,7 @@ class ConstitutionalInsertOperations:
             with self.get_db_connection() as connection:
                 cursor = connection.cursor()
                 
-                # Check if agricultural_advice table exists, create if not
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS agricultural_advice (
-                        advice_id SERIAL PRIMARY KEY,
-                        farmer_id INTEGER REFERENCES farmers(farmer_id),
-                        crop_name VARCHAR(100),
-                        advice_type VARCHAR(50),
-                        title VARCHAR(200) NOT NULL,
-                        content TEXT NOT NULL,
-                        country VARCHAR(100),
-                        language VARCHAR(10),
-                        climate_relevance VARCHAR(100),
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                        is_active BOOLEAN DEFAULT true
-                    )
-                """)
+                # Use existing incoming_messages table structure for advice - no table creation needed
                 
                 # Constitutional insert: Global advice support
                 insert_query = """

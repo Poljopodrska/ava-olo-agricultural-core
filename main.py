@@ -51,8 +51,9 @@ app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 # Constitutional AWS RDS Connection (RESTORED WORKING VERSION)
 @contextmanager
 def get_constitutional_db_connection():
-    """Constitutional connection with multiple strategies (from working debug version)"""
+    """Constitutional connection with multiple strategies (FIXED VERSION)"""
     connection = None
+    
     try:
         host = os.getenv('DB_HOST')
         database = os.getenv('DB_NAME', 'farmer_crm')
@@ -63,66 +64,71 @@ def get_constitutional_db_connection():
         print(f"DEBUG: Attempting connection to {host}:{port}/{database} as {user}")
         
         # Strategy 1: Try with SSL required (AWS RDS default)
-        try:
-            connection = psycopg2.connect(
-                host=host,
-                database=database,
-                user=user,
-                password=password,
-                port=port,
-                connect_timeout=10,
-                sslmode='require'
-            )
-            print("DEBUG: Connected with SSL required")
-            yield connection
-            return
-        except psycopg2.OperationalError as ssl_error:
-            print(f"DEBUG: SSL required failed: {ssl_error}")
+        if not connection:
+            try:
+                connection = psycopg2.connect(
+                    host=host,
+                    database=database,
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='require'
+                )
+                print("DEBUG: Connected with SSL required")
+            except psycopg2.OperationalError as ssl_error:
+                print(f"DEBUG: SSL required failed: {ssl_error}")
         
         # Strategy 2: Try with SSL preferred
-        try:
-            connection = psycopg2.connect(
-                host=host,
-                database=database,
-                user=user,
-                password=password,
-                port=port,
-                connect_timeout=10,
-                sslmode='prefer'
-            )
-            print("DEBUG: Connected with SSL preferred")
-            yield connection
-            return
-        except psycopg2.OperationalError as ssl_pref_error:
-            print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
+        if not connection:
+            try:
+                connection = psycopg2.connect(
+                    host=host,
+                    database=database,
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='prefer'
+                )
+                print("DEBUG: Connected with SSL preferred")
+            except psycopg2.OperationalError as ssl_pref_error:
+                print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
         
         # Strategy 3: Try connecting to postgres database instead
-        try:
-            connection = psycopg2.connect(
-                host=host,
-                database='postgres',  # Fallback database
-                user=user,
-                password=password,
-                port=port,
-                connect_timeout=10,
-                sslmode='require'
-            )
-            print("DEBUG: Connected to postgres database")
-            yield connection
-            return
-        except psycopg2.OperationalError as postgres_error:
-            print(f"DEBUG: Postgres database failed: {postgres_error}")
-            
-        # All strategies failed
-        print("DEBUG: All connection strategies failed")
-        yield None
+        if not connection:
+            try:
+                connection = psycopg2.connect(
+                    host=host,
+                    database='postgres',  # Fallback database
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='require'
+                )
+                print("DEBUG: Connected to postgres database")
+            except psycopg2.OperationalError as postgres_error:
+                print(f"DEBUG: Postgres database failed: {postgres_error}")
+        
+        # Yield the connection (successful or None)
+        if connection:
+            print("DEBUG: Yielding successful connection")
+        else:
+            print("DEBUG: All connection strategies failed, yielding None")
+        
+        yield connection
         
     except Exception as e:
-        print(f"DEBUG: Unexpected error: {e}")
+        print(f"DEBUG: Unexpected error in connection: {e}")
         yield None
     finally:
         if connection:
-            connection.close()
+            try:
+                connection.close()
+                print("DEBUG: Connection closed")
+            except:
+                pass
 
 # PART 1: Standard Agricultural Queries (ALWAYS WORKS)
 async def get_farmer_count():
@@ -2146,36 +2152,51 @@ async def process_natural_query(request: Dict[str, Any]):
                             "operation_type": operation_type
                         }
                     else:
-                        cursor.execute(sql_query)
-                        
-                        if operation_type == "SELECT":
-                            # Get column names
-                            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                        try:
+                            cursor.execute(sql_query)
                             
-                            # Fetch all results
-                            rows = cursor.fetchall()
-                            
-                            # Convert to list of dicts
-                            data = []
-                            for row in rows:
-                                data.append(dict(zip(columns, row)))
-                            
+                            if operation_type == "SELECT":
+                                # Get column names
+                                columns = [desc[0] for desc in cursor.description] if cursor.description else []
+                                
+                                # Fetch all results
+                                rows = cursor.fetchall()
+                                
+                                # Convert to list of dicts
+                                data = []
+                                for row in rows:
+                                    data.append(dict(zip(columns, row)))
+                                
+                                llm_result["execution_result"] = {
+                                    "status": "success",
+                                    "operation_type": operation_type,
+                                    "row_count": len(rows),
+                                    "data": data
+                                }
+                            else:
+                                # For INSERT, UPDATE, DELETE
+                                conn.commit()  # Important: commit the transaction
+                                affected_rows = cursor.rowcount
+                                
+                                llm_result["execution_result"] = {
+                                    "status": "success",
+                                    "operation_type": operation_type,
+                                    "affected_rows": affected_rows,
+                                    "message": f"{operation_type} executed successfully"
+                                }
+                        except StopIteration:
+                            # Handle generator issue specifically
                             llm_result["execution_result"] = {
-                                "status": "success",
-                                "operation_type": operation_type,
-                                "row_count": len(rows),
-                                "data": data
+                                "status": "error",
+                                "error": "Query execution failed due to generator issue. Try rephrasing the query.",
+                                "suggestion": "Use a simpler INSERT statement or check farmer ID manually."
                             }
-                        else:
-                            # For INSERT, UPDATE, DELETE
-                            conn.commit()  # Important: commit the transaction
-                            affected_rows = cursor.rowcount
-                            
+                        except GeneratorExit:
+                            # Handle generator exit issue
                             llm_result["execution_result"] = {
-                                "status": "success",
-                                "operation_type": operation_type,
-                                "affected_rows": affected_rows,
-                                "message": f"{operation_type} executed successfully"
+                                "status": "error", 
+                                "error": "Query execution interrupted. Try a simpler query format.",
+                                "suggestion": "Use direct INSERT with known farmer ID instead of subquery."
                             }
                 else:
                     llm_result["execution_result"] = {"error": "Database connection failed"}
