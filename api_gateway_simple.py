@@ -1890,6 +1890,35 @@ except ImportError as e:
 
 
 # Test endpoint at the end of file
+@app.get("/api/v1/test-import-order")
+def test_import_order():
+    """Test if import order affects password retrieval"""
+    import os
+    
+    # Get password from different sources
+    env_password = os.getenv('DB_PASSWORD', 'not-set')
+    
+    # Import config AFTER checking env
+    from config_manager import config
+    config_password = config.db_password
+    
+    # Import secrets manager
+    from implementation.secrets_manager import get_database_config
+    secrets_config = get_database_config()
+    secrets_password = secrets_config.get('password', 'not-set')
+    
+    return {
+        "env_password_length": len(env_password),
+        "env_password_preview": env_password[:5] + "..." + env_password[-5:] if env_password != 'not-set' else 'not-set',
+        "config_password_length": len(config_password),
+        "config_password_preview": config_password[:5] + "..." + config_password[-5:] if config_password else 'not-set',
+        "secrets_password_length": len(secrets_password),
+        "secrets_password_preview": secrets_password[:5] + "..." + secrets_password[-5:] if secrets_password != 'not-set' else 'not-set',
+        "all_match": env_password == config_password == secrets_password,
+        "env_equals_config": env_password == config_password,
+        "config_equals_secrets": config_password == secrets_password
+    }
+
 @app.get("/api/v1/test-final-connection")
 def test_final_connection():
     """Test connection at the very end of the file"""
