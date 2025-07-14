@@ -29,8 +29,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize database operations
-db_ops = ConstitutionalDatabaseOperations()
+# Initialize database operations lazily
+db_ops = None
 
 
 # Pydantic models
@@ -49,10 +49,20 @@ class FarmerQueryResponse(BaseModel):
     metadata: Dict[str, Any]
 
 
+def get_db_ops():
+    """Lazy initialization of database operations"""
+    global db_ops
+    if db_ops is None:
+        logger.info("Initializing ConstitutionalDatabaseOperations...")
+        db_ops = ConstitutionalDatabaseOperations()
+        logger.info("ConstitutionalDatabaseOperations initialized")
+    return db_ops
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    db_healthy = await db_ops.health_check()
+    db_healthy = await get_db_ops().health_check()
     
     return {
         "status": "healthy" if db_healthy else "unhealthy",
@@ -71,7 +81,7 @@ async def process_farmer_query(request: FarmerQuery):
     Constitutional compliance: 100% LLM-driven
     """
     try:
-        response = await db_ops.process_natural_query(
+        response = await get_db_ops().process_natural_query(
             query_text=request.query,
             farmer_id=request.farmer_id,
             language=request.language,
@@ -104,7 +114,7 @@ async def process_farmer_query(request: FarmerQuery):
 async def get_farmer_fields(farmer_id: int, language: str = "en"):
     """Get farmer's fields using LLM-first approach"""
     try:
-        response = await db_ops.process_natural_query(
+        response = await get_db_ops().process_natural_query(
             query_text="Show me all my fields with their sizes and current crops",
             farmer_id=farmer_id,
             language=language
@@ -124,7 +134,7 @@ async def get_farmer_fields(farmer_id: int, language: str = "en"):
 async def get_farmer_crops(farmer_id: int, language: str = "en"):
     """Get farmer's crops using LLM-first approach"""
     try:
-        response = await db_ops.process_natural_query(
+        response = await get_db_ops().process_natural_query(
             query_text="What crops am I currently growing and their status?",
             farmer_id=farmer_id,
             language=language
@@ -144,7 +154,7 @@ async def get_farmer_crops(farmer_id: int, language: str = "en"):
 async def get_farmer_tasks(farmer_id: int, language: str = "en"):
     """Get farmer's tasks using LLM-first approach"""
     try:
-        response = await db_ops.process_natural_query(
+        response = await get_db_ops().process_natural_query(
             query_text="Show me my upcoming agricultural tasks",
             farmer_id=farmer_id,
             language=language

@@ -71,7 +71,7 @@ class LLMDatabaseQueryEngine:
         self.client = OpenAI(api_key=config.openai_api_key)
         self.model = config.openai_model
         self.db_connection = None
-        self._initialize_database()
+        # Don't initialize database on import - do it lazily
         
         # Initialize smart country detector
         try:
@@ -176,6 +176,10 @@ class LLMDatabaseQueryEngine:
     
     def _get_database_schema(self) -> Dict[str, Any]:
         """Get database schema information for LLM context"""
+        # Ensure database connection is established
+        if self.db_connection is None:
+            self._initialize_database()
+            
         schema_query = """
         SELECT 
             table_name,
@@ -341,6 +345,10 @@ SQL: SELECT task_description, due_date, status
                             sql_query: str, 
                             farmer_id: Optional[int]) -> List[Dict]:
         """Execute SQL query safely with proper error handling"""
+        # Ensure database connection is established
+        if self.db_connection is None:
+            self._initialize_database()
+            
         try:
             with self.db_connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 # Use parameterized query if farmer_id is provided
