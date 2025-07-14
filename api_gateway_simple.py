@@ -111,6 +111,7 @@ async def main_web_interface():
             .today-icon .weather-icon svg { width: 64px; height: 64px; }
             .hour-icon .weather-icon svg { width: 24px; height: 24px; }
             .day-icon .weather-icon svg { width: 32px; height: 32px; }
+            .extended-day .weather-icon svg { width: 24px; height: 24px; }
             
             /* Constitutional Cards */
             .constitutional-card { background: var(--white); border-radius: 8px; padding: 24px; box-shadow: 0 2px 12px rgba(107,91,115,0.1); border-left: 4px solid var(--primary-olive); margin-bottom: 24px; }
@@ -124,24 +125,25 @@ async def main_web_interface():
             
             /* Real-Time Date/Time Display */
             .datetime-display {
-                background: rgba(255,255,255,0.1);
+                background: var(--white);
                 border-radius: 8px;
                 padding: 16px;
                 margin-bottom: 24px;
                 text-align: center;
-                border: 1px solid rgba(255,255,255,0.2);
+                border: 1px solid var(--light-gray);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             }
             .current-time {
                 font-size: 32px;
                 font-weight: bold;
-                color: var(--white);
+                color: #2F4F4F;
                 margin-bottom: 8px;
                 font-family: monospace;
             }
             .current-date {
                 font-size: 18px;
-                color: var(--white);
-                opacity: 0.9;
+                color: #000000;
+                font-weight: 500;
             }
             
             /* Endless 24-Hour Tape */
@@ -291,8 +293,8 @@ async def main_web_interface():
                         <div class="today-icon">
                             <div class="weather-icon">
                                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="12" r="5" fill="#9CAF88" stroke="#8B4513" stroke-width="2"/>
-                                    <g stroke="#8B4513" stroke-width="2" stroke-linecap="round">
+                                    <circle cx="12" cy="12" r="5" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+                                    <g stroke="#FFD700" stroke-width="2" stroke-linecap="round">
                                         <line x1="12" y1="1" x2="12" y2="3"/>
                                         <line x1="12" y1="21" x2="12" y2="23"/>
                                         <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
@@ -336,8 +338,15 @@ async def main_web_interface():
                     <!-- 5-day timeline will be populated by JavaScript -->
                 </div>
                 
+                <!-- Extended Forecast Toggle -->
+                <div style="text-align: center; margin: 24px 0;">
+                    <button class="constitutional-btn constitutional-btn-secondary" onclick="toggleExtendedForecast()" style="width: auto; padding: 12px 24px;">
+                        <span id="toggleText">Show Extended Forecast</span>
+                    </button>
+                </div>
+                
                 <!-- Extended Forecast Section -->
-                <div class="extended-forecast-section">
+                <div class="extended-forecast-section" id="extendedForecastSection" style="display: none;">
                     <div class="extended-header">
                         <h3>Extended Forecast</h3>
                         <div class="forecast-controls">
@@ -566,15 +575,29 @@ async def main_web_interface():
                 populateHourlyTape();
                 populate5DayTimeline();
                 
-                // Initialize extended forecast with 5 days
-                const firstButton = document.querySelector('.forecast-btn');
-                if (firstButton) {
-                    event = { target: firstButton };
-                    showDays(5);
-                }
+                // Don't initialize extended forecast until toggle is clicked
                 
                 console.log('🏛️ Constitutional Weather System: Next 24 hours + Extended forecast active');
             });
+            
+            // Toggle Extended Forecast
+            function toggleExtendedForecast() {
+                const section = document.getElementById('extendedForecastSection');
+                const toggleText = document.getElementById('toggleText');
+                
+                if (section.style.display === 'none') {
+                    section.style.display = 'block';
+                    toggleText.textContent = 'Hide Extended Forecast';
+                    // Initialize if not already done
+                    if (!section.dataset.initialized) {
+                        showDays(5);
+                        section.dataset.initialized = 'true';
+                    }
+                } else {
+                    section.style.display = 'none';
+                    toggleText.textContent = 'Show Extended Forecast';
+                }
+            }
             
             // Populate hourly forecast with SVG icons
             function populateHourlyForecast() {
@@ -632,12 +655,15 @@ async def main_web_interface():
             // Populate 5-day timeline with SVG icons
             function populate5DayTimeline() {
                 const timeline = document.getElementById('weatherTimeline');
+                const today = new Date();
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                
                 const days = [
-                    {label: 'Yesterday', icon: 'partly-cloudy', condition: 'Partly Cloudy', temp: 19, rain: 2, wind: 'W 14km/h'},
                     {label: 'Today', icon: 'sunny', condition: 'Sunny', temp: 22, rain: 0, wind: 'NE 12km/h', today: true},
                     {label: 'Tomorrow', icon: 'partly-cloudy', condition: 'Partly Sunny', temp: 24, rain: 1, wind: 'N 8km/h'},
-                    {label: 'Tuesday', icon: 'rain-moderate', condition: 'Light Rain', temp: 18, rain: 8, wind: 'SW 18km/h'},
-                    {label: 'Wednesday', icon: 'thunderstorm', condition: 'Thunderstorms', temp: 16, rain: 15, wind: 'W 22km/h'}
+                    {label: dayNames[(today.getDay() + 2) % 7], icon: 'rain-moderate', condition: 'Light Rain', temp: 18, rain: 8, wind: 'SW 18km/h'},
+                    {label: dayNames[(today.getDay() + 3) % 7], icon: 'cloudy', condition: 'Cloudy', temp: 20, rain: 3, wind: 'W 15km/h'},
+                    {label: dayNames[(today.getDay() + 4) % 7], icon: 'thunderstorm', condition: 'Thunderstorms', temp: 16, rain: 15, wind: 'W 22km/h'}
                 ];
                 
                 let html = '';
@@ -671,8 +697,8 @@ async def main_web_interface():
             // SVG Weather Icon Functions
             function getSunnyIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="5" fill="#9CAF88" stroke="#8B4513" stroke-width="2"/>
-                    <g stroke="#8B4513" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="5" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+                    <g stroke="#FFD700" stroke-width="2" stroke-linecap="round">
                         <line x1="12" y1="1" x2="12" y2="3"/>
                         <line x1="12" y1="21" x2="12" y2="23"/>
                         <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
@@ -688,21 +714,21 @@ async def main_web_interface():
             function getCloudyIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                          fill="#808080" stroke="#696969" stroke-width="2" stroke-linejoin="round"/>
                 </svg>`;
             }
             
             function getPartlyCloudyIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <g>
-                        <circle cx="10" cy="10" r="3" fill="#9CAF88" stroke="#8B4513" stroke-width="1.5"/>
-                        <g stroke="#8B4513" stroke-width="1.5" stroke-linecap="round" opacity="0.8">
+                        <circle cx="10" cy="10" r="3" fill="#FFD700" stroke="#FFA500" stroke-width="1.5"/>
+                        <g stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.8">
                             <line x1="10" y1="4" x2="10" y2="5"/>
                             <line x1="15" y1="10" x2="16" y2="10"/>
                             <line x1="14.5" y1="5.5" x2="15.5" y2="4.5"/>
                         </g>
                         <path d="M16 12h-0.8A5 5 0 1 0 10 17h6a3 3 0 0 0 0-6z" 
-                              fill="#E8E8E6" stroke="#8B4513" stroke-width="1.5" stroke-linejoin="round"/>
+                              fill="#808080" stroke="#696969" stroke-width="1.5" stroke-linejoin="round"/>
                     </g>
                 </svg>`;
             }
@@ -712,11 +738,11 @@ async def main_web_interface():
                 let dropPaths = '';
                 for (let i = 0; i < drops; i++) {
                     const x = 8 + (i * 3);
-                    dropPaths += `<line x1="${x}" y1="13" x2="${x-1}" y2="16" stroke="#5D5E3F" stroke-width="1.5" stroke-linecap="round"/>`;
+                    dropPaths += `<line x1="${x}" y1="13" x2="${x-1}" y2="16" stroke="#4169E1" stroke-width="1.5" stroke-linecap="round"/>`;
                 }
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                          fill="#808080" stroke="#696969" stroke-width="2" stroke-linejoin="round"/>
                     ${dropPaths}
                 </svg>`;
             }
@@ -724,17 +750,17 @@ async def main_web_interface():
             function getThunderstormIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                          fill="#2F4F4F" stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
                     <path d="M13 16l-3 5 3-5h-3l3-5" 
-                          fill="none" stroke="#8B4513" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+                          fill="none" stroke="#FFD700" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
                 </svg>`;
             }
             
             function getSnowIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#E8E8E6" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
-                    <g fill="#8B4513">
+                          fill="#808080" stroke="#696969" stroke-width="2" stroke-linejoin="round"/>
+                    <g fill="#FFFFFF" stroke="#4169E1" stroke-width="0.5">
                         <circle cx="8" cy="14" r="1"/>
                         <circle cx="12" cy="13" r="1"/>
                         <circle cx="16" cy="14" r="1"/>
@@ -746,7 +772,7 @@ async def main_web_interface():
             
             function getFogIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <g stroke="#8B4513" stroke-width="2" stroke-linecap="round">
+                    <g stroke="#808080" stroke-width="2" stroke-linecap="round">
                         <line x1="4" y1="8" x2="20" y2="8" opacity="0.8"/>
                         <line x1="4" y1="12" x2="20" y2="12"/>
                         <line x1="4" y1="16" x2="20" y2="16" opacity="0.6"/>
@@ -757,16 +783,16 @@ async def main_web_interface():
             function getNightIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" 
-                          fill="#9CAF88" stroke="#8B4513" stroke-width="2" stroke-linejoin="round"/>
+                          fill="#FFFACD" stroke="#FFD700" stroke-width="2" stroke-linejoin="round"/>
                 </svg>`;
             }
             
             function getDawnIcon() {
                 return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <g>
-                        <path d="M12 15a5 5 0 0 0 0-10v10z" fill="#9CAF88" stroke="#8B4513" stroke-width="2"/>
-                        <line x1="4" y1="18" x2="20" y2="18" stroke="#8B4513" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="6" y1="21" x2="18" y2="21" stroke="#8B4513" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                        <path d="M12 15a5 5 0 0 0 0-10v10z" fill="#FFB347" stroke="#FF8C00" stroke-width="2"/>
+                        <line x1="4" y1="18" x2="20" y2="18" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
+                        <line x1="6" y1="21" x2="18" y2="21" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
                     </g>
                 </svg>`;
             }
