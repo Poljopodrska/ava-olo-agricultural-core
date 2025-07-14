@@ -1396,6 +1396,75 @@ try:
             "JWT_SECRET_SET": bool(os.getenv('JWT_SECRET'))
         }
     
+    @app.get("/api/v1/auth/test-password-sources")
+    async def test_password_sources():
+        """Compare passwords from different sources"""
+        import psycopg2
+        from implementation.secrets_manager import get_database_config
+        from config_manager import config
+        
+        results = []
+        
+        # Test 1: Using config_manager (what regular endpoints use)
+        try:
+            conn = psycopg2.connect(
+                host=config.db_host,
+                database=config.db_name,
+                user=config.db_user,
+                password=config.db_password,
+                port=config.db_port
+            )
+            conn.close()
+            results.append({
+                "method": "config_manager", 
+                "success": True,
+                "password_length": len(config.db_password),
+                "password_preview": config.db_password[:5] + "..." + config.db_password[-5:] if config.db_password else 'not-set'
+            })
+        except Exception as e:
+            results.append({
+                "method": "config_manager", 
+                "error": str(e)[:100],
+                "password_length": len(config.db_password),
+                "password_preview": config.db_password[:5] + "..." + config.db_password[-5:] if config.db_password else 'not-set'
+            })
+            
+        # Test 2: Using secrets_manager (what auth uses)
+        try:
+            db_config = get_database_config()
+            conn = psycopg2.connect(
+                host=db_config['host'],
+                database=db_config['database'],
+                user=db_config['user'],
+                password=db_config['password'],
+                port=db_config['port']
+            )
+            conn.close()
+            results.append({
+                "method": "secrets_manager", 
+                "success": True,
+                "password_length": len(db_config['password']),
+                "password_preview": db_config['password'][:5] + "..." + db_config['password'][-5:] if db_config['password'] else 'not-set'
+            })
+        except Exception as e:
+            results.append({
+                "method": "secrets_manager", 
+                "error": str(e)[:100],
+                "password_length": len(db_config.get('password', '')),
+                "password_preview": db_config['password'][:5] + "..." + db_config['password'][-5:] if db_config.get('password') else 'not-set'
+            })
+            
+        # Compare passwords
+        config_pw = config.db_password
+        secrets_pw = get_database_config().get('password', '')
+        
+        return {
+            "tests": results,
+            "passwords_match": config_pw == secrets_pw,
+            "config_has_dollar": '$' in config_pw,
+            "secrets_has_dollar": '$' in secrets_pw
+        }
+    
     @app.get("/api/v1/auth/test-basic-connection")
     async def test_basic_connection():
         """Test basic psycopg2 connection like LLM engine uses"""
