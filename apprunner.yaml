@@ -1,0 +1,29 @@
+version: 1.0
+runtime: python311
+build:
+  commands:
+    build:
+      - pip install -r requirements.txt
+run:
+  runtime-version: 3.11
+  command: python app.py
+  network:
+    port: 8080
+    env: PORT
+  env:
+    - name: DB_HOST
+      value: "farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com"
+    - name: DB_NAME
+      value: "farmer_crm"
+    - name: DB_USER
+      value: "postgres"
+    - name: DB_PASSWORD
+      value: "from-environment"
+    - name: DB_PORT
+      value: "5432"
+    - name: DATABASE_URL
+      value: "postgresql://postgres:2hpzvrg_xP~qNbz1[_NppSK$e*O1@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
+    - name: OPENAI_API_KEY
+      value: "from-environment"
+    - name: PERPLEXITY_API_KEY
+      value: "from-environment"
