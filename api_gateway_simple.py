@@ -1889,6 +1889,32 @@ except ImportError as e:
         return result
 
 
+# Test endpoint at the end of file
+@app.get("/api/v1/test-final-connection")
+def test_final_connection():
+    """Test connection at the very end of the file"""
+    from config_manager import config
+    import psycopg2
+    
+    try:
+        conn = psycopg2.connect(
+            host=config.db_host,
+            database=config.db_name,
+            user=config.db_user,
+            password=config.db_password,
+            port=config.db_port
+        )
+        
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")
+            result = cur.fetchone()
+        
+        conn.close()
+        return {"success": True, "test": "final_connection"}
+    except Exception as e:
+        return {"success": False, "error": str(e)[:100], "test": "final_connection"}
+
+
 if __name__ == "__main__":
     import uvicorn
     print("🚀 Starting Simple AVA OLO API Gateway on port 8000")
