@@ -8,7 +8,11 @@ from contextlib import contextmanager
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import Form
 from pydantic import BaseModel
+import sys
+sys.path.append('.')
+from database.insert_operations import ConstitutionalInsertOperations
 
 # Construct DATABASE_URL from individual components if not set
 if not os.getenv('DATABASE_URL'):
@@ -2833,6 +2837,547 @@ async def test_external_connection():
             "failed": len([r for r in results.values() if isinstance(r, str) and "❌" in r])
         }
     }
+
+# ===================================================================
+# 🛡️ CONSTITUTIONAL DATA INSERTION ROUTES - NEW FUNCTIONALITY
+# ===================================================================
+
+# Initialize constitutional insert operations
+constitutional_ops = ConstitutionalInsertOperations(get_constitutional_db_connection)
+
+@app.get("/database-dashboard/add-data", response_class=HTMLResponse)
+async def database_add_data_form():
+    """Constitutional data entry form selection page"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Agricultural Data - AVA OLO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-brown: #6B5B73;
+            --primary-olive: #8B8C5A;
+            --dark-olive: #5D5E3F;
+            --cream: #F5F3F0;
+            --dark-charcoal: #2C2C2C;
+            --white: #FFFFFF;
+            --font-large: 18px;
+            --font-heading: 24px;
+            --font-title: 32px;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: var(--cream); 
+            color: var(--dark-charcoal);
+            margin: 0;
+            padding: 20px;
+            font-size: var(--font-large);
+            line-height: 1.6;
+        }
+        .constitutional-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .constitutional-header {
+            background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
+            color: var(--white);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .constitutional-title {
+            margin: 0 0 10px 0;
+            font-size: var(--font-title);
+            font-weight: bold;
+        }
+        .back-link {
+            color: var(--white);
+            text-decoration: none;
+            margin-bottom: 15px;
+            display: inline-block;
+            font-size: var(--font-large);
+        }
+        .content {
+            padding: 40px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .form-card {
+            background: var(--white);
+            border: 2px solid var(--primary-olive);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        .form-card h3 {
+            color: var(--primary-brown);
+            margin-bottom: 15px;
+            font-size: var(--font-heading);
+        }
+        .form-card p {
+            color: var(--dark-olive);
+            margin-bottom: 25px;
+            font-size: var(--font-large);
+        }
+        .constitutional-button {
+            background: linear-gradient(135deg, var(--primary-olive), var(--primary-brown));
+            color: var(--white);
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: var(--font-large);
+            display: inline-block;
+            transition: background 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .constitutional-button:hover {
+            background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
+            text-decoration: none;
+            color: var(--white);
+        }
+        .mango-rule {
+            background: #FFF3CD;
+            border: 2px solid #FFC107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .mango-rule h4 {
+            color: #856404;
+            margin: 0 0 10px 0;
+            font-size: var(--font-heading);
+        }
+        .mango-rule p {
+            color: #856404;
+            margin: 0;
+            font-size: var(--font-large);
+        }
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="constitutional-container">
+        <header class="constitutional-header">
+            <a href="/database-dashboard" class="back-link">← Back to Database Dashboard</a>
+            <h1 class="constitutional-title">🌾 Add Agricultural Data</h1>
+            <p>Constitutional Data Entry System</p>
+        </header>
+        
+        <div class="content">
+            <div class="mango-rule">
+                <h4>🥭 Constitutional Compliance</h4>
+                <p>This system follows the MANGO RULE: Works for Bulgarian mango farmers and supports all crops globally</p>
+            </div>
+            
+            <div class="form-grid">
+                <div class="form-card">
+                    <h3>👨‍🌾 Add Farmer</h3>
+                    <p>Register a new farmer profile with international support</p>
+                    <a href="/database-dashboard/add-farmer" class="constitutional-button">Add Farmer</a>
+                </div>
+                
+                <div class="form-card">
+                    <h3>🌱 Add Crop</h3>
+                    <p>Add crop information with global variety support</p>
+                    <a href="/database-dashboard/add-crop" class="constitutional-button">Add Crop</a>
+                </div>
+                
+                <div class="form-card">
+                    <h3>📖 Add Agricultural Advice</h3>
+                    <p>Share agricultural knowledge and recommendations</p>
+                    <a href="/database-dashboard/add-advice" class="constitutional-button">Add Advice</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+""")
+
+@app.get("/database-dashboard/add-farmer", response_class=HTMLResponse)
+async def add_farmer_form():
+    """Constitutional farmer registration form"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Farmer - AVA OLO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --primary-brown: #6B5B73;
+            --primary-olive: #8B8C5A;
+            --dark-olive: #5D5E3F;
+            --cream: #F5F3F0;
+            --dark-charcoal: #2C2C2C;
+            --white: #FFFFFF;
+            --font-large: 18px;
+            --font-heading: 24px;
+            --font-title: 32px;
+            --success-green: #6B8E23;
+            --error-red: #C85450;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: var(--cream); 
+            color: var(--dark-charcoal);
+            margin: 0;
+            padding: 20px;
+            font-size: var(--font-large);
+            line-height: 1.6;
+        }
+        .constitutional-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .constitutional-header {
+            background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
+            color: var(--white);
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .constitutional-title {
+            margin: 0 0 10px 0;
+            font-size: var(--font-title);
+            font-weight: bold;
+        }
+        .back-link {
+            color: var(--white);
+            text-decoration: none;
+            margin-bottom: 15px;
+            display: inline-block;
+            font-size: var(--font-large);
+        }
+        .content {
+            padding: 40px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--primary-brown);
+            font-size: var(--font-large);
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--primary-olive);
+            border-radius: 6px;
+            font-size: var(--font-large);
+            box-sizing: border-box;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-brown);
+            box-shadow: 0 0 0 3px rgba(107, 91, 115, 0.1);
+        }
+        .constitutional-button {
+            background: linear-gradient(135deg, var(--primary-olive), var(--primary-brown));
+            color: var(--white);
+            padding: 15px 30px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: var(--font-large);
+            cursor: pointer;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+        .constitutional-button:hover {
+            background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
+        }
+        .mango-rule {
+            background: #FFF3CD;
+            border: 2px solid #FFC107;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .required {
+            color: var(--error-red);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="constitutional-container">
+        <header class="constitutional-header">
+            <a href="/database-dashboard/add-data" class="back-link">← Back to Add Data</a>
+            <h1 class="constitutional-title">👨‍🌾 Add Farmer</h1>
+            <p>Constitutional Farmer Registration</p>
+        </header>
+        
+        <div class="content">
+            <div class="mango-rule">
+                <h4>🥭 MANGO RULE Compliant</h4>
+                <p>This form supports Bulgarian mango farmers and all international farmers</p>
+            </div>
+            
+            <form method="POST" action="/database-dashboard/add-farmer">
+                <div class="form-group">
+                    <label for="farm_name">Farm Name <span class="required">*</span></label>
+                    <input type="text" id="farm_name" name="farm_name" required 
+                           placeholder="e.g., София Манго Ферма (Sofia Mango Farm)">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="manager_name">Manager First Name <span class="required">*</span></label>
+                        <input type="text" id="manager_name" name="manager_name" required 
+                               placeholder="e.g., Димитър (Dimitar)">
+                    </div>
+                    <div class="form-group">
+                        <label for="manager_last_name">Manager Last Name</label>
+                        <input type="text" id="manager_last_name" name="manager_last_name" 
+                               placeholder="e.g., Петров (Petrov)">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <input type="text" id="city" name="city" 
+                               placeholder="e.g., София (Sofia)">
+                    </div>
+                    <div class="form-group">
+                        <label for="country">Country <span class="required">*</span></label>
+                        <input type="text" id="country" name="country" required 
+                               placeholder="e.g., Bulgaria">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" 
+                               placeholder="e.g., +359 2 123 4567">
+                    </div>
+                    <div class="form-group">
+                        <label for="wa_phone_number">WhatsApp Number</label>
+                        <input type="tel" id="wa_phone_number" name="wa_phone_number" 
+                               placeholder="e.g., +359 87 123 4567">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" 
+                           placeholder="e.g., dimitar@mangoferma.bg">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="preferred_language">Preferred Language</label>
+                        <select id="preferred_language" name="preferred_language">
+                            <option value="en">English</option>
+                            <option value="bg">Bulgarian (Български)</option>
+                            <option value="hr">Croatian (Hrvatski)</option>
+                            <option value="hu">Hungarian (Magyar)</option>
+                            <option value="sr">Serbian (Српски)</option>
+                            <option value="es">Spanish (Español)</option>
+                            <option value="fr">French (Français)</option>
+                            <option value="de">German (Deutsch)</option>
+                            <option value="it">Italian (Italiano)</option>
+                            <option value="pt">Portuguese (Português)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="timezone">Timezone</label>
+                        <select id="timezone" name="timezone">
+                            <option value="Europe/Sofia">Sofia (Bulgaria)</option>
+                            <option value="Europe/Zagreb">Zagreb (Croatia)</option>
+                            <option value="Europe/Budapest">Budapest (Hungary)</option>
+                            <option value="Europe/Belgrade">Belgrade (Serbia)</option>
+                            <option value="Europe/Madrid">Madrid (Spain)</option>
+                            <option value="Europe/Paris">Paris (France)</option>
+                            <option value="Europe/Berlin">Berlin (Germany)</option>
+                            <option value="Europe/Rome">Rome (Italy)</option>
+                            <option value="Europe/Lisbon">Lisbon (Portugal)</option>
+                            <option value="America/New_York">New York (USA)</option>
+                            <option value="America/Los_Angeles">Los Angeles (USA)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="constitutional-button">
+                    🌾 Add Farmer (Constitutional Compliance)
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+""")
+
+@app.post("/database-dashboard/add-farmer", response_class=HTMLResponse)
+async def add_farmer_submit(
+    farm_name: str = Form(...),
+    manager_name: str = Form(...),
+    manager_last_name: str = Form(None),
+    city: str = Form(None),
+    country: str = Form(...),
+    phone: str = Form(None),
+    wa_phone_number: str = Form(None),
+    email: str = Form(None),
+    preferred_language: str = Form("en"),
+    timezone: str = Form(None)
+):
+    """Process farmer registration with constitutional compliance"""
+    
+    # Prepare farmer data
+    farmer_data = {
+        'farm_name': farm_name,
+        'manager_name': manager_name,
+        'manager_last_name': manager_last_name,
+        'city': city,
+        'country': country,
+        'phone': phone,
+        'wa_phone_number': wa_phone_number,
+        'email': email,
+        'preferred_language': preferred_language,
+        'timezone': timezone,
+        'country_code': country[:2].upper() if country else None,
+        'whatsapp_number': wa_phone_number,
+        'localization_preferences': {}
+    }
+    
+    # Insert farmer with constitutional validation
+    success, message, farmer_id = await constitutional_ops.insert_farmer(farmer_data)
+    
+    # Return success/error page
+    if success:
+        return HTMLResponse(content=f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Farmer Added Successfully - AVA OLO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {{
+            --primary-brown: #6B5B73;
+            --success-green: #6B8E23;
+            --cream: #F5F3F0;
+            --white: #FFFFFF;
+            --font-large: 18px;
+            --font-title: 32px;
+        }}
+        body {{ 
+            font-family: Arial, sans-serif; 
+            background: var(--cream); 
+            margin: 0;
+            padding: 20px;
+            font-size: var(--font-large);
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--white);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }}
+        .success-icon {{
+            font-size: 48px;
+            color: var(--success-green);
+            margin-bottom: 20px;
+        }}
+        h1 {{
+            color: var(--primary-brown);
+            font-size: var(--font-title);
+        }}
+        .constitutional-button {{
+            background: linear-gradient(135deg, #8B8C5A, var(--primary-brown));
+            color: var(--white);
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: var(--font-large);
+            display: inline-block;
+            margin: 10px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>Farmer Added Successfully!</h1>
+        <p><strong>Farmer ID:</strong> {farmer_id}</p>
+        <p><strong>Farm:</strong> {farm_name}</p>
+        <p><strong>Manager:</strong> {manager_name}</p>
+        <p><strong>Country:</strong> {country}</p>
+        <div style="margin-top: 20px; padding: 15px; background: #F0F8E8; border-radius: 8px;">
+            <p><strong>Constitutional Compliance:</strong> ✅ MANGO RULE Verified</p>
+            <p>{message}</p>
+        </div>
+        <div style="margin-top: 30px;">
+            <a href="/database-dashboard/add-data" class="constitutional-button">Add More Data</a>
+            <a href="/database-dashboard" class="constitutional-button">Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>
+""")
+    else:
+        return HTMLResponse(content=f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error Adding Farmer - AVA OLO</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; background: #F5F3F0; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; text-align: center; }}
+        .error {{ color: #C85450; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="error">❌ Error Adding Farmer</h1>
+        <p>{message}</p>
+        <a href="/database-dashboard/add-farmer">← Try Again</a>
+    </div>
+</body>
+</html>
+""")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
