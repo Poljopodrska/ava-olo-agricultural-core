@@ -1396,6 +1396,61 @@ try:
             "JWT_SECRET_SET": bool(os.getenv('JWT_SECRET'))
         }
     
+    @app.get("/api/v1/auth/test-basic-connection")
+    async def test_basic_connection():
+        """Test basic psycopg2 connection like LLM engine uses"""
+        import psycopg2
+        from implementation.secrets_manager import get_database_config
+        
+        results = []
+        
+        # Test 1: Exact same connection as LLM engine (no SSL specified)
+        try:
+            db_config = get_database_config()
+            conn = psycopg2.connect(
+                host=db_config['host'],
+                database=db_config['database'],
+                user=db_config['user'],
+                password=db_config['password'],
+                port=db_config['port']
+            )
+            conn.close()
+            results.append({"method": "basic_no_ssl", "success": True})
+        except Exception as e:
+            results.append({"method": "basic_no_ssl", "error": str(e)[:200]})
+            
+        # Test 2: With SSL disable (explicit)
+        try:
+            conn = psycopg2.connect(
+                host=db_config['host'],
+                database=db_config['database'],
+                user=db_config['user'],
+                password=db_config['password'],
+                port=db_config['port'],
+                sslmode='disable'
+            )
+            conn.close()
+            results.append({"method": "ssl_disable", "success": True})
+        except Exception as e:
+            results.append({"method": "ssl_disable", "error": str(e)[:200]})
+            
+        # Test 3: With SSL require
+        try:
+            conn = psycopg2.connect(
+                host=db_config['host'],
+                database=db_config['database'],
+                user=db_config['user'],
+                password=db_config['password'],
+                port=db_config['port'],
+                sslmode='require'
+            )
+            conn.close()
+            results.append({"method": "ssl_require", "success": True})
+        except Exception as e:
+            results.append({"method": "ssl_require", "error": str(e)[:200]})
+            
+        return {"tests": results, "password_length": len(db_config.get('password', ''))}
+    
     @app.get("/api/v1/auth/test-secrets")
     async def test_secrets():
         """Test AWS Secrets Manager integration"""
