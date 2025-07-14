@@ -1465,6 +1465,44 @@ try:
             "secrets_has_dollar": '$' in secrets_pw
         }
     
+    @app.get("/api/v1/auth/test-working-connection")
+    async def test_working_connection():
+        """Test the exact connection method that works for farmers"""
+        try:
+            # Use the exact same method as the farmers endpoint
+            db_ops = DatabaseOperations()
+            
+            # This should work since farmers endpoint works
+            farmers = db_ops.get_all_farmers(limit=1)
+            
+            # Now let's trace how it connects
+            from llm_first_database_engine import LLMDatabaseQueryEngine
+            engine = LLMDatabaseQueryEngine()
+            
+            # Force database initialization
+            if engine.db_connection is None:
+                engine._initialize_database()
+            
+            # Test if we can query with this connection
+            with engine.db_connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+                result = cursor.fetchone()
+            
+            return {
+                "farmers_query": "success" if farmers else "no farmers",
+                "farmer_count": len(farmers) if farmers else 0,
+                "direct_query": "success" if result else "failed",
+                "connection_info": {
+                    "host": config.db_host,
+                    "port": config.db_port,
+                    "database": config.db_name,
+                    "user": config.db_user,
+                    "password_length": len(config.db_password)
+                }
+            }
+        except Exception as e:
+            return {"error": str(e), "trace": str(type(e))}
+    
     @app.get("/api/v1/auth/test-basic-connection")
     async def test_basic_connection():
         """Test basic psycopg2 connection like LLM engine uses"""
