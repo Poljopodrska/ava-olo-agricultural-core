@@ -1320,9 +1320,27 @@ try:
             raise HTTPException(status_code=500, detail="Failed to load conversations")
     
     @app.post("/api/v1/auth/migrate")
-    async def run_aurora_migration():
+    def run_aurora_migration():
         """Run Aurora database migration for authentication tables"""
         try:
+            # First test if we can connect using config manager (which works)
+            from config_manager import config
+            import psycopg2
+            
+            logger.info("Testing config manager connection first...")
+            try:
+                test_conn = psycopg2.connect(
+                    host=config.db_host,
+                    database=config.db_name,
+                    user=config.db_user,
+                    password=config.db_password,
+                    port=config.db_port
+                )
+                test_conn.close()
+                logger.info("✅ Config manager connection works!")
+            except Exception as e:
+                logger.error(f"❌ Config manager connection failed: {e}")
+            
             auth_manager = get_auth_manager()
             # Check if tables exist by trying a simple query
             conn = auth_manager._get_connection()
@@ -1464,6 +1482,37 @@ try:
             "config_has_dollar": '$' in config_pw,
             "secrets_has_dollar": '$' in secrets_pw
         }
+    
+    @app.get("/api/v1/auth/test-sync-connection")
+    def test_sync_connection():
+        """Test sync connection without async"""
+        from config_manager import config
+        import psycopg2
+        
+        try:
+            # Simple sync connection like config manager
+            conn = psycopg2.connect(
+                host=config.db_host,
+                database=config.db_name,
+                user=config.db_user,
+                password=config.db_password,
+                port=config.db_port
+            )
+            
+            # Test query
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                result = cur.fetchone()
+            
+            conn.close()
+            
+            return {
+                "connection": "success",
+                "test_query": "success" if result else "failed",
+                "method": "sync_psycopg2"
+            }
+        except Exception as e:
+            return {"error": str(e), "method": "sync_psycopg2"}
     
     @app.get("/api/v1/auth/test-working-connection")
     async def test_working_connection():
