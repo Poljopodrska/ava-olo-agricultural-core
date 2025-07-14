@@ -122,6 +122,135 @@ async def main_web_interface():
             .constitutional-btn-secondary { background: var(--light-gray); color: #2C2C2C; }
             .enter-hint { text-align: center; font-size: 16px; color: var(--dark-olive); margin-top: 8px; font-style: italic; }
             
+            /* Real-Time Date/Time Display */
+            .datetime-display {
+                background: rgba(255,255,255,0.1);
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 24px;
+                text-align: center;
+                border: 1px solid rgba(255,255,255,0.2);
+            }
+            .current-time {
+                font-size: 32px;
+                font-weight: bold;
+                color: var(--white);
+                margin-bottom: 8px;
+                font-family: monospace;
+            }
+            .current-date {
+                font-size: 18px;
+                color: var(--white);
+                opacity: 0.9;
+            }
+            
+            /* Endless 24-Hour Tape */
+            .tape-btn {
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                border-radius: 4px;
+                padding: 8px 12px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.3s ease;
+            }
+            .tape-btn:hover {
+                background: rgba(255,255,255,0.3);
+            }
+            .tape-btn:active {
+                transform: scale(0.95);
+            }
+            .hourly-tape-container {
+                position: relative;
+                overflow: hidden;
+                height: 140px;
+            }
+            .hourly-tape {
+                display: flex;
+                transition: transform 0.3s ease;
+                width: 2000px;
+            }
+            .hour-square {
+                min-width: 80px;
+                flex-shrink: 0;
+                background: rgba(255,255,255,0.2);
+                border-radius: 8px;
+                padding: 12px 8px;
+                text-align: center;
+                margin-right: 8px;
+                border: 1px solid rgba(255,255,255,0.3);
+                transition: all 0.3s ease;
+            }
+            .hour-square:hover {
+                background: rgba(255,255,255,0.3);
+                transform: translateY(-2px);
+            }
+            .hour-square.current-hour {
+                border: 2px solid #FFD700;
+                background: rgba(255,215,0,0.2);
+            }
+            
+            /* Extended Forecast */
+            .extended-forecast-section {
+                margin-top: 32px;
+                background: var(--white);
+                border-radius: 8px;
+                padding: 24px;
+                box-shadow: 0 2px 12px rgba(107,91,115,0.1);
+                border-left: 4px solid var(--primary-olive);
+            }
+            .extended-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 24px;
+            }
+            .extended-header h3 {
+                font-size: 24px;
+                color: var(--primary-brown);
+            }
+            .forecast-controls {
+                display: flex;
+                gap: 8px;
+            }
+            .forecast-btn {
+                background: var(--light-gray);
+                color: var(--dark-olive);
+                border: none;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: bold;
+                transition: all 0.3s ease;
+            }
+            .forecast-btn:hover {
+                background: var(--primary-olive);
+                color: var(--white);
+            }
+            .forecast-btn.active {
+                background: var(--primary-brown);
+                color: var(--white);
+            }
+            .extended-timeline {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 16px;
+            }
+            .extended-day {
+                background: var(--cream);
+                border-radius: 8px;
+                padding: 16px;
+                text-align: center;
+                border: 1px solid var(--light-gray);
+                transition: all 0.3s ease;
+            }
+            .extended-day:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(107,91,115,0.1);
+            }
+            
             /* Mobile Responsive */
             @media (max-width: 768px) {
                 .weather-timeline { grid-template-columns: repeat(2, 1fr); }
@@ -149,6 +278,12 @@ async def main_web_interface():
 
             <!-- Weather Section -->
             <section class="weather-section">
+                <!-- Real-Time Date/Time Display -->
+                <div class="datetime-display">
+                    <div class="current-time" id="currentTime">Loading...</div>
+                    <div class="current-date" id="currentDate">Loading...</div>
+                </div>
+                
                 <!-- Today's Weather Featured -->
                 <div class="weather-today">
                     <div class="today-header">Today's Weather</div>
@@ -178,19 +313,19 @@ async def main_web_interface():
                         </div>
                     </div>
                     
-                    <!-- 24-Hour Forecast with Slider -->
+                    <!-- Endless 24-Hour Tape -->
                     <div class="hourly-container">
                         <div class="hourly-header">
-                            <div class="hourly-title">24-Hour Forecast</div>
+                            <div class="hourly-title">Next 24 Hours</div>
                             <div class="hourly-controls">
-                                <button class="slider-btn" onclick="slideLeft()">◀</button>
-                                <button class="slider-btn" onclick="slideRight()">▶</button>
-                                <button class="slider-btn" onclick="resetSlider()">8AM-4PM</button>
+                                <button class="tape-btn" onclick="tapeLeft()">◀◀</button>
+                                <button class="tape-btn" onclick="tapeRight()">▶▶</button>
+                                <button class="tape-btn" onclick="goToNow()">NOW</button>
                             </div>
                         </div>
-                        <div class="hourly-slider-container">
-                            <div class="hourly-slider" id="hourlySlider">
-                                <!-- All 24 hours will be populated by JavaScript -->
+                        <div class="hourly-tape-container">
+                            <div class="hourly-tape" id="hourlyTape">
+                                <!-- Will be populated by JavaScript with NEXT 24 hours -->
                             </div>
                         </div>
                     </div>
@@ -199,6 +334,22 @@ async def main_web_interface():
                 <!-- 5-Day Timeline -->
                 <div class="weather-timeline" id="weatherTimeline">
                     <!-- 5-day timeline will be populated by JavaScript -->
+                </div>
+                
+                <!-- Extended Forecast Section -->
+                <div class="extended-forecast-section">
+                    <div class="extended-header">
+                        <h3>Extended Forecast</h3>
+                        <div class="forecast-controls">
+                            <button class="forecast-btn active" onclick="showDays(5)">5 Days</button>
+                            <button class="forecast-btn" onclick="showDays(10)">10 Days</button>
+                            <button class="forecast-btn" onclick="showDays(15)">15 Days</button>
+                            <button class="forecast-btn" onclick="showDays(20)">20 Days</button>
+                        </div>
+                    </div>
+                    <div class="extended-timeline" id="extendedTimeline">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
                 </div>
             </section>
 
@@ -233,40 +384,196 @@ async def main_web_interface():
                     textarea.value = '';
                 }
             });
-            // 24-Hour Slider functionality
-            let currentSlide = 8; // Start at 8AM (index 8)
+            // Real-time clock and weather system
+            let tapePosition = 0;
+            let currentForecastDays = 5;
 
-            function slideLeft() {
-                if (currentSlide > 0) {
-                    currentSlide -= 1;
-                    updateSlider();
+            // Update real-time clock
+            function updateDateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('en-US', { 
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                const dateString = now.toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                document.getElementById('currentTime').textContent = timeString;
+                document.getElementById('currentDate').textContent = dateString;
+            }
+
+            // Generate next 24 hours from current time
+            function generateNext24Hours() {
+                const hours = [];
+                const now = new Date();
+                
+                for (let i = 0; i < 24; i++) {
+                    const hour = new Date(now.getTime() + i * 60 * 60 * 1000);
+                    const hourStr = hour.getHours().toString().padStart(2, '0') + ':00';
+                    const isCurrentHour = i === 0;
+                    
+                    // Generate weather based on hour
+                    let icon, temp, rain, wind;
+                    const h = hour.getHours();
+                    
+                    if (h >= 22 || h <= 5) {
+                        icon = getNightIcon();
+                        temp = Math.floor(12 + Math.random() * 6);
+                    } else if (h === 6 || h === 20) {
+                        icon = getDawnIcon();
+                        temp = Math.floor(14 + Math.random() * 8);
+                    } else if (h >= 10 && h <= 16) {
+                        icon = getSunnyIcon();
+                        temp = Math.floor(20 + Math.random() * 8);
+                    } else {
+                        icon = getPartlyCloudyIcon();
+                        temp = Math.floor(16 + Math.random() * 8);
+                    }
+                    
+                    rain = Math.floor(Math.random() * 3);
+                    wind = Math.floor(5 + Math.random() * 15);
+                    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                    const windDir = directions[Math.floor(Math.random() * directions.length)];
+                    
+                    hours.push({
+                        time: hourStr,
+                        icon: icon,
+                        temp: temp,
+                        rain: rain,
+                        wind: `${windDir} ${wind}`,
+                        isCurrent: isCurrentHour
+                    });
                 }
+                
+                return hours;
             }
 
-            function slideRight() {
-                if (currentSlide < 16) { // Allow sliding to show hours up to 23:00
-                    currentSlide += 1;
-                    updateSlider();
+            // Generate extended forecast (5-20 days)
+            function generateExtendedForecast(days) {
+                const forecast = [];
+                const now = new Date();
+                
+                for (let i = 0; i < days; i++) {
+                    const date = new Date(now.getTime() + (i + 1) * 24 * 60 * 60 * 1000);
+                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                    const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    
+                    // Generate realistic weather
+                    const conditions = [
+                        { icon: getSunnyIcon(), condition: 'Sunny', temp: [18, 28] },
+                        { icon: getPartlyCloudyIcon(), condition: 'Partly Cloudy', temp: [16, 25] },
+                        { icon: getCloudyIcon(), condition: 'Cloudy', temp: [14, 22] },
+                        { icon: getRainIcon('moderate'), condition: 'Light Rain', temp: [12, 20] },
+                        { icon: getThunderstormIcon(), condition: 'Storms', temp: [10, 18] }
+                    ];
+                    
+                    const weather = conditions[Math.floor(Math.random() * conditions.length)];
+                    const tempMin = weather.temp[0] + Math.floor(Math.random() * 4);
+                    const tempMax = weather.temp[1] + Math.floor(Math.random() * 4);
+                    const rain = Math.floor(Math.random() * 12);
+                    
+                    forecast.push({
+                        day: dayName,
+                        date: monthDay,
+                        icon: weather.icon,
+                        condition: weather.condition,
+                        tempMin: tempMin,
+                        tempMax: tempMax,
+                        rain: rain
+                    });
                 }
+                
+                return forecast;
             }
 
-            function resetSlider() {
-                currentSlide = 8; // Reset to 8AM
-                updateSlider();
+            // Populate 24-hour tape
+            function populateHourlyTape() {
+                const hours = generateNext24Hours();
+                const tape = document.getElementById('hourlyTape');
+                
+                tape.innerHTML = hours.map(hour => `
+                    <div class="hour-square ${hour.isCurrent ? 'current-hour' : ''}">
+                        <div class="hour-time">${hour.time}</div>
+                        <div class="hour-icon"><div class="weather-icon">${hour.icon}</div></div>
+                        <div class="hour-temp">${hour.temp}°C</div>
+                        <div class="hour-rain">💧 ${hour.rain}mm</div>
+                        <div class="hour-wind">🌪️ ${hour.wind}km/h</div>
+                    </div>
+                `).join('');
             }
 
-            function updateSlider() {
-                const slider = document.getElementById('hourlySlider');
-                const slideWidth = 88; // 80px width + 8px margin
-                const translateX = -(currentSlide * slideWidth);
-                slider.style.transform = `translateX(${translateX}px)`;
+            // Tape controls
+            function tapeLeft() {
+                tapePosition = Math.max(tapePosition - 200, 0);
+                updateTapePosition();
             }
 
-            // Initialize slider to show 8AM-4PM on load
+            function tapeRight() {
+                tapePosition = Math.min(tapePosition + 200, 1600);
+                updateTapePosition();
+            }
+
+            function goToNow() {
+                tapePosition = 0;
+                updateTapePosition();
+            }
+
+            function updateTapePosition() {
+                const tape = document.getElementById('hourlyTape');
+                tape.style.transform = `translateX(-${tapePosition}px)`;
+            }
+
+            // Extended forecast controls
+            function showDays(days) {
+                currentForecastDays = days;
+                
+                // Update button states
+                document.querySelectorAll('.forecast-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                // Populate extended forecast
+                const forecast = generateExtendedForecast(days);
+                const timeline = document.getElementById('extendedTimeline');
+                
+                timeline.innerHTML = forecast.map(day => `
+                    <div class="extended-day">
+                        <div style="font-size: 14px; color: var(--dark-olive); margin-bottom: 8px;">${day.day}</div>
+                        <div style="font-size: 12px; color: var(--dark-olive); margin-bottom: 12px;">${day.date}</div>
+                        <div style="margin-bottom: 12px;"><div class="weather-icon">${day.icon}</div></div>
+                        <div style="font-size: 14px; color: var(--dark-olive); margin-bottom: 8px;">${day.condition}</div>
+                        <div style="font-size: 18px; font-weight: bold; color: var(--primary-brown); margin-bottom: 4px;">${day.tempMax}°C</div>
+                        <div style="font-size: 14px; color: var(--dark-olive); margin-bottom: 8px;">${day.tempMin}°C</div>
+                        <div style="font-size: 14px; color: var(--dark-olive);">💧 ${day.rain}mm</div>
+                    </div>
+                `).join('');
+            }
+
+            // Initialize everything
             document.addEventListener('DOMContentLoaded', function() {
-                resetSlider();
-                populateHourlyForecast();
+                // Start real-time clock
+                updateDateTime();
+                setInterval(updateDateTime, 1000);
+                
+                // Initialize weather systems
+                populateHourlyTape();
                 populate5DayTimeline();
+                
+                // Initialize extended forecast with 5 days
+                const firstButton = document.querySelector('.forecast-btn');
+                if (firstButton) {
+                    event = { target: firstButton };
+                    showDays(5);
+                }
+                
+                console.log('🏛️ Constitutional Weather System: Next 24 hours + Extended forecast active');
             });
             
             // Populate hourly forecast with SVG icons
