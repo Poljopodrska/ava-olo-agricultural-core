@@ -10,12 +10,8 @@ import sys
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import config manager
-try:
-    from ava_olo_shared.config_manager import config
-except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ava-olo-shared'))
-    from config_manager import config
+# Import config manager - it's in the same directory
+from config_manager import config
 
 from llm_first_database_engine import LLMDatabaseQueryEngine, DatabaseQuery
 import logging

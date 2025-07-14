@@ -25,13 +25,8 @@ from openai import OpenAI
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Import constitutional config manager
-try:
-    from ava_olo_shared.config_manager import config
-except ImportError:
-    # Fallback for different import paths
-    sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'ava-olo-shared'))
-    from config_manager import config
+# Import constitutional config manager - it's in the same directory
+from config_manager import config
 
 logger = logging.getLogger(__name__)
 
