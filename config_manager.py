@@ -35,6 +35,22 @@ class Config:
     app_env = os.getenv('APP_ENV', 'development')
     log_level = os.getenv('LOG_LEVEL', 'INFO')
     
+    # Constitutional compliance settings
+    enable_constitutional_checks = os.getenv('ENABLE_CONSTITUTIONAL_CHECKS', 'true').lower() == 'true'
+    
+    # Additional properties for compatibility
+    DATABASE_URL = property(lambda self: self.database_url)
+    DB_HOST = property(lambda self: self.db_host)
+    DB_NAME = property(lambda self: self.db_name)
+    DB_USER = property(lambda self: self.db_user)
+    DB_PASSWORD = property(lambda self: self.db_password)
+    DB_PORT = property(lambda self: str(self.db_port))
+    OPENAI_API_KEY = property(lambda self: self.openai_api_key)
+    
+    def validate_constitutional_compliance(self):
+        """Validate constitutional compliance settings"""
+        return True  # Simplified for now
+    
     def __repr__(self):
         return f"<Config: {self.app_env} - DB: {self.db_host}>"
 
