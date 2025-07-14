@@ -1146,10 +1146,31 @@ try:
     from implementation.auth_middleware import AuthMiddleware, AuthDependencies
     from pydantic import BaseModel
     
-    # Initialize authentication system
-    auth_manager = FarmAuthManager()
-    auth_middleware = AuthMiddleware(auth_manager)
-    auth_deps = AuthDependencies(auth_middleware)
+    # Lazy initialization for production deployment
+    _auth_manager = None
+    _auth_middleware = None
+    _auth_deps = None
+    
+    def get_auth_manager():
+        """Lazy initialization of authentication manager"""
+        global _auth_manager
+        if _auth_manager is None:
+            _auth_manager = FarmAuthManager()
+        return _auth_manager
+    
+    def get_auth_middleware():
+        """Lazy initialization of authentication middleware"""
+        global _auth_middleware
+        if _auth_middleware is None:
+            _auth_middleware = AuthMiddleware(get_auth_manager())
+        return _auth_middleware
+    
+    def get_auth_deps():
+        """Lazy initialization of authentication dependencies"""
+        global _auth_deps
+        if _auth_deps is None:
+            _auth_deps = AuthDependencies(get_auth_middleware())
+        return _auth_deps
     
     # Authentication request/response models
     class LoginRequest(BaseModel):
@@ -1173,6 +1194,7 @@ try:
     async def login(request: LoginRequest):
         """Authenticate farm user and return access token"""
         try:
+            auth_manager = get_auth_manager()
             result = auth_manager.authenticate_user(
                 request.wa_phone_number, 
                 request.password
@@ -1203,10 +1225,11 @@ try:
     @app.post("/api/v1/auth/register")
     async def register_farm_user(
         request: RegisterUserRequest,
-        current_user: dict = auth_deps.can_add_users()
+        current_user: dict = get_auth_deps().can_add_users()
     ):
         """Add new family member to farm (requires owner permissions)"""
         try:
+            auth_manager = get_auth_manager()
             result = auth_manager.register_farm_user(
                 farmer_id=current_user['farmer_id'],
                 wa_phone=request.wa_phone_number,
@@ -1227,14 +1250,15 @@ try:
             raise HTTPException(status_code=500, detail="Registration failed")
 
     @app.get("/api/v1/auth/me")
-    async def get_current_user_info(current_user: dict = auth_deps.current_user()):
+    async def get_current_user_info(current_user: dict = get_auth_deps().current_user()):
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
     @app.get("/api/v1/auth/family")
-    async def get_farm_family(current_user: dict = auth_deps.current_user()):
+    async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
         """Get all family members who have access to this farm"""
         try:
+            auth_manager = get_auth_manager()
             family_members = auth_manager.get_farm_family_members(current_user['farmer_id'])
             return {"success": True, "family_members": family_members}
         except Exception as e:
@@ -1244,10 +1268,11 @@ try:
     @app.get("/api/v1/auth/activity")
     async def get_farm_activity(
         limit: int = 50,
-        current_user: dict = auth_deps.can_view_activity_log()
+        current_user: dict = get_auth_deps().can_view_activity_log()
     ):
         """Get recent farm activity log (who did what)"""
         try:
+            auth_manager = get_auth_manager()
             activities = auth_manager.get_farm_activity_log(current_user['farmer_id'], limit)
             return {"success": True, "activities": activities}
         except Exception as e:
@@ -1256,7 +1281,7 @@ try:
 
     # Authentication-aware versions of existing endpoints
     @app.get("/api/v1/farmers/me")
-    async def get_my_farm_info(current_user: dict = auth_deps.current_user()):
+    async def get_my_farm_info(current_user: dict = get_auth_deps().current_user()):
         """Get authenticated user's farm information"""
         try:
             db_ops = DatabaseOperations()
@@ -1272,7 +1297,7 @@ try:
     @app.get("/api/v1/conversations/me")
     async def get_my_conversations(
         limit: int = 10,
-        current_user: dict = auth_deps.current_user()
+        current_user: dict = get_auth_deps().current_user()
     ):
         """Get conversations for authenticated user's farm"""
         try:
@@ -1292,6 +1317,68 @@ try:
         except Exception as e:
             logger.error(f"Get conversations error: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to load conversations")
+    
+    @app.post("/api/v1/auth/migrate")
+    async def run_aurora_migration():
+        """Run Aurora database migration for authentication tables"""
+        try:
+            auth_manager = get_auth_manager()
+            # Check if tables exist by trying a simple query
+            conn = auth_manager._get_connection()
+            with conn.cursor() as cur:
+                # Check if farm_users table exists
+                cur.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'farm_users'
+                    )
+                """)
+                farm_users_exists = cur.fetchone()[0]
+                
+                cur.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'farm_activity_log'
+                    )
+                """)
+                activity_log_exists = cur.fetchone()[0]
+                
+            conn.close()
+            
+            if farm_users_exists and activity_log_exists:
+                return {
+                    "success": True,
+                    "message": "Authentication tables already exist",
+                    "farm_users": "exists",
+                    "farm_activity_log": "exists"
+                }
+            else:
+                # Run migration
+                from implementation.migrate_auth_to_aurora import AuthMigrator
+                migrator = AuthMigrator()
+                success = migrator.run_migration()
+                
+                if success:
+                    return {
+                        "success": True,
+                        "message": "Migration completed successfully",
+                        "farm_users": "created",
+                        "farm_activity_log": "created"
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "message": "Migration failed - check logs"
+                    }
+                    
+        except Exception as e:
+            logger.error(f"Migration error: {str(e)}")
+            return {
+                "success": False,
+                "message": f"Migration failed: {str(e)}"
+            }
 
     logger.info("✅ Authentication endpoints loaded successfully")
     

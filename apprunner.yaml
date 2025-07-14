@@ -10,7 +10,7 @@ build:
       - echo "Build completed - Authentication system ready"
 run:
   runtime-version: 3.11
-  command: python api_gateway_simple.py
+  command: uvicorn api_gateway_simple:app --host 0.0.0.0 --port 8080
   network:
     port: 8080
     env: PORT
