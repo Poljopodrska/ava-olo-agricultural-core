@@ -48,51 +48,47 @@ class FarmAuthManager:
             return get_aurora_config()
     
     def _get_connection(self):
-        """Get database connection with retry logic (same as dashboards)"""
+        """Get database connection using dashboard pattern"""
         if self.connection and not self.connection.closed:
             return self.connection
         
-        # First try without SSL mode specified (like LLM engine)
-        try:
-            self.connection = psycopg2.connect(
-                host=self.db_config['host'],
-                database=self.db_config['database'],
-                user=self.db_config['user'],
-                password=self.db_config['password'],
-                port=self.db_config['port'],
-                connect_timeout=10,
-                cursor_factory=RealDictCursor
-            )
-            logger.info("Connected to Aurora (default SSL mode)")
-            return self.connection
-        except Exception as e:
-            logger.warning(f"Default connection failed: {e}")
+        # Build connection kwargs like dashboards do (not a URL string)
+        conn_kwargs = {
+            'host': self.db_config['host'],
+            'database': self.db_config['database'],
+            'user': self.db_config['user'],
+            'password': self.db_config['password'],  # Raw password, not encoded
+            'port': self.db_config['port'],
+            'connect_timeout': 10,
+            'cursor_factory': RealDictCursor,
+            'application_name': 'ava_olo_auth'
+        }
         
-        # Then try different SSL modes in order of preference
-        ssl_modes = ['prefer', 'disable', 'require']
+        # Try different SSL modes in order (same as dashboards)
+        ssl_modes = ['require', 'prefer', 'disable']
         
         for ssl_mode in ssl_modes:
             try:
-                self.connection = psycopg2.connect(
-                    host=self.db_config['host'],
-                    database=self.db_config['database'],
-                    user=self.db_config['user'],
-                    password=self.db_config['password'],
-                    port=self.db_config['port'],
-                    connect_timeout=10,
-                    sslmode=ssl_mode,
-                    cursor_factory=RealDictCursor
-                )
-                logger.info(f"Connected to Aurora with SSL mode: {ssl_mode}")
+                conn_kwargs['sslmode'] = ssl_mode
+                self.connection = psycopg2.connect(**conn_kwargs)
+                logger.info(f"✅ Connected to Aurora with SSL mode: {ssl_mode}")
                 return self.connection
                 
             except psycopg2.OperationalError as e:
-                if "SSL" in str(e) or "ssl" in str(e):
+                error_msg = str(e)
+                if "SSL" in error_msg or "ssl" in error_msg:
                     logger.warning(f"SSL mode {ssl_mode} failed, trying next...")
                     continue
-                else:
-                    logger.warning(f"Connection failed with {ssl_mode}: {e}")
+                elif "no pg_hba.conf entry" in error_msg:
+                    logger.warning(f"Access denied with SSL {ssl_mode}, trying next...")
                     continue
+                else:
+                    logger.error(f"Connection failed with {ssl_mode}: {error_msg[:100]}")
+                    # Try next mode anyway
+                    continue
+            except Exception as e:
+                logger.error(f"Unexpected error with SSL {ssl_mode}: {str(e)[:100]}")
+                continue
                     
         raise Exception("Failed to connect to database with all SSL modes")
     

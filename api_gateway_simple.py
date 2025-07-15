@@ -1528,6 +1528,103 @@ try:
                 "message": f"Migration failed: {str(e)[:200]}"
             }
     
+    @app.post("/api/v1/auth/migrate-dashboard-style")
+    async def migrate_dashboard_style():
+        """Migration using the exact pattern from monitoring dashboards"""
+        try:
+            from config_manager import config
+            import asyncpg
+            import os
+            
+            # Build connection params like dashboards do
+            connection_params = {
+                'host': config.db_host,
+                'port': config.db_port,
+                'user': config.db_user,
+                'password': config.db_password,  # Raw password, not URL-encoded
+                'database': config.db_name,
+                'server_settings': {
+                    'application_name': 'ava_olo_auth_migration'
+                }
+            }
+            
+            # Try different SSL modes like dashboards
+            ssl_modes = ['require', 'prefer', 'disable']
+            conn = None
+            
+            for ssl_mode in ssl_modes:
+                try:
+                    if ssl_mode != 'disable':
+                        connection_params['ssl'] = ssl_mode
+                    else:
+                        connection_params['ssl'] = False
+                    
+                    logger.info(f"Trying connection with SSL mode: {ssl_mode}")
+                    conn = await asyncpg.connect(**connection_params)
+                    logger.info(f"✅ Connected with SSL mode: {ssl_mode}")
+                    break
+                except Exception as e:
+                    logger.warning(f"Failed with SSL {ssl_mode}: {str(e)[:100]}")
+                    if "SSL" not in str(e) and "ssl" not in str(e):
+                        # Not an SSL error, don't try other modes
+                        raise
+                    continue
+            
+            if not conn:
+                return {
+                    "success": False,
+                    "message": "Failed to connect with all SSL modes"
+                }
+            
+            # Test connection
+            version = await conn.fetchval("SELECT version()")
+            logger.info(f"Database version: {version[:50]}")
+            
+            # Read migration SQL
+            migration_path = os.path.join(os.path.dirname(__file__), 'database', 'auth_schema.sql')
+            
+            if not os.path.exists(migration_path):
+                await conn.close()
+                return {
+                    "success": False,
+                    "message": f"Migration file not found: {migration_path}"
+                }
+            
+            with open(migration_path, 'r') as f:
+                migration_sql = f.read()
+            
+            # Execute migration (asyncpg requires splitting statements)
+            statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
+            
+            success_count = 0
+            for statement in statements:
+                if statement and not statement.strip().startswith('--'):
+                    try:
+                        await conn.execute(statement)
+                        success_count += 1
+                        logger.info(f"✅ Executed statement {success_count}")
+                    except Exception as e:
+                        if "already exists" in str(e):
+                            logger.info("Table/object already exists, skipping")
+                        else:
+                            logger.error(f"Statement failed: {str(e)[:100]}")
+                            # Continue with other statements
+            
+            await conn.close()
+            
+            return {
+                "success": True,
+                "message": f"Migration completed! Executed {success_count} statements",
+                "database_version": version[:50] if version else "Unknown"
+            }
+            
+        except Exception as e:
+            logger.error(f"Dashboard-style migration failed: {e}")
+            return {
+                "success": False,
+                "message": f"Migration failed: {str(e)[:200]}"
+            }
+    
     @app.post("/api/v1/auth/migrate-simple")
     async def run_simple_migration():
         """Simple migration using async pattern"""
