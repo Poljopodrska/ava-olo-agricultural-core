@@ -1327,6 +1327,37 @@ async def web_interface_health():
     }
 
 
+@app.post("/api/v1/self-test/registration")
+async def run_registration_self_test():
+    """Run automated registration tests"""
+    
+    try:
+        from tests.registration_self_test import RegistrationSelfTest
+        
+        tester = RegistrationSelfTest("http://localhost:8080")
+        results = await tester.run_complete_flow_test()
+        
+        return {
+            "test_completed": True,
+            "success_rate": results["success_rate"],
+            "passed": results["passed"],
+            "total": results["total"],
+            "status": "PASSED" if results["success_rate"] >= 0.8 else "FAILED",
+            "failures": results.get("failures", [])
+        }
+        
+    except Exception as e:
+        logger.error(f"Self-test error: {str(e)}")
+        return {
+            "test_completed": False,
+            "success_rate": 0.0,
+            "passed": 0,
+            "total": 0,
+            "status": "ERROR",
+            "error": str(e)
+        }
+
+
 # ====================================================================
 # AUTHENTICATION ENDPOINTS - ADDED WITHOUT BREAKING EXISTING FEATURES
 # ====================================================================
@@ -1465,114 +1496,85 @@ try:
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
-    # Simple Registration Prompt - Emergency Fix
-    SIMPLE_REGISTRATION_PROMPT = """
-You are AVA, helping farmers register. Be conversational and smart.
+    # Working LLM-First Approach with Specific Fixes
+    WORKING_LLM_PROMPT = """
+You are AVA, the constitutional agricultural assistant having a LIVE CONVERSATION.
 
-COLLECT THIS DATA:
-1. full_name (first + last name)
-2. wa_phone_number (with + country code)  
-3. password (ask, then confirm)
-4. farm_name (optional)
+REQUIRED DATA: full_name, wa_phone_number, password, farm_name
 
-CURRENT DATA: {current_data}
+CURRENT STATE: {current_data}
+CONVERSATION HISTORY: {conversation_history}
 
-SIMPLE RULES:
-- If missing full_name and user gives one name → ask for last name
-- If missing phone and user gives phone → check for country code
-- If missing password and user gives text ≥6 chars → ask them to confirm it
-- If confirming password and it matches → move to farm name
-- If have everything → complete registration
+CONVERSATIONAL INTELLIGENCE:
+- Track what you just asked for
+- User response = answer to your question
+- Accept reasonable responses and move forward
+- Be smart about conversation flow
 
-RESPONSE FORMAT (simple JSON):
+CRITICAL FIXES:
+1. NAME LOGIC: "Alma" + "Udovčić" = "Alma Udovčić" (combine, don't restart)
+2. PASSWORD LOGIC: ANY text ≥6 chars = valid password (including spaces)
+3. FARM NAME LOGIC: ANY text = valid farm name ("Velika farma" is perfect)
+
+JSON RESPONSE:
 {{
-  "message": "your friendly response",
-  "full_name": "First Last" or null,
-  "wa_phone_number": "+385123456789" or null,
-  "password": "confirmed_password" or null,
-  "farm_name": "Farm Name" or null,
-  "temp_password": "for_confirmation" or null,
-  "status": "collecting" or "complete"
+  "message": "conversational response",
+  "extracted_data": {{
+    "full_name": "First Last" or null,
+    "wa_phone_number": "+385123456789" or null,
+    "password": "confirmed_password" or null,
+    "farm_name": "Farm Name" or null,
+    "temp_password_for_confirmation": "temp" or null
+  }},
+  "status": "collecting" or "COMPLETE"
 }}
 
 EXAMPLES:
+- User: "Alma" → "Hi Alma! What's your last name?"
+- User: "Udovčić" → "Great Alma Udovčić! What's your WhatsApp number?"
+- User: "Slavonski Brod" → "Thanks! Confirm by typing 'Slavonski Brod' again:"
+- User: "Velika farma" → "Perfect! Welcome to AVA OLO!"
 
-User: "Alma"
-Response: {{
-  "message": "Hi Alma! What's your last name?",
-  "full_name": null,
-  "status": "collecting"
-}}
-
-User: "Horvat" (when first name is "Alma")
-Response: {{
-  "message": "Great Alma Horvat! What's your WhatsApp number? (include country code like +385...)",
-  "full_name": "Alma Horvat",
-  "status": "collecting"
-}}
-
-BE SIMPLE AND CONVERSATIONAL!
+BE CONVERSATIONALLY SMART AND MOVE FORWARD!
 """
 
 
     
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
-        """Ultra-simple registration - no complexity"""
+        """Simple LLM-first approach"""
         
         try:
-            prompt = SIMPLE_REGISTRATION_PROMPT.format(
-                current_data=request.current_data or {}
-            )
-            
             from config_manager import config
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=config.openai_api_key)
             
             response = await client.chat.completions.create(
-                model="gpt-3.5-turbo",  # Simpler model, more reliable
+                model="gpt-4",
                 messages=[
-                    {"role": "system", "content": prompt},
+                    {"role": "system", "content": WORKING_LLM_PROMPT.format(
+                        current_data=request.current_data or {},
+                        conversation_history=(request.conversation_history or [])[-6:]
+                    )},
                     {"role": "user", "content": request.user_input}
                 ],
-                temperature=0.3
+                temperature=0.1,
+                response_format={"type": "json_object"}
             )
             
-            # Simple text parsing if JSON fails
-            content = response.choices[0].message.content
-            
-            try:
-                # Try JSON parsing
-                import json
-                result = json.loads(content)
-            except:
-                # Fallback: simple text response
-                return {
-                    "message": "Let me try that again. What's your full name?",
-                    "status": "collecting",
-                    "extracted_data": request.current_data or {},
-                    "conversation_history": request.conversation_history or [],
-                    "last_ava_message": "Let me try that again. What's your full name?"
-                }
+            import json
+            result = json.loads(response.choices[0].message.content)
             
             # Handle temporary password for confirmation
             current_data = request.current_data or {}
-            if result.get("temp_password"):
-                current_data["temp_password_for_confirmation"] = result["temp_password"]
+            if result["extracted_data"].get("temp_password_for_confirmation"):
+                current_data["temp_password_for_confirmation"] = result["extracted_data"]["temp_password_for_confirmation"]
             
             # Update with new data
-            if result.get("full_name"):
-                current_data["full_name"] = result["full_name"]
-            if result.get("wa_phone_number"):
-                current_data["wa_phone_number"] = result["wa_phone_number"]
-            if result.get("password"):
-                current_data["password"] = result["password"]
-                current_data.pop("temp_password_for_confirmation", None)
-            if result.get("farm_name"):
-                current_data["farm_name"] = result["farm_name"]
+            current_data.update({k: v for k, v in result["extracted_data"].items() if v is not None})
             
             # Handle registration completion
-            if result.get("status") == "complete":
+            if result["status"] == "COMPLETE":
                 data = current_data
                 
                 try:
@@ -1606,7 +1608,7 @@ BE SIMPLE AND CONVERSATIONAL!
                     )
                     
                     return {
-                        "message": result.get("message", "Registration complete!"),
+                        "message": result["message"],
                         "status": "COMPLETE",
                         "registration_successful": True,
                         "farmer_id": farmer_id,
@@ -1614,7 +1616,7 @@ BE SIMPLE AND CONVERSATIONAL!
                         "user": login_result['user'] if login_result else None,
                         "extracted_data": data,
                         "conversation_history": request.conversation_history or [],
-                        "last_ava_message": result.get("message", "Registration complete!")
+                        "last_ava_message": result["message"]
                     }
                     
                 except Exception as e:
@@ -1629,21 +1631,21 @@ BE SIMPLE AND CONVERSATIONAL!
             
             # Continue conversation
             return {
-                "message": result.get("message", "Please continue..."),
+                "message": result["message"],
                 "extracted_data": current_data,
-                "status": result.get("status", "collecting"),
+                "status": result["status"],
                 "conversation_history": request.conversation_history or [],
-                "last_ava_message": result.get("message", "Please continue...")
+                "last_ava_message": result["message"]
             }
             
         except Exception as e:
-            logger.error(f"Simple registration error: {str(e)}")
+            logger.error(f"Registration error: {str(e)}")
             return {
-                "message": "Let's start over. What's your full name?",
+                "message": "Let's continue. Could you repeat that?",
                 "status": "collecting",
-                "extracted_data": {},
-                "conversation_history": [],
-                "last_ava_message": "Let's start over. What's your full name?"
+                "extracted_data": request.current_data or {},
+                "conversation_history": request.conversation_history or [],
+                "last_ava_message": "Let's continue. Could you repeat that?"
             }
 
     @app.get("/api/v1/auth/family")
