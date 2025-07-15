@@ -84,6 +84,53 @@ def format_time_ago(timestamp):
     else:
         return timestamp.strftime("%Y-%m-%d")
 
+def create_cost_tables():
+    """Create cost tracking tables - Simple implementation"""
+    try:
+        with get_constitutional_db_connection() as connection:
+            if connection:
+                cursor = connection.cursor()
+                
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS farmer_interaction_costs (
+                        id SERIAL PRIMARY KEY,
+                        farmer_id INTEGER NOT NULL,
+                        interaction_type VARCHAR(50) NOT NULL,
+                        cost_amount DECIMAL(10,6) NOT NULL,
+                        tokens_used INTEGER NULL,
+                        api_service VARCHAR(50) NOT NULL,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_costs_farmer ON farmer_interaction_costs(farmer_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_costs_date ON farmer_interaction_costs(created_at)")
+                
+                connection.commit()
+                return True
+    except Exception as e:
+        print(f"Cost table creation failed: {e}")
+        return False
+
+def track_cost(farmer_id, interaction_type, cost_amount, tokens_used=None, api_service="unknown"):
+    """Track cost - Simple implementation"""
+    try:
+        with get_constitutional_db_connection() as connection:
+            if connection:
+                cursor = connection.cursor()
+                
+                cursor.execute("""
+                    INSERT INTO farmer_interaction_costs 
+                    (farmer_id, interaction_type, cost_amount, tokens_used, api_service)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (farmer_id, interaction_type, cost_amount, tokens_used, api_service))
+                
+                connection.commit()
+                return True
+    except Exception as e:
+        print(f"Cost tracking failed: {e}")
+        return False
+
 # Constitutional AWS RDS Connection (RESTORED WORKING VERSION)
 @contextmanager
 def get_constitutional_db_connection():
@@ -1213,6 +1260,110 @@ async def database_dashboard():
     """Agricultural Database Dashboard - Full Functionality"""
     return HTMLResponse(content=DASHBOARD_LANDING_HTML)
 
+# Simple Cost Analytics Route
+@app.get("/cost-analytics", response_class=HTMLResponse)
+async def cost_analytics():
+    """Simple Cost Analytics - Safe Implementation"""
+    
+    cost_data = {
+        "total_cost": 0.0,
+        "avg_cost_per_farmer": 0.0,
+        "tables_exist": False
+    }
+    
+    try:
+        with get_constitutional_db_connection() as connection:
+            if connection:
+                cursor = connection.cursor()
+                
+                # Check if cost tables exist
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'farmer_interaction_costs'
+                    )
+                """)
+                
+                cost_data["tables_exist"] = cursor.fetchone()[0]
+                
+                if cost_data["tables_exist"]:
+                    # Get basic cost data
+                    cursor.execute("""
+                        SELECT 
+                            COUNT(DISTINCT farmer_id) as farmers,
+                            COALESCE(SUM(cost_amount), 0) as total_cost
+                        FROM farmer_interaction_costs
+                        WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
+                    """)
+                    
+                    result = cursor.fetchone()
+                    farmers = result[0] or 1
+                    total_cost = result[1] or 0
+                    
+                    cost_data["total_cost"] = round(total_cost, 2)
+                    cost_data["avg_cost_per_farmer"] = round(total_cost / farmers, 2)
+                    
+    except Exception as e:
+        print(f"Cost analytics error: {e}")
+    
+    # Simple HTML response
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Cost Analytics - AVA OLO</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; background: #F5F3F0; }}
+            .container {{ max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; }}
+            .metric {{ margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }}
+            .value {{ font-size: 24px; font-weight: bold; color: #2D5A27; }}
+            .label {{ color: #6B5B73; margin-bottom: 5px; }}
+            .back-link {{ color: #6B5B73; text-decoration: none; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="/business-dashboard" class="back-link">← Back to Business Dashboard</a>
+            <h1>💰 Cost Analytics</h1>
+            
+            """ + ("<p>Cost tracking tables not yet created. <a href='/initialize-cost-tables'>Click here to initialize</a></p>" if not cost_data["tables_exist"] else "") + """
+            
+            """ + (f"""
+            <div class="metric">
+                <div class="label">Total Cost (30 days)</div>
+                <div class="value">${cost_data["total_cost"]}</div>
+            </div>
+            
+            <div class="metric">
+                <div class="label">Average Cost per Farmer</div>
+                <div class="value">${cost_data["avg_cost_per_farmer"]}</div>
+            </div>
+            """ if cost_data["tables_exist"] else "") + """
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html)
+
+# Initialize cost tables endpoint
+@app.get("/initialize-cost-tables")
+async def initialize_cost_tables():
+    """Initialize cost tracking tables"""
+    success = create_cost_tables()
+    
+    if success:
+        # Add some test data
+        try:
+            track_cost(1, "llm_query", 0.05, 2500, "openai")
+            track_cost(2, "llm_query", 0.03, 1500, "openai")
+            track_cost(1, "whatsapp_out", 0.0075, None, "twilio")
+        except:
+            pass
+    
+    return {"success": success, "message": "Cost tables initialized" if success else "Failed to initialize"}
+
 # Business Dashboard Implementation
 @app.get("/business-dashboard", response_class=HTMLResponse)
 async def business_dashboard():
@@ -1236,7 +1387,8 @@ async def business_dashboard():
         "recent_changes": [],
         "farmer_growth_data": [],
         "churn_rate_daily": 0,
-        "churn_rate_7d_avg": 0
+        "churn_rate_7d_avg": 0,
+        "cost_analytics_enabled": False
     }
     
     try:
@@ -1699,7 +1851,17 @@ async def business_dashboard():
             ''' for activity in metrics['recent_activities']]) or '<p style="text-align:center; color:#6B5B73;">No recent activities</p>'}
         </div>
         
-        <!-- Section 5: Recent Database Changes -->
+        <!-- Section 5: Cost Analytics Link -->
+        <div class="section">
+            <h2 class="section-title">💰 COST ANALYTICS</h2>
+            <p style="text-align: center; margin: 20px 0;">
+                <a href="/cost-analytics" style="background: #5D5E3F; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    View Cost Analytics
+                </a>
+            </p>
+        </div>
+        
+        <!-- Section 6: Recent Database Changes -->
         <div class="section">
             <h2 class="section-title">📝 RECENT DATABASE CHANGES</h2>
             {"".join([f'''

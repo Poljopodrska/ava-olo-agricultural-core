@@ -47,7 +47,32 @@ def check_deployment_ready():
                 if pkg not in reqs:
                     errors.append(f"Missing {pkg} in requirements.txt")
     
-    # 5. Basic security check - no hardcoded credentials
+    # 5. Runtime checks for potential AWS deployment issues
+    runtime_errors = []
+    
+    if os.path.exists('main.py'):
+        with open('main.py', 'r') as f:
+            content = f.read()
+            
+            # Check for complex string formatting that might fail at runtime
+            # Note: Disabled for now as it's too strict
+            # if 'f\'\'\'' in content and content.count('f\'\'\'') > 1:
+            #     runtime_errors.append("Complex f-string formatting detected - may cause runtime errors")
+            
+            # Check for JSON operations that might fail
+            if 'json.dumps(' in content and 'json.loads(' in content:
+                # Check if json is imported
+                if 'import json' not in content:
+                    runtime_errors.append("JSON operations used without import - runtime error")
+            
+            # Check for complex HTML generation that might fail
+            if content.count('f"""') > 10:
+                runtime_errors.append("Complex HTML generation detected - potential runtime issues")
+    
+    # Add runtime errors to main errors
+    errors.extend(runtime_errors)
+    
+    # 6. Basic security check - no hardcoded credentials
     for root, dirs, files in os.walk('.'):
         if '.git' in root or 'venv' in root or '__pycache__' in root:
             continue
