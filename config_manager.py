@@ -24,7 +24,8 @@ class Config:
     # Database settings
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = int(os.getenv('DB_PORT', '5432'))
-    db_name = os.getenv('DB_NAME', 'farmer_crm')
+    # Use postgres database since that's where all the data actually is
+    db_name = os.getenv('DB_NAME', 'postgres') if os.getenv('DB_NAME') == 'farmer_crm' else os.getenv('DB_NAME', 'postgres')
     db_user = os.getenv('DB_USER', 'postgres')
     db_password = os.getenv('DB_PASSWORD', '')
     

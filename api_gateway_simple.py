@@ -1537,20 +1537,17 @@ try:
             import os
             
             # Build connection params like dashboards do
+            # Use postgres database since that's where the data actually is
             connection_params = {
                 'host': config.db_host,
                 'port': config.db_port,
                 'user': config.db_user,
                 'password': config.db_password,  # Raw password, not URL-encoded
-                'database': config.db_name,
+                'database': 'postgres',  # Use postgres database where farmers table exists
                 'server_settings': {
                     'application_name': 'ava_olo_auth_migration'
                 }
             }
-            
-            # First try to connect to see if database exists
-            databases_to_try = [config.db_name, 'postgres']
-            actual_database = None
             
             # Try different SSL modes like dashboards
             ssl_modes = ['require', 'prefer', 'disable']
