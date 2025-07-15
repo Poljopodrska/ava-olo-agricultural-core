@@ -864,10 +864,16 @@ async def main_web_interface():
                     // Add AVA response to chat
                     addChatMessage(data.message, 'ava');
                     
-                    // Update registration data
-                    Object.assign(registrationData, data.extracted_data);
+                    // Merge extracted data with existing data (only update non-null values)
+                    if (data.extracted_data) {
+                        for (const [key, value] of Object.entries(data.extracted_data)) {
+                            if (value !== null) {
+                                registrationData[key] = value;
+                            }
+                        }
+                    }
                     
-                    if (data.next_step === 'COMPLETE') {
+                    if (data.next_step === 'COMPLETE' || data.ready_to_register) {
                         // Registration complete
                         if (data.token) {
                             localStorage.setItem('ava_auth_token', data.token);
@@ -878,7 +884,8 @@ async def main_web_interface():
                             }, 2000);
                         }
                     } else {
-                        chatStep = data.next_step;
+                        // Update step based on what's needed next
+                        chatStep = chatStep + 1;
                     }
                 } catch (error) {
                     console.error('Chat registration error:', error);
@@ -1442,73 +1449,86 @@ try:
         return {"success": True, "user": current_user}
 
     # LLM Registration Prompt
-    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. Collect registration info in EXACTLY 4 exchanges.
+    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. You help farmers register by collecting exactly 4 pieces of information in a conversational way.
 
-REQUIRED DATA (must collect ALL completely):
-1. Full name (BOTH first name AND last name required)
-2. WhatsApp number with country code (must start with + and country code like +385, +1, +44, etc.)
-3. Password (minimum 6 characters, must be secure)
-4. Farm/company name (optional - suggest "[Lastname] Farm" if empty)
+REQUIRED DATA TO COLLECT:
+1. full_name (first + last name)
+2. wa_phone_number (with country code like +385...)
+3. password (minimum 6 characters)
+4. farm_name (optional - can suggest "[LastName] Farm")
 
-CONVERSATION FLOW:
-Exchange 1: Ask for full name (first and last name)
-Exchange 2: Ask for WhatsApp number with country code
-Exchange 3: Ask to create a secure password
-Exchange 4: Ask for farm name
+CURRENT CONVERSATION STATE:
+{current_data}
 
-VALIDATION RULES FOR EACH STEP:
-Step 1 - Name validation:
-- If only one name given, ask: "Thanks! And what's your last name?"
-- Must have both first and last name before moving to step 2
-- Extract as separate fields: first_name and last_name
+CONVERSATION RULES:
+- Track what you ALREADY HAVE - don't ask for it again!
+- Ask for the NEXT missing piece of information
+- Be conversational but efficient
+- Validate inputs and ask for corrections if needed
 
-Step 2 - Phone validation:
-- If no + or country code, ask: "Please include your country code (like +385 for Croatia, +1 for USA)"
-- If looks incomplete, ask: "That number seems incomplete. Please provide the full number with country code"
-- Must start with + and have country code
+RESPONSE LOGIC:
+1. Look at current_data to see what you already have
+2. Identify what's still missing
+3. Ask for the NEXT missing item only
+4. If user gives partial info (like just first name), ask for the missing part
+5. Once ALL 4 items are complete, mark as COMPLETE
 
-Step 3 - Password validation:
-- If less than 6 characters, say: "That's too short. Please create a password with at least 6 characters"
-- If password seems weak, suggest: "For security, please include numbers or symbols"
+VALIDATION RULES:
+- full_name: Must have both first and last name
+- wa_phone_number: Must start with + and country code
+- password: Must be at least 6 characters
+- farm_name: Optional, suggest based on last name if empty
 
-Step 4 - Farm name:
-- If empty, suggest: "[Lastname] Farm" or "[Lastname] Agricultural Services"
-- Always accept what they provide or confirm the suggestion
-
-IMPORTANT: Do NOT proceed to next step until current step data is COMPLETE and VALID.
-
-RESPOND IN JSON FORMAT:
+RESPONSE FORMAT (JSON):
 {
-  "message": "your friendly response",
+  "message": "Your friendly response asking for NEXT missing item",
   "extracted_data": {
-    "first_name": "...", 
-    "last_name": "...", 
-    "wa_phone": "...", 
-    "password": "...", 
-    "farm_name": "..."
+    "full_name": "FirstName LastName" or null,
+    "wa_phone_number": "+385912345678" or null,
+    "password": "password123" or null,
+    "farm_name": "Farm Name" or null
   },
-  "next_step": 1-4 or "COMPLETE",
-  "ready_to_register": true/false
+  "status": "collecting" or "COMPLETE",
+  "next_needed": "full_name|wa_phone_number|password|farm_name" or "none"
 }
 
-Example responses:
-- If user says "John": Ask for last name, stay on step 1
-- If user says "John Smith": Extract both, move to step 2
-- If user says "0912345678": Ask for country code, stay on step 2
-- If user says "+385912345678": Valid, move to step 3
+EXAMPLES:
 
-BE FRIENDLY but ENSURE COMPLETE DATA at each step."""
+Input: Current data: {}, User: "Lidija"
+Response: {
+  "message": "Hi Lidija! What's your last name?",
+  "extracted_data": {"full_name": null, "wa_phone_number": null, "password": null, "farm_name": null},
+  "status": "collecting",
+  "next_needed": "full_name"
+}
 
-    @app.post("/api/v1/auth/chat-register", response_model=ChatRegisterResponse)
+Input: Current data: {}, User: "Lidija Bačić"  
+Response: {
+  "message": "Great Lidija Bačić! What's your WhatsApp number? (please include country code like +385...)",
+  "extracted_data": {"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null},
+  "status": "collecting", 
+  "next_needed": "wa_phone_number"
+}
+
+Input: Current data: {"full_name": "Lidija Bačić"}, User: "Bačić"
+Response: {
+  "message": "I already have your full name as Lidija Bačić! What's your WhatsApp number? (please include country code like +385...)",
+  "extracted_data": {"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null},
+  "status": "collecting",
+  "next_needed": "wa_phone_number"
+}
+
+CRITICAL: Always check current_data first! Don't ask for information you already have!"""
+
+    @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
-        """Handle one step of the registration conversation"""
+        """Handle registration conversation with proper state tracking"""
         try:
             from config_manager import config
             import json
             
-            # Prepare the conversation context
-            conversation_context = f"""Step {request.step}: {request.user_input}
-Current data: {json.dumps(request.current_data)}"""
+            # Prepare prompt with current state
+            prompt = REGISTRATION_PROMPT.format(current_data=json.dumps(request.current_data))
             
             # Use OpenAI to process the conversation
             from openai import AsyncOpenAI
@@ -1517,19 +1537,19 @@ Current data: {json.dumps(request.current_data)}"""
             response = await client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": REGISTRATION_PROMPT},
-                    {"role": "user", "content": conversation_context}
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": f"Current data: {json.dumps(request.current_data)}\nUser input: {request.user_input}"}
                 ],
-                temperature=0.7
+                temperature=0.1,  # Low temperature for consistent behavior
+                response_format={"type": "json_object"}
             )
             
             # Parse the LLM response
             llm_response = json.loads(response.choices[0].message.content)
             
-            # If ready to register, create the account
-            if llm_response.get('ready_to_register', False):
-                # Extract data
-                extracted = llm_response['extracted_data']
+            # If registration is complete, create the farmer account
+            if llm_response.get("status") == "COMPLETE":
+                data = llm_response["extracted_data"]
                 
                 # Check if any users exist to determine if this should be an owner
                 auth_manager = get_auth_manager()
@@ -1544,16 +1564,14 @@ Current data: {json.dumps(request.current_data)}"""
                 farmer = cursor.fetchone()
                 farmer_id = farmer['id'] if farmer else 1
                 
-                # Create the user with full name
-                full_name = f"{extracted.get('first_name', '')} {extracted.get('last_name', '')}".strip()
-                if not full_name:
-                    # Fallback if name not properly extracted
-                    full_name = extracted.get('name', 'User')
+                # Extract full name from the data
+                full_name = data.get('full_name', 'User')
                 
+                # Create the user
                 user_result = auth_manager.register_farm_user(
                     farmer_id=farmer_id,
-                    wa_phone=extracted['wa_phone'],
-                    password=extracted['password'],
+                    wa_phone=data['wa_phone_number'],
+                    password=data['password'],
                     user_name=full_name,
                     role="owner" if is_first_user else "member",
                     created_by_user_id=None
@@ -1561,28 +1579,45 @@ Current data: {json.dumps(request.current_data)}"""
                 
                 # Auto-login after registration
                 login_result = auth_manager.authenticate_user(
-                    extracted['wa_phone'],
-                    extracted['password']
+                    data['wa_phone_number'],
+                    data['password']
                 )
                 
-                llm_response['message'] = f"Perfect! You're all set up! Welcome to AVA OLO, {extracted['name']}! 🚜"
-                llm_response['token'] = login_result['token'] if login_result else None
-                llm_response['user'] = login_result['user'] if login_result else None
+                # Return success response with token
+                return {
+                    "message": f"Perfect! You're all set up! Welcome to AVA OLO, {full_name}! 🚜",
+                    "extracted_data": data,
+                    "next_step": "COMPLETE",
+                    "ready_to_register": True,
+                    "token": login_result['token'] if login_result else None,
+                    "user": login_result['user'] if login_result else None
+                }
             
-            return ChatRegisterResponse(**llm_response)
+            # Return the LLM response for continuing conversation
+            return {
+                "message": llm_response["message"],
+                "extracted_data": llm_response["extracted_data"],
+                "next_step": llm_response.get("next_needed", "collecting"),
+                "ready_to_register": False
+            }
             
         except json.JSONDecodeError as e:
             logger.error(f"LLM response parsing error: {str(e)}")
             # Fallback response
-            return ChatRegisterResponse(
-                message="I'm having trouble understanding. Could you please repeat that?",
-                extracted_data=request.current_data,
-                next_step=request.step,
-                ready_to_register=False
-            )
+            return {
+                "message": "I'm having trouble understanding. Could you please repeat that?",
+                "extracted_data": request.current_data,
+                "next_step": "collecting",
+                "ready_to_register": False
+            }
         except Exception as e:
             logger.error(f"Chat registration error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Registration chat failed: {str(e)}")
+            return {
+                "message": "Sorry, I had a technical issue. Could you please repeat that?",
+                "extracted_data": request.current_data,
+                "next_step": "collecting",
+                "ready_to_register": False
+            }
 
     @app.get("/api/v1/auth/family")
     async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
