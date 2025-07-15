@@ -827,9 +827,9 @@ async def main_web_interface():
             }
             
             // Authentication and Chat Registration Functions
-            let chatStep = 1;
-            let registrationData = {};
             let conversationHistory = [];
+            let lastAvaMessage = "";
+            let registrationData = {};
             let authToken = localStorage.getItem('ava_auth_token');
             
             // Check if user is already authenticated
@@ -849,15 +849,15 @@ async def main_web_interface():
                 input.value = '';
                 
                 try {
-                    // Send to backend
+                    // Send to backend with conversation context
                     const response = await fetch('/api/v1/auth/chat-register', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            step: chatStep,
                             user_input: message,
                             current_data: registrationData,
-                            conversation_history: conversationHistory
+                            conversation_history: conversationHistory,
+                            last_ava_message: lastAvaMessage
                         })
                     });
                     
@@ -866,21 +866,20 @@ async def main_web_interface():
                     // Add AVA response to chat
                     addChatMessage(data.message, 'ava');
                     
-                    // Merge extracted data with existing data (only update non-null values)
+                    // Update context
                     if (data.extracted_data) {
-                        for (const [key, value] of Object.entries(data.extracted_data)) {
-                            if (value !== null) {
-                                registrationData[key] = value;
-                            }
-                        }
+                        Object.assign(registrationData, data.extracted_data || {});
+                    }
+                    conversationHistory = data.conversation_history || conversationHistory;
+                    lastAvaMessage = data.last_ava_message || data.message;
+                    
+                    // Log debug info
+                    if (data.debug_info) {
+                        console.log('🔍 Debug Info:', data.debug_info);
                     }
                     
-                    // Update conversation history
-                    if (data.conversation_history) {
-                        conversationHistory = data.conversation_history;
-                    }
-                    
-                    if (data.next_step === 'COMPLETE' || data.ready_to_register) {
+                    // Handle completion
+                    if (data.status === "COMPLETE") {
                         // Registration complete
                         if (data.token) {
                             localStorage.setItem('ava_auth_token', data.token);
@@ -888,11 +887,8 @@ async def main_web_interface():
                             // Hide auth section after successful registration
                             setTimeout(() => {
                                 document.getElementById('authSection').style.display = 'none';
-                            }, 2000);
+                            }, 3000);
                         }
-                    } else {
-                        // Update step based on what's needed next
-                        chatStep = chatStep + 1;
                     }
                 } catch (error) {
                     console.error('Chat registration error:', error);
@@ -981,7 +977,9 @@ async def main_web_interface():
             document.addEventListener('DOMContentLoaded', function() {
                 // Only show chat if not authenticated
                 if (!authToken) {
-                    addChatMessage("Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)", 'ava');
+                    const initialMessage = "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)";
+                    addChatMessage(initialMessage, 'ava');
+                    lastAvaMessage = initialMessage;
                 }
             });
         </script>
@@ -1380,16 +1378,23 @@ try:
         message: str
     
     class ChatRegisterRequest(BaseModel):
-        step: int = Field(default=1, description="Current conversation step (1-4)")
         user_input: str = Field(..., description="User's response")
         current_data: Dict[str, Any] = Field(default_factory=dict, description="Data collected so far")
-        conversation_history: List[str] = Field(default_factory=list, description="Previous user inputs")
+        conversation_history: List[Dict[str, str]] = Field(default_factory=list, description="Full conversation history")
+        last_ava_message: Optional[str] = Field(None, description="Last message from AVA")
     
     class ChatRegisterResponse(BaseModel):
         message: str = Field(..., description="AVA's response")
         extracted_data: Dict[str, Any] = Field(default_factory=dict, description="Extracted registration data")
-        next_step: Union[int, str] = Field(..., description="Next step number or COMPLETE")
-        ready_to_register: bool = Field(default=False, description="Whether all data is collected")
+        status: str = Field(default="collecting", description="Registration status")
+        next_needed: Optional[str] = Field(None, description="Next field needed")
+        conversation_history: List[Dict[str, str]] = Field(default_factory=list, description="Updated conversation history")
+        last_ava_message: str = Field(..., description="Last AVA message for context")
+        debug_info: Optional[Dict[str, Any]] = Field(None, description="Debug information")
+        registration_successful: bool = Field(default=False, description="Whether registration completed")
+        farmer_id: Optional[int] = Field(None, description="Farmer ID if registration successful")
+        token: Optional[str] = Field(None, description="Auth token if registration successful")
+        user: Optional[Dict[str, Any]] = Field(None, description="User info if registration successful")
 
     # Authentication endpoints
     @app.post("/api/v1/auth/login", response_model=LoginResponse)
@@ -1457,7 +1462,7 @@ try:
         return {"success": True, "user": current_user}
 
     # LLM Registration Prompt
-    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. You help farmers register by collecting exactly 4 pieces of information through intelligent conversation.
+    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. You are having a LIVE CONVERSATION with a farmer to collect registration information.
 
 REQUIRED DATA TO COLLECT:
 1. full_name (first + last name combined)
@@ -1465,114 +1470,79 @@ REQUIRED DATA TO COLLECT:
 3. password (minimum 6 characters)
 4. farm_name (optional - can suggest "[LastName] Farm")
 
-CURRENT CONVERSATION STATE:
-{current_data}
+CURRENT STATE: {current_data}
+LAST AVA MESSAGE: {last_ava_message}
+CONVERSATION HISTORY: {conversation_history}
 
-CONVERSATION HISTORY:
-{conversation_history}
+CRITICAL CONVERSATIONAL LOGIC:
+- Track EXACTLY what you just asked for in your last message
+- When user responds, assume they're answering YOUR LAST QUESTION
+- Don't overthink - if you asked for password and they respond with 6+ characters, that's their password!
+- Trust user responses - don't second-guess reasonable answers
 
-INTELLIGENT NAME COLLECTION RULES:
-- If user gives ONE name first → treat as FIRST NAME, ask for last name
-- If user then gives another name → treat as LAST NAME, combine them
-- If user gives "FirstName LastName" together → accept as complete full_name
-- NEVER ask for first name after you have both parts!
+SMART RESPONSE RULES:
+1. Look at your LAST MESSAGE to see what you asked for
+2. User's response = answer to that question (if it meets basic criteria)
+3. Accept their answer and move to next field
+4. Only reject if clearly invalid (too short password, no country code in phone)
 
-EXAMPLE NAME FLOWS:
-Flow A: User: "Ivana" → You: "Hi Ivana! What's your last name?" → User: "Banfić" → You have: "Ivana Banfić" ✅
-Flow B: User: "Marko Horvat" → You have: "Marko Horvat" ✅  
-Flow C: User: "Smith" → You: "Hi! What's your first name?" → User: "John" → You have: "John Smith" ✅
+CONVERSATIONAL EXAMPLES:
 
-STATE TRACKING LOGIC:
-1. Check what you ALREADY HAVE in current_data
-2. Look at conversation_history to understand context
-3. Identify what's STILL MISSING
-4. Ask for the NEXT missing piece ONLY
-5. Use SMART NAME LOGIC above
-6. PASSWORD CONTEXT: If current_data has name and phone but NO password, you're asking for password
-7. If you're asking for password and user gives ANY text ≥6 chars, that's the password!
+Example 1 - Password Collection:
+Last AVA message: "Please create a password (at least 6 characters):"
+User response: "Dobraguza"
+→ LOGIC: I asked for password, user said "Dobraguza" (9 chars), THAT'S THE PASSWORD! ✅
+→ ACTION: Accept password, move to farm name
 
-INTELLIGENT PASSWORD DETECTION RULES:
-- When you ask for password and user responds with ANY text ≥6 characters → ACCEPT IT AS PASSWORD
-- Don't overthink it - if they respond after password request, it's their password
-- Examples: "PlavoMore", "Naroblek", "NIkadasepromenitineću" are ALL valid passwords
-- Count characters: P-l-a-v-o-M-o-r-e = 9 characters ✅
-- Count characters: N-a-r-o-b-l-e-k = 8 characters ✅
+Example 2 - Phone Collection:
+Last AVA message: "What's your WhatsApp number? (include country code like +385...)"
+User response: "0912345678"
+→ LOGIC: I asked for phone, user gave number but missing country code
+→ ACTION: Ask for country code
 
-VALIDATION RULES:
-- full_name: Must have both first and last (2+ words or collected separately)
-- wa_phone_number: Must start with + and country code
-- password: Must be at least 6 characters - ACCEPT ANY TEXT ≥6 CHARS AS PASSWORD
-- farm_name: Optional, suggest based on last name if empty
+Example 3 - Name Collection:
+Last AVA message: "Hi! What's your full name? (first and last name)"
+User response: "Marko"
+→ LOGIC: I asked for full name, user gave first name only
+→ ACTION: Ask for last name
 
-RESPONSE FORMAT (JSON):
+CULTURAL AWARENESS:
+- Croatian names, song titles, personal words are ALL valid passwords
+- "Dobraguza", "PlavoMore", "Naroblek" are perfectly valid passwords
+- Don't judge password content, just check length
+
+JSON RESPONSE FORMAT:
 {{
-  "message": "Your intelligent response asking for NEXT missing item",
+  "message": "Your conversational response",
   "extracted_data": {{
     "full_name": "FirstName LastName" or null,
-    "wa_phone_number": "+385912345678" or null,  
-    "password": "password123" or null,
+    "wa_phone_number": "+385912345678" or null,
+    "password": "user_provided_password" or null,
     "farm_name": "Farm Name" or null
   }},
   "status": "collecting" or "COMPLETE",
   "next_needed": "full_name|wa_phone_number|password|farm_name" or "none",
-  "_debug_logic": "Brief explanation of what you understood"
+  "what_i_just_asked_for": "name|phone|password|farm_name",
+  "what_user_provided": "brief description of their response",
+  "_conversation_logic": "Why I interpreted their response this way"
 }}
 
-SMART EXAMPLES:
+CRITICAL SUCCESS PATTERNS:
 
-Input: Current data: {{}}, History: [], User: "Ivana"
-Response: {{
-  "message": "Hi Ivana! What's your last name?",
-  "extracted_data": {{"full_name": null, "wa_phone_number": null, "password": null, "farm_name": null}},
-  "status": "collecting",
-  "next_needed": "full_name",
-  "_debug_logic": "User gave first name 'Ivana', need last name to complete full_name"
-}}
+✅ CORRECT: 
+You: "Create a password (6+ characters):"
+User: "Dobraguza"
+You: "Perfect! Finally, what's your farm called?"
 
-Input: Current data: {{}}, History: ["Ivana"], User: "Banfić"
-Response: {{
-  "message": "Perfect! Nice to meet you, Ivana Banfić! What's your WhatsApp number? (please include country code like +385...)",
-  "extracted_data": {{"full_name": "Ivana Banfić", "wa_phone_number": null, "password": null, "farm_name": null}},
-  "status": "collecting",
-  "next_needed": "wa_phone_number",
-  "_debug_logic": "Combined first name 'Ivana' from history with last name 'Banfić' to get complete full_name"
-}}
+❌ WRONG:
+You: "Create a password (6+ characters):"
+User: "Dobraguza"  
+You: "Create a password (6+ characters):" [ASKING AGAIN]
 
-Input: Current data: {{"full_name": "Ivana Banfić"}}, User: "What's my first name?"
-Response: {{
-  "message": "Your name is Ivana Banfić! Now I need your WhatsApp number (please include country code like +385...)",
-  "extracted_data": {{"full_name": "Ivana Banfić", "wa_phone_number": null, "password": null, "farm_name": null}},
-  "status": "collecting", 
-  "next_needed": "wa_phone_number",
-  "_debug_logic": "Full name already complete, redirecting to next needed field"
-}}
+CONVERSATION FLOW:
+full_name → wa_phone_number → password → farm_name → COMPLETE
 
-Input: Current data: {{"full_name": "Ivana Banfić", "wa_phone_number": "+385912345678"}}, User: "PlavoMore"
-Response: {{
-  "message": "Perfect! Your password is set. Finally, what's your farm called? Or I can call it 'Banfić Farm'?",
-  "extracted_data": {{"full_name": "Ivana Banfić", "wa_phone_number": "+385912345678", "password": "PlavoMore", "farm_name": null}},
-  "status": "collecting",
-  "next_needed": "farm_name",
-  "_debug_logic": "User provided 'PlavoMore' (9 characters) as password after I asked for password - ACCEPTED"
-}}
-
-Input: Current data: {{"full_name": "Slavko Perišić", "wa_phone_number": "+385987654321"}}, User: "Naroblek"
-Response: {{
-  "message": "Great! Your password is set. Finally, what's your farm called? Or I can call it 'Perišić Farm'?",
-  "extracted_data": {{"full_name": "Slavko Perišić", "wa_phone_number": "+385987654321", "password": "Naroblek", "farm_name": null}},
-  "status": "collecting",
-  "next_needed": "farm_name",
-  "_debug_logic": "User provided 'Naroblek' (8 characters) as password after I asked for password - ACCEPTED"
-}}
-
-CRITICAL RULES:
-1. NEVER ask for first name if you already have full_name complete
-2. Use conversation history to understand name collection patterns
-3. Always check current_data before asking questions
-4. Be intelligent about what the user means based on conversation flow
-5. Move to next field as soon as current field is complete
-6. PASSWORD RULE: If you asked for password and user responds with ≥6 characters, ACCEPT IT IMMEDIATELY
-7. Don't analyze if something "looks like" a password - just count characters!
+BE CONVERSATIONALLY SMART - TRUST USER RESPONSES THAT MAKE SENSE!
 
 RESPONSE MUST BE ONLY VALID JSON."""
 
@@ -1590,29 +1560,29 @@ RESPONSE MUST BE ONLY VALID JSON."""
 
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
-        """Handle registration conversation with proper state tracking"""
+        """Handle registration with conversational context awareness"""
         try:
             from config_manager import config
             import json
             
-            # Add current input to conversation history
+            # Track conversation context
             conversation_history = request.conversation_history.copy()
-            conversation_history.append(request.user_input)
             
-            # Check if we're collecting password and validate directly
-            last_request = determine_last_request(request.current_data)
-            if last_request == "password":
-                password_candidate = request.user_input.strip()
-                if len(password_candidate) >= 6:
-                    # Valid password - add context hint for LLM
-                    logger.info(f"Valid password provided: {len(password_candidate)} characters")
-                else:
-                    logger.info(f"Password too short: {len(password_candidate)} characters")
+            # Add current user input to history
+            conversation_history.append({
+                "speaker": "user",
+                "message": request.user_input,
+                "timestamp": datetime.now().isoformat()
+            })
             
-            # Prepare prompt with current state and history
+            # Get the last AVA message for context
+            last_ava_message = request.last_ava_message or "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)"
+            
+            # Prepare conversational prompt
             prompt = REGISTRATION_PROMPT.format(
                 current_data=json.dumps(request.current_data),
-                conversation_history=json.dumps(conversation_history)
+                last_ava_message=last_ava_message,
+                conversation_history=json.dumps(conversation_history[-10:])  # Last 10 exchanges
             )
             
             # Use OpenAI to process the conversation
@@ -1623,17 +1593,26 @@ RESPONSE MUST BE ONLY VALID JSON."""
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": f"Current data: {json.dumps(request.current_data)}\nConversation history: {json.dumps(conversation_history)}\nLatest user input: {request.user_input}"}
+                    {"role": "user", "content": f"Last AVA message: '{last_ava_message}'\nUser response: '{request.user_input}'\nCurrent data: {json.dumps(request.current_data)}"}
                 ],
-                temperature=0.1  # Low temperature for consistent behavior
+                temperature=0.1,  # Low temperature for consistent behavior
+                response_format={"type": "json_object"}
             )
             
             # Parse the LLM response
             llm_response = json.loads(response.choices[0].message.content)
             
-            # Log the debug logic for troubleshooting
-            if "_debug_logic" in llm_response:
-                logger.info(f"LLM Debug Logic: {llm_response['_debug_logic']}")
+            # Log conversation logic for debugging
+            logger.info(f"LLM Conversation Logic: {llm_response.get('_conversation_logic', 'No logic provided')}")
+            logger.info(f"What user provided: {llm_response.get('what_user_provided', 'Unknown')}")
+            logger.info(f"What I asked for: {llm_response.get('what_i_just_asked_for', 'Unknown')}")
+            
+            # Add AVA response to conversation history
+            conversation_history.append({
+                "speaker": "ava",
+                "message": llm_response["message"],
+                "timestamp": datetime.now().isoformat()
+            })
             
             # If registration is complete, create the farmer account
             if llm_response.get("status") == "COMPLETE":
@@ -1652,15 +1631,15 @@ RESPONSE MUST BE ONLY VALID JSON."""
                 farmer = cursor.fetchone()
                 farmer_id = farmer['id'] if farmer else 1
                 
-                # Extract full name from the data
-                full_name = data.get('full_name', 'User')
+                # Use farm name from data or generate default
+                farm_name = data.get('farm_name') or f"{data['full_name'].split()[-1]} Farm"
                 
                 # Create the user
                 user_result = auth_manager.register_farm_user(
                     farmer_id=farmer_id,
                     wa_phone=data['wa_phone_number'],
                     password=data['password'],
-                    user_name=full_name,
+                    user_name=data['full_name'],
                     role="owner" if is_first_user else "member",
                     created_by_user_id=None
                 )
@@ -1673,21 +1652,30 @@ RESPONSE MUST BE ONLY VALID JSON."""
                 
                 # Return success response with token
                 return {
-                    "message": f"Perfect! You're all set up! Welcome to AVA OLO, {full_name}! 🚜",
-                    "extracted_data": data,
-                    "next_step": "COMPLETE",
-                    "ready_to_register": True,
+                    "message": f"🎉 Perfect! Welcome to AVA OLO, {data['full_name']}! Your {farm_name} account is ready! 🚜",
+                    "status": "COMPLETE",
+                    "registration_successful": True,
+                    "farmer_id": farmer_id,
                     "token": login_result['token'] if login_result else None,
-                    "user": login_result['user'] if login_result else None
+                    "user": login_result['user'] if login_result else None,
+                    "extracted_data": data,
+                    "conversation_history": conversation_history,
+                    "last_ava_message": llm_response["message"]
                 }
             
             # Return the LLM response for continuing conversation
             return {
                 "message": llm_response["message"],
                 "extracted_data": llm_response["extracted_data"],
-                "next_step": llm_response.get("next_needed", "collecting"),
-                "ready_to_register": False,
-                "conversation_history": conversation_history
+                "status": llm_response["status"],
+                "next_needed": llm_response.get("next_needed", "collecting"),
+                "conversation_history": conversation_history,
+                "last_ava_message": llm_response["message"],  # Track for next request
+                "debug_info": {
+                    "what_asked_for": llm_response.get("what_i_just_asked_for"),
+                    "what_user_provided": llm_response.get("what_user_provided"),
+                    "conversation_logic": llm_response.get("_conversation_logic")
+                }
             }
             
         except json.JSONDecodeError as e:
