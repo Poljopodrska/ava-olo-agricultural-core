@@ -54,11 +54,10 @@ class RegistrationChatWithMemory:
             # Get conversation history from memory
             conversation_history = self._get_conversation_summary()
             
-            # Create simple system prompt with checklist
+            # Constitutional system prompt with data awareness
             system_prompt = f"""
-You are AVA, helping a farmer register. You have PERFECT MEMORY of our conversation.
+You are AVA, constitutional agricultural assistant with PERFECT DATA AWARENESS.
 
-REGISTRATION CHECKLIST - Fill these 4 items:
 {checklist_status}
 
 OUR CONVERSATION SO FAR:
@@ -66,21 +65,19 @@ OUR CONVERSATION SO FAR:
 
 USER JUST SAID: "{user_input}"
 
-SIMPLE INSTRUCTIONS:
-1. Look at the checklist above - what's still MISSING?
-2. If user provided info for a missing item, acknowledge it happily
-3. Ask for the NEXT missing item in a friendly way
-4. For password: ask once, then ask them to type it again to confirm
-5. When ALL items complete, welcome them!
+CONSTITUTIONAL INTELLIGENCE:
+1. ANALYZE the checklist above - what data do you ALREADY HAVE vs STILL NEED?
+2. NEVER re-ask for data marked with ✅ [COLLECTED]
+3. If user provides new data, acknowledge and update mentally
+4. Ask ONLY for the NEXT missing item from the checklist
+5. Be smart - if you have "Peter" and they say "Knaflič", you now have full name "Peter Knaflič"
 
-EXAMPLES:
-- If full_name missing and user says "Peter" → "Hi Peter! What's your last name?"
-- If full_name missing and user says "Peter Smith" → "Nice to meet you Peter Smith! What's your WhatsApp number?"
-- If phone missing → "What's your WhatsApp number? (include country code like +385...)"
-- If password missing → "Create a password (at least 6 characters):"
-- If confirming password → "Please type your password again to confirm:"
+SMART EXAMPLES:
+- Have "Peter", user says "Knaflič" → "Nice to meet you Peter Knaflič! What's your WhatsApp number?"
+- Already have name+phone, user gives anything → "Thanks! Now create a password:"
+- Have everything → "🎉 Welcome to AVA OLO!"
 
-Be conversational but focused on completing the checklist!
+CRITICAL: Look at the checklist. Don't ask for data you already have!
 """
             
             # Get LLM response
@@ -126,17 +123,25 @@ Be conversational but focused on completing the checklist!
             }
     
     def _create_checklist_display(self) -> str:
-        """Create visual checklist for LLM"""
+        """Create constitutional visual checklist for LLM"""
         checklist = []
+        
+        # Constitutional data awareness format
+        checklist.append("DATA COLLECTION CHECKLIST:")
         
         for field, value in self.required_data.items():
             if value:
-                checklist.append(f"✅ {field}: {value}")
+                checklist.append(f"✅ {field}: {value} [COLLECTED]")
             else:
-                checklist.append(f"❌ {field}: MISSING")
+                checklist.append(f"❌ {field}: STILL NEEDED")
         
         if self.temp_password_for_confirmation:
             checklist.append(f"🔄 password_confirmation: WAITING FOR CONFIRMATION")
+        
+        checklist.append("\nCRITICAL RULES:")
+        checklist.append("- NEVER ask for data you already have (marked with ✅)")
+        checklist.append("- ONLY ask for the NEXT missing item (marked with ❌)")
+        checklist.append("- If ALL data collected → complete registration")
         
         return "\n".join(checklist)
     
@@ -170,53 +175,61 @@ Be conversational but focused on completing the checklist!
         return history
     
     def _update_checklist_from_conversation(self, user_input: str, ava_response: str):
-        """Simple pattern matching to update checklist"""
+        """Constitutional intelligent data extraction"""
         
-        # Look for patterns in the conversation
-        conversation_text = f"{user_input} {ava_response}".lower()
-        
-        # Extract full name from conversation
+        # Extract full name with smart combination logic
         if not self.required_data["full_name"]:
-            # Look for name patterns
             words = user_input.strip().split()
-            if len(words) == 1 and words[0].isalpha():
-                # Single word - wait for last name
-                pass
-            elif len(words) >= 2 and all(word.isalpha() or '-' in word for word in words):
-                # Multiple words that look like names
+            
+            # Check if this completes a partial name from memory
+            name_from_memory = self._extract_partial_name_from_memory()
+            
+            if name_from_memory and len(words) == 1 and words[0].isalpha():
+                # Complete the name: "Peter" + "Knaflič" = "Peter Knaflič"
+                self.required_data["full_name"] = f"{name_from_memory} {words[0]}"
+            elif len(words) >= 2 and all(word.replace('-', '').isalpha() for word in words):
+                # Full name provided at once
                 self.required_data["full_name"] = user_input.strip()
         
         # Extract phone number
         if not self.required_data["wa_phone_number"] and '+' in user_input:
-            # Simple phone pattern
-            if user_input.strip().startswith('+') and len(user_input.strip()) > 8:
-                self.required_data["wa_phone_number"] = user_input.strip()
+            phone = user_input.strip()
+            if phone.startswith('+') and len(phone) > 8:
+                self.required_data["wa_phone_number"] = phone
         
-        # Handle password logic
+        # Constitutional password handling
         if not self.required_data["password"]:
             if not self.temp_password_for_confirmation:
-                # Check if this looks like a password (6+ chars, not a name/phone)
+                # First password entry
                 if (len(user_input.strip()) >= 6 and 
                     not user_input.strip().startswith('+') and
-                    not all(word.isalpha() for word in user_input.split()) and
-                    'confirm' in ava_response.lower()):
+                    not all(word.isalpha() for word in user_input.split())):
                     self.temp_password_for_confirmation = user_input.strip()
             else:
-                # Check password confirmation
+                # Password confirmation
                 if user_input.strip() == self.temp_password_for_confirmation:
                     self.required_data["password"] = self.temp_password_for_confirmation
                     self.temp_password_for_confirmation = None
                 else:
-                    # Password mismatch - reset
                     self.temp_password_for_confirmation = None
         
-        # Extract farm name (last item)
+        # Extract farm name (when other data is complete)
         if (self.required_data["full_name"] and 
             self.required_data["wa_phone_number"] and 
             self.required_data["password"] and 
-            not self.required_data["farm_name"]):
-            # This input is probably the farm name
+            not self.required_data["farm_name"] and
+            len(user_input.strip()) > 0):
             self.required_data["farm_name"] = user_input.strip()
+    
+    def _extract_partial_name_from_memory(self) -> Optional[str]:
+        """Extract partial first name from conversation memory"""
+        for msg in self.memory.chat_memory.messages:
+            if isinstance(msg, HumanMessage):
+                words = msg.content.strip().split()
+                if len(words) == 1 and words[0].isalpha() and len(words[0]) > 1:
+                    # Found a single name word - likely first name
+                    return words[0]
+        return None
     
     def _is_registration_complete(self) -> bool:
         """Check if all required data is collected"""
