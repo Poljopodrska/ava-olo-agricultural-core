@@ -829,6 +829,7 @@ async def main_web_interface():
             // Authentication and Chat Registration Functions
             let chatStep = 1;
             let registrationData = {};
+            let conversationHistory = [];
             let authToken = localStorage.getItem('ava_auth_token');
             
             // Check if user is already authenticated
@@ -855,7 +856,8 @@ async def main_web_interface():
                         body: JSON.stringify({
                             step: chatStep,
                             user_input: message,
-                            current_data: registrationData
+                            current_data: registrationData,
+                            conversation_history: conversationHistory
                         })
                     });
                     
@@ -871,6 +873,11 @@ async def main_web_interface():
                                 registrationData[key] = value;
                             }
                         }
+                    }
+                    
+                    // Update conversation history
+                    if (data.conversation_history) {
+                        conversationHistory = data.conversation_history;
                     }
                     
                     if (data.next_step === 'COMPLETE' || data.ready_to_register) {
@@ -1376,6 +1383,7 @@ try:
         step: int = Field(default=1, description="Current conversation step (1-4)")
         user_input: str = Field(..., description="User's response")
         current_data: Dict[str, Any] = Field(default_factory=dict, description="Data collected so far")
+        conversation_history: List[str] = Field(default_factory=list, description="Previous user inputs")
     
     class ChatRegisterResponse(BaseModel):
         message: str = Field(..., description="AVA's response")
@@ -1449,10 +1457,10 @@ try:
         return {"success": True, "user": current_user}
 
     # LLM Registration Prompt
-    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. You help farmers register by collecting exactly 4 pieces of information in a conversational way.
+    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. You help farmers register by collecting exactly 4 pieces of information through intelligent conversation.
 
 REQUIRED DATA TO COLLECT:
-1. full_name (first + last name)
+1. full_name (first + last name combined)
 2. wa_phone_number (with country code like +385...)
 3. password (minimum 6 characters)
 4. farm_name (optional - can suggest "[LastName] Farm")
@@ -1460,67 +1468,84 @@ REQUIRED DATA TO COLLECT:
 CURRENT CONVERSATION STATE:
 {current_data}
 
-CONVERSATION RULES:
-- Track what you ALREADY HAVE - don't ask for it again!
-- Ask for the NEXT missing piece of information
-- Be conversational but efficient
-- Validate inputs and ask for corrections if needed
+CONVERSATION HISTORY:
+{conversation_history}
 
-RESPONSE LOGIC:
-1. Look at current_data to see what you already have
-2. Identify what's still missing
-3. Ask for the NEXT missing item only
-4. If user gives partial info (like just first name), ask for the missing part
-5. Once ALL 4 items are complete, mark as COMPLETE
+INTELLIGENT NAME COLLECTION RULES:
+- If user gives ONE name first → treat as FIRST NAME, ask for last name
+- If user then gives another name → treat as LAST NAME, combine them
+- If user gives "FirstName LastName" together → accept as complete full_name
+- NEVER ask for first name after you have both parts!
+
+EXAMPLE NAME FLOWS:
+Flow A: User: "Ivana" → You: "Hi Ivana! What's your last name?" → User: "Banfić" → You have: "Ivana Banfić" ✅
+Flow B: User: "Marko Horvat" → You have: "Marko Horvat" ✅  
+Flow C: User: "Smith" → You: "Hi! What's your first name?" → User: "John" → You have: "John Smith" ✅
+
+STATE TRACKING LOGIC:
+1. Check what you ALREADY HAVE in current_data
+2. Look at conversation_history to understand context
+3. Identify what's STILL MISSING
+4. Ask for the NEXT missing piece ONLY
+5. Use SMART NAME LOGIC above
 
 VALIDATION RULES:
-- full_name: Must have both first and last name
+- full_name: Must have both first and last (2+ words or collected separately)
 - wa_phone_number: Must start with + and country code
-- password: Must be at least 6 characters
+- password: Must be at least 6 characters  
 - farm_name: Optional, suggest based on last name if empty
 
-RESPONSE FORMAT (MUST BE VALID JSON):
+RESPONSE FORMAT (JSON):
 {{
-  "message": "Your friendly response asking for NEXT missing item",
+  "message": "Your intelligent response asking for NEXT missing item",
   "extracted_data": {{
     "full_name": "FirstName LastName" or null,
-    "wa_phone_number": "+385912345678" or null,
+    "wa_phone_number": "+385912345678" or null,  
     "password": "password123" or null,
     "farm_name": "Farm Name" or null
   }},
   "status": "collecting" or "COMPLETE",
-  "next_needed": "full_name|wa_phone_number|password|farm_name" or "none"
+  "next_needed": "full_name|wa_phone_number|password|farm_name" or "none",
+  "_debug_logic": "Brief explanation of what you understood"
 }}
 
-IMPORTANT: Your response MUST be ONLY the JSON object above. No additional text before or after.
+SMART EXAMPLES:
 
-EXAMPLES:
-
-Input: Current data: {{}}, User: "Lidija"
+Input: Current data: {{}}, History: [], User: "Ivana"
 Response: {{
-  "message": "Hi Lidija! What's your last name?",
+  "message": "Hi Ivana! What's your last name?",
   "extracted_data": {{"full_name": null, "wa_phone_number": null, "password": null, "farm_name": null}},
   "status": "collecting",
-  "next_needed": "full_name"
+  "next_needed": "full_name",
+  "_debug_logic": "User gave first name 'Ivana', need last name to complete full_name"
 }}
 
-Input: Current data: {{}}, User: "Lidija Bačić"  
+Input: Current data: {{}}, History: ["Ivana"], User: "Banfić"
 Response: {{
-  "message": "Great Lidija Bačić! What's your WhatsApp number? (please include country code like +385...)",
-  "extracted_data": {{"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null}},
-  "status": "collecting", 
-  "next_needed": "wa_phone_number"
-}}
-
-Input: Current data: {{"full_name": "Lidija Bačić"}}, User: "Bačić"
-Response: {{
-  "message": "I already have your full name as Lidija Bačić! What's your WhatsApp number? (please include country code like +385...)",
-  "extracted_data": {{"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null}},
+  "message": "Perfect! Nice to meet you, Ivana Banfić! What's your WhatsApp number? (please include country code like +385...)",
+  "extracted_data": {{"full_name": "Ivana Banfić", "wa_phone_number": null, "password": null, "farm_name": null}},
   "status": "collecting",
-  "next_needed": "wa_phone_number"
+  "next_needed": "wa_phone_number",
+  "_debug_logic": "Combined first name 'Ivana' from history with last name 'Banfić' to get complete full_name"
 }}
 
-CRITICAL: Always check current_data first! Don't ask for information you already have!"""
+Input: Current data: {{"full_name": "Ivana Banfić"}}, User: "What's my first name?"
+Response: {{
+  "message": "Your name is Ivana Banfić! Now I need your WhatsApp number (please include country code like +385...)",
+  "extracted_data": {{"full_name": "Ivana Banfić", "wa_phone_number": null, "password": null, "farm_name": null}},
+  "status": "collecting", 
+  "next_needed": "wa_phone_number",
+  "_debug_logic": "Full name already complete, redirecting to next needed field"
+}}
+
+CRITICAL RULES:
+1. NEVER ask for first name if you already have full_name complete
+2. Use conversation history to understand name collection patterns
+3. Always check current_data before asking questions
+4. Be intelligent about what the user means based on conversation flow
+5. Move to next field as soon as current field is complete
+
+RESPONSE MUST BE ONLY VALID JSON."""
 
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
@@ -1529,8 +1554,15 @@ CRITICAL: Always check current_data first! Don't ask for information you already
             from config_manager import config
             import json
             
-            # Prepare prompt with current state
-            prompt = REGISTRATION_PROMPT.format(current_data=json.dumps(request.current_data))
+            # Add current input to conversation history
+            conversation_history = request.conversation_history.copy()
+            conversation_history.append(request.user_input)
+            
+            # Prepare prompt with current state and history
+            prompt = REGISTRATION_PROMPT.format(
+                current_data=json.dumps(request.current_data),
+                conversation_history=json.dumps(conversation_history)
+            )
             
             # Use OpenAI to process the conversation
             from openai import AsyncOpenAI
@@ -1540,13 +1572,17 @@ CRITICAL: Always check current_data first! Don't ask for information you already
                 model="gpt-4",
                 messages=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": f"Current data: {json.dumps(request.current_data)}\nUser input: {request.user_input}"}
+                    {"role": "user", "content": f"Current data: {json.dumps(request.current_data)}\nConversation history: {json.dumps(conversation_history)}\nLatest user input: {request.user_input}"}
                 ],
                 temperature=0.1  # Low temperature for consistent behavior
             )
             
             # Parse the LLM response
             llm_response = json.loads(response.choices[0].message.content)
+            
+            # Log the debug logic for troubleshooting
+            if "_debug_logic" in llm_response:
+                logger.info(f"LLM Debug Logic: {llm_response['_debug_logic']}")
             
             # If registration is complete, create the farmer account
             if llm_response.get("status") == "COMPLETE":
@@ -1599,7 +1635,8 @@ CRITICAL: Always check current_data first! Don't ask for information you already
                 "message": llm_response["message"],
                 "extracted_data": llm_response["extracted_data"],
                 "next_step": llm_response.get("next_needed", "collecting"),
-                "ready_to_register": False
+                "ready_to_register": False,
+                "conversation_history": conversation_history
             }
             
         except json.JSONDecodeError as e:
