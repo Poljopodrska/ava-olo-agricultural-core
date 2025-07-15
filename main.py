@@ -1393,18 +1393,38 @@ async def cost_rates_management():
     """Cost rates management interface"""
     rates = []
     error_msg = None
+    connection = None
     
     try:
-        with get_constitutional_db_connection() as connection:
-            if connection:
-                cursor = connection.cursor()
-                cursor.execute("SELECT service_name, cost_per_unit, unit_type, currency FROM cost_rates ORDER BY service_name")
-                rates = cursor.fetchall()
-                cursor.close()
-            else:
-                error_msg = "Database connection failed"
+        # Direct connection without context manager
+        host = os.getenv('DB_HOST')
+        database = os.getenv('DB_NAME', 'farmer_crm')
+        user = os.getenv('DB_USER', 'postgres')
+        password = os.getenv('DB_PASSWORD')
+        port = int(os.getenv('DB_PORT', '5432'))
+        
+        connection = psycopg2.connect(
+            host=host,
+            database=database,
+            user=user,
+            password=password,
+            port=port,
+            connect_timeout=10,
+            sslmode='require'
+        )
+        
+        cursor = connection.cursor()
+        cursor.execute("SELECT service_name, cost_per_unit, unit_type, currency FROM cost_rates ORDER BY service_name")
+        rates = cursor.fetchall()
+        cursor.close()
+        
+    except psycopg2.Error as e:
+        error_msg = f"Database error: {str(e)}"
     except Exception as e:
-        error_msg = str(e)
+        error_msg = f"Connection error: {str(e)}"
+    finally:
+        if connection:
+            connection.close()
     
     if error_msg:
         return HTMLResponse(f"""
@@ -1468,6 +1488,7 @@ async def cost_rates_management():
 @app.post("/api/update-cost-rate")
 async def update_cost_rate(request: Request):
     """Update cost rate for a service"""
+    connection = None
     try:
         data = await request.json()
         service = data.get('service')
@@ -1476,26 +1497,45 @@ async def update_cost_rate(request: Request):
         if not service or rate is None:
             return {"success": False, "error": "Missing service or rate"}
         
-        with get_constitutional_db_connection() as connection:
-            if connection:
-                cursor = connection.cursor()
-                cursor.execute("""
-                    UPDATE cost_rates 
-                    SET cost_per_unit = %s, updated_at = NOW()
-                    WHERE service_name = %s
-                """, (rate, service))
-                
-                if cursor.rowcount > 0:
-                    connection.commit()
-                    cursor.close()
-                    return {"success": True, "message": f"Updated {service} rate to ${rate}"}
-                else:
-                    cursor.close()
-                    return {"success": False, "error": f"Service {service} not found"}
-            else:
-                return {"success": False, "error": "Database connection failed"}
+        # Direct connection without context manager
+        host = os.getenv('DB_HOST')
+        database = os.getenv('DB_NAME', 'farmer_crm')
+        user = os.getenv('DB_USER', 'postgres')
+        password = os.getenv('DB_PASSWORD')
+        port = int(os.getenv('DB_PORT', '5432'))
+        
+        connection = psycopg2.connect(
+            host=host,
+            database=database,
+            user=user,
+            password=password,
+            port=port,
+            connect_timeout=10,
+            sslmode='require'
+        )
+        
+        cursor = connection.cursor()
+        cursor.execute("""
+            UPDATE cost_rates 
+            SET cost_per_unit = %s, updated_at = NOW()
+            WHERE service_name = %s
+        """, (rate, service))
+        
+        if cursor.rowcount > 0:
+            connection.commit()
+            cursor.close()
+            return {"success": True, "message": f"Updated {service} rate to ${rate}"}
+        else:
+            cursor.close()
+            return {"success": False, "error": f"Service {service} not found"}
+            
+    except psycopg2.Error as e:
+        return {"success": False, "error": f"Database error: {str(e)}"}
     except Exception as e:
         return {"success": False, "error": str(e)}
+    finally:
+        if connection:
+            connection.close()
 
 # Business Dashboard Implementation
 @app.get("/business-dashboard", response_class=HTMLResponse)
