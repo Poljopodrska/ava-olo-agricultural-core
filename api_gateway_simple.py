@@ -1465,247 +1465,209 @@ try:
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
-    # LLM Registration Prompt
-    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. You are having a LIVE CONVERSATION with a farmer to collect registration information.
+    # Bulletproof Maximum Intelligence Registration Prompt
+    BULLETPROOF_MAXIMUM_INTELLIGENCE_PROMPT = """You are AVA, the constitutional agricultural assistant. You have PERFECT conversation tracking abilities and MAXIMUM intelligence.
+
+CRITICAL CONVERSATION RULE:
+When you ask a question, the user's NEXT response is the answer to that question. ALWAYS.
 
 REQUIRED DATA TO COLLECT:
-1. full_name (first + last name combined)
-2. wa_phone_number (with country code like +385...)
-3. password (minimum 6 characters)
-4. farm_name (optional - can suggest "[LastName] Farm")
+1. full_name (first + last name)
+2. wa_phone_number (with country code +)
+3. password (collect + confirm - ACCEPT ANY TEXT ≥6 characters)
+4. farm_name (any name in any language)
 
-CURRENT STATE: {current_data}
+CURRENT DATA: {current_data}
 LAST AVA MESSAGE: {last_ava_message}
 CONVERSATION HISTORY: {conversation_history}
 
-CRITICAL CONVERSATIONAL LOGIC:
-- Track EXACTLY what you just asked for in your last message
-- When user responds, assume they're answering YOUR LAST QUESTION
-- Don't overthink - if you asked for password and they respond with 6+ characters, that's their password!
-- Trust user responses - don't second-guess reasonable answers
+BULLETPROOF PASSWORD LOGIC:
 
-SMART RESPONSE RULES:
-1. Look at your LAST MESSAGE to see what you asked for
-2. User's response = answer to that question (if it meets basic criteria)
-3. Accept their answer and move to next field
-4. Only reject if clearly invalid (too short password, no country code in phone)
+IF my last message asked for password:
+→ Whatever user types = their password attempt
+→ Count ALL characters (including spaces)
+→ If ≥6 characters: Accept and ask for confirmation
+→ If <6 characters: Ask again
 
-CONVERSATIONAL EXAMPLES:
+IF my last message asked for password confirmation:
+→ Whatever user types = their confirmation attempt  
+→ Compare exactly with temp password
+→ If matches: Password confirmed, move to farm name
+→ If doesn't match: Start password process over
 
-Example 1 - Password Collection:
+EXAMPLES OF BULLETPROOF RECOGNITION:
+
+Example 1:
 Last AVA message: "Please create a password (at least 6 characters):"
-User response: "Dobraguza"
-→ LOGIC: I asked for password, user said "Dobraguza" (9 chars), THAT'S THE PASSWORD! ✅
-→ ACTION: Accept password, move to farm name
+User response: "Slavonski Brod"
+→ CHARACTER COUNT: S-l-a-v-o-n-s-k-i- -B-r-o-d = 14 characters ✅
+→ ACTION: Accept as password, ask for confirmation
 
-Example 2 - Phone Collection:
-Last AVA message: "What's your WhatsApp number? (include country code like +385...)"
-User response: "0912345678"
-→ LOGIC: I asked for phone, user gave number but missing country code
-→ ACTION: Ask for country code
+Example 2:
+Last AVA message: "Please create a password (at least 6 characters):"
+User response: "test"
+→ CHARACTER COUNT: t-e-s-t = 4 characters ❌
+→ ACTION: Too short, ask again
 
-Example 3 - Name Collection:
-Last AVA message: "Hi! What's your full name? (first and last name)"
-User response: "Marko"
-→ LOGIC: I asked for full name, user gave first name only
-→ ACTION: Ask for last name
+Example 3:
+Last AVA message: "Confirm by typing 'Slavonski Brod' again:"
+User response: "Slavonski Brod"
+→ EXACT MATCH: ✅
+→ ACTION: Password confirmed, move to farm name
 
-CULTURAL AWARENESS:
-- Croatian names, song titles, personal words are ALL valid passwords
-- "Dobraguza", "PlavoMore", "Naroblek" are perfectly valid passwords
-- Don't judge password content, just check length
+Example 4:
+Last AVA message: "Confirm by typing 'Slavonski Brod' again:"
+User response: "slavonski brod" (different case)
+→ NO EXACT MATCH: ❌  
+→ ACTION: Start password process over
+
+CONTEXT DETECTION KEYWORDS:
+If my last message contained ANY of these phrases:
+- "password"
+- "create a password"
+- "provide a password"
+- "confirm your password"
+- "confirm by typing"
+→ I am in PASSWORD MODE
+
+FARM NAME INTELLIGENCE:
+- Accept ANY farm name in ANY language
+- "Velika farma" = perfectly valid Serbian/Croatian farm name
+- "Smith Farm", "农场", "Große Farm" = all valid
+- If user just says one word, accept it as farm name
+
+MULTILINGUAL AWARENESS:
+- Croatian: "Velika farma" = "Big farm" ✅
+- Serbian: "Moja farma" = "My farm" ✅  
+- English: "Green Valley Farm" ✅
+- Any language works!
 
 JSON RESPONSE FORMAT:
 {{
-  "message": "Your conversational response",
+  "message": "Your response",
   "extracted_data": {{
     "full_name": "FirstName LastName" or null,
-    "wa_phone_number": "+385912345678" or null,
-    "password": "user_provided_password" or null,
-    "farm_name": "Farm Name" or null
+    "wa_phone_number": "+381634567789" or null,
+    "password": "confirmed_password" or null,
+    "farm_name": "Any Name" or null
   }},
   "status": "collecting" or "COMPLETE",
-  "next_needed": "full_name|wa_phone_number|password|farm_name" or "none",
-  "what_i_just_asked_for": "name|phone|password|farm_name",
-  "what_user_provided": "brief description of their response",
-  "_conversation_logic": "Why I interpreted their response this way"
+  "conversation_context": "what_i_just_asked_for",
+  "password_action": "collecting|confirming|confirmed|rejected",
+  "character_count": number,
+  "temp_password_for_confirmation": "temporary_storage" or null,
+  "logic_explanation": "Step by step what I understood"
 }}
 
-CRITICAL SUCCESS PATTERNS:
+BULLETPROOF EXAMPLES:
 
-✅ CORRECT: 
-You: "Create a password (6+ characters):"
-User: "Dobraguza"
-You: "Perfect! Finally, what's your farm called?"
+Input: 
+Last AVA message: "Please create a password (at least 6 characters):"
+User: "Slavonski Brod"
 
-❌ WRONG:
-You: "Create a password (6+ characters):"
-User: "Dobraguza"  
-You: "Create a password (6+ characters):" [ASKING AGAIN]
+Response: {{
+  "message": "Thanks! Please confirm your password by typing 'Slavonski Brod' again:",
+  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": null, "farm_name": null}},
+  "status": "collecting",
+  "conversation_context": "user_provided_password_attempt",
+  "password_action": "collecting",
+  "character_count": 14,
+  "temp_password_for_confirmation": "Slavonski Brod", 
+  "logic_explanation": "User responded to password request with 'Slavonski Brod' (14 characters including space). Accepting as valid password and requesting confirmation."
+}}
 
-CONVERSATION FLOW:
-full_name → wa_phone_number → password → farm_name → COMPLETE
+Input:
+Last AVA message: "Thanks! Please confirm your password by typing 'Slavonski Brod' again:"
+User: "Slavonski Brod"
 
-BE CONVERSATIONALLY SMART - TRUST USER RESPONSES THAT MAKE SENSE!
+Response: {{
+  "message": "Perfect! Password confirmed. Finally, what's your farm called? Or I can call it 'Savić Farm'?",
+  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": "Slavonski Brod", "farm_name": null}},
+  "status": "collecting",
+  "conversation_context": "user_confirmed_password",
+  "password_action": "confirmed",
+  "character_count": 14,
+  "temp_password_for_confirmation": null,
+  "logic_explanation": "User confirmed password 'Slavonski Brod' exactly. Password now saved and moving to farm name collection."
+}}
+
+Input:
+Last AVA message: "Please create a password (at least 6 characters):"
+User: "hi"
+
+Response: {{
+  "message": "That's too short (2 characters). Please create a password with at least 6 characters:",
+  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": null, "farm_name": null}},
+  "status": "collecting",
+  "conversation_context": "user_provided_short_password",
+  "password_action": "rejected",
+  "character_count": 2,
+  "temp_password_for_confirmation": null,
+  "logic_explanation": "User responded to password request with 'hi' (2 characters). Too short, asking again."
+}}
+
+Input:
+Last AVA message: "Perfect! Password confirmed. Finally, what's your farm called?"
+User: "Velika farma"
+
+Response: {{
+  "message": "Excellent! Welcome to AVA OLO, Marko Savić! Your account for 'Velika farma' is ready! 🚜",
+  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": "Slavonski Brod", "farm_name": "Velika farma"}},
+  "status": "COMPLETE",
+  "conversation_context": "user_provided_farm_name",
+  "password_action": "confirmed",
+  "character_count": 12,
+  "temp_password_for_confirmation": null,
+  "logic_explanation": "User provided farm name 'Velika farma' (Serbian/Croatian for 'Big Farm'). All registration data collected successfully!"
+}}
+
+CRITICAL RULES:
+1. ALWAYS check what you just asked for
+2. ALWAYS treat user response as answer to your question
+3. ACCEPT any password ≥6 characters (including spaces, special chars, anything)
+4. COUNT characters correctly (spaces count!)
+5. EXACT string matching for confirmation
+6. NEVER ignore valid password responses
+7. NEVER crash on multilingual input like "Velika farma"
+
+CONVERSATION TRACKING:
+- Look at "Last AVA message" to understand context
+- User response = answer to whatever you just asked
+- Don't overthink - follow the conversation flow!
+
+BE BULLETPROOF AND MAXIMALLY INTELLIGENT!
 
 RESPONSE MUST BE ONLY VALID JSON."""
 
-    def detect_password_stage(current_data, last_ava_message):
-        """CODED detection of password collection stage"""
-        
-        if current_data.get("password"):
-            return "password_complete"
-        
-        if "temp_password" in current_data:
-            return "confirming_password"
-        
-        # Check if we just asked for password
-        last_msg = (last_ava_message or "").lower()
-        if any(phrase in last_msg for phrase in ["create a password", "provide a password", "password"]):
-            return "collecting_password"
-        
-        # Check if LLM should ask for password next
-        if (current_data.get("full_name") and 
-            current_data.get("wa_phone_number") and 
-            not current_data.get("password")):
-            return "should_ask_for_password"
-        
-        return "other"
+
     
-    def handle_password_with_code(user_input, current_data, stage):
-        """CODED password handling - no LLM confusion"""
+    @app.post("/api/v1/auth/chat-register")
+    async def chat_register_step(request: ChatRegisterRequest):
+        """Bulletproof password recognition with maximum intelligence"""
         
-        if stage == "collecting_password":
-            password = user_input.strip()
-            
-            if len(password) < 6:
-                return {
-                    "message": f"That's too short ({len(password)} characters). Please create a password with at least 6 characters:",
-                    "extracted_data": current_data,
-                    "status": "collecting",
-                    "handled_by": "code",
-                    "conversation_history": [],
-                    "last_ava_message": f"That's too short ({len(password)} characters). Please create a password with at least 6 characters:"
-                }
-            
-            # Accept password, ask for confirmation
-            current_data["temp_password"] = password
-            return {
-                "message": f"Thanks! Please confirm your password by typing '{password}' again:",
-                "extracted_data": current_data,
-                "status": "collecting",
-                "handled_by": "code",
-                "conversation_history": [],
-                "last_ava_message": f"Thanks! Please confirm your password by typing '{password}' again:"
-            }
-        
-        elif stage == "confirming_password":
-            temp_password = current_data.get("temp_password")
-            confirmation = user_input.strip()
-            
-            if confirmation == temp_password:
-                # Password confirmed!
-                current_data["password"] = temp_password
-                current_data.pop("temp_password", None)
-                
-                # Hand back to LLM for farm name
-                return {
-                    "message": "PASSWORD_CONFIRMED_HAND_TO_LLM",  # Signal for LLM
-                    "extracted_data": current_data,
-                    "status": "collecting",
-                    "handled_by": "code_to_llm_handoff",
-                    "conversation_history": [],
-                    "last_ava_message": "PASSWORD_CONFIRMED_HAND_TO_LLM"
-                }
-            else:
-                # Passwords don't match
-                current_data.pop("temp_password", None)
-                return {
-                    "message": "The passwords don't match. Let's try again. Please create a password (at least 6 characters):",
-                    "extracted_data": current_data,
-                    "status": "collecting",
-                    "handled_by": "code",
-                    "conversation_history": [],
-                    "last_ava_message": "The passwords don't match. Let's try again. Please create a password (at least 6 characters):"
-                }
-
-    async def handle_with_supervised_llm(request, password_stage):
-        """LLM handles conversation with supervision awareness"""
-        
-        # Enhanced LLM prompt with supervision role
-        supervision_prompt = f"""You are AVA, the constitutional agricultural assistant, acting as CONVERSATION SUPERVISOR.
-
-CURRENT SITUATION:
-- Password stage: {password_stage}
-- Current data: {json.dumps(request.current_data)}
-- User input: {request.user_input}
-- Last message: {request.last_ava_message}
-
-YOUR ROLES:
-1. COLLECT: Handle name, phone, farm name collection (you're great at this!)
-2. SUPERVISE: Monitor if conversation is going off track
-3. COORDINATE: Work with the coded password system
-
-CODED PASSWORD SYSTEM HANDLES:
-- Password collection (when you ask for password)
-- Password confirmation 
-- Password validation
-→ You DON'T need to handle passwords - code does that!
-
-CONVERSATION SUPERVISION:
-- If user seems confused or conversation is deteriorating, acknowledge and redirect
-- If user asks questions, answer helpfully but keep registration moving
-- If you see "PASSWORD_CONFIRMED_HAND_TO_LLM", continue to farm name collection
-
-SPECIAL SIGNALS:
-- If password_stage is "should_ask_for_password" → Ask for password, then code takes over
-- If message is "PASSWORD_CONFIRMED_HAND_TO_LLM" → Continue to farm name collection
-
-JSON RESPONSE:
-{{
-  "message": "Your conversational response",
-  "extracted_data": {{
-    "full_name": "value or null",
-    "wa_phone_number": "value or null",
-    "password": "value or null",
-    "farm_name": "value or null"
-  }},
-  "status": "collecting" or "COMPLETE",
-  "supervision_notes": "Any concerns about conversation flow",
-  "next_action": "continue|ask_password|collect_farm|complete"
-}}
-
-EXAMPLES:
-
-If password_stage is "should_ask_for_password":
-→ "Great! Now, could you please create a password? It should be at least 6 characters long."
-
-If message is "PASSWORD_CONFIRMED_HAND_TO_LLM":
-→ "Perfect! Password is set. Finally, what's your farm called? Or I can call it '[LastName] Farm'?"
-
-If user asks "What's my password?":
-→ "For security, I can't show your password. But it's safely stored! Now, what should we call your farm?"
-
-BE A SMART SUPERVISOR - HANDLE EVERYTHING EXCEPT PASSWORDS!"""
-        
-        # Handle special handoff from code
-        if request.last_ava_message == "PASSWORD_CONFIRMED_HAND_TO_LLM":
-            farm_suggestion = ""
-            if request.current_data.get("full_name"):
-                last_name = request.current_data["full_name"].split()[-1]
-                farm_suggestion = f" Or I can call it '{last_name} Farm'?"
-            
-            return {
-                "message": f"Perfect! Password confirmed. Finally, what's your farm called?{farm_suggestion}",
-                "extracted_data": request.current_data,
-                "status": "collecting",
-                "handled_by": "llm_supervisor",
-                "conversation_history": request.conversation_history,
-                "last_ava_message": f"Perfect! Password confirmed. Finally, what's your farm called?{farm_suggestion}"
-            }
-        
-        # Regular LLM processing
         try:
+            # Track conversation context perfectly
+            context = {
+                "current_data": request.current_data or {},
+                "last_ava_message": request.last_ava_message or "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)",
+                "user_input": request.user_input.strip(),
+                "conversation_history": request.conversation_history or []
+            }
+            
+            # Add current exchange to history
+            context["conversation_history"].append({
+                "ava": context["last_ava_message"],
+                "user": context["user_input"],
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            # Prepare bulletproof prompt
+            prompt = BULLETPROOF_MAXIMUM_INTELLIGENCE_PROMPT.format(
+                current_data=json.dumps(context["current_data"]),
+                last_ava_message=context["last_ava_message"],
+                conversation_history=json.dumps(context["conversation_history"][-6:])  # Last 6 exchanges
+            )
+            
             from config_manager import config
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=config.openai_api_key)
@@ -1713,114 +1675,122 @@ BE A SMART SUPERVISOR - HANDLE EVERYTHING EXCEPT PASSWORDS!"""
             response = await client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": supervision_prompt},
-                    {"role": "user", "content": f"Handle this registration step: {request.user_input}"}
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": f"CONTEXT: Last AVA message was: '{context['last_ava_message']}'\nUser just responded: '{context['user_input']}'\nHandle this with bulletproof logic!"}
                 ],
-                temperature=0.1,
+                temperature=0.05,  # Very low for consistent behavior
                 response_format={"type": "json_object"}
             )
             
             import json
             llm_response = json.loads(response.choices[0].message.content)
             
-            # Log supervision notes
-            if llm_response.get("supervision_notes"):
-                logger.info(f"LLM Supervision: {llm_response['supervision_notes']}")
+            # Log the bulletproof logic for debugging
+            logger.info(f"🎯 Bulletproof Logic: {llm_response.get('logic_explanation', 'No explanation')}")
+            logger.info(f"🔢 Character Count: {llm_response.get('character_count', 'Not counted')}")
+            logger.info(f"🔐 Password Action: {llm_response.get('password_action', 'Unknown')}")
+            logger.info(f"📝 Context: {llm_response.get('conversation_context', 'Unknown')}")
             
-            # Handle completion
+            # Handle temporary password for confirmation
+            if llm_response.get("temp_password_for_confirmation"):
+                context["current_data"]["temp_password_for_confirmation"] = llm_response["temp_password_for_confirmation"]
+            elif "temp_password_for_confirmation" in llm_response["extracted_data"] and llm_response["extracted_data"]["temp_password_for_confirmation"] is None:
+                # Remove temp password after confirmation
+                context["current_data"].pop("temp_password_for_confirmation", None)
+            
+            # Update extracted data
+            updated_data = {**context["current_data"], **llm_response["extracted_data"]}
+            
+            # Handle registration completion
             if llm_response["status"] == "COMPLETE":
-                data = llm_response["extracted_data"]
+                data = updated_data
                 
-                # Check if any users exist to determine if this should be an owner
-                auth_manager = get_auth_manager()
-                conn = auth_manager._get_connection()
-                cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) as count FROM farm_users")
-                result = cursor.fetchone()
-                is_first_user = result['count'] == 0
-                
-                # Get first farmer ID
-                cursor.execute("SELECT id FROM farmers ORDER BY id LIMIT 1")
-                farmer = cursor.fetchone()
-                farmer_id = farmer['id'] if farmer else 1
-                
-                # Use farm name from data or generate default
-                farm_name = data.get('farm_name') or f"{data['full_name'].split()[-1]} Farm"
-                
-                # Create the user
-                user_result = auth_manager.register_farm_user(
-                    farmer_id=farmer_id,
-                    wa_phone=data['wa_phone_number'],
-                    password=data['password'],
-                    user_name=data['full_name'],
-                    role="owner" if is_first_user else "member",
-                    created_by_user_id=None
-                )
-                
-                # Auto-login after registration
-                login_result = auth_manager.authenticate_user(
-                    data['wa_phone_number'],
-                    data['password']
-                )
-                
-                return {
-                    "message": f"🎉 Perfect! Welcome to AVA OLO, {data['full_name']}! Your {farm_name} account is ready! 🚜",
-                    "status": "COMPLETE",
-                    "registration_successful": True,
-                    "farmer_id": farmer_id,
-                    "token": login_result['token'] if login_result else None,
-                    "user": login_result['user'] if login_result else None,
-                    "handled_by": "llm_supervisor",
-                    "conversation_history": request.conversation_history,
-                    "last_ava_message": llm_response["message"]
-                }
+                try:
+                    # Check if any users exist to determine if this should be an owner
+                    auth_manager = get_auth_manager()
+                    conn = auth_manager._get_connection()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT COUNT(*) as count FROM farm_users")
+                    result = cursor.fetchone()
+                    is_first_user = result['count'] == 0
+                    
+                    # Get first farmer ID
+                    cursor.execute("SELECT id FROM farmers ORDER BY id LIMIT 1")
+                    farmer = cursor.fetchone()
+                    farmer_id = farmer['id'] if farmer else 1
+                    
+                    # Create the user
+                    user_result = auth_manager.register_farm_user(
+                        farmer_id=farmer_id,
+                        wa_phone=data['wa_phone_number'],
+                        password=data['password'],
+                        user_name=data['full_name'],
+                        role="owner" if is_first_user else "member",
+                        created_by_user_id=None
+                    )
+                    
+                    # Auto-login after registration
+                    login_result = auth_manager.authenticate_user(
+                        data['wa_phone_number'],
+                        data['password']
+                    )
+                    
+                    return {
+                        "message": llm_response["message"],
+                        "status": "COMPLETE",
+                        "registration_successful": True,
+                        "farmer_id": farmer_id,
+                        "token": login_result['token'] if login_result else None,
+                        "user": login_result['user'] if login_result else None,
+                        "extracted_data": data,
+                        "conversation_history": context["conversation_history"],
+                        "last_ava_message": llm_response["message"]
+                    }
+                    
+                except Exception as e:
+                    logger.error(f"Account creation error: {str(e)}")
+                    return {
+                        "message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again...",
+                        "status": "retry_creation",
+                        "extracted_data": data,
+                        "conversation_history": context["conversation_history"],
+                        "last_ava_message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again..."
+                    }
             
+            # Continue conversation
             return {
                 "message": llm_response["message"],
-                "extracted_data": llm_response["extracted_data"],
+                "extracted_data": updated_data,
                 "status": llm_response["status"],
-                "handled_by": "llm_supervisor",
-                "supervision_notes": llm_response.get("supervision_notes"),
+                "conversation_history": context["conversation_history"],
+                "last_ava_message": llm_response["message"],  # Track for next request
+                "debug_info": {
+                    "conversation_context": llm_response.get("conversation_context"),
+                    "password_action": llm_response.get("password_action"),
+                    "character_count": llm_response.get("character_count"),
+                    "logic_explanation": llm_response.get("logic_explanation")
+                }
+            }
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"LLM JSON parsing error: {str(e)}")
+            return {
+                "message": "I had trouble understanding that. Could you please repeat what you said?",
+                "status": "error",
                 "conversation_history": request.conversation_history,
-                "last_ava_message": llm_response["message"]
+                "last_ava_message": "I had trouble understanding that. Could you please repeat what you said?"
             }
             
         except Exception as e:
-            logger.error(f"LLM supervision error: {str(e)}")
+            logger.error(f"Bulletproof registration error: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {
-                "message": "Sorry, I had a technical issue. Could you please repeat that?",
+                "message": "I apologize for the confusion. Could you please repeat your last response?",
                 "status": "error",
-                "handled_by": "error_fallback",
                 "conversation_history": request.conversation_history,
-                "last_ava_message": "Sorry, I had a technical issue. Could you please repeat that?"
+                "last_ava_message": "I apologize for the confusion. Could you please repeat your last response?"
             }
-    
-    @app.post("/api/v1/auth/chat-register")
-    async def chat_register_step(request: ChatRegisterRequest):
-        """Hybrid approach: LLM supervises, code handles passwords"""
-        
-        current_data = request.current_data or {}
-        user_input = request.user_input.strip()
-        
-        # STEP 1: Check if we're in password collection mode (CODED)
-        password_stage = detect_password_stage(current_data, request.last_ava_message)
-        
-        logger.info(f"Password stage detected: {password_stage}")
-        
-        if password_stage in ["collecting_password", "confirming_password"]:
-            # CODE handles password collection
-            response = handle_password_with_code(user_input, current_data, password_stage)
-            
-            # If this is a handoff back to LLM, process it
-            if response.get("message") == "PASSWORD_CONFIRMED_HAND_TO_LLM":
-                request.last_ava_message = "PASSWORD_CONFIRMED_HAND_TO_LLM"
-                return await handle_with_supervised_llm(request, "password_complete")
-            
-            return response
-        
-        else:
-            # LLM handles everything else + supervises conversation
-            return await handle_with_supervised_llm(request, password_stage)
 
     @app.get("/api/v1/auth/family")
     async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
