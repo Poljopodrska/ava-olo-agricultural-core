@@ -1614,6 +1614,13 @@ Output: {{
   "status": "collecting"
 }}
 
+Input: "Peter" (when asked for name)
+Output: {{
+  "message": "Hi Peter! What's your last name?",
+  "extracted_data": {{}},
+  "status": "collecting"
+}}
+
 Input: "Ana Marija" (when asked for name)
 Output: {{
   "message": "Hi Ana Marija! What's your last name?",
@@ -1694,7 +1701,22 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
             )
             
             import json
-            result = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content
+            logger.info(f"Raw LLM response: {content}")
+            
+            try:
+                result = json.loads(content)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing failed for content: {content}")
+                logger.error(f"JSON error: {str(e)}")
+                # Return simple fallback response
+                return {
+                    "message": "Hi! What's your full name? (first and last name)",
+                    "extracted_data": {},
+                    "status": "collecting",
+                    "conversation_history": request.conversation_history or [],
+                    "last_ava_message": "Hi! What's your full name? (first and last name)"
+                }
             
             # Handle temporary password for confirmation
             current_data = request.current_data or {}
