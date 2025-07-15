@@ -2072,6 +2072,56 @@ except ImportError as e:
         return result
 
 
+# Manual migration endpoint
+@app.post("/api/v1/auth/manual-migrate")
+async def manual_migrate():
+    """Manually create tables if they don't exist"""
+    try:
+        # Test if we can query farmers (this works)
+        farmers_result = await db_ops.get_all_farmers(limit=1)
+        
+        if farmers_result is None:
+            return {"success": False, "message": "Cannot connect to database"}
+        
+        # Since we can't connect directly, let's check if tables exist
+        # by trying to use the auth system
+        from implementation.farm_auth import FarmAuthManager
+        
+        try:
+            # Try to create auth manager
+            auth = FarmAuthManager()
+            
+            # Try a simple query to see if tables exist
+            test_farmers = auth.get_farm_family_members(1)
+            
+            return {
+                "success": True,
+                "message": "Auth tables already exist",
+                "test_result": f"Found {len(test_farmers)} family members"
+            }
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "does not exist" in error_msg:
+                return {
+                    "success": False,
+                    "message": "Auth tables do not exist - manual creation needed",
+                    "error": error_msg[:200],
+                    "solution": "Please run the migration SQL manually in AWS RDS console"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "Auth system error",
+                    "error": error_msg[:200]
+                }
+                
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Error: {str(e)[:200]}"
+        }
+
 # Test endpoint at the end of file
 @app.get("/api/v1/test-import-order")
 def test_import_order():
