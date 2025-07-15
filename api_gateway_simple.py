@@ -1673,6 +1673,112 @@ try:
                 "error": str(e)[:200]
             }
     
+    @app.get("/api/v1/check-farmers-table")
+    async def check_farmers_table():
+        """Check which database has the farmers table"""
+        try:
+            from config_manager import config
+            import asyncpg
+            
+            results = []
+            
+            # Check postgres database
+            try:
+                conn = await asyncpg.connect(
+                    host=config.db_host,
+                    port=config.db_port,
+                    user=config.db_user,
+                    password=config.db_password,
+                    database='postgres',
+                    ssl='prefer'
+                )
+                
+                # Check if farmers table exists
+                farmers_exists = await conn.fetchval("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'farmers'
+                    )
+                """)
+                
+                # Count farmers if table exists
+                farmer_count = 0
+                if farmers_exists:
+                    farmer_count = await conn.fetchval("SELECT COUNT(*) FROM farmers")
+                
+                await conn.close()
+                
+                results.append({
+                    "database": "postgres",
+                    "farmers_table_exists": farmers_exists,
+                    "farmer_count": farmer_count
+                })
+            except Exception as e:
+                results.append({
+                    "database": "postgres",
+                    "error": str(e)[:100]
+                })
+                
+            return {
+                "success": True,
+                "results": results,
+                "configured_database": config.db_name
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)[:200]
+            }
+    
+    @app.post("/api/v1/auth/create-database")
+    async def create_database():
+        """Create the farmer_crm database if it doesn't exist"""
+        try:
+            from config_manager import config
+            import asyncpg
+            
+            # Connect to postgres database to create farmer_crm
+            conn = await asyncpg.connect(
+                host=config.db_host,
+                port=config.db_port,
+                user=config.db_user,
+                password=config.db_password,
+                database='postgres',
+                ssl='prefer'
+            )
+            
+            # Check if farmer_crm exists
+            exists = await conn.fetchval(
+                "SELECT 1 FROM pg_database WHERE datname = $1",
+                'farmer_crm'
+            )
+            
+            if exists:
+                await conn.close()
+                return {
+                    "success": True,
+                    "message": "Database farmer_crm already exists"
+                }
+            
+            # Create the database
+            # Note: Can't use parameters for CREATE DATABASE
+            await conn.execute('CREATE DATABASE farmer_crm')
+            
+            await conn.close()
+            
+            return {
+                "success": True,
+                "message": "Database farmer_crm created successfully"
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)[:200]
+            }
+    
     @app.post("/api/v1/auth/migrate-simple")
     async def run_simple_migration():
         """Simple migration using async pattern"""
