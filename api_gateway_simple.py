@@ -1255,6 +1255,40 @@ try:
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
+    @app.post("/api/v1/auth/bootstrap-owner")
+    async def bootstrap_farm_owner(request: RegisterUserRequest):
+        """Bootstrap the first farm owner - only works if no users exist"""
+        try:
+            auth_manager = get_auth_manager()
+            
+            # Check if any users already exist
+            conn = auth_manager._get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) as count FROM farm_users")
+            result = cursor.fetchone()
+            
+            if result['count'] > 0:
+                raise HTTPException(status_code=403, detail="Bootstrap only allowed when no users exist")
+            
+            # Create the first owner
+            result = auth_manager.register_farm_user(
+                farmer_id=request.farmer_id,
+                wa_phone=request.wa_phone_number,
+                password=request.password,
+                user_name=request.user_name,
+                role="owner",  # Always owner for bootstrap
+                created_by_user_id=None  # Self-created
+            )
+            
+            logger.info(f"Bootstrap: Created first farm owner: {request.user_name}")
+            return {"success": True, "user": result, "message": "First farm owner created successfully"}
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Bootstrap error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Bootstrap failed: {str(e)}")
+
     @app.get("/api/v1/auth/family")
     async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
         """Get all family members who have access to this farm"""
