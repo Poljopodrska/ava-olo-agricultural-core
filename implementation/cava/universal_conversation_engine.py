@@ -74,7 +74,6 @@ class CAVAUniversalConversationEngine:
         """Get conversation with retry logic"""
         return await self.db_manager.redis.get_conversation(session_id)
     
-    @CAVAPerformanceOptimizer().track_performance("handle_farmer_message")
     async def handle_farmer_message(
         self,
         farmer_id: int,
