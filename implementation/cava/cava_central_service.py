@@ -62,6 +62,11 @@ class CAVACentralService:
     
     async def health_check(self) -> bool:
         """Check if CAVA service is healthy"""
+        # In integrated mode, always return True (no separate service to check)
+        if self.integrated_mode:
+            logger.info("✅ CAVA health: integrated mode active")
+            return True
+            
         try:
             await self.ensure_session()
             async with self.session.get(f"{self.cava_url}/health") as response:

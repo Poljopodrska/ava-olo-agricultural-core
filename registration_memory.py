@@ -101,7 +101,9 @@ class RegistrationChatWithMemory:
             }
             
         except Exception as e:
+            import traceback
             logger.error(f"CAVA registration error: {str(e)}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
             # Fallback response maintains compatibility
             return {
                 "message": "Hi! What's your full name? (first and last name)",

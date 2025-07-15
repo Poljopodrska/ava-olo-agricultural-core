@@ -40,7 +40,9 @@ try:
     app.include_router(cava_router)
     logger.info("✅ CAVA routes loaded successfully")
 except Exception as e:
+    import traceback
     logger.warning(f"⚠️ CAVA routes not loaded: {e}")
+    logger.warning(f"Traceback: {traceback.format_exc()}")
     # System continues without CAVA - constitutional principle of MODULE INDEPENDENCE
 
 # Root Web Interface Route - Complete Constitutional Interface with Weather

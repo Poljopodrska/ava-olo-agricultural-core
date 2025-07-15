@@ -7,7 +7,7 @@ Constitutional principles: ERROR ISOLATION, PRODUCTION-READY, FARMER-CENTRIC
 import asyncio
 import time
 import logging
-from typing import Dict, Any, Optional, Callable, List
+from typing import Dict, Any, Optional, Callable, List, Tuple
 from enum import Enum
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
@@ -343,7 +343,7 @@ async def llm_fallback_response(prompt: str, context: Dict[str, Any]) -> str:
         return "I understand. Could you please tell me more about what you need help with?"
 
 # Example usage in CAVA
-def create_cava_error_handler() -> tuple[CAVAFailoverManager, CAVAErrorRecovery]:
+def create_cava_error_handler() -> Tuple[CAVAFailoverManager, CAVAErrorRecovery]:
     """Create error handling components for CAVA"""
     failover_manager = CAVAFailoverManager()
     
