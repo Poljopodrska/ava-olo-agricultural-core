@@ -12,10 +12,17 @@ from datetime import datetime
 import asyncio
 import os
 
-# Import CAVA components
-from implementation.cava.cava_central_service import get_cava_service
-
+# Import CAVA components conditionally
 logger = logging.getLogger(__name__)
+
+CAVA_DISABLED = os.getenv('DISABLE_CAVA', 'false').lower() == 'true'
+
+if not CAVA_DISABLED:
+    try:
+        from implementation.cava.cava_central_service import get_cava_service
+    except Exception as e:
+        logger.error(f"Failed to import CAVA: {e}")
+        CAVA_DISABLED = True
 
 class RegistrationChatWithMemory:
     """
@@ -47,6 +54,11 @@ class RegistrationChatWithMemory:
         """Process user message through CAVA (maintains same interface)"""
         
         try:
+            # If CAVA is disabled, use fallback
+            if CAVA_DISABLED:
+                logger.info("Using fallback registration (CAVA disabled)")
+                raise Exception("CAVA disabled by configuration")
+                
             # Generate farmer ID if not set
             if not self.farmer_id:
                 # Use conversation ID hash as farmer ID for consistency

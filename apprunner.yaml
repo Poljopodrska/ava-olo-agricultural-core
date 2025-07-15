@@ -51,9 +51,11 @@ run:
       value: "true"
     # CAVA Configuration
     - name: CAVA_INTEGRATED_MODE
-      value: "true"
+      value: "false"  # Disable CAVA integration temporarily
     - name: CAVA_DRY_RUN_MODE
       value: "true"  # Enable dry-run mode until databases are configured
+    - name: DISABLE_CAVA
+      value: "true"  # Completely disable CAVA for testing
     - name: CAVA_POSTGRESQL_SCHEMA
       value: "cava"
     - name: CAVA_REDIS_URL
