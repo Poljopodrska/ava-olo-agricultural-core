@@ -1548,6 +1548,10 @@ try:
                 }
             }
             
+            # First try to connect to see if database exists
+            databases_to_try = [config.db_name, 'postgres']
+            actual_database = None
+            
             # Try different SSL modes like dashboards
             ssl_modes = ['require', 'prefer', 'disable']
             conn = None
@@ -1623,6 +1627,50 @@ try:
             return {
                 "success": False,
                 "message": f"Migration failed: {str(e)[:200]}"
+            }
+    
+    @app.get("/api/v1/auth/list-databases")
+    async def list_databases():
+        """List available databases on the server"""
+        try:
+            from config_manager import config
+            import asyncpg
+            
+            # Connect to postgres database (always exists)
+            connection_params = {
+                'host': config.db_host,
+                'port': config.db_port,
+                'user': config.db_user,
+                'password': config.db_password,
+                'database': 'postgres',  # Connect to default postgres database
+                'ssl': 'prefer'
+            }
+            
+            conn = await asyncpg.connect(**connection_params)
+            
+            # List all databases
+            databases = await conn.fetch("""
+                SELECT datname FROM pg_database 
+                WHERE datistemplate = false 
+                ORDER BY datname
+            """)
+            
+            # Also check current database
+            current_db = await conn.fetchval("SELECT current_database()")
+            
+            await conn.close()
+            
+            return {
+                "success": True,
+                "databases": [db['datname'] for db in databases],
+                "current_database": current_db,
+                "configured_database": config.db_name
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e)[:200]
             }
     
     @app.post("/api/v1/auth/migrate-simple")
