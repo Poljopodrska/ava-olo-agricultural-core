@@ -7,11 +7,13 @@ Replaces hardcoded SQL with LLM-first approach
 import os
 import sys
 
-# Add parent directory to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 # Import config manager - it's in the same directory
-from config_manager import config
+try:
+    from config_manager import config
+except ImportError:
+    # If direct import fails, try with current directory
+    import config_manager
+    config = config_manager.config
 
 from llm_first_database_engine import LLMDatabaseQueryEngine, DatabaseQuery
 import logging
