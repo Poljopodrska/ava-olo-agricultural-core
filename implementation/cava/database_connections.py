@@ -11,6 +11,7 @@ import asyncpg
 from neo4j import GraphDatabase
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from __future__ import annotations
 import logging
 from dotenv import load_dotenv
 import sys
@@ -46,17 +47,47 @@ class CAVANeo4jConnection:
                 logger.info("🔍 DRY RUN: Would connect to Neo4j at %s", self.uri)
                 return
             
-            self.driver = GraphDatabase.driver(
-                self.uri, 
-                auth=(self.user, self.password),
-                max_connection_lifetime=3600,
-                max_connection_pool_size=50
-            )
+            # Add timeout to prevent hanging
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
             
-            # Test connection
-            with self.driver.session() as session:
-                result = session.run("RETURN 'CAVA Neo4j Connected' as message")
-                logger.info("✅ %s", result.single()['message'])
+            def create_driver():
+                return GraphDatabase.driver(
+                    self.uri, 
+                    auth=(self.user, self.password),
+                    max_connection_lifetime=3600,
+                    max_connection_pool_size=50
+                )
+            
+            # Use thread pool with timeout
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(create_driver)
+                try:
+                    self.driver = await asyncio.wait_for(
+                        asyncio.wrap_future(future), 
+                        timeout=10.0  # 10 second timeout
+                    )
+                except asyncio.TimeoutError:
+                    logger.error("❌ Neo4j connection timeout")
+                    return
+            
+            # Test connection with timeout
+            def test_connection():
+                with self.driver.session() as session:
+                    result = session.run("RETURN 'CAVA Neo4j Connected' as message")
+                    return result.single()['message']
+            
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(test_connection)
+                try:
+                    message = await asyncio.wait_for(
+                        asyncio.wrap_future(future), 
+                        timeout=5.0  # 5 second timeout
+                    )
+                    logger.info("✅ %s", message)
+                except asyncio.TimeoutError:
+                    logger.error("❌ Neo4j test query timeout")
+                    
         except Exception as e:
             logger.error("❌ Neo4j connection failed: %s", str(e))
             # ERROR ISOLATION - Don't crash, just log
@@ -103,11 +134,33 @@ class CAVARedisConnection:
                 logger.info("🔍 DRY RUN: Would connect to Redis at %s", self.url)
                 return
             
-            self.client = redis.from_url(self.url, decode_responses=True)
+            # Add timeout to prevent hanging
+            import asyncio
+            from concurrent.futures import ThreadPoolExecutor
             
-            # Test connection
-            self.client.ping()
-            logger.info("✅ CAVA Redis Connected")
+            def create_redis_client():
+                client = redis.from_url(
+                    self.url, 
+                    decode_responses=True,
+                    socket_timeout=5,  # 5 second socket timeout
+                    socket_connect_timeout=5  # 5 second connection timeout
+                )
+                client.ping()  # Test connection
+                return client
+            
+            # Use thread pool with timeout
+            with ThreadPoolExecutor() as executor:
+                future = executor.submit(create_redis_client)
+                try:
+                    self.client = await asyncio.wait_for(
+                        asyncio.wrap_future(future), 
+                        timeout=10.0  # 10 second timeout
+                    )
+                    logger.info("✅ CAVA Redis Connected")
+                except asyncio.TimeoutError:
+                    logger.error("❌ Redis connection timeout")
+                    return
+                    
         except Exception as e:
             logger.error("❌ Redis connection failed: %s", str(e))
             # ERROR ISOLATION - Don't crash

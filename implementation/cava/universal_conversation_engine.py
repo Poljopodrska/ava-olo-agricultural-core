@@ -9,6 +9,7 @@ import json
 import uuid
 import logging
 from typing import Dict, List, Any, Optional
+from __future__ import annotations
 from datetime import datetime
 import asyncio
 import sys

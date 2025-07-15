@@ -8,6 +8,7 @@ import asyncio
 import time
 import logging
 from typing import Dict, Any, Optional, Callable, List, Tuple
+from __future__ import annotations
 from enum import Enum
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
@@ -137,7 +138,7 @@ class CAVAFailoverManager:
     """
     
     def __init__(self):
-        self.circuit_breakers: Dict[str, CAVACircuitBreaker] = {}
+        self.circuit_breakers: Dict[str, 'CAVACircuitBreaker'] = {}
         self.fallback_handlers: Dict[str, Callable] = {}
         self._initialize_circuit_breakers()
     
@@ -343,7 +344,7 @@ async def llm_fallback_response(prompt: str, context: Dict[str, Any]) -> str:
         return "I understand. Could you please tell me more about what you need help with?"
 
 # Example usage in CAVA
-def create_cava_error_handler() -> Tuple[CAVAFailoverManager, CAVAErrorRecovery]:
+def create_cava_error_handler() -> Tuple['CAVAFailoverManager', 'CAVAErrorRecovery']:
     """Create error handling components for CAVA"""
     failover_manager = CAVAFailoverManager()
     

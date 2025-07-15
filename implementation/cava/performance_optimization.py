@@ -8,6 +8,7 @@ import asyncio
 import time
 import logging
 from typing import Dict, Any, List, Optional, Callable, Tuple
+from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache, wraps
 import hashlib
