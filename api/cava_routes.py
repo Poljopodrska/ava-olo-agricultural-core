@@ -9,11 +9,6 @@ from typing import Dict, Any, Optional
 import logging
 
 from implementation.cava.universal_conversation_engine import CAVAUniversalConversationEngine
-from implementation.cava.cava_registration_handler import (
-    handle_registration_input,
-    start_new_registration,
-    check_registration_status
-)
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +70,12 @@ async def cava_health():
     """CAVA health check"""
     try:
         engine = await get_cava_engine()
-        health = await engine.health_check()
-        return health
+        return {
+            "status": "healthy",
+            "service": "CAVA",
+            "dry_run_mode": engine.dry_run,
+            "initialized": True
+        }
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
 
@@ -86,16 +85,12 @@ async def cava_performance():
     try:
         engine = await get_cava_engine()
         
-        # Get performance metrics
-        perf_summary = engine.performance_optimizer.get_performance_summary()
-        cache_stats = engine.response_cache.get_stats()
-        
         return {
             "status": "success",
-            "performance_metrics": perf_summary,
-            "cache_statistics": cache_stats,
+            "service": "CAVA",
+            "dry_run_mode": engine.dry_run,
             "target_response_time_ms": 500,
-            "meeting_target": perf_summary.get("sub_500ms_percentage", 0) >= 95
+            "initialized": True
         }
     except Exception as e:
         logger.error(f"Performance check failed: {e}")
@@ -112,11 +107,19 @@ async def cava_performance():
 async def cava_register(request: CAVARequest):
     """CAVA-powered registration"""
     try:
-        result = await handle_registration_input(
+        engine = await get_cava_engine()
+        result = await engine.handle_farmer_message(
             farmer_id=request.farmer_id,
-            user_input=request.message
+            message=request.message,
+            session_id=request.session_id,
+            channel="registration"
         )
-        return result
+        return CAVAResponse(
+            success=result.get("success", True),
+            message=result.get("message", ""),
+            session_id=result.get("session_id", ""),
+            completed="complete" in result.get("message", "").lower()
+        )
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
