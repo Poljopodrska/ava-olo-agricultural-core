@@ -1452,6 +1452,7 @@ try:
         current_data: Dict[str, Any] = Field(default_factory=dict, description="Data collected so far")
         conversation_history: List[Dict[str, str]] = Field(default_factory=list, description="Full conversation history")
         last_ava_message: Optional[str] = Field(None, description="Last message from AVA")
+        conversation_id: Optional[str] = Field(None, description="Conversation ID for memory tracking")
     
     class ChatRegisterResponse(BaseModel):
         message: str = Field(..., description="AVA's response")
@@ -1680,55 +1681,30 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
     
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
-        """Simple LLM-first approach"""
+        """LangChain memory-based registration"""
         
         try:
             from config_manager import config
-            from openai import AsyncOpenAI
-            client = AsyncOpenAI(api_key=config.openai_api_key)
+            from registration_memory import get_conversation_memory
+            import uuid
             
-            response = await client.chat.completions.create(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": ENHANCED_LLM_PROMPT.format(
-                        current_data=request.current_data or {},
-                        conversation_history=(request.conversation_history or [])[-6:]
-                    )},
-                    {"role": "user", "content": request.user_input}
-                ],
-                temperature=0.05,  # Lower temperature for more consistent behavior
-                response_format={"type": "json_object"}
-            )
+            # Get or create conversation ID
+            conversation_id = request.conversation_id
+            if not conversation_id:
+                conversation_id = str(uuid.uuid4())
             
-            import json
-            content = response.choices[0].message.content
-            logger.info(f"Raw LLM response: {content}")
+            # Get memory for this conversation
+            memory_chat = get_conversation_memory(conversation_id, config.openai_api_key)
             
-            try:
-                result = json.loads(content)
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON parsing failed for content: {content}")
-                logger.error(f"JSON error: {str(e)}")
-                # Return simple fallback response
-                return {
-                    "message": "Hi! What's your full name? (first and last name)",
-                    "extracted_data": {},
-                    "status": "collecting",
-                    "conversation_history": request.conversation_history or [],
-                    "last_ava_message": "Hi! What's your full name? (first and last name)"
-                }
+            # Process message with LangChain memory
+            result = await memory_chat.process_message(request.user_input)
             
-            # Handle temporary password for confirmation
-            current_data = request.current_data or {}
-            if result["extracted_data"].get("temp_password_for_confirmation"):
-                current_data["temp_password_for_confirmation"] = result["extracted_data"]["temp_password_for_confirmation"]
-            
-            # Update with new data
-            current_data.update({k: v for k, v in result["extracted_data"].items() if v is not None})
+            # Add conversation ID to response
+            result["conversation_id"] = conversation_id
             
             # Handle registration completion
             if result["status"] == "COMPLETE":
-                data = current_data
+                data = result["extracted_data"]
                 
                 try:
                     # Check if any users exist to determine if this should be an owner
@@ -1783,22 +1759,20 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
                     }
             
             # Continue conversation
-            return {
-                "message": result["message"],
-                "extracted_data": current_data,
-                "status": result["status"],
-                "conversation_history": request.conversation_history or [],
-                "last_ava_message": result["message"]
-            }
+            return result
             
         except Exception as e:
-            logger.error(f"Registration error: {str(e)}")
+            logger.error(f"LangChain registration error: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {
-                "message": "Let's continue. Could you repeat that?",
-                "status": "collecting",
-                "extracted_data": request.current_data or {},
-                "conversation_history": request.conversation_history or [],
-                "last_ava_message": "Let's continue. Could you repeat that?"
+                "message": "Hi! What's your full name? (first and last name)",
+                "status": "collecting", 
+                "extracted_data": {},
+                "conversation_history": [],
+                "last_ava_message": "Hi! What's your full name? (first and last name)",
+                "memory_enabled": False,
+                "error": str(e)
             }
 
     @app.get("/api/v1/auth/family")

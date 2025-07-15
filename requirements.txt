@@ -13,6 +13,10 @@ psycopg2-binary==2.9.7
 # AI/ML APIs
 openai>=1.10.0
 
+# LangChain for Memory Management
+langchain==0.1.0
+langchain-openai==0.0.5
+
 # HTTP Client
 httpx==0.26.0
 
