@@ -873,7 +873,11 @@ async def main_web_interface():
                     conversationHistory = data.conversation_history || conversationHistory;
                     lastAvaMessage = data.last_ava_message || data.message;
                     
-                    // Log debug info
+                    // Log who handled the response (for debugging)
+                    console.log(`🤖 Handled by: ${data.handled_by || 'unknown'}`);
+                    if (data.supervision_notes) {
+                        console.log(`👁️ Supervision: ${data.supervision_notes}`);
+                    }
                     if (data.debug_info) {
                         console.log('🔍 Debug Info:', data.debug_info);
                     }
@@ -1546,76 +1550,185 @@ BE CONVERSATIONALLY SMART - TRUST USER RESPONSES THAT MAKE SENSE!
 
 RESPONSE MUST BE ONLY VALID JSON."""
 
-    def determine_last_request(current_data):
-        """Determine what we last asked for based on current data"""
-        if not current_data.get("full_name"):
-            return "full_name"
-        elif not current_data.get("wa_phone_number"):
-            return "wa_phone_number"
-        elif not current_data.get("password"):
-            return "password"
-        elif not current_data.get("farm_name"):
-            return "farm_name"
-        return "complete"
+    def detect_password_stage(current_data, last_ava_message):
+        """CODED detection of password collection stage"""
+        
+        if current_data.get("password"):
+            return "password_complete"
+        
+        if "temp_password" in current_data:
+            return "confirming_password"
+        
+        # Check if we just asked for password
+        last_msg = (last_ava_message or "").lower()
+        if any(phrase in last_msg for phrase in ["create a password", "provide a password", "password"]):
+            return "collecting_password"
+        
+        # Check if LLM should ask for password next
+        if (current_data.get("full_name") and 
+            current_data.get("wa_phone_number") and 
+            not current_data.get("password")):
+            return "should_ask_for_password"
+        
+        return "other"
+    
+    def handle_password_with_code(user_input, current_data, stage):
+        """CODED password handling - no LLM confusion"""
+        
+        if stage == "collecting_password":
+            password = user_input.strip()
+            
+            if len(password) < 6:
+                return {
+                    "message": f"That's too short ({len(password)} characters). Please create a password with at least 6 characters:",
+                    "extracted_data": current_data,
+                    "status": "collecting",
+                    "handled_by": "code",
+                    "conversation_history": [],
+                    "last_ava_message": f"That's too short ({len(password)} characters). Please create a password with at least 6 characters:"
+                }
+            
+            # Accept password, ask for confirmation
+            current_data["temp_password"] = password
+            return {
+                "message": f"Thanks! Please confirm your password by typing '{password}' again:",
+                "extracted_data": current_data,
+                "status": "collecting",
+                "handled_by": "code",
+                "conversation_history": [],
+                "last_ava_message": f"Thanks! Please confirm your password by typing '{password}' again:"
+            }
+        
+        elif stage == "confirming_password":
+            temp_password = current_data.get("temp_password")
+            confirmation = user_input.strip()
+            
+            if confirmation == temp_password:
+                # Password confirmed!
+                current_data["password"] = temp_password
+                current_data.pop("temp_password", None)
+                
+                # Hand back to LLM for farm name
+                return {
+                    "message": "PASSWORD_CONFIRMED_HAND_TO_LLM",  # Signal for LLM
+                    "extracted_data": current_data,
+                    "status": "collecting",
+                    "handled_by": "code_to_llm_handoff",
+                    "conversation_history": [],
+                    "last_ava_message": "PASSWORD_CONFIRMED_HAND_TO_LLM"
+                }
+            else:
+                # Passwords don't match
+                current_data.pop("temp_password", None)
+                return {
+                    "message": "The passwords don't match. Let's try again. Please create a password (at least 6 characters):",
+                    "extracted_data": current_data,
+                    "status": "collecting",
+                    "handled_by": "code",
+                    "conversation_history": [],
+                    "last_ava_message": "The passwords don't match. Let's try again. Please create a password (at least 6 characters):"
+                }
 
-    @app.post("/api/v1/auth/chat-register")
-    async def chat_register_step(request: ChatRegisterRequest):
-        """Handle registration with conversational context awareness"""
+    async def handle_with_supervised_llm(request, password_stage):
+        """LLM handles conversation with supervision awareness"""
+        
+        # Enhanced LLM prompt with supervision role
+        supervision_prompt = f"""You are AVA, the constitutional agricultural assistant, acting as CONVERSATION SUPERVISOR.
+
+CURRENT SITUATION:
+- Password stage: {password_stage}
+- Current data: {json.dumps(request.current_data)}
+- User input: {request.user_input}
+- Last message: {request.last_ava_message}
+
+YOUR ROLES:
+1. COLLECT: Handle name, phone, farm name collection (you're great at this!)
+2. SUPERVISE: Monitor if conversation is going off track
+3. COORDINATE: Work with the coded password system
+
+CODED PASSWORD SYSTEM HANDLES:
+- Password collection (when you ask for password)
+- Password confirmation 
+- Password validation
+→ You DON'T need to handle passwords - code does that!
+
+CONVERSATION SUPERVISION:
+- If user seems confused or conversation is deteriorating, acknowledge and redirect
+- If user asks questions, answer helpfully but keep registration moving
+- If you see "PASSWORD_CONFIRMED_HAND_TO_LLM", continue to farm name collection
+
+SPECIAL SIGNALS:
+- If password_stage is "should_ask_for_password" → Ask for password, then code takes over
+- If message is "PASSWORD_CONFIRMED_HAND_TO_LLM" → Continue to farm name collection
+
+JSON RESPONSE:
+{{
+  "message": "Your conversational response",
+  "extracted_data": {{
+    "full_name": "value or null",
+    "wa_phone_number": "value or null",
+    "password": "value or null",
+    "farm_name": "value or null"
+  }},
+  "status": "collecting" or "COMPLETE",
+  "supervision_notes": "Any concerns about conversation flow",
+  "next_action": "continue|ask_password|collect_farm|complete"
+}}
+
+EXAMPLES:
+
+If password_stage is "should_ask_for_password":
+→ "Great! Now, could you please create a password? It should be at least 6 characters long."
+
+If message is "PASSWORD_CONFIRMED_HAND_TO_LLM":
+→ "Perfect! Password is set. Finally, what's your farm called? Or I can call it '[LastName] Farm'?"
+
+If user asks "What's my password?":
+→ "For security, I can't show your password. But it's safely stored! Now, what should we call your farm?"
+
+BE A SMART SUPERVISOR - HANDLE EVERYTHING EXCEPT PASSWORDS!"""
+        
+        # Handle special handoff from code
+        if request.last_ava_message == "PASSWORD_CONFIRMED_HAND_TO_LLM":
+            farm_suggestion = ""
+            if request.current_data.get("full_name"):
+                last_name = request.current_data["full_name"].split()[-1]
+                farm_suggestion = f" Or I can call it '{last_name} Farm'?"
+            
+            return {
+                "message": f"Perfect! Password confirmed. Finally, what's your farm called?{farm_suggestion}",
+                "extracted_data": request.current_data,
+                "status": "collecting",
+                "handled_by": "llm_supervisor",
+                "conversation_history": request.conversation_history,
+                "last_ava_message": f"Perfect! Password confirmed. Finally, what's your farm called?{farm_suggestion}"
+            }
+        
+        # Regular LLM processing
         try:
             from config_manager import config
-            import json
-            
-            # Track conversation context
-            conversation_history = request.conversation_history.copy()
-            
-            # Add current user input to history
-            conversation_history.append({
-                "speaker": "user",
-                "message": request.user_input,
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            # Get the last AVA message for context
-            last_ava_message = request.last_ava_message or "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)"
-            
-            # Prepare conversational prompt
-            prompt = REGISTRATION_PROMPT.format(
-                current_data=json.dumps(request.current_data),
-                last_ava_message=last_ava_message,
-                conversation_history=json.dumps(conversation_history[-10:])  # Last 10 exchanges
-            )
-            
-            # Use OpenAI to process the conversation
             from openai import AsyncOpenAI
             client = AsyncOpenAI(api_key=config.openai_api_key)
             
             response = await client.chat.completions.create(
                 model="gpt-4",
                 messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": f"Last AVA message: '{last_ava_message}'\nUser response: '{request.user_input}'\nCurrent data: {json.dumps(request.current_data)}"}
+                    {"role": "system", "content": supervision_prompt},
+                    {"role": "user", "content": f"Handle this registration step: {request.user_input}"}
                 ],
-                temperature=0.1,  # Low temperature for consistent behavior
+                temperature=0.1,
                 response_format={"type": "json_object"}
             )
             
-            # Parse the LLM response
+            import json
             llm_response = json.loads(response.choices[0].message.content)
             
-            # Log conversation logic for debugging
-            logger.info(f"LLM Conversation Logic: {llm_response.get('_conversation_logic', 'No logic provided')}")
-            logger.info(f"What user provided: {llm_response.get('what_user_provided', 'Unknown')}")
-            logger.info(f"What I asked for: {llm_response.get('what_i_just_asked_for', 'Unknown')}")
+            # Log supervision notes
+            if llm_response.get("supervision_notes"):
+                logger.info(f"LLM Supervision: {llm_response['supervision_notes']}")
             
-            # Add AVA response to conversation history
-            conversation_history.append({
-                "speaker": "ava",
-                "message": llm_response["message"],
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            # If registration is complete, create the farmer account
-            if llm_response.get("status") == "COMPLETE":
+            # Handle completion
+            if llm_response["status"] == "COMPLETE":
                 data = llm_response["extracted_data"]
                 
                 # Check if any users exist to determine if this should be an owner
@@ -1626,7 +1739,7 @@ RESPONSE MUST BE ONLY VALID JSON."""
                 result = cursor.fetchone()
                 is_first_user = result['count'] == 0
                 
-                # Get first farmer ID if no specific farmer provided
+                # Get first farmer ID
                 cursor.execute("SELECT id FROM farmers ORDER BY id LIMIT 1")
                 farmer = cursor.fetchone()
                 farmer_id = farmer['id'] if farmer else 1
@@ -1650,7 +1763,6 @@ RESPONSE MUST BE ONLY VALID JSON."""
                     data['password']
                 )
                 
-                # Return success response with token
                 return {
                     "message": f"🎉 Perfect! Welcome to AVA OLO, {data['full_name']}! Your {farm_name} account is ready! 🚜",
                     "status": "COMPLETE",
@@ -1658,47 +1770,57 @@ RESPONSE MUST BE ONLY VALID JSON."""
                     "farmer_id": farmer_id,
                     "token": login_result['token'] if login_result else None,
                     "user": login_result['user'] if login_result else None,
-                    "extracted_data": data,
-                    "conversation_history": conversation_history,
+                    "handled_by": "llm_supervisor",
+                    "conversation_history": request.conversation_history,
                     "last_ava_message": llm_response["message"]
                 }
             
-            # Return the LLM response for continuing conversation
             return {
                 "message": llm_response["message"],
                 "extracted_data": llm_response["extracted_data"],
                 "status": llm_response["status"],
-                "next_needed": llm_response.get("next_needed", "collecting"),
-                "conversation_history": conversation_history,
-                "last_ava_message": llm_response["message"],  # Track for next request
-                "debug_info": {
-                    "what_asked_for": llm_response.get("what_i_just_asked_for"),
-                    "what_user_provided": llm_response.get("what_user_provided"),
-                    "conversation_logic": llm_response.get("_conversation_logic")
-                }
+                "handled_by": "llm_supervisor",
+                "supervision_notes": llm_response.get("supervision_notes"),
+                "conversation_history": request.conversation_history,
+                "last_ava_message": llm_response["message"]
             }
             
-        except json.JSONDecodeError as e:
-            logger.error(f"LLM response parsing error: {str(e)}")
-            logger.error(f"Raw LLM response: {response.choices[0].message.content if 'response' in locals() else 'No response'}")
-            # Fallback response
-            return {
-                "message": "I'm having trouble understanding. Could you please repeat that?",
-                "extracted_data": request.current_data,
-                "next_step": "collecting",
-                "ready_to_register": False
-            }
         except Exception as e:
-            logger.error(f"Chat registration error: {str(e)}")
-            logger.error(f"Request data: step={request.step}, input={request.user_input}, current={request.current_data}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"LLM supervision error: {str(e)}")
             return {
                 "message": "Sorry, I had a technical issue. Could you please repeat that?",
-                "extracted_data": request.current_data,
-                "next_step": "collecting",
-                "ready_to_register": False
+                "status": "error",
+                "handled_by": "error_fallback",
+                "conversation_history": request.conversation_history,
+                "last_ava_message": "Sorry, I had a technical issue. Could you please repeat that?"
             }
+    
+    @app.post("/api/v1/auth/chat-register")
+    async def chat_register_step(request: ChatRegisterRequest):
+        """Hybrid approach: LLM supervises, code handles passwords"""
+        
+        current_data = request.current_data or {}
+        user_input = request.user_input.strip()
+        
+        # STEP 1: Check if we're in password collection mode (CODED)
+        password_stage = detect_password_stage(current_data, request.last_ava_message)
+        
+        logger.info(f"Password stage detected: {password_stage}")
+        
+        if password_stage in ["collecting_password", "confirming_password"]:
+            # CODE handles password collection
+            response = handle_password_with_code(user_input, current_data, password_stage)
+            
+            # If this is a handoff back to LLM, process it
+            if response.get("message") == "PASSWORD_CONFIRMED_HAND_TO_LLM":
+                request.last_ava_message = "PASSWORD_CONFIRMED_HAND_TO_LLM"
+                return await handle_with_supervised_llm(request, "password_complete")
+            
+            return response
+        
+        else:
+            # LLM handles everything else + supervises conversation
+            return await handle_with_supervised_llm(request, password_stage)
 
     @app.get("/api/v1/auth/family")
     async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
