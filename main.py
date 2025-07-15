@@ -1391,63 +1391,79 @@ async def initialize_cost_tables():
 @app.get("/cost-rates", response_class=HTMLResponse)
 async def cost_rates_management():
     """Cost rates management interface"""
+    rates = []
+    error_msg = None
+    
     try:
         with get_constitutional_db_connection() as connection:
             if connection:
                 cursor = connection.cursor()
                 cursor.execute("SELECT service_name, cost_per_unit, unit_type, currency FROM cost_rates ORDER BY service_name")
                 rates = cursor.fetchall()
-                
-                rates_html = ""
-                for service, cost, unit, currency in rates:
-                    rates_html += f"""
-                    <tr>
-                        <td>{service}</td>
-                        <td><input type="number" step="0.000001" value="{cost}" id="rate_{service}" style="width: 100px;"></td>
-                        <td>{unit}</td>
-                        <td>{currency}</td>
-                        <td><button onclick="updateRate('{service}')" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 3px;">Update</button></td>
-                    </tr>"""
-                
-                return f"""
-                <html><head><title>Cost Rates Management</title></head><body>
-                <h1>Cost Rates Configuration</h1>
-                <p><a href="/business-dashboard">← Back to Dashboard</a></p>
-                
-                <table border="1" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-                    <tr style="background: #f5f5f5;">
-                        <th style="padding: 10px;">Service</th>
-                        <th style="padding: 10px;">Cost per Unit</th>
-                        <th style="padding: 10px;">Unit Type</th>
-                        <th style="padding: 10px;">Currency</th>
-                        <th style="padding: 10px;">Action</th>
-                    </tr>
-                    {rates_html}
-                </table>
-                
-                <script>
-                function updateRate(serviceName) {{
-                    const newRate = document.getElementById('rate_' + serviceName).value;
-                    
-                    fetch('/api/update-cost-rate', {{
-                        method: 'POST',
-                        headers: {{'Content-Type': 'application/json'}},
-                        body: JSON.stringify({{service: serviceName, rate: parseFloat(newRate)}})
-                    }})
-                    .then(response => response.json())
-                    .then(data => {{
-                        if (data.success) {{
-                            alert('✅ Updated ' + serviceName + ' rate to $' + newRate);
-                        }} else {{
-                            alert('❌ Failed to update rate: ' + data.error);
-                        }}
-                    }});
-                }}
-                </script>
-                </body></html>
-                """
+                cursor.close()
+            else:
+                error_msg = "Database connection failed"
     except Exception as e:
-        return f"<html><body><h1>Error</h1><p>{e}</p></body></html>"
+        error_msg = str(e)
+    
+    if error_msg:
+        return HTMLResponse(f"""
+        <html><head><title>Cost Rates Management</title></head><body>
+        <h1>Cost Rates Configuration</h1>
+        <p><a href="/business-dashboard">← Back to Dashboard</a></p>
+        <p style="color: red;">Error: {error_msg}</p>
+        <p>Please ensure cost tables are initialized first: <a href="/initialize-cost-tables">Initialize Cost Tables</a></p>
+        </body></html>
+        """)
+    
+    rates_html = ""
+    for service, cost, unit, currency in rates:
+        rates_html += f"""
+        <tr>
+            <td>{service}</td>
+            <td><input type="number" step="0.000001" value="{cost}" id="rate_{service}" style="width: 100px;"></td>
+            <td>{unit}</td>
+            <td>{currency}</td>
+            <td><button onclick="updateRate('{service}')" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 3px;">Update</button></td>
+        </tr>"""
+    
+    return HTMLResponse(f"""
+    <html><head><title>Cost Rates Management</title></head><body>
+    <h1>Cost Rates Configuration</h1>
+    <p><a href="/business-dashboard">← Back to Dashboard</a></p>
+    
+    <table border="1" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+        <tr style="background: #f5f5f5;">
+            <th style="padding: 10px;">Service</th>
+            <th style="padding: 10px;">Cost per Unit</th>
+            <th style="padding: 10px;">Unit Type</th>
+            <th style="padding: 10px;">Currency</th>
+            <th style="padding: 10px;">Action</th>
+        </tr>
+        {rates_html}
+    </table>
+    
+    <script>
+    function updateRate(serviceName) {{
+        const newRate = document.getElementById('rate_' + serviceName).value;
+        
+        fetch('/api/update-cost-rate', {{
+            method: 'POST',
+            headers: {{'Content-Type': 'application/json'}},
+            body: JSON.stringify({{service: serviceName, rate: parseFloat(newRate)}})
+        }})
+        .then(response => response.json())
+        .then(data => {{
+            if (data.success) {{
+                alert('✅ Updated ' + serviceName + ' rate to $' + newRate);
+            }} else {{
+                alert('❌ Failed to update rate: ' + data.error);
+            }}
+        }});
+    }}
+    </script>
+    </body></html>
+    """)
 
 @app.post("/api/update-cost-rate")
 async def update_cost_rate(request: Request):
@@ -1457,6 +1473,9 @@ async def update_cost_rate(request: Request):
         service = data.get('service')
         rate = data.get('rate')
         
+        if not service or rate is None:
+            return {"success": False, "error": "Missing service or rate"}
+        
         with get_constitutional_db_connection() as connection:
             if connection:
                 cursor = connection.cursor()
@@ -1465,9 +1484,16 @@ async def update_cost_rate(request: Request):
                     SET cost_per_unit = %s, updated_at = NOW()
                     WHERE service_name = %s
                 """, (rate, service))
-                connection.commit()
                 
-                return {"success": True, "message": f"Updated {service} rate to ${rate}"}
+                if cursor.rowcount > 0:
+                    connection.commit()
+                    cursor.close()
+                    return {"success": True, "message": f"Updated {service} rate to ${rate}"}
+                else:
+                    cursor.close()
+                    return {"success": False, "error": f"Service {service} not found"}
+            else:
+                return {"success": False, "error": "Database connection failed"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
