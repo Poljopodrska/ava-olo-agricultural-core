@@ -15,6 +15,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database_operations import DatabaseOperations
+from api.cava_routes import cava_router
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include CAVA routes
+app.include_router(cava_router)
 
 # Root Web Interface Route - Complete Constitutional Interface with Weather
 @app.get("/", response_class=HTMLResponse)

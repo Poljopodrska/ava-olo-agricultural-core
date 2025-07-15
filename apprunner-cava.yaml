@@ -1,0 +1,50 @@
+version: 1.0
+runtime: python311
+build:
+  commands:
+    pre-build:
+      - echo "Installing dependencies for CAVA Central Service"
+    build:
+      - pip install -r requirements.txt
+    post-build:
+      - echo "Build completed - CAVA ready"
+run:
+  runtime-version: 3.11
+  command: python implementation/cava/cava_api.py
+  network:
+    port: 8001
+    env: PORT
+  env:
+    # Inherit database settings from main app
+    - name: DB_HOST
+      value: "farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com"
+    - name: DB_NAME
+      value: "farmer_crm"
+    - name: DB_USER
+      value: "postgres"
+    - name: DB_PASSWORD
+      value: "USE_SECRETS_MANAGER"  # Don't hardcode
+    - name: DATABASE_URL
+      value: "postgresql://postgres:PASS@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
+    
+    # CAVA-specific settings
+    - name: CAVA_DRY_RUN_MODE
+      value: "false"
+    - name: CAVA_POSTGRESQL_SCHEMA
+      value: "cava"
+    
+    # For Neo4j and Redis, use AWS managed services
+    - name: CAVA_NEO4J_URI
+      value: "USE_NEPTUNE_ENDPOINT"  # AWS Neptune as Neo4j replacement
+    - name: CAVA_REDIS_URL
+      value: "USE_ELASTICACHE_ENDPOINT"  # AWS ElastiCache
+    
+    # OpenAI settings
+    - name: OPENAI_API_KEY
+      value: "USE_SECRETS_MANAGER"
+    
+    # App Runner settings
+    - name: APP_ENV
+      value: "production"
+    - name: ENABLE_CONSTITUTIONAL_CHECKS
+      value: "true"

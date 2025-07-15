@@ -1,0 +1,24 @@
+# 🏛️ CAVA-specific Dependencies
+# Separate file to maintain MODULE INDEPENDENCE
+# Install with: pip install -r requirements-cava.txt
+
+# Neo4j Graph Database
+neo4j==5.15.0
+
+# Redis for conversation memory
+redis==5.0.1
+aioredis==2.0.1
+
+# Pinecone Vector Database (optional)
+# pinecone-client==2.2.4
+
+# Additional async support
+asyncio==3.4.3
+
+# For database health checks
+tenacity==8.2.3
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0

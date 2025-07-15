@@ -49,3 +49,20 @@ run:
       value: "production"
     - name: ENABLE_CONSTITUTIONAL_CHECKS
       value: "true"
+    # CAVA Configuration
+    - name: CAVA_INTEGRATED_MODE
+      value: "true"
+    - name: CAVA_DRY_RUN_MODE
+      value: "false"
+    - name: CAVA_POSTGRESQL_SCHEMA
+      value: "cava"
+    - name: CAVA_REDIS_URL
+      value: "redis://localhost:6379"  # Will use ElastiCache in production
+    - name: CAVA_NEO4J_URI
+      value: "bolt://localhost:7687"   # Will use Neptune in production
+    - name: CAVA_ENABLE_GRAPH
+      value: "false"  # Disable until Neptune configured
+    - name: CAVA_ENABLE_VECTOR
+      value: "true"  # Enable Pinecone vector intelligence
+    - name: CAVA_ENABLE_MEMORY
+      value: "true"

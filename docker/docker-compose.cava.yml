@@ -1,0 +1,59 @@
+version: '3.8'
+
+# 🏛️ CAVA Infrastructure
+# Constitutional Module Independence - Isolated from existing systems
+# No conflicts with existing services
+
+services:
+  cava-neo4j:
+    image: neo4j:5.15-community
+    container_name: cava-neo4j
+    ports:
+      - "7474:7474"  # Web interface
+      - "7687:7687"  # Bolt protocol
+    environment:
+      NEO4J_AUTH: neo4j/cavapassword123
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: "apoc.*"
+      NEO4J_dbms_memory_heap_max__size: "2G"
+    volumes:
+      - neo4j_cava_data:/data
+      - neo4j_cava_logs:/logs
+    networks:
+      - cava-network
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  cava-redis:
+    image: redis:7-alpine
+    container_name: cava-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_cava_data:/data
+    networks:
+      - cava-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  neo4j_cava_data:
+    driver: local
+  neo4j_cava_logs:
+    driver: local
+  redis_cava_data:
+    driver: local
+
+networks:
+  cava-network:
+    driver: bridge
+    name: cava-network
