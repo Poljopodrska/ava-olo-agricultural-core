@@ -1464,19 +1464,23 @@ try:
             }
     
     @app.post("/api/v1/auth/migrate-working")
-    async def run_working_migration():
-        """Use the exact same db_ops that works for farmers"""
+    def run_working_migration():
+        """Use sync function to avoid event loop issues"""
         try:
+            # Use the sync wrapper
+            from database_operations import DatabaseOperations
+            sync_db = DatabaseOperations()
+            
             # First verify connection works
-            farmers = await db_ops.get_all_farmers(limit=1)
+            farmers = sync_db.get_all_farmers(limit=1)
             if farmers is None:
                 return {"success": False, "message": "Database connection not working"}
             
-            # Now get the LLM engine's connection
+            # Get the actual connection from LLM engine
             from llm_first_database_engine import LLMDatabaseQueryEngine
             engine = LLMDatabaseQueryEngine()
             
-            # Initialize if needed
+            # This will create the connection using the working pattern
             if engine.db_connection is None:
                 engine._initialize_database()
             
@@ -1493,7 +1497,7 @@ try:
             with open(migration_path, 'r') as f:
                 migration_sql = f.read()
             
-            # Execute using the working connection
+            # Execute using the engine's connection
             with engine.db_connection.cursor() as cursor:
                 # Split and execute statements
                 statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
