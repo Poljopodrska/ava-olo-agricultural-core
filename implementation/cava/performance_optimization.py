@@ -4,11 +4,12 @@ Enhancement 3: Sub-500ms Response Times
 Constitutional principles: FARMER-CENTRIC, PRODUCTION-READY, LLM-FIRST
 """
 
+from __future__ import annotations
+
 import asyncio
 import time
 import logging
 from typing import Dict, Any, List, Optional, Callable, Tuple
-from __future__ import annotations
 from dataclasses import dataclass
 from functools import lru_cache, wraps
 import hashlib

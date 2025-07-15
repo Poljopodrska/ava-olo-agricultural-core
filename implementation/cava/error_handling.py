@@ -4,11 +4,12 @@ Enhancement 2: Circuit Breaker Pattern and Failover Strategies
 Constitutional principles: ERROR ISOLATION, PRODUCTION-READY, FARMER-CENTRIC
 """
 
+from __future__ import annotations
+
 import asyncio
 import time
 import logging
 from typing import Dict, Any, Optional, Callable, List, Tuple
-from __future__ import annotations
 from enum import Enum
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field

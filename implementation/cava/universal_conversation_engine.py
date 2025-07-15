@@ -4,12 +4,13 @@ Constitutional Amendment #15: 95%+ LLM-generated logic
 Handles ANY farmer conversation through LLM intelligence
 """
 
+from __future__ import annotations
+
 import os
 import json
 import uuid
 import logging
 from typing import Dict, List, Any, Optional
-from __future__ import annotations
 from datetime import datetime
 import asyncio
 import sys

@@ -4,6 +4,8 @@ Handles connections to all 4 CAVA databases
 Constitutional principles: MODULE INDEPENDENCE, ERROR ISOLATION, PRIVACY-FIRST
 """
 
+from __future__ import annotations
+
 import os
 import json
 import redis
@@ -11,7 +13,6 @@ import asyncpg
 from neo4j import GraphDatabase
 from datetime import datetime
 from typing import Dict, List, Any, Optional
-from __future__ import annotations
 import logging
 from dotenv import load_dotenv
 import sys
