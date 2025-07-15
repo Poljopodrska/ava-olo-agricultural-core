@@ -1463,6 +1463,67 @@ try:
                 "message": f"Migration failed: {str(e)[:200]}"
             }
     
+    @app.post("/api/v1/auth/migrate-working")
+    async def run_working_migration():
+        """Use the exact same db_ops that works for farmers"""
+        try:
+            # First verify connection works
+            farmers = await db_ops.get_all_farmers(limit=1)
+            if farmers is None:
+                return {"success": False, "message": "Database connection not working"}
+            
+            # Now get the LLM engine's connection
+            from llm_first_database_engine import LLMDatabaseQueryEngine
+            engine = LLMDatabaseQueryEngine()
+            
+            # Initialize if needed
+            if engine.db_connection is None:
+                engine._initialize_database()
+            
+            # Read migration SQL
+            import os
+            migration_path = os.path.join(os.path.dirname(__file__), 'database', 'auth_schema.sql')
+            
+            if not os.path.exists(migration_path):
+                return {
+                    "success": False,
+                    "message": f"Migration file not found: {migration_path}"
+                }
+            
+            with open(migration_path, 'r') as f:
+                migration_sql = f.read()
+            
+            # Execute using the working connection
+            with engine.db_connection.cursor() as cursor:
+                # Split and execute statements
+                statements = [s.strip() for s in migration_sql.split(';') if s.strip()]
+                
+                for statement in statements:
+                    if statement:
+                        try:
+                            cursor.execute(statement)
+                            engine.db_connection.commit()
+                            logger.info(f"Executed: {statement[:50]}...")
+                        except Exception as e:
+                            if "already exists" in str(e):
+                                logger.info(f"Table/index already exists, skipping")
+                                engine.db_connection.rollback()
+                            else:
+                                engine.db_connection.rollback()
+                                raise e
+            
+            return {
+                "success": True,
+                "message": "Migration completed successfully using working connection"
+            }
+            
+        except Exception as e:
+            logger.error(f"Working migration failed: {e}")
+            return {
+                "success": False,
+                "message": f"Migration failed: {str(e)[:200]}"
+            }
+    
     @app.post("/api/v1/auth/migrate-simple")
     async def run_simple_migration():
         """Simple migration using async pattern"""
