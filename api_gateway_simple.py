@@ -15,7 +15,6 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database_operations import DatabaseOperations
-from api.cava_routes import cava_router
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +34,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include CAVA routes
-app.include_router(cava_router)
+# CAVA Integration - Load lazily to prevent deployment issues
+try:
+    from api.cava_routes import cava_router
+    app.include_router(cava_router)
+    logger.info("✅ CAVA routes loaded successfully")
+except Exception as e:
+    logger.warning(f"⚠️ CAVA routes not loaded: {e}")
+    # System continues without CAVA - constitutional principle of MODULE INDEPENDENCE
 
 # Root Web Interface Route - Complete Constitutional Interface with Weather
 @app.get("/", response_class=HTMLResponse)

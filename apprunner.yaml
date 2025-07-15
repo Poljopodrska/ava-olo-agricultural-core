@@ -53,7 +53,7 @@ run:
     - name: CAVA_INTEGRATED_MODE
       value: "true"
     - name: CAVA_DRY_RUN_MODE
-      value: "false"
+      value: "true"  # Enable dry-run mode until databases are configured
     - name: CAVA_POSTGRESQL_SCHEMA
       value: "cava"
     - name: CAVA_REDIS_URL

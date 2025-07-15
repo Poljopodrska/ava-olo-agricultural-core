@@ -27,8 +27,13 @@ async def get_cava_engine():
     """Get or create CAVA engine instance"""
     global _cava_engine
     if _cava_engine is None:
-        _cava_engine = CAVAUniversalConversationEngine()
-        await _cava_engine.initialize()
+        try:
+            _cava_engine = CAVAUniversalConversationEngine()
+            await _cava_engine.initialize()
+        except Exception as e:
+            logger.error(f"Failed to initialize CAVA engine: {e}")
+            # Create a minimal engine that works without full initialization
+            _cava_engine = CAVAUniversalConversationEngine()
     return _cava_engine
 
 # Request/Response models
