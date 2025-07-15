@@ -1480,45 +1480,45 @@ VALIDATION RULES:
 - farm_name: Optional, suggest based on last name if empty
 
 RESPONSE FORMAT (MUST BE VALID JSON):
-{
+{{
   "message": "Your friendly response asking for NEXT missing item",
-  "extracted_data": {
+  "extracted_data": {{
     "full_name": "FirstName LastName" or null,
     "wa_phone_number": "+385912345678" or null,
     "password": "password123" or null,
     "farm_name": "Farm Name" or null
-  },
+  }},
   "status": "collecting" or "COMPLETE",
   "next_needed": "full_name|wa_phone_number|password|farm_name" or "none"
-}
+}}
 
 IMPORTANT: Your response MUST be ONLY the JSON object above. No additional text before or after.
 
 EXAMPLES:
 
-Input: Current data: {}, User: "Lidija"
-Response: {
+Input: Current data: {{}}, User: "Lidija"
+Response: {{
   "message": "Hi Lidija! What's your last name?",
-  "extracted_data": {"full_name": null, "wa_phone_number": null, "password": null, "farm_name": null},
+  "extracted_data": {{"full_name": null, "wa_phone_number": null, "password": null, "farm_name": null}},
   "status": "collecting",
   "next_needed": "full_name"
-}
+}}
 
-Input: Current data: {}, User: "Lidija Bačić"  
-Response: {
+Input: Current data: {{}}, User: "Lidija Bačić"  
+Response: {{
   "message": "Great Lidija Bačić! What's your WhatsApp number? (please include country code like +385...)",
-  "extracted_data": {"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null},
+  "extracted_data": {{"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null}},
   "status": "collecting", 
   "next_needed": "wa_phone_number"
-}
+}}
 
-Input: Current data: {"full_name": "Lidija Bačić"}, User: "Bačić"
-Response: {
+Input: Current data: {{"full_name": "Lidija Bačić"}}, User: "Bačić"
+Response: {{
   "message": "I already have your full name as Lidija Bačić! What's your WhatsApp number? (please include country code like +385...)",
-  "extracted_data": {"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null},
+  "extracted_data": {{"full_name": "Lidija Bačić", "wa_phone_number": null, "password": null, "farm_name": null}},
   "status": "collecting",
   "next_needed": "wa_phone_number"
-}
+}}
 
 CRITICAL: Always check current_data first! Don't ask for information you already have!"""
 
