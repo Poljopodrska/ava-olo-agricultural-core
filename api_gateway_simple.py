@@ -1479,7 +1479,7 @@ VALIDATION RULES:
 - password: Must be at least 6 characters
 - farm_name: Optional, suggest based on last name if empty
 
-RESPONSE FORMAT (JSON):
+RESPONSE FORMAT (MUST BE VALID JSON):
 {
   "message": "Your friendly response asking for NEXT missing item",
   "extracted_data": {
@@ -1491,6 +1491,8 @@ RESPONSE FORMAT (JSON):
   "status": "collecting" or "COMPLETE",
   "next_needed": "full_name|wa_phone_number|password|farm_name" or "none"
 }
+
+IMPORTANT: Your response MUST be ONLY the JSON object above. No additional text before or after.
 
 EXAMPLES:
 
@@ -1540,8 +1542,7 @@ CRITICAL: Always check current_data first! Don't ask for information you already
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": f"Current data: {json.dumps(request.current_data)}\nUser input: {request.user_input}"}
                 ],
-                temperature=0.1,  # Low temperature for consistent behavior
-                response_format={"type": "json_object"}
+                temperature=0.1  # Low temperature for consistent behavior
             )
             
             # Parse the LLM response
@@ -1603,6 +1604,7 @@ CRITICAL: Always check current_data first! Don't ask for information you already
             
         except json.JSONDecodeError as e:
             logger.error(f"LLM response parsing error: {str(e)}")
+            logger.error(f"Raw LLM response: {response.choices[0].message.content if 'response' in locals() else 'No response'}")
             # Fallback response
             return {
                 "message": "I'm having trouble understanding. Could you please repeat that?",
@@ -1612,6 +1614,9 @@ CRITICAL: Always check current_data first! Don't ask for information you already
             }
         except Exception as e:
             logger.error(f"Chat registration error: {str(e)}")
+            logger.error(f"Request data: step={request.step}, input={request.user_input}, current={request.current_data}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return {
                 "message": "Sorry, I had a technical issue. Could you please repeat that?",
                 "extracted_data": request.current_data,
