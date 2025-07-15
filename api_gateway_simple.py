@@ -1488,11 +1488,20 @@ STATE TRACKING LOGIC:
 3. Identify what's STILL MISSING
 4. Ask for the NEXT missing piece ONLY
 5. Use SMART NAME LOGIC above
+6. PASSWORD CONTEXT: If current_data has name and phone but NO password, you're asking for password
+7. If you're asking for password and user gives ANY text ≥6 chars, that's the password!
+
+INTELLIGENT PASSWORD DETECTION RULES:
+- When you ask for password and user responds with ANY text ≥6 characters → ACCEPT IT AS PASSWORD
+- Don't overthink it - if they respond after password request, it's their password
+- Examples: "PlavoMore", "Naroblek", "NIkadasepromenitineću" are ALL valid passwords
+- Count characters: P-l-a-v-o-M-o-r-e = 9 characters ✅
+- Count characters: N-a-r-o-b-l-e-k = 8 characters ✅
 
 VALIDATION RULES:
 - full_name: Must have both first and last (2+ words or collected separately)
 - wa_phone_number: Must start with + and country code
-- password: Must be at least 6 characters  
+- password: Must be at least 6 characters - ACCEPT ANY TEXT ≥6 CHARS AS PASSWORD
 - farm_name: Optional, suggest based on last name if empty
 
 RESPONSE FORMAT (JSON):
@@ -1538,14 +1547,46 @@ Response: {{
   "_debug_logic": "Full name already complete, redirecting to next needed field"
 }}
 
+Input: Current data: {{"full_name": "Ivana Banfić", "wa_phone_number": "+385912345678"}}, User: "PlavoMore"
+Response: {{
+  "message": "Perfect! Your password is set. Finally, what's your farm called? Or I can call it 'Banfić Farm'?",
+  "extracted_data": {{"full_name": "Ivana Banfić", "wa_phone_number": "+385912345678", "password": "PlavoMore", "farm_name": null}},
+  "status": "collecting",
+  "next_needed": "farm_name",
+  "_debug_logic": "User provided 'PlavoMore' (9 characters) as password after I asked for password - ACCEPTED"
+}}
+
+Input: Current data: {{"full_name": "Slavko Perišić", "wa_phone_number": "+385987654321"}}, User: "Naroblek"
+Response: {{
+  "message": "Great! Your password is set. Finally, what's your farm called? Or I can call it 'Perišić Farm'?",
+  "extracted_data": {{"full_name": "Slavko Perišić", "wa_phone_number": "+385987654321", "password": "Naroblek", "farm_name": null}},
+  "status": "collecting",
+  "next_needed": "farm_name",
+  "_debug_logic": "User provided 'Naroblek' (8 characters) as password after I asked for password - ACCEPTED"
+}}
+
 CRITICAL RULES:
 1. NEVER ask for first name if you already have full_name complete
 2. Use conversation history to understand name collection patterns
 3. Always check current_data before asking questions
 4. Be intelligent about what the user means based on conversation flow
 5. Move to next field as soon as current field is complete
+6. PASSWORD RULE: If you asked for password and user responds with ≥6 characters, ACCEPT IT IMMEDIATELY
+7. Don't analyze if something "looks like" a password - just count characters!
 
 RESPONSE MUST BE ONLY VALID JSON."""
+
+    def determine_last_request(current_data):
+        """Determine what we last asked for based on current data"""
+        if not current_data.get("full_name"):
+            return "full_name"
+        elif not current_data.get("wa_phone_number"):
+            return "wa_phone_number"
+        elif not current_data.get("password"):
+            return "password"
+        elif not current_data.get("farm_name"):
+            return "farm_name"
+        return "complete"
 
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
@@ -1557,6 +1598,16 @@ RESPONSE MUST BE ONLY VALID JSON."""
             # Add current input to conversation history
             conversation_history = request.conversation_history.copy()
             conversation_history.append(request.user_input)
+            
+            # Check if we're collecting password and validate directly
+            last_request = determine_last_request(request.current_data)
+            if last_request == "password":
+                password_candidate = request.user_input.strip()
+                if len(password_candidate) >= 6:
+                    # Valid password - add context hint for LLM
+                    logger.info(f"Valid password provided: {len(password_candidate)} characters")
+                else:
+                    logger.info(f"Password too short: {len(password_candidate)} characters")
             
             # Prepare prompt with current state and history
             prompt = REGISTRATION_PROMPT.format(
