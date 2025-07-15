@@ -103,8 +103,30 @@ def create_cost_tables():
                     )
                 """)
                 
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS cost_rates (
+                        id SERIAL PRIMARY KEY,
+                        service_name VARCHAR(50) UNIQUE NOT NULL,
+                        cost_per_unit DECIMAL(10,6) NOT NULL,
+                        unit_type VARCHAR(20) NOT NULL,
+                        currency VARCHAR(3) DEFAULT 'USD',
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_costs_farmer ON farmer_interaction_costs(farmer_id)")
                 cursor.execute("CREATE INDEX IF NOT EXISTS idx_costs_date ON farmer_interaction_costs(created_at)")
+                
+                # Insert default cost rates
+                cursor.execute("""
+                    INSERT INTO cost_rates (service_name, cost_per_unit, unit_type, currency) 
+                    VALUES 
+                        ('openai_gpt4', 0.00002, 'token', 'USD'),
+                        ('twilio_whatsapp_out', 0.0075, 'message', 'USD'),
+                        ('twilio_whatsapp_in', 0.005, 'message', 'USD'),
+                        ('openweather_api', 0.001, 'api_call', 'USD')
+                    ON CONFLICT (service_name) DO NOTHING
+                """)
                 
                 connection.commit()
                 return True
@@ -1329,6 +1351,8 @@ async def cost_analytics():
             
             """ + ("<p>Cost tracking tables not yet created. <a href='/initialize-cost-tables'>Click here to initialize</a></p>" if not cost_data["tables_exist"] else "") + """
             
+            """ + ("<p style='text-align: center; margin: 15px 0;'><a href='/cost-rates' style='background: #3b82f6; color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px;'>⚙️ Manage Cost Rates</a></p>" if cost_data["tables_exist"] else "") + """
+            
             """ + (f"""
             <div class="metric">
                 <div class="label">Total Cost (30 days)</div>
@@ -1363,6 +1387,89 @@ async def initialize_cost_tables():
             pass
     
     return {"success": success, "message": "Cost tables initialized" if success else "Failed to initialize"}
+
+@app.get("/cost-rates", response_class=HTMLResponse)
+async def cost_rates_management():
+    """Cost rates management interface"""
+    try:
+        with get_constitutional_db_connection() as connection:
+            if connection:
+                cursor = connection.cursor()
+                cursor.execute("SELECT service_name, cost_per_unit, unit_type, currency FROM cost_rates ORDER BY service_name")
+                rates = cursor.fetchall()
+                
+                rates_html = ""
+                for service, cost, unit, currency in rates:
+                    rates_html += f"""
+                    <tr>
+                        <td>{service}</td>
+                        <td><input type="number" step="0.000001" value="{cost}" id="rate_{service}" style="width: 100px;"></td>
+                        <td>{unit}</td>
+                        <td>{currency}</td>
+                        <td><button onclick="updateRate('{service}')" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 3px;">Update</button></td>
+                    </tr>"""
+                
+                return f"""
+                <html><head><title>Cost Rates Management</title></head><body>
+                <h1>Cost Rates Configuration</h1>
+                <p><a href="/business-dashboard">← Back to Dashboard</a></p>
+                
+                <table border="1" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+                    <tr style="background: #f5f5f5;">
+                        <th style="padding: 10px;">Service</th>
+                        <th style="padding: 10px;">Cost per Unit</th>
+                        <th style="padding: 10px;">Unit Type</th>
+                        <th style="padding: 10px;">Currency</th>
+                        <th style="padding: 10px;">Action</th>
+                    </tr>
+                    {rates_html}
+                </table>
+                
+                <script>
+                function updateRate(serviceName) {{
+                    const newRate = document.getElementById('rate_' + serviceName).value;
+                    
+                    fetch('/api/update-cost-rate', {{
+                        method: 'POST',
+                        headers: {{'Content-Type': 'application/json'}},
+                        body: JSON.stringify({{service: serviceName, rate: parseFloat(newRate)}})
+                    }})
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.success) {{
+                            alert('✅ Updated ' + serviceName + ' rate to $' + newRate);
+                        }} else {{
+                            alert('❌ Failed to update rate: ' + data.error);
+                        }}
+                    }});
+                }}
+                </script>
+                </body></html>
+                """
+    except Exception as e:
+        return f"<html><body><h1>Error</h1><p>{e}</p></body></html>"
+
+@app.post("/api/update-cost-rate")
+async def update_cost_rate(request: Request):
+    """Update cost rate for a service"""
+    try:
+        data = await request.json()
+        service = data.get('service')
+        rate = data.get('rate')
+        
+        with get_constitutional_db_connection() as connection:
+            if connection:
+                cursor = connection.cursor()
+                cursor.execute("""
+                    UPDATE cost_rates 
+                    SET cost_per_unit = %s, updated_at = NOW()
+                    WHERE service_name = %s
+                """, (rate, service))
+                connection.commit()
+                
+                return {"success": True, "message": f"Updated {service} rate to ${rate}"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # Business Dashboard Implementation
 @app.get("/business-dashboard", response_class=HTMLResponse)
@@ -1851,12 +1958,15 @@ async def business_dashboard():
             ''' for activity in metrics['recent_activities']]) or '<p style="text-align:center; color:#6B5B73;">No recent activities</p>'}
         </div>
         
-        <!-- Section 5: Cost Analytics Link -->
+        <!-- Section 5: Cost Analytics -->
         <div class="section">
             <h2 class="section-title">💰 COST ANALYTICS</h2>
             <p style="text-align: center; margin: 20px 0;">
-                <a href="/cost-analytics" style="background: #5D5E3F; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                <a href="/cost-analytics" style="background: #5D5E3F; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">
                     View Cost Analytics
+                </a>
+                <a href="/cost-rates" style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                    ⚙️ Manage Rates
                 </a>
             </p>
         </div>
