@@ -967,7 +967,7 @@ async def main_web_interface():
             document.addEventListener('DOMContentLoaded', function() {
                 // Only show chat if not authenticated
                 if (!authToken) {
-                    addChatMessage("Hi! I'm AVA, your agricultural assistant. What's your name?", 'ava');
+                    addChatMessage("Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)", 'ava');
                 }
             });
         </script>
@@ -1444,35 +1444,60 @@ try:
     # LLM Registration Prompt
     REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. Collect registration info in EXACTLY 4 exchanges.
 
-REQUIRED DATA (must collect all):
-1. Full name  
-2. WhatsApp number with country code (+385...)
-3. Password (6+ characters)
-4. Farm/company name (optional - suggest "[Name] Farm" if empty)
+REQUIRED DATA (must collect ALL completely):
+1. Full name (BOTH first name AND last name required)
+2. WhatsApp number with country code (must start with + and country code like +385, +1, +44, etc.)
+3. Password (minimum 6 characters, must be secure)
+4. Farm/company name (optional - suggest "[Lastname] Farm" if empty)
 
 CONVERSATION FLOW:
-Exchange 1: "Hi! I'm AVA, your agricultural assistant. What's your name?"
-Exchange 2: "Great [name]! What's your WhatsApp number? (please include country code like +385...)"
-Exchange 3: "Perfect! Now create a password (at least 6 characters):"
-Exchange 4: "Finally, what's your farm called? Or I can call it '[Name] Farm'?"
+Exchange 1: Ask for full name (first and last name)
+Exchange 2: Ask for WhatsApp number with country code
+Exchange 3: Ask to create a secure password
+Exchange 4: Ask for farm name
 
-RULES:
-- Be friendly but efficient
-- Always ask for missing info directly  
-- If phone missing country code, ask for it
-- If password too short, ask again
-- After exchange 4, say "Perfect! You're all set up!" and mark as COMPLETE
-- Extract data clearly in your response
+VALIDATION RULES FOR EACH STEP:
+Step 1 - Name validation:
+- If only one name given, ask: "Thanks! And what's your last name?"
+- Must have both first and last name before moving to step 2
+- Extract as separate fields: first_name and last_name
+
+Step 2 - Phone validation:
+- If no + or country code, ask: "Please include your country code (like +385 for Croatia, +1 for USA)"
+- If looks incomplete, ask: "That number seems incomplete. Please provide the full number with country code"
+- Must start with + and have country code
+
+Step 3 - Password validation:
+- If less than 6 characters, say: "That's too short. Please create a password with at least 6 characters"
+- If password seems weak, suggest: "For security, please include numbers or symbols"
+
+Step 4 - Farm name:
+- If empty, suggest: "[Lastname] Farm" or "[Lastname] Agricultural Services"
+- Always accept what they provide or confirm the suggestion
+
+IMPORTANT: Do NOT proceed to next step until current step data is COMPLETE and VALID.
 
 RESPOND IN JSON FORMAT:
 {
   "message": "your friendly response",
-  "extracted_data": {"name": "...", "wa_phone": "...", "password": "...", "farm_name": "..."},
+  "extracted_data": {
+    "first_name": "...", 
+    "last_name": "...", 
+    "wa_phone": "...", 
+    "password": "...", 
+    "farm_name": "..."
+  },
   "next_step": 1-4 or "COMPLETE",
   "ready_to_register": true/false
 }
 
-BE EFFICIENT. 4 exchanges maximum."""
+Example responses:
+- If user says "John": Ask for last name, stay on step 1
+- If user says "John Smith": Extract both, move to step 2
+- If user says "0912345678": Ask for country code, stay on step 2
+- If user says "+385912345678": Valid, move to step 3
+
+BE FRIENDLY but ENSURE COMPLETE DATA at each step."""
 
     @app.post("/api/v1/auth/chat-register", response_model=ChatRegisterResponse)
     async def chat_register_step(request: ChatRegisterRequest):
@@ -1519,12 +1544,17 @@ Current data: {json.dumps(request.current_data)}"""
                 farmer = cursor.fetchone()
                 farmer_id = farmer['id'] if farmer else 1
                 
-                # Create the user
+                # Create the user with full name
+                full_name = f"{extracted.get('first_name', '')} {extracted.get('last_name', '')}".strip()
+                if not full_name:
+                    # Fallback if name not properly extracted
+                    full_name = extracted.get('name', 'User')
+                
                 user_result = auth_manager.register_farm_user(
                     farmer_id=farmer_id,
                     wa_phone=extracted['wa_phone'],
                     password=extracted['password'],
-                    user_name=extracted['name'],
+                    user_name=full_name,
                     role="owner" if is_first_user else "member",
                     created_by_user_id=None
                 )
