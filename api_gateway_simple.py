@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 import logging
 from datetime import datetime
 import os
@@ -376,6 +376,35 @@ async def main_web_interface():
                 <button class="constitutional-btn">📋 I want to report a task</button>
                 <button class="constitutional-btn constitutional-btn-secondary">📊 I need data about my farm</button>
             </section>
+
+            <!-- Authentication Section -->
+            <div id="authSection">
+                <!-- Registration Chat Interface -->
+                <div id="registrationChat" class="constitutional-card">
+                    <h1 class="constitutional-card-title">🚜 Join AVA OLO</h1>
+                    <div id="chatMessages" style="max-height: 400px; overflow-y: auto; margin-bottom: 16px; padding: 16px; background: var(--cream); border-radius: 8px;">
+                        <!-- Chat messages appear here -->
+                    </div>
+                    <input id="chatInput" class="constitutional-input" placeholder="Type your response..." onkeypress="handleEnterKey(event, 'sendChatMessage')" style="width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--primary-olive); border-radius: 8px; margin-bottom: 16px;">
+                    <button id="sendChatMessage" class="constitutional-btn" onclick="sendChatMessage()">💬 Send</button>
+                    <div class="enter-hint">Press Enter to send your message</div>
+                </div>
+
+                <!-- Login Interface (show after registration or for existing users) -->
+                <div id="loginSection" class="constitutional-card" style="display: none;">
+                    <h1 class="constitutional-card-title">🔐 Login to My Farm</h1>
+                    <input id="loginPhone" class="constitutional-input" placeholder="WhatsApp number (e.g., +385912345678)" style="width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--primary-olive); border-radius: 8px; margin-bottom: 16px;">
+                    <input id="loginPassword" type="password" class="constitutional-input" placeholder="Password" style="width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--primary-olive); border-radius: 8px; margin-bottom: 16px;">
+                    <button class="constitutional-btn" onclick="performLogin()">🔐 Login</button>
+                    <div id="loginError" style="color: red; margin-top: 16px; display: none;"></div>
+                </div>
+
+                <div style="text-align: center; margin: 16px 0;">
+                    <button id="toggleMode" class="constitutional-btn constitutional-btn-secondary" onclick="toggleLoginRegister()">
+                        <span id="toggleText">Already have an account? Login</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <script>
@@ -796,6 +825,151 @@ async def main_web_interface():
                     </g>
                 </svg>`;
             }
+            
+            // Authentication and Chat Registration Functions
+            let chatStep = 1;
+            let registrationData = {};
+            let authToken = localStorage.getItem('ava_auth_token');
+            
+            // Check if user is already authenticated
+            if (authToken) {
+                // Hide auth section if already logged in
+                document.getElementById('authSection').style.display = 'none';
+            }
+            
+            async function sendChatMessage() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message to chat
+                addChatMessage(message, 'user');
+                input.value = '';
+                
+                try {
+                    // Send to backend
+                    const response = await fetch('/api/v1/auth/chat-register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            step: chatStep,
+                            user_input: message,
+                            current_data: registrationData
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Add AVA response to chat
+                    addChatMessage(data.message, 'ava');
+                    
+                    // Update registration data
+                    Object.assign(registrationData, data.extracted_data);
+                    
+                    if (data.next_step === 'COMPLETE') {
+                        // Registration complete
+                        if (data.token) {
+                            localStorage.setItem('ava_auth_token', data.token);
+                            localStorage.setItem('ava_user', JSON.stringify(data.user));
+                            // Hide auth section after successful registration
+                            setTimeout(() => {
+                                document.getElementById('authSection').style.display = 'none';
+                            }, 2000);
+                        }
+                    } else {
+                        chatStep = data.next_step;
+                    }
+                } catch (error) {
+                    console.error('Chat registration error:', error);
+                    addChatMessage('Sorry, I had trouble processing that. Could you please try again?', 'ava');
+                }
+            }
+            
+            function addChatMessage(message, sender) {
+                const chatDiv = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.style.marginBottom = '12px';
+                messageDiv.style.padding = '8px 12px';
+                messageDiv.style.borderRadius = '8px';
+                
+                if (sender === 'ava') {
+                    messageDiv.style.background = 'var(--primary-olive)';
+                    messageDiv.style.color = 'white';
+                    messageDiv.innerHTML = `<strong>🤖 AVA:</strong> ${message}`;
+                } else {
+                    messageDiv.style.background = 'var(--white)';
+                    messageDiv.style.border = '1px solid var(--light-gray)';
+                    messageDiv.innerHTML = `<strong>👨‍🌾 You:</strong> ${message}`;
+                }
+                
+                chatDiv.appendChild(messageDiv);
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+            }
+            
+            function toggleLoginRegister() {
+                const registrationChat = document.getElementById('registrationChat');
+                const loginSection = document.getElementById('loginSection');
+                const toggleText = document.getElementById('toggleText');
+                
+                if (registrationChat.style.display === 'none') {
+                    registrationChat.style.display = 'block';
+                    loginSection.style.display = 'none';
+                    toggleText.textContent = 'Already have an account? Login';
+                } else {
+                    registrationChat.style.display = 'none';
+                    loginSection.style.display = 'block';
+                    toggleText.textContent = 'Need an account? Register';
+                }
+            }
+            
+            async function performLogin() {
+                const phone = document.getElementById('loginPhone').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                const errorDiv = document.getElementById('loginError');
+                
+                if (!phone || !password) {
+                    errorDiv.textContent = 'Please enter both phone number and password';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            wa_phone_number: phone,
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.token) {
+                        localStorage.setItem('ava_auth_token', data.token);
+                        localStorage.setItem('ava_user', JSON.stringify(data.user));
+                        errorDiv.style.display = 'none';
+                        // Hide auth section after successful login
+                        document.getElementById('authSection').style.display = 'none';
+                    } else {
+                        errorDiv.textContent = data.message || 'Login failed';
+                        errorDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorDiv.textContent = 'Login failed. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
+            }
+            
+            // Initialize chat on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                // Only show chat if not authenticated
+                if (!authToken) {
+                    addChatMessage("Hi! I'm AVA, your agricultural assistant. What's your name?", 'ava');
+                }
+            });
         </script>
     </body>
     </html>
@@ -1179,6 +1353,7 @@ try:
         password: str = Field(..., description="User password")
 
     class RegisterUserRequest(BaseModel):
+        farmer_id: int = Field(..., description="Farmer ID")
         wa_phone_number: str = Field(..., description="WhatsApp phone number")
         password: str = Field(..., description="User password")
         user_name: str = Field(..., description="User display name")
@@ -1189,6 +1364,17 @@ try:
         token: Optional[str] = None
         user: Optional[Dict[str, Any]] = None
         message: str
+    
+    class ChatRegisterRequest(BaseModel):
+        step: int = Field(default=1, description="Current conversation step (1-4)")
+        user_input: str = Field(..., description="User's response")
+        current_data: Dict[str, Any] = Field(default_factory=dict, description="Data collected so far")
+    
+    class ChatRegisterResponse(BaseModel):
+        message: str = Field(..., description="AVA's response")
+        extracted_data: Dict[str, Any] = Field(default_factory=dict, description="Extracted registration data")
+        next_step: Union[int, str] = Field(..., description="Next step number or COMPLETE")
+        ready_to_register: bool = Field(default=False, description="Whether all data is collected")
 
     # Authentication endpoints
     @app.post("/api/v1/auth/login", response_model=LoginResponse)
@@ -1255,39 +1441,118 @@ try:
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
-    @app.post("/api/v1/auth/bootstrap-owner")
-    async def bootstrap_farm_owner(request: RegisterUserRequest):
-        """Bootstrap the first farm owner - only works if no users exist"""
+    # LLM Registration Prompt
+    REGISTRATION_PROMPT = """You are AVA, the constitutional agricultural assistant. Collect registration info in EXACTLY 4 exchanges.
+
+REQUIRED DATA (must collect all):
+1. Full name  
+2. WhatsApp number with country code (+385...)
+3. Password (6+ characters)
+4. Farm/company name (optional - suggest "[Name] Farm" if empty)
+
+CONVERSATION FLOW:
+Exchange 1: "Hi! I'm AVA, your agricultural assistant. What's your name?"
+Exchange 2: "Great [name]! What's your WhatsApp number? (please include country code like +385...)"
+Exchange 3: "Perfect! Now create a password (at least 6 characters):"
+Exchange 4: "Finally, what's your farm called? Or I can call it '[Name] Farm'?"
+
+RULES:
+- Be friendly but efficient
+- Always ask for missing info directly  
+- If phone missing country code, ask for it
+- If password too short, ask again
+- After exchange 4, say "Perfect! You're all set up!" and mark as COMPLETE
+- Extract data clearly in your response
+
+RESPOND IN JSON FORMAT:
+{
+  "message": "your friendly response",
+  "extracted_data": {"name": "...", "wa_phone": "...", "password": "...", "farm_name": "..."},
+  "next_step": 1-4 or "COMPLETE",
+  "ready_to_register": true/false
+}
+
+BE EFFICIENT. 4 exchanges maximum."""
+
+    @app.post("/api/v1/auth/chat-register", response_model=ChatRegisterResponse)
+    async def chat_register_step(request: ChatRegisterRequest):
+        """Handle one step of the registration conversation"""
         try:
-            auth_manager = get_auth_manager()
+            from config_manager import config
+            import json
             
-            # Check if any users already exist
-            conn = auth_manager._get_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT COUNT(*) as count FROM farm_users")
-            result = cursor.fetchone()
+            # Prepare the conversation context
+            conversation_context = f"""Step {request.step}: {request.user_input}
+Current data: {json.dumps(request.current_data)}"""
             
-            if result['count'] > 0:
-                raise HTTPException(status_code=403, detail="Bootstrap only allowed when no users exist")
+            # Use OpenAI to process the conversation
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(api_key=config.openai_api_key)
             
-            # Create the first owner
-            result = auth_manager.register_farm_user(
-                farmer_id=request.farmer_id,
-                wa_phone=request.wa_phone_number,
-                password=request.password,
-                user_name=request.user_name,
-                role="owner",  # Always owner for bootstrap
-                created_by_user_id=None  # Self-created
+            response = await client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": REGISTRATION_PROMPT},
+                    {"role": "user", "content": conversation_context}
+                ],
+                temperature=0.7
             )
             
-            logger.info(f"Bootstrap: Created first farm owner: {request.user_name}")
-            return {"success": True, "user": result, "message": "First farm owner created successfully"}
+            # Parse the LLM response
+            llm_response = json.loads(response.choices[0].message.content)
             
-        except HTTPException:
-            raise
+            # If ready to register, create the account
+            if llm_response.get('ready_to_register', False):
+                # Extract data
+                extracted = llm_response['extracted_data']
+                
+                # Check if any users exist to determine if this should be an owner
+                auth_manager = get_auth_manager()
+                conn = auth_manager._get_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM farm_users")
+                result = cursor.fetchone()
+                is_first_user = result['count'] == 0
+                
+                # Get first farmer ID if no specific farmer provided
+                cursor.execute("SELECT id FROM farmers ORDER BY id LIMIT 1")
+                farmer = cursor.fetchone()
+                farmer_id = farmer['id'] if farmer else 1
+                
+                # Create the user
+                user_result = auth_manager.register_farm_user(
+                    farmer_id=farmer_id,
+                    wa_phone=extracted['wa_phone'],
+                    password=extracted['password'],
+                    user_name=extracted['name'],
+                    role="owner" if is_first_user else "member",
+                    created_by_user_id=None
+                )
+                
+                # Auto-login after registration
+                login_result = auth_manager.authenticate_user(
+                    extracted['wa_phone'],
+                    extracted['password']
+                )
+                
+                llm_response['message'] = f"Perfect! You're all set up! Welcome to AVA OLO, {extracted['name']}! 🚜"
+                llm_response['token'] = login_result['token'] if login_result else None
+                llm_response['user'] = login_result['user'] if login_result else None
+            
+            return ChatRegisterResponse(**llm_response)
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"LLM response parsing error: {str(e)}")
+            # Fallback response
+            return ChatRegisterResponse(
+                message="I'm having trouble understanding. Could you please repeat that?",
+                extracted_data=request.current_data,
+                next_step=request.step,
+                ready_to_register=False
+            )
         except Exception as e:
-            logger.error(f"Bootstrap error: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Bootstrap failed: {str(e)}")
+            logger.error(f"Chat registration error: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Registration chat failed: {str(e)}")
 
     @app.get("/api/v1/auth/family")
     async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
