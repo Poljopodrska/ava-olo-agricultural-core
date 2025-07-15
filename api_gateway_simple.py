@@ -1358,6 +1358,41 @@ async def run_registration_self_test():
         }
 
 
+@app.post("/api/v1/self-test/registration/comprehensive")
+async def run_comprehensive_registration_test():
+    """Run ALL registration test scenarios"""
+    
+    try:
+        from tests.registration_self_test import RegistrationSelfTest
+        
+        tester = RegistrationSelfTest("http://localhost:8080")
+        results = await tester.run_stress_test()
+        
+        return {
+            "test_completed": True,
+            "comprehensive_results": results,
+            "success_rate": results["success_rate"],
+            "passed": results["passed"],
+            "total": results["total_tests"],
+            "recommendation": "DEPLOY" if results["success_rate"] >= 0.85 else "FIX_ISSUES",
+            "critical_failures": results["failed"] > 3,
+            "failure_categories": results.get("failure_categories", {}),
+            "failures": results.get("failures", [])
+        }
+        
+    except Exception as e:
+        logger.error(f"Comprehensive self-test error: {str(e)}")
+        return {
+            "test_completed": False,
+            "success_rate": 0.0,
+            "passed": 0,
+            "total": 0,
+            "recommendation": "ERROR",
+            "critical_failures": True,
+            "error": str(e)
+        }
+
+
 # ====================================================================
 # AUTHENTICATION ENDPOINTS - ADDED WITHOUT BREAKING EXISTING FEATURES
 # ====================================================================
