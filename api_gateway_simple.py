@@ -1465,207 +1465,64 @@ try:
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
-    # Bulletproof Maximum Intelligence Registration Prompt
-    BULLETPROOF_MAXIMUM_INTELLIGENCE_PROMPT = """You are AVA, the constitutional agricultural assistant. You have PERFECT conversation tracking abilities and MAXIMUM intelligence.
+    # Simple Registration Prompt - Emergency Fix
+    SIMPLE_REGISTRATION_PROMPT = """
+You are AVA, helping farmers register. Be conversational and smart.
 
-CRITICAL CONVERSATION RULE:
-When you ask a question, the user's NEXT response is the answer to that question. ALWAYS.
-
-REQUIRED DATA TO COLLECT:
+COLLECT THIS DATA:
 1. full_name (first + last name)
-2. wa_phone_number (with country code +)
-3. password (collect + confirm - ACCEPT ANY TEXT ≥6 characters)
-4. farm_name (any name in any language)
+2. wa_phone_number (with + country code)  
+3. password (ask, then confirm)
+4. farm_name (optional)
 
 CURRENT DATA: {current_data}
-LAST AVA MESSAGE: {last_ava_message}
-CONVERSATION HISTORY: {conversation_history}
 
-BULLETPROOF PASSWORD LOGIC:
+SIMPLE RULES:
+- If missing full_name and user gives one name → ask for last name
+- If missing phone and user gives phone → check for country code
+- If missing password and user gives text ≥6 chars → ask them to confirm it
+- If confirming password and it matches → move to farm name
+- If have everything → complete registration
 
-IF my last message asked for password:
-→ Whatever user types = their password attempt
-→ Count ALL characters (including spaces)
-→ If ≥6 characters: Accept and ask for confirmation
-→ If <6 characters: Ask again
-
-IF my last message asked for password confirmation:
-→ Whatever user types = their confirmation attempt  
-→ Compare exactly with temp password
-→ If matches: Password confirmed, move to farm name
-→ If doesn't match: Start password process over
-
-EXAMPLES OF BULLETPROOF RECOGNITION:
-
-Example 1:
-Last AVA message: "Please create a password (at least 6 characters):"
-User response: "Slavonski Brod"
-→ CHARACTER COUNT: S-l-a-v-o-n-s-k-i- -B-r-o-d = 14 characters ✅
-→ ACTION: Accept as password, ask for confirmation
-
-Example 2:
-Last AVA message: "Please create a password (at least 6 characters):"
-User response: "test"
-→ CHARACTER COUNT: t-e-s-t = 4 characters ❌
-→ ACTION: Too short, ask again
-
-Example 3:
-Last AVA message: "Confirm by typing 'Slavonski Brod' again:"
-User response: "Slavonski Brod"
-→ EXACT MATCH: ✅
-→ ACTION: Password confirmed, move to farm name
-
-Example 4:
-Last AVA message: "Confirm by typing 'Slavonski Brod' again:"
-User response: "slavonski brod" (different case)
-→ NO EXACT MATCH: ❌  
-→ ACTION: Start password process over
-
-CONTEXT DETECTION KEYWORDS:
-If my last message contained ANY of these phrases:
-- "password"
-- "create a password"
-- "provide a password"
-- "confirm your password"
-- "confirm by typing"
-→ I am in PASSWORD MODE
-
-FARM NAME INTELLIGENCE:
-- Accept ANY farm name in ANY language
-- "Velika farma" = perfectly valid Serbian/Croatian farm name
-- "Smith Farm", "农场", "Große Farm" = all valid
-- If user just says one word, accept it as farm name
-
-MULTILINGUAL AWARENESS:
-- Croatian: "Velika farma" = "Big farm" ✅
-- Serbian: "Moja farma" = "My farm" ✅  
-- English: "Green Valley Farm" ✅
-- Any language works!
-
-JSON RESPONSE FORMAT:
+RESPONSE FORMAT (simple JSON):
 {{
-  "message": "Your response",
-  "extracted_data": {{
-    "full_name": "FirstName LastName" or null,
-    "wa_phone_number": "+381634567789" or null,
-    "password": "confirmed_password" or null,
-    "farm_name": "Any Name" or null
-  }},
-  "status": "collecting" or "COMPLETE",
-  "conversation_context": "what_i_just_asked_for",
-  "password_action": "collecting|confirming|confirmed|rejected",
-  "character_count": number,
-  "temp_password_for_confirmation": "temporary_storage" or null,
-  "logic_explanation": "Step by step what I understood"
+  "message": "your friendly response",
+  "full_name": "First Last" or null,
+  "wa_phone_number": "+385123456789" or null,
+  "password": "confirmed_password" or null,
+  "farm_name": "Farm Name" or null,
+  "temp_password": "for_confirmation" or null,
+  "status": "collecting" or "complete"
 }}
 
-BULLETPROOF EXAMPLES:
+EXAMPLES:
 
-Input: 
-Last AVA message: "Please create a password (at least 6 characters):"
-User: "Slavonski Brod"
-
+User: "Alma"
 Response: {{
-  "message": "Thanks! Please confirm your password by typing 'Slavonski Brod' again:",
-  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": null, "farm_name": null}},
-  "status": "collecting",
-  "conversation_context": "user_provided_password_attempt",
-  "password_action": "collecting",
-  "character_count": 14,
-  "temp_password_for_confirmation": "Slavonski Brod", 
-  "logic_explanation": "User responded to password request with 'Slavonski Brod' (14 characters including space). Accepting as valid password and requesting confirmation."
+  "message": "Hi Alma! What's your last name?",
+  "full_name": null,
+  "status": "collecting"
 }}
 
-Input:
-Last AVA message: "Thanks! Please confirm your password by typing 'Slavonski Brod' again:"
-User: "Slavonski Brod"
-
+User: "Horvat" (when first name is "Alma")
 Response: {{
-  "message": "Perfect! Password confirmed. Finally, what's your farm called? Or I can call it 'Savić Farm'?",
-  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": "Slavonski Brod", "farm_name": null}},
-  "status": "collecting",
-  "conversation_context": "user_confirmed_password",
-  "password_action": "confirmed",
-  "character_count": 14,
-  "temp_password_for_confirmation": null,
-  "logic_explanation": "User confirmed password 'Slavonski Brod' exactly. Password now saved and moving to farm name collection."
+  "message": "Great Alma Horvat! What's your WhatsApp number? (include country code like +385...)",
+  "full_name": "Alma Horvat",
+  "status": "collecting"
 }}
 
-Input:
-Last AVA message: "Please create a password (at least 6 characters):"
-User: "hi"
-
-Response: {{
-  "message": "That's too short (2 characters). Please create a password with at least 6 characters:",
-  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": null, "farm_name": null}},
-  "status": "collecting",
-  "conversation_context": "user_provided_short_password",
-  "password_action": "rejected",
-  "character_count": 2,
-  "temp_password_for_confirmation": null,
-  "logic_explanation": "User responded to password request with 'hi' (2 characters). Too short, asking again."
-}}
-
-Input:
-Last AVA message: "Perfect! Password confirmed. Finally, what's your farm called?"
-User: "Velika farma"
-
-Response: {{
-  "message": "Excellent! Welcome to AVA OLO, Marko Savić! Your account for 'Velika farma' is ready! 🚜",
-  "extracted_data": {{"full_name": "Marko Savić", "wa_phone_number": "+381634567789", "password": "Slavonski Brod", "farm_name": "Velika farma"}},
-  "status": "COMPLETE",
-  "conversation_context": "user_provided_farm_name",
-  "password_action": "confirmed",
-  "character_count": 12,
-  "temp_password_for_confirmation": null,
-  "logic_explanation": "User provided farm name 'Velika farma' (Serbian/Croatian for 'Big Farm'). All registration data collected successfully!"
-}}
-
-CRITICAL RULES:
-1. ALWAYS check what you just asked for
-2. ALWAYS treat user response as answer to your question
-3. ACCEPT any password ≥6 characters (including spaces, special chars, anything)
-4. COUNT characters correctly (spaces count!)
-5. EXACT string matching for confirmation
-6. NEVER ignore valid password responses
-7. NEVER crash on multilingual input like "Velika farma"
-
-CONVERSATION TRACKING:
-- Look at "Last AVA message" to understand context
-- User response = answer to whatever you just asked
-- Don't overthink - follow the conversation flow!
-
-BE BULLETPROOF AND MAXIMALLY INTELLIGENT!
-
-RESPONSE MUST BE ONLY VALID JSON."""
+BE SIMPLE AND CONVERSATIONAL!
+"""
 
 
     
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
-        """Bulletproof password recognition with maximum intelligence"""
+        """Ultra-simple registration - no complexity"""
         
         try:
-            # Track conversation context perfectly
-            context = {
-                "current_data": request.current_data or {},
-                "last_ava_message": request.last_ava_message or "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)",
-                "user_input": request.user_input.strip(),
-                "conversation_history": request.conversation_history or []
-            }
-            
-            # Add current exchange to history
-            context["conversation_history"].append({
-                "ava": context["last_ava_message"],
-                "user": context["user_input"],
-                "timestamp": datetime.now().isoformat()
-            })
-            
-            # Prepare bulletproof prompt
-            prompt = BULLETPROOF_MAXIMUM_INTELLIGENCE_PROMPT.format(
-                current_data=json.dumps(context["current_data"]),
-                last_ava_message=context["last_ava_message"],
-                conversation_history=json.dumps(context["conversation_history"][-6:])  # Last 6 exchanges
+            prompt = SIMPLE_REGISTRATION_PROMPT.format(
+                current_data=request.current_data or {}
             )
             
             from config_manager import config
@@ -1673,37 +1530,50 @@ RESPONSE MUST BE ONLY VALID JSON."""
             client = AsyncOpenAI(api_key=config.openai_api_key)
             
             response = await client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",  # Simpler model, more reliable
                 messages=[
                     {"role": "system", "content": prompt},
-                    {"role": "user", "content": f"CONTEXT: Last AVA message was: '{context['last_ava_message']}'\nUser just responded: '{context['user_input']}'\nHandle this with bulletproof logic!"}
+                    {"role": "user", "content": request.user_input}
                 ],
-                temperature=0.05,  # Very low for consistent behavior
-                response_format={"type": "json_object"}
+                temperature=0.3
             )
             
-            import json
-            llm_response = json.loads(response.choices[0].message.content)
+            # Simple text parsing if JSON fails
+            content = response.choices[0].message.content
             
-            # Log the bulletproof logic for debugging
-            logger.info(f"🎯 Bulletproof Logic: {llm_response.get('logic_explanation', 'No explanation')}")
-            logger.info(f"🔢 Character Count: {llm_response.get('character_count', 'Not counted')}")
-            logger.info(f"🔐 Password Action: {llm_response.get('password_action', 'Unknown')}")
-            logger.info(f"📝 Context: {llm_response.get('conversation_context', 'Unknown')}")
+            try:
+                # Try JSON parsing
+                import json
+                result = json.loads(content)
+            except:
+                # Fallback: simple text response
+                return {
+                    "message": "Let me try that again. What's your full name?",
+                    "status": "collecting",
+                    "extracted_data": request.current_data or {},
+                    "conversation_history": request.conversation_history or [],
+                    "last_ava_message": "Let me try that again. What's your full name?"
+                }
             
             # Handle temporary password for confirmation
-            if llm_response.get("temp_password_for_confirmation"):
-                context["current_data"]["temp_password_for_confirmation"] = llm_response["temp_password_for_confirmation"]
-            elif "temp_password_for_confirmation" in llm_response["extracted_data"] and llm_response["extracted_data"]["temp_password_for_confirmation"] is None:
-                # Remove temp password after confirmation
-                context["current_data"].pop("temp_password_for_confirmation", None)
+            current_data = request.current_data or {}
+            if result.get("temp_password"):
+                current_data["temp_password_for_confirmation"] = result["temp_password"]
             
-            # Update extracted data
-            updated_data = {**context["current_data"], **llm_response["extracted_data"]}
+            # Update with new data
+            if result.get("full_name"):
+                current_data["full_name"] = result["full_name"]
+            if result.get("wa_phone_number"):
+                current_data["wa_phone_number"] = result["wa_phone_number"]
+            if result.get("password"):
+                current_data["password"] = result["password"]
+                current_data.pop("temp_password_for_confirmation", None)
+            if result.get("farm_name"):
+                current_data["farm_name"] = result["farm_name"]
             
             # Handle registration completion
-            if llm_response["status"] == "COMPLETE":
-                data = updated_data
+            if result.get("status") == "complete":
+                data = current_data
                 
                 try:
                     # Check if any users exist to determine if this should be an owner
@@ -1736,15 +1606,15 @@ RESPONSE MUST BE ONLY VALID JSON."""
                     )
                     
                     return {
-                        "message": llm_response["message"],
+                        "message": result.get("message", "Registration complete!"),
                         "status": "COMPLETE",
                         "registration_successful": True,
                         "farmer_id": farmer_id,
                         "token": login_result['token'] if login_result else None,
                         "user": login_result['user'] if login_result else None,
                         "extracted_data": data,
-                        "conversation_history": context["conversation_history"],
-                        "last_ava_message": llm_response["message"]
+                        "conversation_history": request.conversation_history or [],
+                        "last_ava_message": result.get("message", "Registration complete!")
                     }
                     
                 except Exception as e:
@@ -1759,37 +1629,21 @@ RESPONSE MUST BE ONLY VALID JSON."""
             
             # Continue conversation
             return {
-                "message": llm_response["message"],
-                "extracted_data": updated_data,
-                "status": llm_response["status"],
-                "conversation_history": context["conversation_history"],
-                "last_ava_message": llm_response["message"],  # Track for next request
-                "debug_info": {
-                    "conversation_context": llm_response.get("conversation_context"),
-                    "password_action": llm_response.get("password_action"),
-                    "character_count": llm_response.get("character_count"),
-                    "logic_explanation": llm_response.get("logic_explanation")
-                }
-            }
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"LLM JSON parsing error: {str(e)}")
-            return {
-                "message": "I had trouble understanding that. Could you please repeat what you said?",
-                "status": "error",
-                "conversation_history": request.conversation_history,
-                "last_ava_message": "I had trouble understanding that. Could you please repeat what you said?"
+                "message": result.get("message", "Please continue..."),
+                "extracted_data": current_data,
+                "status": result.get("status", "collecting"),
+                "conversation_history": request.conversation_history or [],
+                "last_ava_message": result.get("message", "Please continue...")
             }
             
         except Exception as e:
-            logger.error(f"Bulletproof registration error: {str(e)}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            logger.error(f"Simple registration error: {str(e)}")
             return {
-                "message": "I apologize for the confusion. Could you please repeat your last response?",
-                "status": "error",
-                "conversation_history": request.conversation_history,
-                "last_ava_message": "I apologize for the confusion. Could you please repeat your last response?"
+                "message": "Let's start over. What's your full name?",
+                "status": "collecting",
+                "extracted_data": {},
+                "conversation_history": [],
+                "last_ava_message": "Let's start over. What's your full name?"
             }
 
     @app.get("/api/v1/auth/family")
