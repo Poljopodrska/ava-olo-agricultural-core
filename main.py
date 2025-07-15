@@ -1396,22 +1396,35 @@ async def cost_rates_management():
     connection = None
     
     try:
-        # Direct connection without context manager
+        # Use same connection strategy as get_constitutional_db_connection
         host = os.getenv('DB_HOST')
         database = os.getenv('DB_NAME', 'farmer_crm')
         user = os.getenv('DB_USER', 'postgres')
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
         
-        connection = psycopg2.connect(
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=10,
-            sslmode='require'
-        )
+        # Strategy 1: Try farmer_crm database first
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
+        except psycopg2.OperationalError:
+            # Strategy 2: Fallback to postgres database (like working endpoints)
+            connection = psycopg2.connect(
+                host=host,
+                database='postgres',
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
         
         cursor = connection.cursor()
         cursor.execute("SELECT service_name, cost_per_unit, unit_type, currency FROM cost_rates ORDER BY service_name")
@@ -1497,22 +1510,35 @@ async def update_cost_rate(request: Request):
         if not service or rate is None:
             return {"success": False, "error": "Missing service or rate"}
         
-        # Direct connection without context manager
+        # Use same connection strategy as get_constitutional_db_connection
         host = os.getenv('DB_HOST')
         database = os.getenv('DB_NAME', 'farmer_crm')
         user = os.getenv('DB_USER', 'postgres')
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
         
-        connection = psycopg2.connect(
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=10,
-            sslmode='require'
-        )
+        # Strategy 1: Try farmer_crm database first
+        try:
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
+        except psycopg2.OperationalError:
+            # Strategy 2: Fallback to postgres database (like working endpoints)
+            connection = psycopg2.connect(
+                host=host,
+                database='postgres',
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=10,
+                sslmode='require'
+            )
         
         cursor = connection.cursor()
         cursor.execute("""
