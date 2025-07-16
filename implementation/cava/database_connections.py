@@ -145,12 +145,24 @@ class CAVARedisConnection:
             from concurrent.futures import ThreadPoolExecutor
             
             def create_redis_client():
-                client = redis.from_url(
-                    self.url, 
-                    decode_responses=True,
-                    socket_timeout=5,  # 5 second socket timeout
-                    socket_connect_timeout=5  # 5 second connection timeout
-                )
+                # Parse Redis URL and add SSL if needed
+                if 'amazonaws.com' in self.url:
+                    # AWS ElastiCache requires SSL
+                    client = redis.from_url(
+                        self.url, 
+                        decode_responses=True,
+                        socket_timeout=10,  # Increase timeout for AWS
+                        socket_connect_timeout=10,  # Increase timeout for AWS
+                        ssl=True,
+                        ssl_cert_reqs=None
+                    )
+                else:
+                    client = redis.from_url(
+                        self.url, 
+                        decode_responses=True,
+                        socket_timeout=5,
+                        socket_connect_timeout=5
+                    )
                 client.ping()  # Test connection
                 return client
             
@@ -278,7 +290,9 @@ class CAVAPineconeConnection:
             from config_manager import config
             openai.api_key = config.openai_api_key
             
-            response = await openai.Embedding.acreate(
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(api_key=openai.api_key)
+            response = await client.embeddings.create(
                 input=text,
                 model="text-embedding-ada-002"
             )

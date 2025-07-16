@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-import openai
+from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 import sys
 
@@ -31,10 +31,11 @@ class CAVALLMQueryGenerator:
         self.temperature = 0.1  # Low temperature for consistent query generation
         self.dry_run = os.getenv('CAVA_DRY_RUN_MODE', 'true').lower() == 'true'
         
-        # Set OpenAI API key
+        # Initialize OpenAI client
         if self.api_key:
-            openai.api_key = self.api_key
+            self.client = AsyncOpenAI(api_key=self.api_key)
         else:
+            self.client = None
             logger.warning("⚠️ OpenAI API key not configured")
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
@@ -96,7 +97,7 @@ Return only valid JSON.
             }
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a farming analysis expert. Always return valid JSON."},
@@ -172,7 +173,7 @@ Return only the Cypher query, nothing else.
             """
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a Neo4j Cypher expert. Generate valid Cypher queries."},
@@ -236,7 +237,7 @@ Return only the Cypher query, nothing else.
             """
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a Neo4j Cypher expert for farming queries."},
@@ -291,7 +292,7 @@ Generate a natural farmer response that:
                 return "I don't have any information about that yet. Could you tell me more about what you've planted?"
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are AVA, a helpful agricultural assistant."},
@@ -378,7 +379,7 @@ Return only valid JSON.
             return mock_data
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": "You are a registration data extractor. Always return valid JSON."},
@@ -420,7 +421,7 @@ Return only the SQL query.
             return "SELECT * FROM cava.conversation_sessions WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 10"
         
         try:
-            response = await openai.ChatCompletion.acreate(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=self.temperature
