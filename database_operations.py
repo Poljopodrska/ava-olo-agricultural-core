@@ -49,25 +49,50 @@ class DatabaseOperations:
         
         print(f"DEBUG: Database connection string: {self.connection_string[:50]}...{self.connection_string[-20:]}")
         
-        # Validate hostname format
+        # Extract and validate connection components
         if "@" in self.connection_string:
-            host_part = self.connection_string.split("@")[1].split(":")[0]
-            if " " in host_part:
-                print(f"WARNING: Still found spaces in hostname: '{host_part}'")
-            elif not host_part.endswith(".amazonaws.com"):
-                print(f"WARNING: Unusual hostname format: '{host_part}'")
-                print(f"Expected AWS RDS hostname format: *.amazonaws.com")
-            else:
-                print(f"INFO: Hostname format looks correct: '{host_part}'")
+            try:
+                # Parse connection string
+                parts = self.connection_string.replace("postgresql://", "").split("@")
+                user_pass = parts[0]
+                host_port_db = parts[1]
+                
+                user = user_pass.split(":")[0]
+                host = host_port_db.split(":")[0]
+                
+                print(f"DEBUG: Connecting as user: '{user}'")
+                print(f"DEBUG: Connecting to host: '{host}'")
+                
+                if " " in host:
+                    print(f"WARNING: Still found spaces in hostname: '{host}'")
+                elif not host.endswith(".amazonaws.com"):
+                    print(f"WARNING: Unusual hostname format: '{host}'")
+                    print(f"Expected AWS RDS hostname format: *.amazonaws.com")
+                else:
+                    print(f"INFO: Hostname format looks correct: '{host}'")
+            except Exception as e:
+                print(f"WARNING: Could not parse connection string: {e}")
         
         # For WSL2 to Windows connection, we might need to adjust the connection
         if "host.docker.internal" in self.connection_string:
             # This is correct for WSL2 to Windows connection
             pass
         
+        # Add SSL requirement for AWS RDS
+        engine_kwargs = DB_POOL_SETTINGS.copy()
+        if ".amazonaws.com" in self.connection_string:
+            engine_kwargs["connect_args"] = {
+                "sslmode": "require",
+                "sslcert": None,
+                "sslkey": None,
+                "sslrootcert": None
+            }
+            print("INFO: Added SSL requirement for AWS RDS connection")
+            print("INFO: Using sslmode=require for RDS connection")
+        
         self.engine = create_engine(
             self.connection_string,
-            **DB_POOL_SETTINGS
+            **engine_kwargs
         )
         self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         
