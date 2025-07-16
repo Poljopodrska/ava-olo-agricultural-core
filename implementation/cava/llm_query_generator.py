@@ -110,7 +110,7 @@ Return only valid JSON.
         try:
             if not self.client:
                 logger.error("❌ OpenAI client not initialized - API key missing?")
-                return fallback_response
+                return None
                 
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -118,8 +118,7 @@ Return only valid JSON.
                     {"role": "system", "content": "You are a farming analysis expert. Always return valid JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=self.temperature,
-                response_format={"type": "json_object"}
+                temperature=self.temperature
             )
             
             result = json.loads(response.choices[0].message.content)
@@ -190,7 +189,7 @@ Return only the Cypher query, nothing else.
         try:
             if not self.client:
                 logger.error("❌ OpenAI client not initialized - API key missing?")
-                return fallback_response
+                return None
                 
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -258,7 +257,7 @@ Return only the Cypher query, nothing else.
         try:
             if not self.client:
                 logger.error("❌ OpenAI client not initialized - API key missing?")
-                return fallback_response
+                return None
                 
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -317,7 +316,7 @@ Generate a natural farmer response that:
         try:
             if not self.client:
                 logger.error("❌ OpenAI client not initialized - API key missing?")
-                return fallback_response
+                return None
                 
             response = await self.client.chat.completions.create(
                 model=self.model,
@@ -437,8 +436,7 @@ Return only valid JSON.
                     {"role": "system", "content": "You are a registration data extractor. Always return valid JSON."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=self.temperature,
-                response_format={"type": "json_object"}
+                temperature=self.temperature
             )
             
             return json.loads(response.choices[0].message.content)
@@ -475,7 +473,7 @@ Return only the SQL query.
         try:
             if not self.client:
                 logger.error("❌ OpenAI client not initialized - API key missing?")
-                return fallback_response
+                return None
                 
             response = await self.client.chat.completions.create(
                 model=self.model,
