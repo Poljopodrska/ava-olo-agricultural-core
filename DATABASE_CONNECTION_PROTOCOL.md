@@ -25,16 +25,18 @@ FATAL: no pg_hba.conf entry for host "172.31.96.165", user "postgres", database 
 ### **Step 1: Environment Variable Configuration**
 ```bash
 # Required AWS App Runner Environment Variables
-DATABASE_URL=postgresql://username:password@hostname:5432/database_name
+# NOTE: Password with special characters like [ ] $ * will be automatically URL-encoded
 DB_HOST=farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com
 DB_NAME=farmer_crm
 DB_USER=postgres
-DB_PASSWORD=your_secure_password
+DB_PASSWORD=2hpzvrg_xP~qNbz1[_NppSK$e*O1
 DB_PORT=5432
+
+# Optional: Complete DATABASE_URL (will be constructed if not provided)
+DATABASE_URL=postgresql://username:password@hostname:5432/database_name
 
 # SSL Configuration (REQUIRED for AWS RDS)
 DB_SSL_MODE=require
-DB_SSL_CERT_PATH=/opt/rds-ca-2019-root.pem
 ```
 
 ### **Step 2: Standard Connection Class**

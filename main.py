@@ -12,6 +12,7 @@ from fastapi import Form
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sys
+import urllib.parse
 sys.path.append('.')
 from database.insert_operations import ConstitutionalInsertOperations
 from database_operations import DatabaseOperations
@@ -27,11 +28,25 @@ if not os.getenv('DATABASE_URL'):
     if db_host and db_password:
         # Clean up hostname - remove any whitespace or special characters
         db_host = db_host.strip().replace(" ", "")  # Remove all spaces
-        DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+        
+        # URL encode the password to handle special characters
+        db_password_encoded = urllib.parse.quote(db_password, safe='')
+        print(f"DEBUG: URL encoding password. Original length: {len(db_password)}, Encoded length: {len(db_password_encoded)}")
+        
+        DATABASE_URL = f"postgresql://{db_user}:{db_password_encoded}@{db_host}:{db_port}/{db_name}"
         os.environ['DATABASE_URL'] = DATABASE_URL
         print(f"DEBUG: Constructed DATABASE_URL from components")
         print(f"DEBUG: DB_HOST = '{db_host}'")
-        print(f"DEBUG: DATABASE_URL = '{DATABASE_URL}'")
+        print(f"DEBUG: DB_NAME = '{db_name}'")
+        print(f"DEBUG: DB_USER = '{db_user}'")
+        print(f"DEBUG: DB_PASSWORD = {'SET (' + str(len(db_password)) + ' chars)' if db_password else 'NOT SET'}")
+        print(f"DEBUG: DATABASE_URL = '{DATABASE_URL[:60]}...{DATABASE_URL[-20:]}'")
+        
+        # Test the connection string format
+        if "[" in DATABASE_URL or "]" in DATABASE_URL:
+            print("WARNING: DATABASE_URL contains brackets - may need URL encoding")
+        if " " in DATABASE_URL:
+            print("WARNING: DATABASE_URL contains spaces")
     else:
         print(f"DEBUG: Missing DB_HOST or DB_PASSWORD")
         print(f"DEBUG: DB_HOST = '{db_host}'")
@@ -656,6 +671,7 @@ DASHBOARD_LANDING_HTML = """
             <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
             <p><a href="/diagnostics/">Run Connection Diagnostics</a> - Test database connections and configurations</p>
             <p><a href="/health/database" style="color: #007bff; font-weight: bold;">🔍 Database Health Check</a> - Test RDS connectivity and permissions</p>
+            <p><a href="/debug/database-connection" style="color: #dc3545; font-weight: bold;">🐛 Database Debug</a> - Detailed connection troubleshooting</p>
             <p><a href="/health/google-maps" style="color: #28a745; font-weight: bold;">🗺️ Google Maps API Check</a> - Check if API key is configured</p>
             <p><a href="/farmer-registration" style="font-weight: bold;">🌾 Register New Farmer</a> - Add new farmer with fields and app access</p>
             <p><a href="/field-drawing-test" style="color: #28a745; font-weight: bold;">🗺️ Test Field Drawing</a> - Test the interactive map functionality</p>
@@ -3150,6 +3166,82 @@ async def google_maps_health_check():
                 "GOOGLE_MAPS_API_KEY": "SET" if google_maps_api_key else "NOT_SET"
             }
         }
+    except Exception as e:
+        return {
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
+
+# Database Connection Debug Endpoint
+@app.get("/debug/database-connection")
+async def debug_database_connection():
+    """Debug database connection issues"""
+    try:
+        debug_info = {
+            "timestamp": datetime.now().isoformat(),
+            "environment_variables": {
+                "DATABASE_URL": "SET" if os.getenv('DATABASE_URL') else "NOT_SET",
+                "DB_HOST": os.getenv('DB_HOST', 'NOT_SET'),
+                "DB_NAME": os.getenv('DB_NAME', 'NOT_SET'),
+                "DB_USER": os.getenv('DB_USER', 'NOT_SET'),
+                "DB_PASSWORD": "SET" if os.getenv('DB_PASSWORD') else "NOT_SET",
+                "DB_PORT": os.getenv('DB_PORT', 'NOT_SET')
+            },
+            "connection_tests": []
+        }
+        
+        # Test 1: Basic connection string construction
+        try:
+            db_host = os.getenv('DB_HOST', '').strip().replace(" ", "")
+            db_name = os.getenv('DB_NAME', 'farmer_crm')
+            db_user = os.getenv('DB_USER', 'postgres')
+            db_password = os.getenv('DB_PASSWORD', '')
+            db_port = os.getenv('DB_PORT', '5432')
+            
+            if db_password:
+                db_password_encoded = urllib.parse.quote(db_password, safe='')
+                test_url = f"postgresql://{db_user}:{db_password_encoded}@{db_host}:{db_port}/{db_name}"
+                
+                debug_info["connection_tests"].append({
+                    "test": "URL Construction",
+                    "status": "success",
+                    "url_length": len(test_url),
+                    "url_preview": test_url[:50] + "..." + test_url[-20:],
+                    "password_length": len(db_password),
+                    "password_encoded_length": len(db_password_encoded)
+                })
+            else:
+                debug_info["connection_tests"].append({
+                    "test": "URL Construction",
+                    "status": "failed",
+                    "error": "DB_PASSWORD not set"
+                })
+        except Exception as e:
+            debug_info["connection_tests"].append({
+                "test": "URL Construction",
+                "status": "error",
+                "error": str(e)
+            })
+        
+        # Test 2: Database connection attempt
+        try:
+            db_ops = DatabaseOperations()
+            connection_test = await db_ops.health_check()
+            debug_info["connection_tests"].append({
+                "test": "Database Connection",
+                "status": "success" if connection_test else "failed",
+                "connected": connection_test
+            })
+        except Exception as e:
+            debug_info["connection_tests"].append({
+                "test": "Database Connection",
+                "status": "error",
+                "error": str(e)
+            })
+        
+        return debug_info
+        
     except Exception as e:
         return {
             "status": "error",
