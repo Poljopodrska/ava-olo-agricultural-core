@@ -2307,6 +2307,102 @@ async def agronomic_dashboard():
 
     <script>
         let selectedConversationId = null;
+        let isUserActive = false;
+        let lastActivityTime = Date.now();
+        let scrollPositions = { left: 0, right: 0 };
+        let inputValues = {};
+        let refreshTimer = null;
+        
+        // Track user activity
+        function trackActivity() {
+            isUserActive = true;
+            lastActivityTime = Date.now();
+            
+            // Reset activity flag after 2 seconds of inactivity
+            clearTimeout(window.activityTimeout);
+            window.activityTimeout = setTimeout(() => {
+                isUserActive = false;
+            }, 2000);
+        }
+        
+        // Add activity listeners
+        document.addEventListener('mousemove', trackActivity);
+        document.addEventListener('click', trackActivity);
+        document.addEventListener('keypress', trackActivity);
+        document.addEventListener('scroll', trackActivity, true);
+        
+        // Save state before refresh
+        function saveState() {
+            // Save scroll positions
+            const leftPanel = document.querySelector('.conversations-panel');
+            const rightPanel = document.querySelector('.details-panel');
+            const messagesContainer = document.querySelector('.messages-container');
+            
+            if (leftPanel) scrollPositions.left = leftPanel.scrollTop;
+            if (rightPanel) scrollPositions.right = rightPanel.scrollTop;
+            if (messagesContainer) scrollPositions.messages = messagesContainer.scrollTop;
+            
+            // Save input values
+            const inputs = document.querySelectorAll('input[type="text"], textarea');
+            inputs.forEach(input => {
+                if (input.id || input.className) {
+                    inputValues[input.id || input.className] = input.value;
+                }
+            });
+            
+            // Save to sessionStorage
+            sessionStorage.setItem('selectedConversationId', selectedConversationId || '');
+            sessionStorage.setItem('scrollPositions', JSON.stringify(scrollPositions));
+            sessionStorage.setItem('inputValues', JSON.stringify(inputValues));
+        }
+        
+        // Restore state after refresh
+        function restoreState() {
+            // Restore selected conversation
+            const savedConversationId = sessionStorage.getItem('selectedConversationId');
+            if (savedConversationId) {
+                selectedConversationId = parseInt(savedConversationId);
+                
+                // Find and select the conversation
+                const conversationElements = document.querySelectorAll('.conversation-item');
+                conversationElements.forEach(elem => {
+                    if (elem.getAttribute('onclick').includes(savedConversationId)) {
+                        elem.classList.add('selected');
+                        // Load conversation details without animation
+                        setTimeout(() => loadConversationDetails(selectedConversationId), 100);
+                    }
+                });
+            }
+            
+            // Restore scroll positions
+            const savedScrollPositions = JSON.parse(sessionStorage.getItem('scrollPositions') || '{}');
+            setTimeout(() => {
+                const leftPanel = document.querySelector('.conversations-panel');
+                const rightPanel = document.querySelector('.details-panel');
+                const messagesContainer = document.querySelector('.messages-container');
+                
+                if (leftPanel && savedScrollPositions.left) {
+                    leftPanel.scrollTop = savedScrollPositions.left;
+                }
+                if (rightPanel && savedScrollPositions.right) {
+                    rightPanel.scrollTop = savedScrollPositions.right;
+                }
+                if (messagesContainer && savedScrollPositions.messages) {
+                    messagesContainer.scrollTop = savedScrollPositions.messages;
+                }
+            }, 200);
+            
+            // Restore input values
+            const savedInputValues = JSON.parse(sessionStorage.getItem('inputValues') || '{}');
+            setTimeout(() => {
+                Object.keys(savedInputValues).forEach(key => {
+                    const input = document.getElementById(key) || document.querySelector('.' + key);
+                    if (input) {
+                        input.value = savedInputValues[key];
+                    }
+                });
+            }, 300);
+        }
         
         function selectConversation(id) {
             selectedConversationId = id;
@@ -2324,6 +2420,12 @@ async def agronomic_dashboard():
         }
         
         function loadConversationDetails(id) {
+            // Save current messages scroll position if exists
+            const currentMessagesContainer = document.querySelector('.messages-container');
+            if (currentMessagesContainer) {
+                scrollPositions.messages = currentMessagesContainer.scrollTop;
+            }
+            
             // Mock conversation details - in real implementation, this would fetch from backend
             const mockMessages = [
                 { id: 1, role: 'user', content: 'My tomato plants have yellow leaves. What should I do?', timestamp: '2 hours ago', approved: true },
@@ -2361,11 +2463,21 @@ async def agronomic_dashboard():
             messagesHtml += '<div class="unrelated-message-section">';
             messagesHtml += '<div class="unrelated-message-title">Send Unrelated Message</div>';
             messagesHtml += '<div class="unrelated-message-form">';
-            messagesHtml += '<input type="text" class="unrelated-message-input" placeholder="Type your message to the farmer...">';
+            messagesHtml += '<input type="text" class="unrelated-message-input" id="unrelated-input-' + id + '" placeholder="Type your message to the farmer..." onfocus="trackActivity()" onkeyup="trackActivity()">';
             messagesHtml += '<button class="send-unrelated-btn" onclick="sendUnrelatedMessage(' + id + ')">Send</button>';
             messagesHtml += '</div></div>';
             
             document.getElementById('conversation-details').innerHTML = messagesHtml;
+            
+            // Restore messages scroll position if available
+            if (scrollPositions.messages) {
+                setTimeout(() => {
+                    const newMessagesContainer = document.querySelector('.messages-container');
+                    if (newMessagesContainer) {
+                        newMessagesContainer.scrollTop = scrollPositions.messages;
+                    }
+                }, 50);
+            }
         }
         
         function approveMessage(messageId) {
@@ -2374,6 +2486,7 @@ async def agronomic_dashboard():
         }
         
         function writeManualResponse(messageId) {
+            trackActivity(); // Prevent refresh during interaction
             const response = prompt('Enter your manual response:');
             if (response) {
                 alert('Manual response sent: ' + response + ' (Mock implementation)');
@@ -2382,6 +2495,7 @@ async def agronomic_dashboard():
         }
         
         function approveAllInConversation(conversationId) {
+            trackActivity(); // Prevent refresh during interaction
             if (confirm('Approve all messages in this conversation?')) {
                 alert('All messages in conversation ' + conversationId + ' approved! (Mock implementation)');
                 // In real implementation, this would approve all messages in conversation
@@ -2399,6 +2513,7 @@ async def agronomic_dashboard():
         }
         
         function showApproveAllModal() {
+            trackActivity(); // Prevent refresh during interaction
             document.getElementById('approve-all-modal').style.display = 'block';
         }
         
@@ -2426,10 +2541,28 @@ async def agronomic_dashboard():
             }
         }
         
-        // Auto-refresh every 30 seconds
-        setInterval(function() {
-            location.reload();
-        }, 30000);
+        // Smart refresh function
+        function smartRefresh() {
+            // Don't refresh if user is active or modal is open
+            const modalOpen = document.getElementById('approve-all-modal').style.display === 'block';
+            const timeSinceActivity = Date.now() - lastActivityTime;
+            
+            if (!isUserActive && !modalOpen && timeSinceActivity > 2000) {
+                saveState();
+                location.reload();
+            }
+        }
+        
+        // Initialize state restoration
+        window.addEventListener('load', () => {
+            restoreState();
+            
+            // Start smart refresh timer (every 5 seconds)
+            refreshTimer = setInterval(smartRefresh, 5000);
+        });
+        
+        // Save state before page unload
+        window.addEventListener('beforeunload', saveState);
     </script>
 </body>
 </html>'''
