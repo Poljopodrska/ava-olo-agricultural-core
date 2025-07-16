@@ -655,6 +655,7 @@ DASHBOARD_LANDING_HTML = """
             <h3>🔍 Database Tools</h3>
             <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
             <p><a href="/diagnostics/">Run Connection Diagnostics</a> - Test database connections and configurations</p>
+            <p><a href="/health/database" style="color: #007bff; font-weight: bold;">🔍 Database Health Check</a> - Test RDS connectivity and permissions</p>
             <p><a href="/farmer-registration" style="font-weight: bold;">🌾 Register New Farmer</a> - Add new farmer with fields and app access</p>
             <p><a href="/field-drawing-test" style="color: #28a745; font-weight: bold;">🗺️ Test Field Drawing</a> - Test the interactive map functionality</p>
         </div>
@@ -3092,6 +3093,32 @@ async def register_farmer(request: Request):
             status_code=500,
             content={"success": False, "message": str(e)}
         )
+
+# Database Health Check Endpoint
+@app.get("/health/database")
+async def database_health_check():
+    """Test database connectivity and return detailed status"""
+    try:
+        db_ops = DatabaseOperations()
+        is_healthy = await db_ops.health_check()
+        
+        return {
+            "status": "healthy" if is_healthy else "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "database": "farmer_crm",
+            "connection_info": {
+                "host": os.getenv('DB_HOST', 'not_set')[:20] + "...",
+                "database": os.getenv('DB_NAME', 'not_set'),
+                "user": os.getenv('DB_USER', 'not_set'),
+                "ssl_mode": "require" if ".amazonaws.com" in os.getenv('DB_HOST', '') else "disabled"
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
 
 # Add diagnostics viewer page
 @app.get("/diagnostics/", response_class=HTMLResponse)

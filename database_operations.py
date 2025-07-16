@@ -83,12 +83,11 @@ class DatabaseOperations:
         if ".amazonaws.com" in self.connection_string:
             engine_kwargs["connect_args"] = {
                 "sslmode": "require",
-                "sslcert": None,
-                "sslkey": None,
-                "sslrootcert": None
+                "connect_timeout": 30,
+                "application_name": "ava-olo-monitoring-dashboard"
             }
             print("INFO: Added SSL requirement for AWS RDS connection")
-            print("INFO: Using sslmode=require for RDS connection")
+            print("INFO: Using sslmode=require with 30s timeout for RDS connection")
         
         self.engine = create_engine(
             self.connection_string,
@@ -388,12 +387,35 @@ class DatabaseOperations:
     async def health_check(self) -> bool:
         """Check database connectivity to farmer_crm database"""
         try:
+            print("INFO: Starting comprehensive database health check...")
+            
             with self.get_session() as session:
+                # Test basic connectivity
+                print("INFO: Testing basic connectivity...")
+                basic_result = session.execute(text("SELECT 1")).scalar()
+                if basic_result != 1:
+                    print("ERROR: Basic connectivity test failed")
+                    return False
+                print("✅ Basic connectivity: OK")
+                
+                # Test farmers table access
+                print("INFO: Testing farmers table access...")
                 result = session.execute(text("SELECT COUNT(*) FROM farmers"))
                 count = result.scalar()
-                logger.info(f"Database health check: Connected to farmer_crm with {count} farmers")
+                print(f"✅ Farmers table access: OK ({count} farmers found)")
+                
+                # Test fields table access
+                print("INFO: Testing fields table access...")
+                fields_result = session.execute(text("SELECT COUNT(*) FROM fields"))
+                fields_count = fields_result.scalar()
+                print(f"✅ Fields table access: OK ({fields_count} fields found)")
+                
+                logger.info(f"Database health check: Connected to farmer_crm with {count} farmers and {fields_count} fields")
+                print("✅ Database health check: PASSED")
                 return True
+                
         except Exception as e:
+            print(f"❌ Database health check failed: {str(e)}")
             logger.error(f"Database health check failed: {str(e)}")
             return False
 
@@ -426,6 +448,8 @@ class DatabaseOperations:
     async def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new farmer with fields and app access credentials"""
         try:
+            print(f"INFO: Starting farmer registration for {data.get('manager_name')} {data.get('manager_last_name')}")
+            
             with self.get_session() as session:
                 # First, create a user authentication entry (we'll need to create this table)
                 # For now, we'll store the password hash in a separate table or as a comment
@@ -526,9 +550,15 @@ class DatabaseOperations:
                 
                 session.commit()
                 
+                print(f"✅ Successfully registered farmer {data['manager_name']} {data['manager_last_name']} with ID {farmer_id}")
+                print(f"   - Farm: {data.get('farm_name')}")
+                print(f"   - Fields: {len(data.get('fields', []))}")
+                print(f"   - Location: {data.get('city')}, {data.get('country')}")
+                
                 logger.info(f"Successfully registered farmer {data['manager_name']} {data['manager_last_name']} with ID {farmer_id}")
                 return {"success": True, "farmer_id": farmer_id}
                 
         except Exception as e:
+            print(f"❌ Error inserting farmer with fields: {str(e)}")
             logger.error(f"Error inserting farmer with fields: {str(e)}")
             return {"success": False, "error": str(e)}
