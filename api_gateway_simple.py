@@ -39,6 +39,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add logging middleware to catch ALL registration calls
+from starlette.requests import Request
+from starlette.responses import Response
+
+@app.middleware("http")
+async def log_registration_calls(request: Request, call_next):
+    if request.method == "POST" and "register" in request.url.path.lower():
+        body = await request.body()
+        logger.error(f"🔥🔥🔥 REGISTRATION POST: {request.url.path} - Body: {body[:200]}")
+        # Recreate request with body
+        from starlette.datastructures import Headers
+        from starlette.requests import Request as StarletteRequest
+        request = StarletteRequest(request.scope, receive=lambda: {"type": "http.request", "body": body})
+    
+    response = await call_next(request)
+    return response
+
 # Configure CAVA logger
 cava_logger = logging.getLogger('CAVA')
 
@@ -891,10 +908,26 @@ async def register_page():
                         conversation_id: conversationData.conversation_id
                     };
                     
+                    // CRITICAL FIX: Generate farmer_id ONCE and reuse it
+                    if (!conversationData.farmer_id) {
+                        // Generate farmer_id from conversation_id to ensure consistency
+                        const hashCode = (str) => {
+                            let hash = 0;
+                            for (let i = 0; i < str.length; i++) {
+                                const char = str.charCodeAt(i);
+                                hash = ((hash << 5) - hash) + char;
+                                hash = hash & hash; // Convert to 32bit integer
+                            }
+                            return Math.abs(hash);
+                        };
+                        conversationData.farmer_id = hashCode(conversationData.conversation_id) % 1000000;
+                        console.log('Generated persistent farmer_id:', conversationData.farmer_id);
+                    }
+                    
                     // Try CAVA first, fallback to old system if not available
                     let endpoint = '/api/v1/cava/register';
                     let requestBody = {
-                        farmer_id: Math.floor(Math.random() * 1000000), // Temporary ID for registration
+                        farmer_id: conversationData.farmer_id, // Use PERSISTENT farmer_id
                         message: message,
                         session_id: conversationData.conversation_id
                     };
@@ -1741,6 +1774,8 @@ try:
         request: RegisterUserRequest,
         current_user: dict = get_auth_deps().can_add_users()
     ):
+        # CRITICAL LOGGING
+        logger.error(f"🔥🔥🔥 OLD AUTH/REGISTER CALLED! User: {getattr(request, 'user_name', 'unknown')}")
         """Add new family member to farm (requires owner permissions)"""
         try:
             auth_manager = get_auth_manager()
@@ -2013,6 +2048,9 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
         """CAVA-powered registration proxy with persistent session management"""
+        
+        # CRITICAL LOGGING TO VERIFY THIS IS BEING CALLED
+        logger.error(f"🔥🔥🔥 CAVA PROXY CALLED! Message: '{request.user_input}'")
         
         # Enhanced logging for debugging
         logger.info(f"🔄 CAVA Proxy: Registration request - session: {request.session_id}, message: '{request.user_input}'")

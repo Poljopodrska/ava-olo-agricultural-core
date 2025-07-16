@@ -107,6 +107,8 @@ async def cava_performance():
 @cava_router.post("/register")
 async def cava_register(request: CAVARequest):
     """CAVA-powered registration"""
+    # CRITICAL LOGGING
+    logger.error(f"🔥🔥🔥 CAVA DIRECT /register CALLED! Message: '{request.message}'")
     logger.info(f"📨 CAVA Route: Received registration request - farmer_id: {request.farmer_id}, message: '{request.message}', session_id: {request.session_id}")
     try:
         engine = await get_cava_engine()
