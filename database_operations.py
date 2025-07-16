@@ -4,6 +4,8 @@ Connects to existing Windows PostgreSQL with real farmer data
 """
 import asyncio
 import logging
+import json
+import psycopg2
 from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime, date
 from decimal import Decimal
@@ -13,12 +15,92 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 import os
 import sys
+from contextlib import contextmanager
 
 # Add parent directory to path for config import
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import DATABASE_URL, DB_POOL_SETTINGS
+try:
+    from config import DATABASE_URL, DB_POOL_SETTINGS
+except ImportError:
+    DATABASE_URL = None
+    DB_POOL_SETTINGS = {}
 
 logger = logging.getLogger(__name__)
+
+# Add the WORKING connection method from main.py
+@contextmanager
+def get_working_db_connection():
+    """Use the EXACT same connection method as the working database dashboard"""
+    connection = None
+    
+    try:
+        host = os.getenv('DB_HOST')
+        database = os.getenv('DB_NAME', 'farmer_crm')
+        user = os.getenv('DB_USER', 'postgres')
+        password = os.getenv('DB_PASSWORD')
+        port = int(os.getenv('DB_PORT', '5432'))
+        
+        print(f"DEBUG: Attempting connection to {host}:{port}/{database} as {user}")
+        
+        # Strategy 1: Try with SSL required (AWS RDS default)
+        if not connection:
+            try:
+                connection = psycopg2.connect(
+                    host=host,
+                    database=database,
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='require'
+                )
+                print("DEBUG: Connected with SSL required")
+            except psycopg2.OperationalError as ssl_error:
+                print(f"DEBUG: SSL required failed: {ssl_error}")
+        
+        # Strategy 2: Try with SSL preferred
+        if not connection:
+            try:
+                connection = psycopg2.connect(
+                    host=host,
+                    database=database,
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='prefer'
+                )
+                print("DEBUG: Connected with SSL preferred")
+            except psycopg2.OperationalError as ssl_pref_error:
+                print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
+        
+        # Strategy 3: Try connecting to postgres database instead
+        if not connection:
+            try:
+                connection = psycopg2.connect(
+                    host=host,
+                    database='postgres',  # Try postgres database
+                    user=user,
+                    password=password,
+                    port=port,
+                    connect_timeout=10,
+                    sslmode='require'
+                )
+                print("DEBUG: Connected to postgres database instead")
+            except psycopg2.OperationalError as postgres_error:
+                print(f"DEBUG: Postgres database connection failed: {postgres_error}")
+        
+        if connection:
+            yield connection
+        else:
+            yield None
+            
+    except Exception as e:
+        print(f"DEBUG: Connection error: {e}")
+        yield None
+    finally:
+        if connection:
+            connection.close()
 
 class DatabaseOperations:
     """
@@ -450,40 +532,41 @@ class DatabaseOperations:
         try:
             print(f"INFO: Starting farmer registration for {data.get('manager_name')} {data.get('manager_last_name')}")
             
-            with self.get_session() as session:
+            # Use the WORKING connection method instead of SQLAlchemy
+            with get_working_db_connection() as connection:
+                if not connection:
+                    print("ERROR: Could not establish database connection")
+                    return {"success": False, "error": "Database connection failed"}
+                
+                cursor = connection.cursor()
                 # First, create a user authentication entry (we'll need to create this table)
                 # For now, we'll store the password hash in a separate table or as a comment
                 
-                # Insert the farmer
-                farmer_result = session.execute(
-                    text("""
+                # Insert the farmer using psycopg2 style (like working dashboard)
+                cursor.execute("""
                     INSERT INTO farmers (
                         farm_name, manager_name, manager_last_name, 
                         city, country, phone, wa_phone_number, email, 
                         state_farm_number, street_and_no, village, postal_code
                     ) VALUES (
-                        :farm_name, :manager_name, :manager_last_name,
-                        :city, :country, :phone, :wa_phone_number, :email,
-                        :state_farm_number, :street_and_no, :village, :postal_code
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                     ) RETURNING id
-                    """),
-                    {
-                        "farm_name": data.get("farm_name"),
-                        "manager_name": data.get("manager_name"),
-                        "manager_last_name": data.get("manager_last_name"),
-                        "city": data.get("city"),
-                        "country": data.get("country"),
-                        "phone": data.get("phone") or None,
-                        "wa_phone_number": data.get("wa_phone_number"),
-                        "email": data.get("email"),
-                        "state_farm_number": data.get("state_farm_number") or None,
-                        "street_and_no": data.get("street_and_no") or None,
-                        "village": data.get("village") or None,
-                        "postal_code": data.get("postal_code") or None
-                    }
-                )
+                    """, (
+                        data.get("farm_name"),
+                        data.get("manager_name"),
+                        data.get("manager_last_name"),
+                        data.get("city"),
+                        data.get("country"),
+                        data.get("phone") or None,
+                        data.get("wa_phone_number"),
+                        data.get("email"),
+                        data.get("state_farm_number") or None,
+                        data.get("street_and_no") or None,
+                        data.get("village") or None,
+                        data.get("postal_code") or None
+                    ))
                 
-                farmer_id = farmer_result.scalar()
+                farmer_id = cursor.fetchone()[0]
                 
                 # Insert fields
                 for field in data.get("fields", []):
@@ -504,27 +587,26 @@ class DatabaseOperations:
                         centroid_lat = centroid.get("lat")
                         centroid_lng = centroid.get("lng")
                     
-                    session.execute(
-                        text("""
+                    # Check if fields table has area_hectares or area_ha column
+                    cursor.execute("""
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = 'fields' AND column_name IN ('area_hectares', 'area_ha')
+                    """)
+                    area_column = cursor.fetchone()
+                    area_col_name = area_column[0] if area_column else 'area_ha'  # Use area_ha as default
+                    
+                    # Insert field using psycopg2 style
+                    cursor.execute(f"""
                         INSERT INTO fields (
-                            farmer_id, field_name, area_hectares, location,
-                            field_polygon_data, calculated_area_hectares, centroid_lat, centroid_lng
+                            farmer_id, field_name, {area_col_name}
                         ) VALUES (
-                            :farmer_id, :field_name, :area_hectares, :location,
-                            :field_polygon_data, :calculated_area_hectares, :centroid_lat, :centroid_lng
+                            %s, %s, %s
                         )
-                        """),
-                        {
-                            "farmer_id": farmer_id,
-                            "field_name": field.get("name"),
-                            "area_hectares": field.get("size"),
-                            "location": field.get("location") or None,
-                            "field_polygon_data": json.dumps(polygon_data) if polygon_data else None,
-                            "calculated_area_hectares": calculated_area,
-                            "centroid_lat": centroid_lat,
-                            "centroid_lng": centroid_lng
-                        }
-                    )
+                    """, (
+                        farmer_id,
+                        field.get("name"),
+                        field.get("size")
+                    ))
                 
                 # Create user authentication record
                 # For now, we'll store a hashed password in a comment
@@ -532,23 +614,20 @@ class DatabaseOperations:
                 import hashlib
                 password_hash = hashlib.sha256(data['password'].encode()).hexdigest()
                 
-                # Store authentication info (temporary solution)
-                session.execute(
-                    text("""
+                # Store authentication info (temporary solution) using psycopg2
+                cursor.execute("""
                     INSERT INTO incoming_messages (
                         farmer_id, phone_number, message_text, role, timestamp
                     ) VALUES (
-                        :farmer_id, :email, :auth_info, 'system', CURRENT_TIMESTAMP
+                        %s, %s, %s, 'system', CURRENT_TIMESTAMP
                     )
-                    """),
-                    {
-                        "farmer_id": farmer_id,
-                        "email": data['email'],
-                        "auth_info": f"AUTH_RECORD: email={data['email']}, password_hash={password_hash}"
-                    }
-                )
+                """, (
+                    farmer_id,
+                    data['email'],
+                    f"AUTH_RECORD: email={data['email']}, password_hash={password_hash}"
+                ))
                 
-                session.commit()
+                connection.commit()
                 
                 print(f"✅ Successfully registered farmer {data['manager_name']} {data['manager_last_name']} with ID {farmer_id}")
                 print(f"   - Farm: {data.get('farm_name')}")
