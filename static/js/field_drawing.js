@@ -9,6 +9,8 @@ let markers = [];
 
 function initFieldMap() {
     console.log('initFieldMap called');
+    console.log('Google Maps available:', typeof google !== 'undefined' && google.maps);
+    console.log('Map container exists:', document.getElementById('field-map') !== null);
     
     // Check if Google Maps is available
     if (typeof google === 'undefined' || !google.maps) {
@@ -35,7 +37,7 @@ function initFieldMap() {
         }
         
         // Initialize map centered on Croatia/Slovenia region (can be adjusted)
-        fieldMap = new google.maps.Map(mapContainer, {
+        const mapOptions = {
             zoom: 15,
             center: { lat: 45.8150, lng: 15.9819 }, // Zagreb coordinates as default
             mapTypeId: 'satellite', // Better for field visualization
@@ -47,7 +49,10 @@ function initFieldMap() {
                 mapTypeIds: ['satellite', 'hybrid', 'terrain']
             },
             mapId: "e2a6d55c7b7beb3685a30de3" // AVA OLO Agricultural Maps
-        });
+        };
+        
+        console.log('Creating map with options:', mapOptions);
+        fieldMap = new google.maps.Map(mapContainer, mapOptions);
         
         console.log('Map initialized successfully');
     } catch (error) {
