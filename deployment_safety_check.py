@@ -35,6 +35,7 @@ class DeploymentSafetyChecker:
         self.check_docker_setup()
         self.check_database_safety()
         self.check_api_endpoints()
+        self.check_runtime_startup()
         
         # Generate report
         report = self.generate_report()
@@ -209,6 +210,97 @@ class DeploymentSafetyChecker:
                     self.checks_passed.append("✅ Performance endpoint added")
                 else:
                     self.warnings.append("⚠️ Performance endpoint missing")
+    
+    def check_runtime_startup(self):
+        """Check runtime startup capabilities"""
+        logger.info("\n🚀 Checking runtime startup...")
+        
+        # Check if main API files can be imported
+        startup_files = [
+            "api_gateway_minimal.py",
+            "api_gateway_simple.py", 
+            "start_simple.py"
+        ]
+        
+        for file in startup_files:
+            if os.path.exists(file):
+                try:
+                    # Test Python syntax
+                    with open(file, 'r') as f:
+                        content = f.read()
+                        compile(content, file, 'exec')
+                    self.checks_passed.append(f"✅ {file} syntax valid")
+                except SyntaxError as e:
+                    self.checks_failed.append(f"❌ {file} syntax error: {str(e)}")
+                except Exception as e:
+                    self.warnings.append(f"⚠️ {file} compile warning: {str(e)}")
+        
+        # Check apprunner.yaml configuration
+        if os.path.exists("apprunner.yaml"):
+            with open("apprunner.yaml", 'r') as f:
+                content = f.read()
+                if "command:" in content:
+                    self.checks_passed.append("✅ AppRunner command configured")
+                    # Check if the command file exists
+                    if "api_gateway_minimal.py" in content:
+                        if os.path.exists("api_gateway_minimal.py"):
+                            self.checks_passed.append("✅ AppRunner startup file exists")
+                        else:
+                            self.checks_failed.append("❌ AppRunner startup file missing")
+                    elif "start_simple.py" in content:
+                        if os.path.exists("start_simple.py"):
+                            self.checks_passed.append("✅ AppRunner startup file exists")
+                        else:
+                            self.checks_failed.append("❌ AppRunner startup file missing")
+                else:
+                    self.checks_failed.append("❌ AppRunner command not configured")
+        
+        # Check for common runtime failure patterns
+        self.check_runtime_failure_patterns()
+    
+    def check_runtime_failure_patterns(self):
+        """Check for patterns that cause runtime failures"""
+        
+        # Pattern 1: Missing __name__ == "__main__" guards
+        main_files = ["api_gateway_minimal.py", "api_gateway_simple.py"]
+        for file in main_files:
+            if os.path.exists(file):
+                with open(file, 'r') as f:
+                    content = f.read()
+                    if '__name__ == "__main__"' in content:
+                        self.checks_passed.append(f"✅ {file} has proper main guard")
+                    else:
+                        self.warnings.append(f"⚠️ {file} missing main guard")
+        
+        # Pattern 2: Port configuration issues
+        if os.path.exists("api_gateway_minimal.py"):
+            with open("api_gateway_minimal.py", 'r') as f:
+                content = f.read()
+                if 'os.environ.get("PORT"' in content:
+                    self.checks_passed.append("✅ Port configuration handled")
+                else:
+                    self.warnings.append("⚠️ Port configuration not handled")
+        
+        # Pattern 3: Import dependencies that might fail
+        critical_imports = ["fastapi", "uvicorn", "pydantic"]
+        for imp in critical_imports:
+            try:
+                __import__(imp)
+                self.checks_passed.append(f"✅ {imp} import available")
+            except ImportError:
+                self.checks_failed.append(f"❌ {imp} import failed")
+        
+        # Pattern 4: Check for blocking operations in startup
+        startup_files = ["api_gateway_minimal.py", "start_simple.py"]
+        for file in startup_files:
+            if os.path.exists(file):
+                with open(file, 'r') as f:
+                    content = f.read()
+                    # Check for potentially blocking operations
+                    blocking_patterns = ["input(", "time.sleep(", "requests.get(", "httpx.get("]
+                    for pattern in blocking_patterns:
+                        if pattern in content:
+                            self.warnings.append(f"⚠️ {file} contains potentially blocking operation: {pattern}")
     
     def generate_report(self) -> Dict:
         """Generate deployment report"""

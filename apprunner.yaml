@@ -10,7 +10,7 @@ build:
       - echo "Build completed - Authentication system ready"
 run:
   runtime-version: 3.9
-  command: python start_simple.py
+  command: python api_gateway_minimal.py
   network:
     port: 8080
     env: PORT
