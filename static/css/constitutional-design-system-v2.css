@@ -1,0 +1,465 @@
+/* 
+ * AVA OLO Constitutional Design System v2
+ * Unified design system for all AVA OLO applications
+ * Used by: Agricultural Core, Monitoring Dashboards, and all modules
+ * Constitutional Principle #14: Consistent Design Across All Modules
+ */
+
+:root {
+  /* ===== CONSTITUTIONAL COLOR PALETTE ===== */
+  /* Preserving original agricultural theme with enhanced gradients */
+  
+  /* Primary Agricultural Colors */
+  --primary-brown: #6B5B73;
+  --primary-olive: #8B8C5A;
+  --dark-olive: #5D5E3F;
+  --light-olive: #A8AA6B;
+  --accent-green: #7A8B5A;
+  --earth-brown: #8B7355;
+  
+  /* Enhanced Brand Colors with Gradients */
+  --color-primary-gradient-start: #667eea;
+  --color-primary-gradient-end: #764ba2;
+  --color-primary: #667eea;
+  --color-primary-dark: #5a67d8;
+  --color-primary-light: #7c8ff0;
+  
+  /* Agricultural Green - Core Identity */
+  --color-agri-green: #2c5530;
+  --color-agri-green-light: #3a6b3e;
+  --color-agri-green-dark: #1f3d22;
+  
+  /* Status Colors - Farming Context */
+  --color-success: #16a34a;      /* Healthy crops */
+  --color-success-light: #22c55e;
+  --color-success-dark: #15803d;
+  --color-success-bg: #f0fdf4;
+  
+  --color-warning: #f59e0b;      /* Attention needed */
+  --color-warning-light: #fbbf24;
+  --color-warning-dark: #d97706;
+  --color-warning-bg: #fffbeb;
+  
+  --color-danger: #dc2626;       /* Urgent issues */
+  --color-danger-light: #ef4444;
+  --color-danger-dark: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  
+  --color-info: #3b82f6;         /* Information */
+  --color-info-light: #60a5fa;
+  --color-info-dark: #2563eb;
+  --color-info-bg: #eff6ff;
+  
+  /* Constitutional Base Colors */
+  --cream: #F5F3F0;
+  --dark-charcoal: #2C2C2C;
+  --medium-gray: #666666;
+  --light-gray: #E8E8E6;
+  --white: #FFFFFF;
+  
+  /* Enhanced Neutral Colors */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+  --color-gray-900: #111827;
+  
+  /* Background Colors */
+  --color-bg-primary: #f5f7fa;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-white: rgba(255, 255, 255, 0.95);
+  
+  /* Special Purpose Colors */
+  --color-purple-accent: #8b5cf6;
+  --color-purple-accent-dark: #7c3aed;
+  --color-blue-accent: #1a73e8;
+  --color-blue-accent-dark: #1557b0;
+  
+  /* ===== CONSTITUTIONAL TYPOGRAPHY ===== */
+  /* Larger fonts for accessibility - older farmers */
+  
+  /* Font Families */
+  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-secondary: 'Arial', sans-serif;
+  
+  /* Constitutional Font Sizes - Minimum 18px for readability */
+  --font-large: 18px;    /* MINIMUM for older farmers */
+  --font-medium: 16px;
+  --font-small: 14px;    /* Only for secondary text */
+  --font-heading: 24px;
+  --font-title: 32px;
+  
+  /* Enhanced Font Scale */
+  --font-size-xs: 0.75rem;    /* 12px - avoid if possible */
+  --font-size-sm: 0.875rem;   /* 14px - secondary only */
+  --font-size-base: 1.125rem; /* 18px - constitutional minimum */
+  --font-size-lg: 1.25rem;    /* 20px */
+  --font-size-xl: 1.5rem;     /* 24px */
+  --font-size-2xl: 1.875rem;  /* 30px */
+  --font-size-3xl: 2.25rem;   /* 36px */
+  --font-size-4xl: 3rem;      /* 48px */
+  
+  /* Font Weights */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  
+  /* Line Heights - Better readability */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.6;   /* Increased for readability */
+  --line-height-relaxed: 1.75;
+  
+  /* ===== CONSTITUTIONAL SPACING ===== */
+  
+  /* Spacing Scale - Generous for touch targets */
+  --spacing-0: 0;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+  
+  /* Enhanced spacing for consistency */
+  --spacing-1: 0.25rem;   /* 4px */
+  --spacing-2: 0.5rem;    /* 8px */
+  --spacing-3: 0.75rem;   /* 12px */
+  --spacing-4: 1rem;      /* 16px */
+  --spacing-5: 1.25rem;   /* 20px */
+  --spacing-6: 1.5rem;    /* 24px */
+  --spacing-8: 2rem;      /* 32px */
+  --spacing-10: 2.5rem;   /* 40px */
+  --spacing-12: 3rem;     /* 48px */
+  
+  /* ===== BORDERS ===== */
+  
+  /* Border Radius - Softer agricultural feel */
+  --border-radius: 8px;
+  --radius-sm: 0.25rem;    /* 4px */
+  --radius-base: 0.5rem;   /* 8px */
+  --radius-md: 0.625rem;   /* 10px */
+  --radius-lg: 0.75rem;    /* 12px */
+  --radius-xl: 1rem;       /* 16px */
+  --radius-2xl: 1.25rem;   /* 20px */
+  --radius-full: 9999px;
+  
+  /* Border Widths */
+  --border-width-0: 0;
+  --border-width-1: 1px;
+  --border-width-2: 2px;
+  --border-width-4: 4px;
+  --border-width-8: 8px;
+  
+  /* ===== SHADOWS ===== */
+  
+  /* Constitutional Box Shadows */
+  --box-shadow: 0 2px 12px rgba(107, 91, 115, 0.1);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-base: 0 4px 6px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.15);
+  
+  /* Colored Shadows */
+  --shadow-primary: 0 4px 15px rgba(102, 126, 234, 0.3);
+  --shadow-success: 0 4px 12px rgba(22, 163, 74, 0.3);
+  --shadow-warning: 0 4px 12px rgba(245, 158, 11, 0.3);
+  --shadow-danger: 0 4px 12px rgba(220, 38, 38, 0.3);
+  
+  /* ===== ANIMATIONS ===== */
+  
+  /* Constitutional Transitions */
+  --transition: all 0.3s ease;
+  --transition-fast: 150ms ease;
+  --transition-base: 300ms ease;
+  --transition-slow: 500ms ease;
+  
+  /* Transform Values */
+  --transform-hover-up: translateY(-2px);
+  --transform-hover-right: translateX(5px);
+  --transform-press: scale(0.98);
+  
+  /* ===== Z-INDEX ===== */
+  
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  
+  /* ===== STATES ===== */
+  
+  /* Opacity */
+  --opacity-disabled: 0.5;
+  --opacity-hover: 0.8;
+  --opacity-focus: 1;
+  
+  /* Focus Ring - High visibility */
+  --focus-ring-width: 3px;
+  --focus-ring-color: rgba(102, 126, 234, 0.3);
+  --focus-ring: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+
+/* ===== CONSTITUTIONAL RESET ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ===== CONSTITUTIONAL BASE STYLES ===== */
+body {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  color: var(--dark-charcoal);
+  background-color: var(--cream);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== CONSTITUTIONAL TYPOGRAPHY ===== */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-agri-green);
+  margin-bottom: var(--spacing-md);
+}
+
+h1 { font-size: var(--font-size-4xl); }
+h2 { font-size: var(--font-size-3xl); }
+h3 { font-size: var(--font-size-2xl); }
+h4 { font-size: var(--font-size-xl); }
+h5 { font-size: var(--font-size-lg); }
+h6 { font-size: var(--font-size-base); }
+
+/* ===== CONSTITUTIONAL COMPONENTS ===== */
+
+/* Buttons - Large touch targets for farmers */
+.constitutional-button,
+.btn {
+  display: inline-block;
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+  text-decoration: none;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  min-width: 120px;
+  min-height: 48px; /* Touch-friendly */
+}
+
+.constitutional-button-primary,
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-olive) 0%, var(--primary-brown) 100%);
+  color: var(--white);
+  box-shadow: var(--shadow-base);
+}
+
+.constitutional-button-primary:hover,
+.btn-primary:hover {
+  transform: var(--transform-hover-up);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Cards - Clean agricultural design */
+.constitutional-card {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+  border: 2px solid transparent;
+}
+
+.constitutional-card:hover {
+  transform: var(--transform-hover-up);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-olive);
+}
+
+/* Forms - Accessible and clear */
+.constitutional-input,
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+  border: 2px solid var(--light-gray);
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  background: var(--white);
+}
+
+.constitutional-input:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary-olive);
+  box-shadow: var(--focus-ring);
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Gradients */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%);
+}
+
+.gradient-agricultural {
+  background: linear-gradient(135deg, var(--primary-olive) 0%, var(--primary-brown) 100%);
+}
+
+.gradient-success {
+  background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+}
+
+/* Status Indicators */
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot.active {
+  background: var(--color-success);
+  animation: pulse 2s infinite;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Loading States */
+.skeleton {
+  animation: shimmer 1.5s infinite;
+  background: linear-gradient(90deg, var(--color-gray-200) 25%, var(--color-gray-300) 50%, var(--color-gray-200) 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile First - Critical for farmers in fields */
+@media (max-width: 768px) {
+  :root {
+    --font-size-base: 1rem; /* Slightly smaller on mobile but still readable */
+    --spacing-md: 12px;
+    --spacing-lg: 18px;
+  }
+  
+  body {
+    padding: var(--spacing-sm);
+  }
+  
+  .constitutional-card {
+    padding: var(--spacing-md);
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+
+/* Focus States - High visibility */
+*:focus {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Skip to content */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+  padding: var(--spacing-md);
+  background: var(--primary-olive);
+  color: var(--white);
+  text-decoration: none;
+}
+
+.skip-to-content:focus {
+  left: 50%;
+  transform: translateX(-50%);
+  top: var(--spacing-md);
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #0066cc;
+    --color-success: #008000;
+    --color-danger: #cc0000;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  body {
+    font-size: 12pt;
+    color: black;
+    background: white;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* ===== CONSTITUTIONAL ENFORCEMENT ===== */
+/* These rules ensure constitutional compliance */
+
+/* Minimum font size enforcement */
+body * {
+  font-size: max(var(--font-size-sm), 14px);
+}
+
+/* Touch target enforcement */
+button, a, input, select, textarea {
+  min-height: 44px; /* iOS recommendation */
+}
+
+/* Color contrast enforcement */
+.constitutional-text-on-dark {
+  color: var(--white);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.constitutional-text-on-light {
+  color: var(--dark-charcoal);
+}

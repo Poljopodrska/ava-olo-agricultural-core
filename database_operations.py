@@ -368,3 +368,90 @@ class DatabaseOperations:
         except Exception as e:
             print(f"❌ Connection failed: {e}")
             return False
+    
+    async def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Insert a new farmer with fields and app access credentials"""
+        try:
+            with self.get_session() as session:
+                # First, create a user authentication entry (we'll need to create this table)
+                # For now, we'll store the password hash in a separate table or as a comment
+                
+                # Insert the farmer
+                farmer_result = session.execute(
+                    text("""
+                    INSERT INTO farmers (
+                        farm_name, manager_name, manager_last_name, 
+                        city, country, phone, wa_phone_number, email, 
+                        state_farm_number, street_and_no, village, postal_code
+                    ) VALUES (
+                        :farm_name, :manager_name, :manager_last_name,
+                        :city, :country, :phone, :wa_phone_number, :email,
+                        :state_farm_number, :street_and_no, :village, :postal_code
+                    ) RETURNING id
+                    """),
+                    {
+                        "farm_name": data.get("farm_name"),
+                        "manager_name": data.get("manager_name"),
+                        "manager_last_name": data.get("manager_last_name"),
+                        "city": data.get("city"),
+                        "country": data.get("country"),
+                        "phone": data.get("phone") or None,
+                        "wa_phone_number": data.get("wa_phone_number"),
+                        "email": data.get("email"),
+                        "state_farm_number": data.get("state_farm_number") or None,
+                        "street_and_no": data.get("street_and_no") or None,
+                        "village": data.get("village") or None,
+                        "postal_code": data.get("postal_code") or None
+                    }
+                )
+                
+                farmer_id = farmer_result.scalar()
+                
+                # Insert fields
+                for field in data.get("fields", []):
+                    session.execute(
+                        text("""
+                        INSERT INTO fields (
+                            farmer_id, field_name, area_hectares, location
+                        ) VALUES (
+                            :farmer_id, :field_name, :area_hectares, :location
+                        )
+                        """),
+                        {
+                            "farmer_id": farmer_id,
+                            "field_name": field.get("name"),
+                            "area_hectares": field.get("size"),
+                            "location": field.get("location") or None
+                        }
+                    )
+                
+                # Create user authentication record
+                # For now, we'll store a hashed password in a comment
+                # In production, this should be in a proper authentication table
+                import hashlib
+                password_hash = hashlib.sha256(data['password'].encode()).hexdigest()
+                
+                # Store authentication info (temporary solution)
+                session.execute(
+                    text("""
+                    INSERT INTO incoming_messages (
+                        farmer_id, phone_number, message_text, role, timestamp
+                    ) VALUES (
+                        :farmer_id, :email, :auth_info, 'system', CURRENT_TIMESTAMP
+                    )
+                    """),
+                    {
+                        "farmer_id": farmer_id,
+                        "email": data['email'],
+                        "auth_info": f"AUTH_RECORD: email={data['email']}, password_hash={password_hash}"
+                    }
+                )
+                
+                session.commit()
+                
+                logger.info(f"Successfully registered farmer {data['manager_name']} {data['manager_last_name']} with ID {farmer_id}")
+                return {"success": True, "farmer_id": farmer_id}
+                
+        except Exception as e:
+            logger.error(f"Error inserting farmer with fields: {str(e)}")
+            return {"success": False, "error": str(e)}

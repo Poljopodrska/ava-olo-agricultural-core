@@ -55,8 +55,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Helper function to get design system CSS
 def get_design_system_css():
-    """Return the CSS link tag for the design system"""
-    return '<link rel="stylesheet" href="/static/css/design-system.css">'
+    """Return the CSS link tag for the shared constitutional design system v2"""
+    return '<link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">'
 
 # Base HTML template for all dashboards
 def get_base_html_start(title="AVA OLO Dashboard"):
@@ -645,6 +645,7 @@ DASHBOARD_LANDING_HTML = """
             <h3>🔍 Database Tools</h3>
             <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
             <p><a href="/diagnostics/">Run Connection Diagnostics</a> - Test database connections and configurations</p>
+            <p><a href="/farmer-registration" style="font-weight: bold;">🌾 Register New Farmer</a> - Add new farmer with fields and app access</p>
         </div>
         
         <!-- PART 1: Standard Agricultural Queries -->
@@ -1372,6 +1373,14 @@ async def dashboard_landing():
 </body>
 </html>
 """)
+
+# Design System Demo Route
+@app.get("/design-demo", response_class=HTMLResponse)
+async def design_demo():
+    """Unified Design System Demo Page"""
+    with open("templates/design_demo.html", "r") as f:
+        content = f.read()
+    return HTMLResponse(content=content)
 
 # Database Dashboard Route - Keep existing functionality  
 @app.get("/database-dashboard", response_class=HTMLResponse)
@@ -3001,6 +3010,57 @@ async def redirect_agronomic():
 @app.get("/database")
 async def redirect_database():
     return RedirectResponse(url="/database-dashboard", status_code=302)
+
+# Farmer Registration Form
+@app.get("/farmer-registration", response_class=HTMLResponse)
+async def farmer_registration_form():
+    """Farmer Registration Form with password for app access"""
+    with open("templates/farmer_registration.html", "r") as f:
+        content = f.read()
+    return HTMLResponse(content=content)
+
+# API endpoint for farmer registration
+@app.post("/api/register-farmer")
+async def register_farmer(request: Request):
+    """Register a new farmer with fields and app access"""
+    try:
+        data = await request.json()
+        
+        # Validate required fields
+        required_fields = ['email', 'password', 'manager_name', 'manager_last_name', 
+                         'wa_phone_number', 'farm_name', 'city', 'country']
+        for field in required_fields:
+            if not data.get(field):
+                return JSONResponse(
+                    status_code=400,
+                    content={{"success": False, "message": f"Missing required field: {field}"}}
+                )
+        
+        # Validate password length
+        if len(data['password']) < 8:
+            return JSONResponse(
+                status_code=400,
+                content={{"success": False, "message": "Password must be at least 8 characters long"}}
+            )
+        
+        # Insert farmer and fields using database operations
+        db_ops = DatabaseOperations()
+        result = await db_ops.insert_farmer_with_fields(data)
+        
+        if result['success']:
+            return JSONResponse(content={{"success": True, "farmer_id": result['farmer_id']}})
+        else:
+            return JSONResponse(
+                status_code=500,
+                content={{"success": False, "message": result.get('error', 'Failed to register farmer')}}
+            )
+            
+    except Exception as e:
+        logger.error(f"Error registering farmer: {{str(e)}}")
+        return JSONResponse(
+            status_code=500,
+            content={{"success": False, "message": str(e)}}
+        )
 
 # Add diagnostics viewer page
 @app.get("/diagnostics/", response_class=HTMLResponse)

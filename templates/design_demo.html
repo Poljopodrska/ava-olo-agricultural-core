@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO Unified Design System Demo</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <style>
+        body {
+            font-family: var(--font-primary);
+            background: var(--color-bg-primary);
+            color: var(--dark-charcoal);
+            line-height: var(--line-height-normal);
+            padding: var(--spacing-8);
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .demo-section {
+            margin-bottom: var(--spacing-12);
+        }
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-4);
+            margin-top: var(--spacing-4);
+        }
+        .color-swatch {
+            padding: var(--spacing-4);
+            border-radius: var(--radius-base);
+            text-align: center;
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+        }
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-6);
+            margin-top: var(--spacing-6);
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>AVA OLO Unified Design System v2</h1>
+        <p style="font-size: var(--font-size-lg); color: var(--color-gray-600); margin-bottom: var(--spacing-8);">
+            This design system is shared between monitoring dashboards and agricultural core
+        </p>
+
+        <!-- Design Principles -->
+        <div class="demo-section">
+            <h2>Constitutional Design Principles</h2>
+            <div class="constitutional-card">
+                <h3>Accessibility First</h3>
+                <p>Minimum font size of 18px for older farmers (Constitutional requirement)</p>
+            </div>
+            <div class="constitutional-card" style="margin-top: var(--spacing-4)">
+                <h3>Agricultural Theme</h3>
+                <p>Brown and olive color palette reflecting the earth and crops</p>
+            </div>
+            <div class="constitutional-card" style="margin-top: var(--spacing-4)">
+                <h3>Module Independence</h3>
+                <p>Shared design system allows consistent updates across all modules</p>
+            </div>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="demo-section">
+            <h2>Color Palette</h2>
+            
+            <h3>Primary Agricultural Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: var(--primary-brown); color: white;">
+                    Primary Brown<br>--primary-brown
+                </div>
+                <div class="color-swatch" style="background: var(--primary-olive); color: white;">
+                    Primary Olive<br>--primary-olive
+                </div>
+                <div class="color-swatch" style="background: var(--dark-olive); color: white;">
+                    Dark Olive<br>--dark-olive
+                </div>
+                <div class="color-swatch" style="background: var(--light-olive); color: white;">
+                    Light Olive<br>--light-olive
+                </div>
+            </div>
+
+            <h3 style="margin-top: var(--spacing-8)">Enhanced Brand Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%); color: white;">
+                    Primary Gradient<br>Purple Theme
+                </div>
+                <div class="color-swatch" style="background: var(--color-agri-green); color: white;">
+                    Agricultural Green<br>--color-agri-green
+                </div>
+            </div>
+
+            <h3 style="margin-top: var(--spacing-8)">Status Colors</h3>
+            <div class="color-grid">
+                <div class="color-swatch" style="background: var(--color-success); color: white;">
+                    Success<br>Healthy Crops
+                </div>
+                <div class="color-swatch" style="background: var(--color-warning); color: white;">
+                    Warning<br>Attention Needed
+                </div>
+                <div class="color-swatch" style="background: var(--color-danger); color: white;">
+                    Danger<br>Urgent Issues
+                </div>
+                <div class="color-swatch" style="background: var(--color-info); color: white;">
+                    Info<br>Information
+                </div>
+            </div>
+        </div>
+
+        <!-- Typography -->
+        <div class="demo-section">
+            <h2>Typography Scale</h2>
+            <div class="constitutional-card">
+                <p style="font-size: var(--font-size-4xl); margin: var(--spacing-2) 0;">Heading 4XL (48px)</p>
+                <p style="font-size: var(--font-size-3xl); margin: var(--spacing-2) 0;">Heading 3XL (36px)</p>
+                <p style="font-size: var(--font-size-2xl); margin: var(--spacing-2) 0;">Heading 2XL (30px)</p>
+                <p style="font-size: var(--font-size-xl); margin: var(--spacing-2) 0;">Heading XL (24px)</p>
+                <p style="font-size: var(--font-size-lg); margin: var(--spacing-2) 0;">Large Text (20px)</p>
+                <p style="font-size: var(--font-size-base); margin: var(--spacing-2) 0; font-weight: var(--font-weight-semibold);">
+                    Base Text (18px) - Constitutional Minimum
+                </p>
+                <p style="font-size: var(--font-size-sm); margin: var(--spacing-2) 0; color: var(--color-gray-600);">
+                    Small Text (14px) - Secondary content only
+                </p>
+            </div>
+        </div>
+
+        <!-- Components -->
+        <div class="demo-section">
+            <h2>Components</h2>
+            
+            <div class="component-grid">
+                <!-- Buttons -->
+                <div>
+                    <h3>Buttons</h3>
+                    <button class="btn btn-primary">Primary Button</button>
+                    <div style="margin-top: var(--spacing-2)">
+                        <button class="constitutional-button constitutional-button-primary">Agricultural Button</button>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div>
+                    <h3>Cards</h3>
+                    <div class="constitutional-card">
+                        <h4>Card Title</h4>
+                        <p>This is a card component with hover effects and proper spacing.</p>
+                    </div>
+                </div>
+
+                <!-- Form Elements -->
+                <div>
+                    <h3>Form Elements</h3>
+                    <div class="constitutional-form-group">
+                        <label class="constitutional-label">Input Field</label>
+                        <input type="text" class="constitutional-input" placeholder="Enter text here">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spacing -->
+        <div class="demo-section">
+            <h2>Spacing System</h2>
+            <div class="constitutional-card">
+                <div style="background: var(--color-gray-200); margin-bottom: var(--spacing-2); padding: var(--spacing-xs);">XS Spacing (4px)</div>
+                <div style="background: var(--color-gray-200); margin-bottom: var(--spacing-2); padding: var(--spacing-sm);">SM Spacing (8px)</div>
+                <div style="background: var(--color-gray-200); margin-bottom: var(--spacing-2); padding: var(--spacing-md);">MD Spacing (16px)</div>
+                <div style="background: var(--color-gray-200); margin-bottom: var(--spacing-2); padding: var(--spacing-lg);">LG Spacing (24px)</div>
+                <div style="background: var(--color-gray-200); padding: var(--spacing-xl);">XL Spacing (32px)</div>
+            </div>
+        </div>
+
+        <!-- Shadows -->
+        <div class="demo-section">
+            <h2>Shadow System</h2>
+            <div class="component-grid">
+                <div class="constitutional-card" style="box-shadow: var(--shadow-xs);">
+                    <p>XS Shadow</p>
+                </div>
+                <div class="constitutional-card" style="box-shadow: var(--shadow-base);">
+                    <p>Base Shadow</p>
+                </div>
+                <div class="constitutional-card" style="box-shadow: var(--shadow-lg);">
+                    <p>Large Shadow</p>
+                </div>
+                <div class="constitutional-card" style="box-shadow: var(--shadow-primary);">
+                    <p>Primary Color Shadow</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Indicators -->
+        <div class="demo-section">
+            <h2>Status Indicators</h2>
+            <div class="constitutional-card">
+                <div style="display: flex; gap: var(--spacing-4); align-items: center;">
+                    <span class="status-dot active"></span> Active (Pulsing)
+                    <span class="status-dot" style="background: var(--color-warning);"></span> Warning
+                    <span class="status-dot" style="background: var(--color-danger);"></span> Error
+                    <span class="status-dot" style="background: var(--color-gray-400);"></span> Inactive
+                </div>
+            </div>
+        </div>
+
+        <!-- Animations -->
+        <div class="demo-section">
+            <h2>Animations</h2>
+            <div class="constitutional-card">
+                <p>Hover over elements to see smooth transitions</p>
+                <div class="skeleton" style="height: 40px; margin-top: var(--spacing-4);">
+                    Loading skeleton animation
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: var(--spacing-12); padding-top: var(--spacing-8); border-top: 1px solid var(--color-gray-300); text-align: center; color: var(--color-gray-600);">
+            <p>AVA OLO Constitutional Design System v2</p>
+            <p style="font-size: var(--font-size-sm);">Shared across monitoring dashboards and agricultural core</p>
+        </div>
+    </div>
+</body>
+</html>
