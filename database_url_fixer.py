@@ -28,13 +28,16 @@ def fix_database_url() -> str:
     logger.info(f"🔍 Original DATABASE_URL: {original_url[:50]}...")
     
     try:
+        # Pre-process URL to handle brackets in password (before urlparse)
+        processed_url = original_url
+        
         # Handle brackets in password (common AWS RDS issue)
-        if "[" in original_url and "]" in original_url:
+        if "[" in processed_url and "]" in processed_url:
             # Check if brackets are in password, not hostname
-            if "://" in original_url and "@" in original_url:
+            if "://" in processed_url and "@" in processed_url:
                 # Extract parts: scheme://user:pass@host:port/db
-                scheme_part = original_url.split("://")[0]
-                rest = original_url.split("://")[1]
+                scheme_part = processed_url.split("://")[0]
+                rest = processed_url.split("://")[1]
                 
                 if "@" in rest:
                     credentials_part = rest.split("@")[0]
@@ -44,14 +47,13 @@ def fix_database_url() -> str:
                     if "[" in credentials_part and "]" in credentials_part:
                         # URL-encode brackets in password
                         fixed_credentials = credentials_part.replace("[", "%5B").replace("]", "%5D")
-                        fixed_url = f"{scheme_part}://{fixed_credentials}@{host_part}"
+                        processed_url = f"{scheme_part}://{fixed_credentials}@{host_part}"
                         
-                        os.environ["DATABASE_URL"] = fixed_url
-                        logger.info(f"✅ Fixed brackets in password: {fixed_url[:50]}...")
-                        return fixed_url
+                        os.environ["DATABASE_URL"] = processed_url
+                        logger.info(f"✅ Fixed brackets in password: {processed_url[:50]}...")
         
-        # Parse the URL to identify components
-        parsed = urlparse(original_url)
+        # Parse the processed URL to identify components
+        parsed = urlparse(processed_url)
         
         # Handle IPv6 bracket issues in hostname
         if parsed.hostname and "[" in parsed.hostname and "]" in parsed.hostname:
@@ -79,7 +81,7 @@ def fix_database_url() -> str:
         
         # Handle postgres:// vs postgresql:// scheme
         if parsed.scheme == "postgres":
-            fixed_url = original_url.replace("postgres://", "postgresql://")
+            fixed_url = processed_url.replace("postgres://", "postgresql://")
             os.environ["DATABASE_URL"] = fixed_url
             logger.info(f"✅ Fixed scheme: postgres:// -> postgresql://")
             logger.info(f"✅ Fixed URL: {fixed_url[:50]}...")
@@ -103,9 +105,9 @@ def fix_database_url() -> str:
                 logger.info(f"✅ Added default port: {fixed_url[:50]}...")
                 return fixed_url
         
-        # URL seems fine, return original
-        logger.info(f"✅ Database URL appears valid: {original_url[:50]}...")
-        return original_url
+        # URL seems fine, return processed URL
+        logger.info(f"✅ Database URL appears valid: {processed_url[:50]}...")
+        return processed_url
         
     except Exception as e:
         logger.error(f"❌ Failed to parse DATABASE_URL: {e}")
