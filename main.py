@@ -2893,6 +2893,371 @@ async def get_system_status():
     
     return status
 
+# Health Dashboard - Comprehensive System Component Monitoring
+@app.get("/health-dashboard", response_class=HTMLResponse)
+async def health_dashboard():
+    """Health Dashboard showing status of all system components"""
+    
+    # Get comprehensive system status
+    components_status = await get_comprehensive_health_status()
+    
+    # Generate status rows HTML
+    status_rows = ""
+    for component, details in components_status.items():
+        status_rows += f"""
+        <tr>
+            <td style="font-weight: bold;">{component}</td>
+            <td>
+                <span style="font-size: 20px; margin-right: 10px;">{details['icon']}</span>
+                <span style="color: {details['color']}; font-weight: bold;">{details['status'].upper()}</span>
+            </td>
+            <td>{details['message']}</td>
+            <td style="color: #666; font-size: 0.9em;">{details['details']}</td>
+        </tr>
+        """
+    
+    # Calculate overall system health
+    total_components = len(components_status)
+    healthy_components = sum(1 for c in components_status.values() if c['status'] == 'healthy')
+    health_percentage = int((healthy_components / total_components) * 100)
+    
+    overall_status = "🟢 All Systems Operational" if healthy_components == total_components else \
+                    "🟡 Partial Degradation" if healthy_components > 0 else \
+                    "🔴 System Offline"
+    
+    return HTMLResponse(f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>System Health Dashboard - AVA OLO</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                margin: 0;
+                padding: 0;
+                background: #f5f5f5;
+            }}
+            .container {{
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+            }}
+            .header {{
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                margin-bottom: 20px;
+                text-align: center;
+            }}
+            .overall-status {{
+                font-size: 24px;
+                font-weight: bold;
+                margin: 20px 0;
+            }}
+            .health-bar {{
+                width: 100%;
+                height: 30px;
+                background: #e0e0e0;
+                border-radius: 15px;
+                overflow: hidden;
+                margin: 20px 0;
+            }}
+            .health-fill {{
+                height: 100%;
+                background: {'#4caf50' if health_percentage > 75 else '#ff9800' if health_percentage > 25 else '#f44336'};
+                width: {health_percentage}%;
+                transition: width 0.3s ease;
+            }}
+            .components-table {{
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                overflow: hidden;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+            th {{
+                background: #f8f9fa;
+                padding: 15px;
+                text-align: left;
+                font-weight: 600;
+                color: #333;
+                border-bottom: 2px solid #e0e0e0;
+            }}
+            td {{
+                padding: 15px;
+                border-bottom: 1px solid #f0f0f0;
+            }}
+            tr:hover {{
+                background: #f8f9fa;
+            }}
+            .refresh-btn {{
+                background: #2196f3;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 16px;
+                margin: 20px 0;
+            }}
+            .refresh-btn:hover {{
+                background: #1976d2;
+            }}
+            .back-link {{
+                display: inline-block;
+                margin-bottom: 20px;
+                color: #2196f3;
+                text-decoration: none;
+            }}
+            .back-link:hover {{
+                text-decoration: underline;
+            }}
+            .timestamp {{
+                color: #666;
+                font-size: 14px;
+                margin-top: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="/" class="back-link">← Back to Dashboard</a>
+            
+            <div class="header">
+                <h1>🏥 System Health Dashboard</h1>
+                <div class="overall-status">{overall_status}</div>
+                <div class="health-bar">
+                    <div class="health-fill"></div>
+                </div>
+                <p>{healthy_components} of {total_components} components healthy ({health_percentage}%)</p>
+                <button class="refresh-btn" onclick="location.reload()">🔄 Refresh Status</button>
+                <div class="timestamp">Last checked: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}</div>
+            </div>
+            
+            <div class="components-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {status_rows}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(() => location.reload(), 30000);
+        </script>
+    </body>
+    </html>
+    """)
+
+async def get_comprehensive_health_status():
+    """Check health status of all system components"""
+    
+    components = {}
+    
+    # 1. Database Connection
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT current_database(), version()")
+                db_name, db_version = cursor.fetchone()
+                cursor.execute("SELECT COUNT(*) FROM farmers")
+                farmer_count = cursor.fetchone()[0]
+                
+                components['Database (PostgreSQL)'] = {
+                    'status': 'healthy',
+                    'icon': '✅',
+                    'color': '#4caf50',
+                    'message': f'Connected to {db_name}',
+                    'details': f'{farmer_count} farmers, {db_version.split(",")[0]}'
+                }
+            else:
+                components['Database (PostgreSQL)'] = {
+                    'status': 'error',
+                    'icon': '❌',
+                    'color': '#f44336',
+                    'message': 'Connection failed',
+                    'details': 'Unable to establish database connection'
+                }
+    except Exception as e:
+        components['Database (PostgreSQL)'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Connection error',
+            'details': str(e)[:100]
+        }
+    
+    # 2. OpenAI API
+    if OPENAI_API_KEY and len(OPENAI_API_KEY) > 10:
+        try:
+            # Import test function
+            from llm_integration import test_llm_connection
+            llm_test = await test_llm_connection()
+            
+            if llm_test.get("status") == "connected":
+                components['OpenAI API'] = {
+                    'status': 'healthy',
+                    'icon': '✅',
+                    'color': '#4caf50',
+                    'message': 'API key configured and working',
+                    'details': f'Model: {llm_test.get("model", "gpt-4")}, Response time: {llm_test.get("response_time", "N/A")}'
+                }
+            else:
+                components['OpenAI API'] = {
+                    'status': 'warning',
+                    'icon': '⚠️',
+                    'color': '#ff9800',
+                    'message': 'API key configured but connection failed',
+                    'details': llm_test.get("error", "Connection test failed")
+                }
+        except:
+            components['OpenAI API'] = {
+                'status': 'warning',
+                'icon': '⚠️',
+                'color': '#ff9800',
+                'message': 'API key configured',
+                'details': 'Unable to test connection'
+            }
+    else:
+        components['OpenAI API'] = {
+            'status': 'not_configured',
+            'icon': '⚪',
+            'color': '#9e9e9e',
+            'message': 'Not configured',
+            'details': 'Set OPENAI_API_KEY in environment variables'
+        }
+    
+    # 3. Twilio (WhatsApp)
+    twilio_sid = os.getenv('TWILIO_ACCOUNT_SID')
+    twilio_token = os.getenv('TWILIO_AUTH_TOKEN')
+    
+    if twilio_sid and twilio_token:
+        components['Twilio (WhatsApp)'] = {
+            'status': 'configured',
+            'icon': '🟢',
+            'color': '#4caf50',
+            'message': 'Credentials configured',
+            'details': f'Account SID: {twilio_sid[:10]}...'
+        }
+    else:
+        components['Twilio (WhatsApp)'] = {
+            'status': 'not_configured',
+            'icon': '⚪',
+            'color': '#9e9e9e',
+            'message': 'Not configured',
+            'details': 'Optional - Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN if using WhatsApp'
+        }
+    
+    # 4. OpenWeather API
+    weather_key = os.getenv('OPENWEATHER_API_KEY')
+    
+    if weather_key:
+        components['OpenWeather API'] = {
+            'status': 'configured',
+            'icon': '🟢',
+            'color': '#4caf50',
+            'message': 'API key configured',
+            'details': f'Key: {weather_key[:10]}...'
+        }
+    else:
+        components['OpenWeather API'] = {
+            'status': 'not_configured',
+            'icon': '⚪',
+            'color': '#9e9e9e',
+            'message': 'Not configured',
+            'details': 'Optional - Set OPENWEATHER_API_KEY if using weather features'
+        }
+    
+    # 5. Cost Tracking Tables
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name IN ('farmer_interaction_costs', 'cost_rates')
+                    )
+                """)
+                tables_exist = cursor.fetchone()[0]
+                
+                if tables_exist:
+                    cursor.execute("SELECT COUNT(*) FROM farmer_interaction_costs")
+                    cost_records = cursor.fetchone()[0]
+                    
+                    components['Cost Tracking'] = {
+                        'status': 'healthy',
+                        'icon': '✅',
+                        'color': '#4caf50',
+                        'message': 'Tables initialized',
+                        'details': f'{cost_records} cost records tracked'
+                    }
+                else:
+                    components['Cost Tracking'] = {
+                        'status': 'warning',
+                        'icon': '⚠️',
+                        'color': '#ff9800',
+                        'message': 'Tables not initialized',
+                        'details': 'Visit /initialize-cost-tables to set up'
+                    }
+    except:
+        components['Cost Tracking'] = {
+            'status': 'unknown',
+            'icon': '❓',
+            'color': '#9e9e9e',
+            'message': 'Unable to check',
+            'details': 'Database connection required'
+        }
+    
+    # 6. Application Server
+    components['Application Server'] = {
+        'status': 'healthy',
+        'icon': '✅',
+        'color': '#4caf50',
+        'message': 'FastAPI running',
+        'details': f'Python {sys.version.split()[0]}, uvicorn server'
+    }
+    
+    # 7. AWS Environment
+    aws_region = os.getenv('AWS_REGION')
+    aws_url = os.getenv('AWS_APP_RUNNER_SERVICE_URL')
+    
+    if aws_region or aws_url:
+        components['AWS Environment'] = {
+            'status': 'configured',
+            'icon': '🟢',
+            'color': '#4caf50',
+            'message': f'Region: {aws_region or "default"}',
+            'details': f'App Runner: {aws_url or "Local development"}'
+        }
+    else:
+        components['AWS Environment'] = {
+            'status': 'development',
+            'icon': '🟡',
+            'color': '#ff9800',
+            'message': 'Local development mode',
+            'details': 'Set AWS_REGION and AWS_APP_RUNNER_SERVICE_URL for production'
+        }
+    
+    return components
+
 # Essential schema endpoint for quick reference
 @app.get("/api/essential-schema")
 async def get_essential_schema():
@@ -4311,6 +4676,144 @@ async def add_farmer_submit(
         <h1 class="error">❌ Error Adding Farmer</h1>
         <p>{message}</p>
         <a href="/database-dashboard/add-farmer">← Try Again</a>
+    </div>
+</body>
+</html>
+""")
+
+# Landing Page - Main Dashboard
+@app.get("/", response_class=HTMLResponse)
+async def landing_page():
+    """Main landing page with links to all dashboards"""
+    return HTMLResponse(content="""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AVA OLO - Agricultural Intelligence Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 20px;
+            margin-bottom: 50px;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        .dashboard-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+        .dashboard-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .dashboard-description {
+            font-size: 16px;
+            color: #7f8c8d;
+            line-height: 1.5;
+        }
+        
+        /* Dashboard specific colors */
+        .health { border-top: 5px solid #e74c3c; }
+        .health .dashboard-icon { color: #e74c3c; }
+        
+        .business { border-top: 5px solid #2ecc71; }
+        .business .dashboard-icon { color: #2ecc71; }
+        
+        .agronomic { border-top: 5px solid #3498db; }
+        .agronomic .dashboard-icon { color: #3498db; }
+        
+        .database { border-top: 5px solid #9b59b6; }
+        .database .dashboard-icon { color: #9b59b6; }
+        
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌾 AVA OLO</h1>
+        <p class="subtitle">Agricultural Intelligence Platform</p>
+        
+        <div class="dashboard-grid">
+            <a href="/health-dashboard" class="dashboard-card health">
+                <span class="dashboard-icon">🏥</span>
+                <div class="dashboard-title">System Health</div>
+                <div class="dashboard-description">
+                    Monitor all system components, API connections, and service status in real-time.
+                </div>
+            </a>
+            
+            <a href="/business-dashboard" class="dashboard-card business">
+                <span class="dashboard-icon">📊</span>
+                <div class="dashboard-title">Business Dashboard</div>
+                <div class="dashboard-description">
+                    View comprehensive business metrics, farmer analytics, and cost tracking.
+                </div>
+            </a>
+            
+            <a href="/agronomic-dashboard" class="dashboard-card agronomic">
+                <span class="dashboard-icon">🌱</span>
+                <div class="dashboard-title">Agronomic Dashboard</div>
+                <div class="dashboard-description">
+                    Track agricultural operations, field management, and crop analytics.
+                </div>
+            </a>
+            
+            <a href="/database-dashboard" class="dashboard-card database">
+                <span class="dashboard-icon">🗄️</span>
+                <div class="dashboard-title">Database Dashboard</div>
+                <div class="dashboard-description">
+                    Manage farmers, fields, tasks, and query agricultural data with AI assistance.
+                </div>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>Constitutional Agricultural Intelligence | Powered by AWS</p>
+        </div>
     </div>
 </body>
 </html>
