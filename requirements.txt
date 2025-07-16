@@ -1,49 +1,12 @@
-# AVA OLO Agricultural Core Dependencies
+# Minimal dependencies for AWS App Runner deployment
+# Only essential packages for api_gateway_minimal.py
 
 # Web Framework and API
 fastapi==0.110.0
 uvicorn[standard]==0.27.0.post1
-python-multipart==0.0.9
 
-# Database
-asyncpg==0.29.0
-sqlalchemy==2.0.23
-psycopg2-binary==2.9.7
-
-# AI/ML APIs
-openai>=1.10.0
-
-# LangChain for Memory Management
-langchain==0.1.0
-langchain-openai==0.0.5
-
-# HTTP Client
-httpx==0.26.0
-
-# Templates and Static Files
-jinja2==3.1.3
-
-# Data Processing
-pandas==2.0.3
-
-# Environment and Configuration
-python-dotenv==1.0.0
-
-# Additional utilities
+# Data validation
 pydantic==2.5.3
-pydantic-settings==2.1.0
 
-# Authentication and Security
-bcrypt==4.1.2
-PyJWT==2.8.0
-
-# WebSocket support
-websockets==11.0.3
-
-# AWS SDK for Secrets Manager
-boto3==1.34.0
-requests
-
-# CAVA Dependencies
-neo4j==5.15.0
-redis==5.0.1
+# Environment configuration
+python-dotenv==1.0.0

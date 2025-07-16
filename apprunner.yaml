@@ -5,7 +5,7 @@ build:
     pre-build:
       - echo "Installing minimal dependencies for stable deployment"
     build:
-      - pip install -r requirements_minimal.txt
+      - pip install -r requirements.txt
     post-build:
       - echo "Build completed - Minimal API ready"
 run:
