@@ -1951,102 +1951,100 @@ CRITICAL SUCCESS FACTORS:
 BE BULLETPROOF AND MAXIMALLY HELPFUL!
 """
 
-
+async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
+    """BACKUP: Original LangChain memory-based registration"""
     
-    async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
-        """BACKUP: Original LangChain memory-based registration"""
+    try:
+        from config_manager import config
+        from registration_memory import get_conversation_memory
+        import uuid
         
-        try:
-            from config_manager import config
-            from registration_memory import get_conversation_memory
-            import uuid
+        # Get or create conversation ID
+        conversation_id = request.conversation_id
+        if not conversation_id:
+            conversation_id = str(uuid.uuid4())
+        
+        # Get memory for this conversation
+        memory_chat = get_conversation_memory(conversation_id, config.openai_api_key)
+        
+        # Process message with LangChain memory
+        result = await memory_chat.process_message(request.user_input)
+        
+        # Add conversation ID to response
+        result["conversation_id"] = conversation_id
+        
+        # Handle registration completion
+        if result["status"] == "COMPLETE":
+            data = result["extracted_data"]
             
-            # Get or create conversation ID
-            conversation_id = request.conversation_id
-            if not conversation_id:
-                conversation_id = str(uuid.uuid4())
-            
-            # Get memory for this conversation
-            memory_chat = get_conversation_memory(conversation_id, config.openai_api_key)
-            
-            # Process message with LangChain memory
-            result = await memory_chat.process_message(request.user_input)
-            
-            # Add conversation ID to response
-            result["conversation_id"] = conversation_id
-            
-            # Handle registration completion
-            if result["status"] == "COMPLETE":
-                data = result["extracted_data"]
+            try:
+                # Check if any users exist to determine if this should be an owner
+                auth_manager = get_auth_manager()
+                conn = auth_manager._get_connection()
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM farm_users")
+                result = cursor.fetchone()
+                is_first_user = result['count'] == 0
                 
-                try:
-                    # Check if any users exist to determine if this should be an owner
-                    auth_manager = get_auth_manager()
-                    conn = auth_manager._get_connection()
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT COUNT(*) as count FROM farm_users")
-                    result = cursor.fetchone()
-                    is_first_user = result['count'] == 0
-                    
-                    # Get first farmer ID
-                    cursor.execute("SELECT id FROM farmers ORDER BY id LIMIT 1")
-                    farmer = cursor.fetchone()
-                    farmer_id = farmer['id'] if farmer else 1
-                    
-                    # Create the user
-                    user_result = auth_manager.register_farm_user(
-                        farmer_id=farmer_id,
-                        wa_phone=data['wa_phone_number'],
-                        password=data['password'],
-                        user_name=data['full_name'],
-                        role="owner" if is_first_user else "member",
-                        created_by_user_id=None
-                    )
-                    
-                    # Auto-login after registration
-                    login_result = auth_manager.authenticate_user(
-                        data['wa_phone_number'],
-                        data['password']
-                    )
-                    
-                    return {
-                        "message": result["message"],
-                        "status": "COMPLETE",
-                        "registration_successful": True,
-                        "farmer_id": farmer_id,
-                        "token": login_result['token'] if login_result else None,
-                        "user": login_result['user'] if login_result else None,
-                        "extracted_data": data,
-                        "conversation_history": request.conversation_history or [],
-                        "last_ava_message": result["message"]
-                    }
-                    
-                except Exception as e:
-                    logger.error(f"Account creation error: {str(e)}")
-                    return {
-                        "message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again...",
-                        "status": "retry_creation",
-                        "extracted_data": data,
-                        "conversation_history": context["conversation_history"],
-                        "last_ava_message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again..."
-                    }
-            
-            # Continue conversation
-            return result
-            
-        except Exception as e:
-            logger.error(f"LangChain registration error: {str(e)}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            return {
-                "message": "Hi! What's your full name? (first and last name)",
-                "status": "collecting", 
-                "extracted_data": {},
-                "conversation_history": [],
-                "last_ava_message": "Hi! What's your full name? (first and last name)",
-                "memory_enabled": False,
-                "error": str(e)
-            }
+                # Get first farmer ID
+                cursor.execute("SELECT id FROM farmers ORDER BY id LIMIT 1")
+                farmer = cursor.fetchone()
+                farmer_id = farmer['id'] if farmer else 1
+                
+                # Create the user
+                user_result = auth_manager.register_farm_user(
+            farmer_id=farmer_id,
+            wa_phone=data['wa_phone_number'],
+            password=data['password'],
+            user_name=data['full_name'],
+            role="owner" if is_first_user else "member",
+            created_by_user_id=None
+                )
+                
+                # Auto-login after registration
+                login_result = auth_manager.authenticate_user(
+            data['wa_phone_number'],
+            data['password']
+                )
+                
+                return {
+            "message": result["message"],
+            "status": "COMPLETE",
+            "registration_successful": True,
+            "farmer_id": farmer_id,
+            "token": login_result['token'] if login_result else None,
+            "user": login_result['user'] if login_result else None,
+            "extracted_data": data,
+            "conversation_history": request.conversation_history or [],
+            "last_ava_message": result["message"]
+                }
+                
+            except Exception as e:
+                logger.error(f"Account creation error: {str(e)}")
+                return {
+            "message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again...",
+            "status": "retry_creation",
+            "extracted_data": data,
+            "conversation_history": context["conversation_history"],
+            "last_ava_message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again..."
+                }
+        
+        # Continue conversation
+        return result
+        
+    except Exception as e:
+        logger.error(f"LangChain registration error: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return {
+            "message": "Hi! What's your full name? (first and last name)",
+            "status": "collecting", 
+            "extracted_data": {},
+            "conversation_history": [],
+            "last_ava_message": "Hi! What's your full name? (first and last name)",
+            "memory_enabled": False,
+            "error": str(e)
+        }
 
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_cava_proxy(request: ChatRegisterRequest):
