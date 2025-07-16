@@ -3075,6 +3075,43 @@ async def test_maps():
     with open("test_maps.html", "r") as f:
         return HTMLResponse(content=f.read())
 
+# Clean Google Maps Test Page
+@app.get("/clean-map-test", response_class=HTMLResponse)
+async def clean_map_test():
+    """Clean test page for Google Maps API debugging"""
+    api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'NOT_SET')
+    
+    # Read the clean test file and inject the API key
+    with open('static/clean-map-test.html', 'r') as f:
+        html_content = f.read()
+    
+    # Replace placeholder with actual API key
+    html_content = html_content.replace('YOUR_ACTUAL_API_KEY', api_key)
+    
+    return HTMLResponse(content=html_content)
+
+# API Key Debug Endpoint
+@app.get("/debug/api-key")
+async def debug_api_key():
+    """Debug API key format and validity"""
+    api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+    
+    return {
+        "api_key_full": api_key,  # Full key for debugging
+        "api_key_length": len(api_key),
+        "starts_with_correct_prefix": api_key.startswith('AIzaSy'),
+        "has_suspicious_chars": any(c in api_key for c in ['<', '>', '&', '"', "'"]),
+        "character_analysis": {
+            "first_10": api_key[:10] if api_key else "EMPTY",
+            "last_10": api_key[-10:] if api_key else "EMPTY",
+            "middle_sample": api_key[10:20] if len(api_key) > 20 else "TOO_SHORT"
+        },
+        "test_urls": {
+            "clean_test": "/clean-map-test",
+            "farmer_registration": "/farmer-registration"
+        }
+    }
+
 # Google Maps Debug Endpoint
 @app.get("/debug/google-maps")
 async def debug_google_maps():
