@@ -1,5 +1,5 @@
 version: 1.0
-runtime: python311
+runtime: python3
 build:
   commands:
     pre-build:
@@ -9,8 +9,8 @@ build:
     post-build:
       - echo "Build completed - Authentication system ready"
 run:
-  runtime-version: 3.11
-  command: uvicorn api_gateway_simple:app --host 0.0.0.0 --port 8080
+  runtime-version: 3.9
+  command: python api_gateway_simple.py
   network:
     port: 8080
     env: PORT
@@ -53,9 +53,9 @@ run:
     - name: CAVA_INTEGRATED_MODE
       value: "true"  # Enable CAVA integration
     - name: CAVA_DRY_RUN_MODE
-      value: "false"  # Production mode with real databases
+      value: "true"  # Dry run mode to avoid connection issues
     - name: DISABLE_CAVA
-      value: "false"  # Enable CAVA for testing
+      value: "true"  # Temporarily disable CAVA for stable deployment
     - name: CAVA_POSTGRESQL_SCHEMA
       value: "cava"
     - name: CAVA_REDIS_URL

@@ -3503,11 +3503,26 @@ async def startup_event():
         try:
             from implementation.cava.universal_conversation_engine import CAVAUniversalConversationEngine
             _cava_engine = CAVAUniversalConversationEngine()
-            await _cava_engine.initialize()
+            # Don't wait for full initialization - let it happen in background
+            cava_logger.info("🔄 APP: CAVA engine created, initializing in background...")
             app.state.cava_engine = _cava_engine  # Store in app state
-            cava_logger.info("✅ APP: CAVA engine initialized and ready for direct use")
+            
+            # Initialize in background to not block startup
+            import asyncio
+            async def init_cava_background():
+                try:
+                    await _cava_engine.initialize()
+                    cava_logger.info("✅ APP: CAVA engine initialized successfully in background")
+                except Exception as init_e:
+                    cava_logger.error(f"⚠️ APP: CAVA initialization incomplete: {str(init_e)}")
+                    cava_logger.info("ℹ️ APP: CAVA will operate in limited mode")
+            
+            asyncio.create_task(init_cava_background())
+            
         except Exception as e:
-            cava_logger.error(f"❌ APP: CAVA engine initialization failed: {str(e)}")
+            cava_logger.error(f"❌ APP: CAVA engine creation failed: {str(e)}")
+            import traceback
+            cava_logger.error(f"Traceback: {traceback.format_exc()}")
             _cava_engine = None
     else:
         cava_logger.info("ℹ️ APP: CAVA engine disabled")
