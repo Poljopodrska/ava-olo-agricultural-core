@@ -3445,6 +3445,42 @@ async def test_cava_proxy():
             "proxy_working": False
         }
 
+@app.get("/debug/test-cava-direct")
+async def test_cava_direct():
+    """Test CAVA directly without proxy"""
+    try:
+        import httpx
+        
+        # Test CAVA health first
+        async with httpx.AsyncClient() as client:
+            health_resp = await client.get("http://localhost:8080/api/v1/cava/health", timeout=5.0)
+            health_data = health_resp.json()
+            
+            # Test CAVA register
+            register_resp = await client.post(
+                "http://localhost:8080/api/v1/cava/register",
+                json={
+                    "farmer_id": 99999,
+                    "message": "Test Direct Call",
+                    "session_id": "debug-direct-test"
+                },
+                timeout=10.0
+            )
+            register_data = register_resp.json()
+            
+        return {
+            "success": True,
+            "health": health_data,
+            "register_response": register_data
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/debug/redis/{session_id}")
 async def debug_redis_state(session_id: str):
     """Check what's in Redis for this session"""

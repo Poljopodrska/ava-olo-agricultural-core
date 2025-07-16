@@ -132,13 +132,20 @@ async def cava_register(request: CAVARequest):
         logger.error(f"Traceback: {traceback.format_exc()}")
         
         # Provide more specific error messages based on error type
-        if "connection" in str(e).lower() or "redis" in str(e).lower():
-            error_message = "I'm having connection issues. Let me try again. What's your full name?"
-        elif "openai" in str(e).lower() or "api" in str(e).lower():
-            error_message = "I'm having trouble with my AI service. Please tell me your full name (first and last)."
+        error_str = str(e).lower()
+        error_type = type(e).__name__
+        
+        # ENHANCED ERROR REPORTING FOR DEBUGGING
+        logger.error(f"🔥🔥🔥 CAVA ERROR TYPE: {error_type}")
+        logger.error(f"🔥🔥🔥 CAVA ERROR MSG: {str(e)}")
+        
+        if "connection" in error_str or "redis" in error_str:
+            error_message = f"I'm having connection issues. Let me try again. What's your full name? [Debug: {error_type}]"
+        elif "openai" in error_str or "api" in error_str:
+            error_message = f"I'm having trouble with my AI service. Please tell me your full name. [Debug: {str(e)[:100]}]"
         else:
-            # Fallback to manual registration flow
-            error_message = "Let me help you register. What's your full name? (Please provide both first and last name)"
+            # Include actual error in response for debugging
+            error_message = f"I'm having trouble processing your message. What's your full name? [Debug: {error_type}: {str(e)[:150]}]"
         
         # Return a valid response even on error
         return CAVAResponse(
