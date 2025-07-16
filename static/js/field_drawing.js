@@ -10,13 +10,15 @@ let markers = [];
 function initFieldMap() {
     // Check if Google Maps is available
     if (typeof google === 'undefined' || !google.maps) {
-        console.log('Google Maps not available');
+        console.error('Google Maps not available - check API key');
         const mapDiv = document.getElementById('field-map');
         if (mapDiv) {
             mapDiv.innerHTML = '<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px;"><h3>📍 Map Not Available</h3><p>Google Maps API key not configured. Field drawing is disabled but you can still register farmers.</p></div>';
         }
         return;
     }
+    
+    console.log('Google Maps API loaded successfully');
     
     // Initialize map centered on Croatia/Slovenia region (can be adjusted)
     fieldMap = new google.maps.Map(document.getElementById('field-map'), {

@@ -10,13 +10,16 @@
     </script>
     <!-- Fallback if Google Maps fails -->
     <script>
-        window.initFieldMap = window.initFieldMap || function() {
-            console.log('Google Maps not available - field drawing disabled');
-            const mapDiv = document.getElementById('field-map');
-            if (mapDiv) {
-                mapDiv.innerHTML = '<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px;"><h3>📍 Map Not Available</h3><p>Google Maps API key not configured. Field drawing is disabled but you can still register farmers.</p></div>';
+        // Only set fallback if Google Maps script fails to load
+        setTimeout(function() {
+            if (typeof google === 'undefined' || !google.maps) {
+                console.log('Google Maps not available - field drawing disabled');
+                const mapDiv = document.getElementById('field-map');
+                if (mapDiv) {
+                    mapDiv.innerHTML = '<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px;"><h3>📍 Map Not Available</h3><p>Google Maps API key not configured. Field drawing is disabled but you can still register farmers.</p></div>';
+                }
             }
-        };
+        }, 3000); // Wait 3 seconds for Google Maps to load
     </script>
     <style>
         body {
