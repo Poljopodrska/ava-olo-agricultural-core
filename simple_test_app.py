@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 print("🚀 SIMPLE APP STARTING...")
 
+import os
+print(f"🚀 Environment PORT: {os.getenv('PORT')}")
+print(f"🚀 All env vars: {dict(os.environ)}")
+
 from fastapi import FastAPI
 import uvicorn
 
@@ -21,7 +25,9 @@ async def health():
 print("✅ Routes defined")
 
 if __name__ == "__main__":
-    print("🚀 Starting uvicorn...")
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    # CRITICAL: Use PORT from environment variable
+    port = int(os.getenv("PORT", 8080))
+    print(f"🚀 Starting uvicorn on port: {port}")
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 print("✅ SIMPLE APP SETUP COMPLETE")
