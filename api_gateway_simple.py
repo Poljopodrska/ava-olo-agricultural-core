@@ -1951,6 +1951,19 @@ CRITICAL SUCCESS FACTORS:
 BE BULLETPROOF AND MAXIMALLY HELPFUL!
 """
 
+except Exception as e:
+    logger.error(f"❌ Authentication system not available: {str(e)}")
+    
+    # Fallback auth functions
+    def get_auth_manager():
+        return None
+    
+    def get_auth_middleware():
+        return None
+    
+    def get_auth_deps():
+        return None
+
 async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
     """BACKUP: Original LangChain memory-based registration"""
     
@@ -1993,40 +2006,40 @@ async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
                 
                 # Create the user
                 user_result = auth_manager.register_farm_user(
-            farmer_id=farmer_id,
-            wa_phone=data['wa_phone_number'],
-            password=data['password'],
-            user_name=data['full_name'],
-            role="owner" if is_first_user else "member",
-            created_by_user_id=None
+                    farmer_id=farmer_id,
+                    wa_phone=data['wa_phone_number'],
+                    password=data['password'],
+                    user_name=data['full_name'],
+                    role="owner" if is_first_user else "member",
+                    created_by_user_id=None
                 )
                 
                 # Auto-login after registration
                 login_result = auth_manager.authenticate_user(
-            data['wa_phone_number'],
-            data['password']
+                    data['wa_phone_number'],
+                    data['password']
                 )
                 
                 return {
-            "message": result["message"],
-            "status": "COMPLETE",
-            "registration_successful": True,
-            "farmer_id": farmer_id,
-            "token": login_result['token'] if login_result else None,
-            "user": login_result['user'] if login_result else None,
-            "extracted_data": data,
-            "conversation_history": request.conversation_history or [],
-            "last_ava_message": result["message"]
+                    "message": result["message"],
+                    "status": "COMPLETE",
+                    "registration_successful": True,
+                    "farmer_id": farmer_id,
+                    "token": login_result['token'] if login_result else None,
+                    "user": login_result['user'] if login_result else None,
+                    "extracted_data": data,
+                    "conversation_history": request.conversation_history or [],
+                    "last_ava_message": result["message"]
                 }
                 
             except Exception as e:
                 logger.error(f"Account creation error: {str(e)}")
                 return {
-            "message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again...",
-            "status": "retry_creation",
-            "extracted_data": data,
-            "conversation_history": context["conversation_history"],
-            "last_ava_message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again..."
+                    "message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again...",
+                    "status": "retry_creation",
+                    "extracted_data": data,
+                    "conversation_history": request.conversation_history or [],
+                    "last_ava_message": "Perfect! I have all your information. There was a brief technical issue, but let me try creating your account again..."
                 }
         
         # Continue conversation
@@ -2046,8 +2059,8 @@ async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
             "error": str(e)
         }
 
-    @app.post("/api/v1/auth/chat-register")
-    async def chat_register_cava_proxy(request: ChatRegisterRequest):
+@app.post("/api/v1/auth/chat-register")
+async def chat_register_cava_proxy(request: ChatRegisterRequest):
         """CAVA proxy using integrated engine (NOT HTTP calls)"""
         
         try:
@@ -2103,8 +2116,8 @@ async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
                     "error": f"Both CAVA and fallback failed: {str(e)}"
                 }
 
-    @app.get("/api/v1/auth/family")
-    async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
+@app.get("/api/v1/auth/family")
+async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
         """Get all family members who have access to this farm"""
         try:
             auth_manager = get_auth_manager()
