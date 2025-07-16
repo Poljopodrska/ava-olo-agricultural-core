@@ -17,7 +17,7 @@ DB_PORT=5432
 # This appears to be different from what was documented previously
 
 # Google Maps API
-GOOGLE_MAPS_API_KEY=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo
+GOOGLE_MAPS_API_KEY=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo  # CORRECT WORKING KEY!
 
 # OpenAI API (Optional)
 OPENAI_API_KEY=your_openai_key_here
