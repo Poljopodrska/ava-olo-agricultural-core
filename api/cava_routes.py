@@ -122,4 +122,12 @@ async def cava_register(request: CAVARequest):
         )
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Return a valid response even on error
+        return CAVAResponse(
+            success=False,
+            message="I'm having trouble processing that. Could you please try again?",
+            session_id=request.session_id or "error",
+            completed=False
+        )

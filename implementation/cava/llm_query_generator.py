@@ -97,6 +97,10 @@ Return only valid JSON.
             }
         
         try:
+            if not self.client:
+                logger.error("❌ OpenAI client not initialized - API key missing?")
+                return fallback_response
+                
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -173,6 +177,10 @@ Return only the Cypher query, nothing else.
             """
         
         try:
+            if not self.client:
+                logger.error("❌ OpenAI client not initialized - API key missing?")
+                return fallback_response
+                
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -237,6 +245,10 @@ Return only the Cypher query, nothing else.
             """
         
         try:
+            if not self.client:
+                logger.error("❌ OpenAI client not initialized - API key missing?")
+                return fallback_response
+                
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -292,6 +304,10 @@ Generate a natural farmer response that:
                 return "I don't have any information about that yet. Could you tell me more about what you've planted?"
         
         try:
+            if not self.client:
+                logger.error("❌ OpenAI client not initialized - API key missing?")
+                return fallback_response
+                
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -379,6 +395,10 @@ Return only valid JSON.
             return mock_data
         
         try:
+            if not self.client:
+                logger.error("❌ OpenAI client not initialized - API key missing?")
+                return fallback_response
+                
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -421,6 +441,10 @@ Return only the SQL query.
             return "SELECT * FROM cava.conversation_sessions WHERE farmer_id = $1 ORDER BY created_at DESC LIMIT 10"
         
         try:
+            if not self.client:
+                logger.error("❌ OpenAI client not initialized - API key missing?")
+                return fallback_response
+                
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],

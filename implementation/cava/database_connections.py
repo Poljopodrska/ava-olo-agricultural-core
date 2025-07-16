@@ -147,14 +147,14 @@ class CAVARedisConnection:
             def create_redis_client():
                 # Parse Redis URL and add SSL if needed
                 if 'amazonaws.com' in self.url:
-                    # AWS ElastiCache requires SSL
+                    # AWS ElastiCache - use rediss:// URL format instead of ssl parameter
+                    # Replace redis:// with rediss:// for SSL
+                    ssl_url = self.url.replace('redis://', 'rediss://')
                     client = redis.from_url(
-                        self.url, 
+                        ssl_url, 
                         decode_responses=True,
                         socket_timeout=10,  # Increase timeout for AWS
-                        socket_connect_timeout=10,  # Increase timeout for AWS
-                        ssl=True,
-                        ssl_cert_reqs=None
+                        socket_connect_timeout=10  # Increase timeout for AWS
                     )
                 else:
                     client = redis.from_url(
