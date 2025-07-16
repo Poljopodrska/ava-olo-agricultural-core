@@ -15,6 +15,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database_operations import DatabaseOperations
+from config_manager import config
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,24 @@ if os.getenv('DISABLE_CAVA', 'false').lower() != 'true':
 else:
     logger.info("ℹ️ CAVA disabled by environment variable")
     cava_logger.info("ℹ️ CAVA: Disabled by environment variable")
+
+# Debug endpoint for AWS deployment verification
+@app.get("/debug/env")
+async def debug_env():
+    """Debug endpoint to verify AWS deployment state"""
+    return {
+        "DATABASE_URL": config.database_url[:50] + "..." if len(config.database_url) > 50 else config.database_url,
+        "DB_HOST": config.db_host,
+        "DB_NAME": config.db_name,
+        "DB_USER": config.db_user,
+        "CAVA_DRY_RUN_MODE": os.getenv("CAVA_DRY_RUN_MODE", "NOT_SET"),
+        "CAVA_REDIS_URL": os.getenv("CAVA_REDIS_URL", "NOT_SET")[:50] + "..." if len(os.getenv("CAVA_REDIS_URL", "")) > 50 else os.getenv("CAVA_REDIS_URL", "NOT_SET"),
+        "DISABLE_CAVA": os.getenv("DISABLE_CAVA", "NOT_SET"),
+        "python_path": sys.path[0] if sys.path else "unknown",
+        "current_working_directory": os.getcwd(),
+        "git_commit": os.getenv("GIT_COMMIT", "NOT_SET"),
+        "deployment_time": datetime.now().isoformat()
+    }
 
 # Root Web Interface Route - Complete Constitutional Interface with Weather
 @app.get("/", response_class=HTMLResponse)
