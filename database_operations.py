@@ -388,7 +388,7 @@ class DatabaseOperations:
             logger.error(f"Error getting crop info: {str(e)}")
             return None
     
-    async def get_conversations_for_approval(self) -> Dict[str, List[Dict[str, Any]]]:
+    def get_conversations_for_approval(self) -> Dict[str, List[Dict[str, Any]]]:
         """Get conversations grouped by approval status for agronomic dashboard"""
         try:
             with self.get_session() as session:
@@ -466,7 +466,7 @@ class DatabaseOperations:
             logger.error(f"Error getting conversation details: {str(e)}")
             return None
 
-    async def health_check(self) -> bool:
+    def health_check(self) -> bool:
         """Check database connectivity to farmer_crm database"""
         try:
             print("INFO: Starting comprehensive database health check...")
@@ -527,7 +527,7 @@ class DatabaseOperations:
             print(f"❌ Connection failed: {e}")
             return False
     
-    async def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new farmer with fields and app access credentials"""
         try:
             print(f"INFO: Starting farmer registration for {data.get('manager_name')} {data.get('manager_last_name')}")

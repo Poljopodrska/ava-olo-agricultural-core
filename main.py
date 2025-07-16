@@ -2350,7 +2350,7 @@ async def agronomic_dashboard():
     # Get conversations data from database
     db_ops = DatabaseOperations()
     try:
-        conversations_data = await db_ops.get_conversations_for_approval()
+        conversations_data = db_ops.get_conversations_for_approval()
         conversations = conversations_data
     except Exception as e:
         print(f"Error getting conversations: {e}")
@@ -3202,7 +3202,7 @@ async def register_farmer(request: Request):
         
         # Insert farmer and fields using database operations
         db_ops = DatabaseOperations()
-        result = await db_ops.insert_farmer_with_fields(data)
+        result = db_ops.insert_farmer_with_fields(data)
         
         if result['success']:
             return JSONResponse(content={"success": True, "farmer_id": result['farmer_id']})
@@ -3225,7 +3225,7 @@ async def database_health_check():
     """Test database connectivity and return detailed status"""
     try:
         db_ops = DatabaseOperations()
-        is_healthy = await db_ops.health_check()
+        is_healthy = db_ops.health_check()
         
         return {
             "status": "healthy" if is_healthy else "unhealthy",
@@ -3396,7 +3396,7 @@ async def debug_database_connection():
         # Test 2: Database connection attempt
         try:
             db_ops = DatabaseOperations()
-            connection_test = await db_ops.health_check()
+            connection_test = db_ops.health_check()
             debug_info["connection_tests"].append({
                 "test": "Database Connection",
                 "status": "success" if connection_test else "failed",
