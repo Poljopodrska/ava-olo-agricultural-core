@@ -1913,9 +1913,8 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
 
 
     
-    @app.post("/api/v1/auth/chat-register")
-    async def chat_register_step(request: ChatRegisterRequest):
-        """LangChain memory-based registration"""
+    async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
+        """BACKUP: Original LangChain memory-based registration"""
         
         try:
             from config_manager import config
@@ -2008,6 +2007,70 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
                 "memory_enabled": False,
                 "error": str(e)
             }
+
+    @app.post("/api/v1/auth/chat-register")
+    async def chat_register_step(request: ChatRegisterRequest):
+        """CAVA-powered registration proxy - routes old endpoint to use CAVA"""
+        
+        logger.info(f"🔄 CAVA Proxy: Registration request - session: {request.session_id}, message: '{request.user_input}'")
+        
+        try:
+            # Import CAVA handler
+            from implementation.cava.cava_registration_handler import handle_registration_input
+            
+            # Generate farmer_id if not provided
+            farmer_id = request.farmer_id or abs(hash(request.session_id or "default")) % 1000000
+            
+            # Call CAVA registration handler
+            logger.info(f"🎯 CAVA Proxy: Calling CAVA with farmer_id={farmer_id}")
+            cava_response = await handle_registration_input(
+                farmer_id=farmer_id,
+                user_input=request.user_input or ""
+            )
+            
+            logger.info(f"✅ CAVA Proxy: CAVA response - {cava_response}")
+            
+            # Convert CAVA response to old format
+            is_complete = cava_response.get("success", False) and \
+                         ("complete" in cava_response.get("message", "").lower() or 
+                          cava_response.get("status") == "COMPLETE")
+            
+            response = {
+                "success": cava_response.get("success", True),
+                "message": cava_response.get("message", ""),
+                "status": "COMPLETE" if is_complete else "collecting",
+                "session_id": request.session_id,
+                "conversation_id": request.conversation_id,
+                "registration_successful": is_complete,
+                "extracted_data": cava_response.get("extracted_data", {}),
+                "conversation_history": request.conversation_history or [],
+                "last_ava_message": cava_response.get("message", ""),
+                "cava_enabled": True
+            }
+            
+            logger.info(f"📤 CAVA Proxy: Final response - status: {response['status']}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"❌ CAVA Proxy failed: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Fallback to old system
+            logger.info("🔄 CAVA Proxy: Falling back to old registration system")
+            try:
+                return await chat_register_step_OLD_BACKUP(request)
+            except Exception as fallback_e:
+                logger.error(f"❌ Fallback also failed: {str(fallback_e)}")
+                return {
+                    "message": "Hi! I'm AVA, your agricultural assistant. What's your full name?",
+                    "status": "collecting", 
+                    "extracted_data": {},
+                    "conversation_history": [],
+                    "last_ava_message": "Hi! I'm AVA, your agricultural assistant. What's your full name?",
+                    "cava_enabled": False,
+                    "error": f"Both CAVA and fallback failed: {str(e)}"
+                }
 
     @app.get("/api/v1/auth/family")
     async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
