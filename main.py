@@ -9,6 +9,7 @@ from typing import Dict, Any
 from fastapi import FastAPI, HTTPException, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi import Form
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sys
 sys.path.append('.')
@@ -48,6 +49,88 @@ else:
     print(f"DEBUG: OpenAI key issue - Present: {bool(OPENAI_API_KEY)}, Length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
 
 app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Helper function to get design system CSS
+def get_design_system_css():
+    """Return the CSS link tag for the design system"""
+    return '<link rel="stylesheet" href="/static/css/design-system.css">'
+
+# Base HTML template for all dashboards
+def get_base_html_start(title="AVA OLO Dashboard"):
+    """Return the base HTML start with design system"""
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    {get_design_system_css()}
+    <style>
+        /* Base styles using design system */
+        body {{
+            font-family: var(--font-primary);
+            background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%);
+            margin: 0;
+            min-height: 100vh;
+            color: var(--color-gray-800);
+        }}
+        .dashboard-container {{
+            max-width: 1400px;
+            margin: var(--spacing-8) auto;
+            background: var(--color-bg-white);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-2xl);
+            overflow: hidden;
+        }}
+        .dashboard-header {{
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: var(--spacing-6) var(--spacing-8);
+            border-bottom: 1px solid var(--color-gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .back-link {{
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: var(--font-weight-semibold);
+            transition: all var(--transition-base);
+        }}
+        .back-link:hover {{
+            color: var(--color-primary-dark);
+            transform: translateX(-5px);
+        }}
+        h1 {{
+            color: var(--color-agri-green);
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            margin: 0;
+        }}
+        .btn {{
+            padding: var(--spacing-3) var(--spacing-6);
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-decoration: none;
+            display: inline-block;
+        }}
+        .btn-primary {{
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-primary);
+        }}
+        .btn-primary:hover {{
+            transform: var(--transform-hover-up);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }}
+    </style>"""
 
 # Helper function for formatting time ago
 def format_time_ago(timestamp):
@@ -1151,99 +1234,106 @@ DASHBOARD_LANDING_HTML = """
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_landing():
     """Dashboard Landing Page with 3-Dashboard Navigation"""
-    return HTMLResponse(content="""
+    return HTMLResponse(content=f"""
 <!DOCTYPE html>
 <html>
 <head>
     <title>AVA OLO Agricultural Dashboards</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {get_design_system_css()}
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #F5F3F0; 
-            color: #2C2C2C;
+        body {{ 
+            font-family: var(--font-primary);
+            background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%);
+            color: var(--color-gray-800);
             margin: 0;
-            padding: 20px;
-            font-size: 18px;
-            line-height: 1.6;
-        }
-        .constitutional-container {
+            padding: var(--spacing-6);
+            min-height: 100vh;
+        }}
+        .constitutional-container {{
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--color-bg-white);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-2xl);
             overflow: hidden;
-        }
-        .constitutional-header {
-            background: linear-gradient(135deg, #6B5B73, #5D5E3F);
+        }}
+        .constitutional-header {{
+            background: linear-gradient(135deg, var(--color-agri-green) 0%, var(--color-agri-green-light) 100%);
             color: white;
-            padding: 40px 20px;
+            padding: var(--spacing-12) var(--spacing-6);
             text-align: center;
-        }
-        .constitutional-title {
-            margin: 0 0 10px 0;
-            font-size: 2.5em;
-            font-weight: bold;
-        }
-        .constitutional-subtitle {
+        }}
+        .constitutional-title {{
+            margin: 0 0 var(--spacing-3) 0;
+            font-size: var(--font-size-4xl);
+            font-weight: var(--font-weight-bold);
+        }}
+        .constitutional-subtitle {{
             margin: 0;
-            font-size: 1.2em;
+            font-size: var(--font-size-xl);
             opacity: 0.9;
-        }
-        .dashboard-grid {
+        }}
+        .dashboard-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            padding: 40px;
-        }
-        .constitutional-card {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--spacing-8);
+            padding: var(--spacing-10);
+        }}
+        .constitutional-card {{
             background: white;
-            border: 2px solid #8B8C5A;
-            border-radius: 8px;
-            padding: 30px;
+            border: 2px solid transparent;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-8);
             text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .constitutional-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
-        }
-        .constitutional-card h2 {
-            color: #6B5B73;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-        .constitutional-card p {
-            color: #5D5E3F;
-            margin-bottom: 25px;
-            font-size: 1.1em;
-        }
-        .constitutional-button {
-            background: linear-gradient(135deg, #8B8C5A, #6B5B73);
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-md);
+        }}
+        .constitutional-card:hover {{
+            transform: var(--transform-hover-up);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--color-primary);
+        }}
+        .constitutional-card h2 {{
+            color: var(--color-agri-green);
+            margin-bottom: var(--spacing-4);
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+        }}
+        .constitutional-card p {{
+            color: var(--color-gray-600);
+            margin-bottom: var(--spacing-6);
+            font-size: var(--font-size-lg);
+            line-height: var(--line-height-normal);
+        }}
+        .constitutional-button {{
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
             color: white;
-            padding: 12px 25px;
+            padding: var(--spacing-4) var(--spacing-8);
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 1.1em;
+            border-radius: var(--radius-md);
+            font-weight: var(--font-weight-semibold);
+            font-size: var(--font-size-base);
             display: inline-block;
-            transition: background 0.3s ease;
-        }
-        .constitutional-button:hover {
-            background: linear-gradient(135deg, #6B5B73, #5D5E3F);
+            transition: all var(--transition-base);
+            box-shadow: var(--shadow-primary);
+        }}
+        .constitutional-button:hover {{
+            transform: var(--transform-hover-up);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
             text-decoration: none;
             color: white;
-        }
-        @media (max-width: 768px) {
-            .dashboard-grid {
+        }}
+        @media (max-width: 768px) {{
+            .dashboard-grid {{
                 grid-template-columns: 1fr;
-                padding: 20px;
-            }
-            .constitutional-title {
-                font-size: 2em;
-            }
-        }
+                padding: var(--spacing-6);
+            }}
+            .constitutional-title {{
+                font-size: var(--font-size-3xl);
+            }}
+        }}
     </style>
 </head>
 <body>
@@ -1461,24 +1551,82 @@ async def cost_rates_management():
         rates_html += f"""
         <tr>
             <td>{service}</td>
-            <td><input type="number" step="0.000001" value="{cost}" id="rate_{service}" style="width: 100px;"></td>
+            <td><input type="number" step="0.000001" value="{cost}" id="rate_{service}"></td>
             <td>{unit}</td>
             <td>{currency}</td>
-            <td><button onclick="updateRate('{service}')" style="background: #3b82f6; color: white; border: none; padding: 5px 10px; border-radius: 3px;">Update</button></td>
+            <td><button onclick="updateRate('{service}')" class="update-btn">Update</button></td>
         </tr>"""
     
     return HTMLResponse(f"""
-    <html><head><title>Cost Rates Management</title></head><body>
-    <h1>Cost Rates Configuration</h1>
-    <p><a href="/business-dashboard">← Back to Dashboard</a></p>
+    {get_base_html_start("Cost Rates Management")}
+    <style>
+        .content {{
+            padding: var(--spacing-8);
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--spacing-6) 0;
+            background: white;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }}
+        th {{
+            background: var(--color-gray-100);
+            padding: var(--spacing-4);
+            text-align: left;
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-gray-700);
+        }}
+        td {{
+            padding: var(--spacing-4);
+            border-bottom: 1px solid var(--color-gray-200);
+        }}
+        input[type="number"] {{
+            padding: var(--spacing-2);
+            border: 2px solid var(--color-gray-200);
+            border-radius: var(--radius-base);
+            width: 120px;
+            transition: all var(--transition-base);
+        }}
+        input[type="number"]:focus {{
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: var(--focus-ring);
+        }}
+        .update-btn {{
+            background: linear-gradient(135deg, var(--color-info) 0%, var(--color-info-dark) 100%);
+            color: white;
+            border: none;
+            padding: var(--spacing-2) var(--spacing-4);
+            border-radius: var(--radius-base);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            font-weight: var(--font-weight-medium);
+        }}
+        .update-btn:hover {{
+            transform: var(--transform-hover-up);
+            box-shadow: var(--shadow-sm);
+        }}
+    </style>
+    </head>
+    <body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <a href="/business-dashboard" class="back-link">← Back to Dashboard</a>
+            <h1>💰 Cost Rates Configuration</h1>
+            <div></div>
+        </div>
+        <div class="content">
     
-    <table border="1" style="border-collapse: collapse; width: 100%; margin: 20px 0;">
-        <tr style="background: #f5f5f5;">
-            <th style="padding: 10px;">Service</th>
-            <th style="padding: 10px;">Cost per Unit</th>
-            <th style="padding: 10px;">Unit Type</th>
-            <th style="padding: 10px;">Currency</th>
-            <th style="padding: 10px;">Action</th>
+    <table>
+        <tr>
+            <th>Service</th>
+            <th>Cost per Unit</th>
+            <th>Unit Type</th>
+            <th>Currency</th>
+            <th>Action</th>
         </tr>
         {rates_html}
     </table>
@@ -1502,6 +1650,8 @@ async def cost_rates_management():
         }});
     }}
     </script>
+        </div>
+    </div>
     </body></html>
     """)
 
