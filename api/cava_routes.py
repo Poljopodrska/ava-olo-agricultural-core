@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
 import logging
+import uuid
 
 from implementation.cava.universal_conversation_engine import CAVAUniversalConversationEngine
 
@@ -106,14 +107,17 @@ async def cava_performance():
 @cava_router.post("/register")
 async def cava_register(request: CAVARequest):
     """CAVA-powered registration"""
+    logger.info(f"📨 CAVA Route: Received registration request - farmer_id: {request.farmer_id}, message: '{request.message}', session_id: {request.session_id}")
     try:
         engine = await get_cava_engine()
+        logger.info("✅ CAVA Route: Engine obtained successfully")
         result = await engine.handle_farmer_message(
             farmer_id=request.farmer_id,
             message=request.message,
             session_id=request.session_id,
             channel="registration"
         )
+        logger.info(f"✅ CAVA Route: Message handled successfully - result: {result}")
         return CAVAResponse(
             success=result.get("success", True),
             message=result.get("message", ""),
@@ -124,10 +128,20 @@ async def cava_register(request: CAVARequest):
         logger.error(f"Registration error: {str(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        # Provide more specific error messages based on error type
+        if "connection" in str(e).lower() or "redis" in str(e).lower():
+            error_message = "I'm having connection issues. Let me try again. What's your full name?"
+        elif "openai" in str(e).lower() or "api" in str(e).lower():
+            error_message = "I'm having trouble with my AI service. Please tell me your full name (first and last)."
+        else:
+            # Fallback to manual registration flow
+            error_message = "Let me help you register. What's your full name? (Please provide both first and last name)"
+        
         # Return a valid response even on error
         return CAVAResponse(
             success=False,
-            message="I'm having trouble processing that. Could you please try again?",
-            session_id=request.session_id or "error",
+            message=error_message,
+            session_id=request.session_id or str(uuid.uuid4()),
             completed=False
         )

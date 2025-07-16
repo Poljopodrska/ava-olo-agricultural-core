@@ -172,7 +172,7 @@ class CAVARedisConnection:
                 try:
                     self.client = await asyncio.wait_for(
                         asyncio.wrap_future(future), 
-                        timeout=10.0  # 10 second timeout
+                        timeout=30.0  # 30 second timeout for AWS ElastiCache
                     )
                     logger.info("✅ CAVA Redis Connected")
                 except asyncio.TimeoutError:
@@ -425,7 +425,28 @@ class CAVAPostgreSQLConnection:
                 logger.info("🔍 DRY RUN: Would connect to PostgreSQL")
                 return
             
-            self.connection = await asyncpg.connect(self.database_url)
+            # Parse database URL for asyncpg
+            # asyncpg doesn't handle standard postgresql:// URLs well
+            import urllib.parse
+            parsed = urllib.parse.urlparse(self.database_url)
+            
+            # Extract components
+            host = parsed.hostname or 'localhost'
+            port = parsed.port or 5432
+            database = parsed.path.lstrip('/') if parsed.path else 'postgres'
+            user = parsed.username or 'postgres'
+            password = parsed.password or ''
+            
+            logger.info(f"🔍 Connecting to PostgreSQL: {user}@{host}:{port}/{database}")
+            
+            # Connect using individual parameters instead of URL
+            self.connection = await asyncpg.connect(
+                host=host,
+                port=port,
+                database=database,
+                user=user,
+                password=password
+            )
             
             # Create CAVA schema if it doesn't exist
             await self.connection.execute(f"""
