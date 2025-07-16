@@ -2899,6 +2899,38 @@ async def get_system_status():
     
     return status
 
+def generate_component_rows(component_health):
+    """Generate HTML rows for system components - safe implementation"""
+    rows = []
+    for component, details in component_health.items():
+        row = '<tr>'
+        row += '<td style="font-weight: bold;">' + component + '</td>'
+        row += '<td>'
+        row += '<span style="font-size: 20px; margin-right: 10px;">' + details['icon'] + '</span>'
+        row += '<span style="color: ' + details['color'] + '; font-weight: bold;">' + details['status'].upper() + '</span>'
+        row += '</td>'
+        row += '<td>' + details['message'] + '</td>'
+        row += '<td style="color: #666; font-size: 0.9em;">' + details['details'] + '</td>'
+        row += '</tr>'
+        rows.append(row)
+    return ''.join(rows)
+
+def generate_feature_rows(feature_health):
+    """Generate HTML rows for feature health - safe implementation"""
+    rows = []
+    for feature, details in feature_health.items():
+        row = '<tr>'
+        row += '<td style="font-weight: bold;">' + feature + '</td>'
+        row += '<td>'
+        row += '<span style="font-size: 20px; margin-right: 10px;">' + details['icon'] + '</span>'
+        row += '<span style="color: ' + details['color'] + '; font-weight: bold;">' + details['status'].upper() + '</span>'
+        row += '</td>'
+        row += '<td>' + details['message'] + '</td>'
+        row += '<td style="color: #666; font-size: 0.9em;">' + details['details'] + '</td>'
+        row += '</tr>'
+        rows.append(row)
+    return ''.join(rows)
+
 # Health Dashboard - Comprehensive System Component Monitoring
 @app.get("/health-dashboard", response_class=HTMLResponse)
 async def health_dashboard():
@@ -3067,17 +3099,7 @@ async def health_dashboard():
                         </tr>
                     </thead>
                     <tbody>
-                        {''.join(f"""
-                        <tr>
-                            <td style="font-weight: bold;">{component}</td>
-                            <td>
-                                <span style="font-size: 20px; margin-right: 10px;">{details['icon']}</span>
-                                <span style="color: {details['color']}; font-weight: bold;">{details['status'].upper()}</span>
-                            </td>
-                            <td>{details['message']}</td>
-                            <td style="color: #666; font-size: 0.9em;">{details['details']}</td>
-                        </tr>
-                        """ for component, details in component_health.items())}
+                        {generate_component_rows(component_health)}
                     </tbody>
                 </table>
             </div>
@@ -3094,17 +3116,7 @@ async def health_dashboard():
                         </tr>
                     </thead>
                     <tbody>
-                        {''.join(f"""
-                        <tr>
-                            <td style="font-weight: bold;">{feature}</td>
-                            <td>
-                                <span style="font-size: 20px; margin-right: 10px;">{details['icon']}</span>
-                                <span style="color: {details['color']}; font-weight: bold;">{details['status'].upper()}</span>
-                            </td>
-                            <td>{details['message']}</td>
-                            <td style="color: #666; font-size: 0.9em;">{details['details']}</td>
-                        </tr>
-                        """ for feature, details in feature_health.items())}
+{generate_feature_rows(feature_health)}
                     </tbody>
                 </table>
             </div>
