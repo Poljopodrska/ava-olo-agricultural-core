@@ -2015,36 +2015,46 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
         logger.info(f"🔄 CAVA Proxy: Registration request - session: {request.session_id}, message: '{request.user_input}'")
         
         try:
-            # Import CAVA handler
-            from implementation.cava.cava_registration_handler import handle_registration_input
+            import httpx
             
             # Generate farmer_id if not provided
             farmer_id = request.farmer_id or abs(hash(request.session_id or "default")) % 1000000
             
-            # Call CAVA registration handler
-            logger.info(f"🎯 CAVA Proxy: Calling CAVA with farmer_id={farmer_id}")
-            cava_response = await handle_registration_input(
-                farmer_id=farmer_id,
-                user_input=request.user_input or ""
-            )
+            # Call CAVA API endpoint directly
+            logger.info(f"🎯 CAVA Proxy: Calling CAVA API with farmer_id={farmer_id}")
             
-            logger.info(f"✅ CAVA Proxy: CAVA response - {cava_response}")
+            async with httpx.AsyncClient() as client:
+                cava_response = await client.post(
+                    "http://localhost:8080/api/v1/cava/register",
+                    json={
+                        "farmer_id": farmer_id,
+                        "message": request.user_input or "",
+                        "session_id": request.session_id or f"chat-{farmer_id}"
+                    },
+                    timeout=30.0
+                )
+                
+            if cava_response.status_code != 200:
+                raise Exception(f"CAVA API returned {cava_response.status_code}")
+                
+            cava_data = cava_response.json()
+            logger.info(f"✅ CAVA Proxy: CAVA response - {cava_data}")
             
             # Convert CAVA response to old format
-            is_complete = cava_response.get("success", False) and \
-                         ("complete" in cava_response.get("message", "").lower() or 
-                          cava_response.get("status") == "COMPLETE")
+            is_complete = cava_data.get("success", False) and \
+                         ("complete" in cava_data.get("message", "").lower() or 
+                          cava_data.get("completed", False))
             
             response = {
-                "success": cava_response.get("success", True),
-                "message": cava_response.get("message", ""),
+                "success": cava_data.get("success", True),
+                "message": cava_data.get("message", ""),
                 "status": "COMPLETE" if is_complete else "collecting",
                 "session_id": request.session_id,
                 "conversation_id": request.conversation_id,
                 "registration_successful": is_complete,
-                "extracted_data": cava_response.get("extracted_data", {}),
+                "extracted_data": cava_data.get("extracted_data", {}),
                 "conversation_history": request.conversation_history or [],
-                "last_ava_message": cava_response.get("message", ""),
+                "last_ava_message": cava_data.get("message", ""),
                 "cava_enabled": True
             }
             
