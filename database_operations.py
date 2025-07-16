@@ -31,6 +31,18 @@ class DatabaseOperations:
         # Ensure PostgreSQL only
         assert self.connection_string.startswith("postgresql://"), "❌ Only PostgreSQL connections allowed"
         
+        # Clean up connection string - remove any whitespace issues
+        self.connection_string = self.connection_string.strip()
+        print(f"DEBUG: Database connection string: {self.connection_string[:50]}...{self.connection_string[-20:]}")
+        
+        # Validate hostname format
+        if "@" in self.connection_string:
+            host_part = self.connection_string.split("@")[1].split(":")[0]
+            if " " in host_part or not host_part.endswith(".amazonaws.com"):
+                print(f"WARNING: Suspicious hostname format: '{host_part}'")
+                print(f"Expected AWS RDS hostname format: *.amazonaws.com")
+                print(f"Check your DB_HOST environment variable for spaces or typos")
+        
         # For WSL2 to Windows connection, we might need to adjust the connection
         if "host.docker.internal" in self.connection_string:
             # This is correct for WSL2 to Windows connection
