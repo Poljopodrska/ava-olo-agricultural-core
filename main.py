@@ -1261,7 +1261,7 @@ async def dashboard_landing():
             
             <div class="constitutional-card">
                 <h2>🌱 Agronomic Dashboard</h2>
-                <p>Crop analytics and agricultural insights</p>
+                <p>Live conversation monitoring and expert intervention</p>
                 <a href="/agronomic-dashboard" class="constitutional-button">Enter Dashboard</a>
             </div>
             
@@ -2130,7 +2130,7 @@ async def business_dashboard():
 # Agronomic Dashboard Placeholder
 @app.get("/agronomic-dashboard", response_class=HTMLResponse)
 async def agronomic_dashboard():
-    """Agronomic Dashboard - Coming Soon"""
+    """Agronomic Dashboard - Live Conversation Monitoring"""
     return HTMLResponse(content="""
 <!DOCTYPE html>
 <html>
@@ -2138,18 +2138,68 @@ async def agronomic_dashboard():
     <title>Agronomic Dashboard</title>
     <style>
         body { font-family: Arial, sans-serif; background: #F5F3F0; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; text-align: center; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; }
         .back-link { color: #6B5B73; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        h1 { color: #6B5B73; margin-bottom: 20px; }
-        p { color: #5D5E3F; font-size: 1.1em; }
+        h1 { color: #6B5B73; margin-bottom: 30px; text-align: center; }
+        .dashboard-section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
+        .section-title { color: #5D5E3F; margin-bottom: 15px; font-size: 1.2em; font-weight: bold; }
+        .monitoring-card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #28a745; }
+        .monitoring-link { display: inline-block; background: #28a745; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
+        .monitoring-link:hover { background: #218838; }
+        .feature-list { margin: 15px 0; }
+        .feature-list li { margin: 8px 0; color: #5D5E3F; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; background: #28a745; border-radius: 50%; margin-right: 8px; }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="/" class="back-link">← Back to Dashboard Hub</a>
-        <h1>🌱 Agronomic Dashboard</h1>
-        <p>Coming Soon - Crop Analytics</p>
-        <p>This dashboard is under development.</p>
+        <h1>🌱 Agronomic Expert Dashboard</h1>
+        
+        <div class="dashboard-section">
+            <div class="section-title">🔍 Live Conversation Monitoring</div>
+            <div class="monitoring-card">
+                <h3><span class="status-indicator"></span>Agronomist Supervision System</h3>
+                <p>Monitor live AI conversations with farmers and intervene when needed.</p>
+                <ul class="feature-list">
+                    <li>✅ Real-time conversation monitoring</li>
+                    <li>✅ Expert intervention capabilities</li>
+                    <li>✅ AI response approval/rejection</li>
+                    <li>✅ Manual message sending</li>
+                    <li>✅ Conversation quality control</li>
+                </ul>
+                <a href="http://localhost:8007" class="monitoring-link" target="_blank">Launch Monitoring Dashboard</a>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-title">🎯 Expert Actions Available</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
+                    <h4>💬 Conversation Review</h4>
+                    <p>Review and approve AI responses before they reach farmers</p>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                    <h4>✏️ Response Editing</h4>
+                    <p>Edit AI responses to correct mistakes or improve quality</p>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
+                    <h4>🚨 Expert Intervention</h4>
+                    <p>Jump in when AI can't provide adequate answers</p>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+                    <h4>📊 Quality Control</h4>
+                    <p>Monitor confidence levels and conversation quality</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <div class="section-title">⚙️ System Status</div>
+            <p><span class="status-indicator"></span>Monitoring Dashboard: Active on port 8007</p>
+            <p><span class="status-indicator"></span>API Gateway: Connected to port 8000</p>
+            <p><span class="status-indicator"></span>Database: Connected to farmer conversations</p>
+        </div>
     </div>
 </body>
 </html>

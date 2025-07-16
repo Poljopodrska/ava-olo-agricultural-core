@@ -195,3 +195,27 @@ This dashboard follows all 13 constitutional principles:
 11. **LLM-First**: Ready for AI integration
 12. **Anti-Monoculture**: Supports diverse crops
 13. **Mango Rule**: Works for Bulgarian mango farmers! 🥭
+
+## 🚨 Critical Development Rule - Safety Check Protocol
+
+**MANDATORY DEPLOYMENT SAFETY CHECK**: Never execute `git push` or any deployment command without first running the safety check script. This is a constitutional requirement to prevent deployment rollbacks and system failures.
+
+**Required process before ANY git push:**
+```bash
+# ALWAYS run this FIRST before git push
+python check_deployment_ready.py
+
+# Only push if safety check PASSES
+git add .
+git commit -m "Your commit message"
+git push
+```
+
+**Why this matters:**
+- Prevents AWS App Runner deployment failures
+- Catches runtime errors before deployment
+- Validates constitutional compliance
+- Ensures system stability
+- Protects against deployment rollbacks
+
+**Constitutional violation**: Pushing code without safety check violates the Error Isolation principle and threatens system stability. This rule is as important as the Mango Rule itself! 🛡️
