@@ -14,6 +14,10 @@ import sys
 # Add current directory to path for imports
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+# Import and fix database URL immediately
+from database_url_fixer import fix_database_url
+fix_database_url()
+
 from database_operations import DatabaseOperations
 from config_manager import config
 

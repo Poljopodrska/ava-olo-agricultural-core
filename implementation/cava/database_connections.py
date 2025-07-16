@@ -19,6 +19,9 @@ import sys
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+# Import database URL fixer
+from database_url_fixer import fix_database_url, get_database_components
 from config_manager import config as main_config
 
 # Load environments - try multiple locations for flexibility
@@ -412,8 +415,8 @@ class CAVAPostgreSQLConnection:
     """PostgreSQL Connection for CAVA (Constitutional requirement)"""
     
     def __init__(self):
-        # Use main database URL from config_manager
-        self.database_url = main_config.database_url
+        # Use main database URL from config_manager and fix any format issues
+        self.database_url = fix_database_url() or main_config.database_url
         self.schema = os.getenv('CAVA_POSTGRESQL_SCHEMA', 'cava')
         self.connection = None
         self.dry_run = os.getenv('CAVA_DRY_RUN_MODE', 'true').lower() == 'true'
@@ -425,17 +428,18 @@ class CAVAPostgreSQLConnection:
                 logger.info("🔍 DRY RUN: Would connect to PostgreSQL")
                 return
             
-            # Parse database URL for asyncpg
-            # asyncpg doesn't handle standard postgresql:// URLs well
-            import urllib.parse
-            parsed = urllib.parse.urlparse(self.database_url)
+            # Get database components using the fixer
+            components = get_database_components()
             
-            # Extract components
-            host = parsed.hostname or 'localhost'
-            port = parsed.port or 5432
-            database = parsed.path.lstrip('/') if parsed.path else 'postgres'
-            user = parsed.username or 'postgres'
-            password = parsed.password or ''
+            if not components:
+                logger.error("❌ Failed to get database components")
+                raise Exception("Failed to parse database URL")
+            
+            host = components.get('hostname', 'localhost')
+            port = components.get('port', 5432)
+            database = components.get('database', 'postgres')
+            user = components.get('username', 'postgres')
+            password = components.get('password', '')
             
             logger.info(f"🔍 CAVA: Raw database URL: {self.database_url}")
             logger.info(f"🔍 CAVA: Parsed components - Host: {host}, Port: {port}, DB: {database}, User: {user}")
