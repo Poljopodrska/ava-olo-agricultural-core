@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import sys
 sys.path.append('.')
 from database.insert_operations import ConstitutionalInsertOperations
+from database_operations import DatabaseOperations
 
 # Construct DATABASE_URL from individual components if not set
 if not os.getenv('DATABASE_URL'):
@@ -2128,82 +2129,140 @@ async def business_dashboard():
 """)
 
 # Agronomic Dashboard Placeholder
+def generate_conversation_items(conversations_list):
+    """Generate HTML for conversation items - safe implementation"""
+    items = []
+    for conv in conversations_list:
+        item = '<div class="conversation-item" onclick="selectConversation(' + str(conv['id']) + ')">'
+        item += '<div class="farmer-info">'
+        item += '<div class="farmer-name">' + str(conv['farmer_name']) + '</div>'
+        item += '<div class="timestamp">' + str(format_time_ago(conv['timestamp'])) + '</div>'
+        item += '</div>'
+        item += '<div class="farmer-details">'
+        item += '📱 ' + str(conv['farmer_phone']) + ' | 📍 ' + str(conv['farmer_location'])
+        item += '</div>'
+        item += '<div class="message-preview">' + str(conv['last_message']) + '</div>'
+        item += '</div>'
+        items.append(item)
+    return ''.join(items)
+
 @app.get("/agronomic-dashboard", response_class=HTMLResponse)
 async def agronomic_dashboard():
     """Agronomic Dashboard - Live Conversation Monitoring"""
-    return HTMLResponse(content="""
-<!DOCTYPE html>
-<html>
+    # Get conversations data from database
+    db_ops = DatabaseOperations()
+    try:
+        conversations_data = await db_ops.get_conversations_for_approval()
+        conversations = conversations_data
+    except Exception as e:
+        print(f"Error getting conversations: {e}")
+        conversations = {"unapproved": [], "approved": []}
+    
+    # Generate conversation items safely
+    unapproved_items = generate_conversation_items(conversations.get('unapproved', []))
+    unapproved_count = len(conversations.get('unapproved', []))
+    approved_count = len(conversations.get('approved', []))
+    total_count = unapproved_count + approved_count
+    
+    # Build HTML content safely
+    html_content = '''<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Agronomic Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO - Agronomic Expert Dashboard</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #F5F3F0; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; }
-        .back-link { color: #6B5B73; text-decoration: none; margin-bottom: 20px; display: inline-block; }
-        h1 { color: #6B5B73; margin-bottom: 30px; text-align: center; }
-        .dashboard-section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; }
-        .section-title { color: #5D5E3F; margin-bottom: 15px; font-size: 1.2em; font-weight: bold; }
-        .monitoring-card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; border-left: 4px solid #28a745; }
-        .monitoring-link { display: inline-block; background: #28a745; color: white; padding: 12px 20px; text-decoration: none; border-radius: 6px; margin: 10px 5px; }
-        .monitoring-link:hover { background: #218838; }
-        .feature-list { margin: 15px 0; }
-        .feature-list li { margin: 8px 0; color: #5D5E3F; }
-        .status-indicator { display: inline-block; width: 10px; height: 10px; background: #28a745; border-radius: 50%; margin-right: 8px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #F5F3F0; min-height: 100vh; color: #333; }
+        .header { background: #6B5B73; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .back-link { color: white; text-decoration: none; font-size: 1.1rem; }
+        .logo h1 { font-size: 1.8rem; font-weight: 700; }
+        .dashboard-container { display: flex; max-width: 1400px; margin: 2rem auto; height: 700px; background: white; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); overflow: hidden; }
+        .conversations-panel { width: 400px; background: #f8f9fa; border-right: 1px solid #ddd; overflow-y: auto; }
+        .panel-header { background: #2c5530; color: white; padding: 1rem; font-weight: 600; font-size: 1.1rem; }
+        .conversations-section { padding: 1rem; }
+        .section-title { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; color: #666; }
+        .section-title.unapproved { color: #dc3545; }
+        .conversation-item { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.3s ease; border: 1px solid #e9ecef; }
+        .conversation-item:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .farmer-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .farmer-name { font-weight: 600; color: #2c5530; }
+        .farmer-details { font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
+        .message-preview { font-size: 0.9rem; color: #555; line-height: 1.4; }
+        .details-panel { flex: 1; padding: 2rem; overflow-y: auto; }
+        .empty-state { text-align: center; color: #666; padding: 2rem; }
+        .empty-state h3 { margin-bottom: 1rem; color: #2c5530; }
+        .stats-header { display: flex; gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center; flex: 1; }
+        .stat-number { font-size: 2rem; font-weight: 700; color: #2c5530; margin-bottom: 0.5rem; }
+        .stat-label { font-size: 0.9rem; color: #666; }
+        .refresh-button { background: #28a745; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
+        .refresh-button:hover { background: #218838; }
+        .timestamp { font-size: 0.8rem; color: #999; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="header">
         <a href="/" class="back-link">← Back to Dashboard Hub</a>
-        <h1>🌱 Agronomic Expert Dashboard</h1>
-        
-        <div class="dashboard-section">
-            <div class="section-title">🔍 Live Conversation Monitoring</div>
-            <div class="monitoring-card">
-                <h3><span class="status-indicator"></span>Agronomist Supervision System</h3>
-                <p>Monitor live AI conversations with farmers and intervene when needed.</p>
-                <ul class="feature-list">
-                    <li>✅ Real-time conversation monitoring</li>
-                    <li>✅ Expert intervention capabilities</li>
-                    <li>✅ AI response approval/rejection</li>
-                    <li>✅ Manual message sending</li>
-                    <li>✅ Conversation quality control</li>
+        <div class="logo">
+            <h1>🌱 Agronomic Expert Dashboard</h1>
+        </div>
+        <button class="refresh-button" onclick="location.reload()">Refresh</button>
+    </div>
+
+    <div class="dashboard-container">
+        <div class="conversations-panel">
+            <div class="panel-header">Live Conversations</div>
+            <div class="conversations-section">
+                <div class="section-title unapproved">Pending Review (''' + str(unapproved_count) + ''')</div>
+                ''' + unapproved_items + '''
+            </div>
+        </div>
+
+        <div class="details-panel">
+            <div class="stats-header">
+                <div class="stat-card">
+                    <div class="stat-number">''' + str(unapproved_count) + '''</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">''' + str(approved_count) + '''</div>
+                    <div class="stat-label">Approved Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">''' + str(total_count) + '''</div>
+                    <div class="stat-label">Total Conversations</div>
+                </div>
+            </div>
+
+            <div class="empty-state">
+                <h3>👋 Welcome to Agronomic Monitoring</h3>
+                <p>Select a conversation from the left panel to review farmer messages and AI responses.</p>
+                <br>
+                <p><strong>Expert Actions Available:</strong></p>
+                <ul style="text-align: left; margin-top: 1rem;">
+                    <li>📋 Review AI responses before they reach farmers</li>
+                    <li>✏️ Edit responses to improve quality</li>
+                    <li>🚨 Intervene when AI can't provide adequate answers</li>
+                    <li>📊 Monitor conversation quality and confidence levels</li>
                 </ul>
-                <a href="http://localhost:8007" class="monitoring-link" target="_blank">Launch Monitoring Dashboard</a>
             </div>
-        </div>
-
-        <div class="dashboard-section">
-            <div class="section-title">🎯 Expert Actions Available</div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
-                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff;">
-                    <h4>💬 Conversation Review</h4>
-                    <p>Review and approve AI responses before they reach farmers</p>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
-                    <h4>✏️ Response Editing</h4>
-                    <p>Edit AI responses to correct mistakes or improve quality</p>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
-                    <h4>🚨 Expert Intervention</h4>
-                    <p>Jump in when AI can't provide adequate answers</p>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
-                    <h4>📊 Quality Control</h4>
-                    <p>Monitor confidence levels and conversation quality</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="dashboard-section">
-            <div class="section-title">⚙️ System Status</div>
-            <p><span class="status-indicator"></span>Monitoring Dashboard: Active on port 8007</p>
-            <p><span class="status-indicator"></span>API Gateway: Connected to port 8000</p>
-            <p><span class="status-indicator"></span>Database: Connected to farmer conversations</p>
         </div>
     </div>
+
+    <script>
+        function selectConversation(id) {
+            alert('Conversation details would load here. Full implementation requires additional API endpoints.');
+        }
+        
+        setInterval(function() {
+            location.reload();
+        }, 30000);
+    </script>
 </body>
-</html>
-""")
+</html>'''
+    
+    return HTMLResponse(content=html_content)
 
 # Legacy redirects
 @app.get("/business")
