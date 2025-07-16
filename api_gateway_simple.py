@@ -2012,18 +2012,34 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
 
     @app.post("/api/v1/auth/chat-register")
     async def chat_register_step(request: ChatRegisterRequest):
-        """CAVA-powered registration proxy - routes old endpoint to use CAVA"""
+        """CAVA-powered registration proxy with persistent session management"""
         
         # Enhanced logging for debugging
         logger.info(f"🔄 CAVA Proxy: Registration request - session: {request.session_id}, message: '{request.user_input}'")
-        logger.info(f"📋 REGISTRATION CALL: farmer_id={request.farmer_id}, session={request.session_id}, message='{request.user_input}'")
+        
+        # CRITICAL FIX: Use consistent farmer_id throughout the registration
+        # If farmer_id not provided, generate from conversation_id (which frontend maintains)
+        if request.farmer_id:
+            persistent_farmer_id = request.farmer_id
+        elif request.conversation_id:
+            # Use conversation_id to generate consistent farmer_id
+            persistent_farmer_id = abs(hash(request.conversation_id)) % 1000000
+        else:
+            # Fallback: generate from session_id or default
+            persistent_farmer_id = abs(hash(request.session_id or "default-session")) % 1000000
+        
+        # Create persistent session key that won't change between calls
+        persistent_session_key = f"reg_farmer_{persistent_farmer_id}"
+        
+        logger.info(f"📋 REGISTRATION CALL: persistent_farmer_id={persistent_farmer_id}, persistent_session={persistent_session_key}, message='{request.user_input}'")
         
         # Store in app state for debug endpoint
         if hasattr(app.state, 'registration_logs'):
             app.state.registration_logs.append({
                 "timestamp": datetime.now().isoformat(),
                 "session_id": request.session_id,
-                "farmer_id": request.farmer_id,
+                "persistent_session": persistent_session_key,
+                "farmer_id": persistent_farmer_id,
                 "message": request.user_input,
                 "type": "CAVA_PROXY"
             })
@@ -2031,19 +2047,16 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
         try:
             import httpx
             
-            # Generate farmer_id if not provided
-            farmer_id = request.farmer_id or abs(hash(request.session_id or "default")) % 1000000
-            
-            # Call CAVA API endpoint directly
-            logger.info(f"🎯 CAVA Proxy: Calling CAVA API with farmer_id={farmer_id}")
+            # Call CAVA API endpoint with PERSISTENT session
+            logger.info(f"🎯 CAVA Proxy: Calling CAVA API with persistent_farmer_id={persistent_farmer_id}, session={persistent_session_key}")
             
             async with httpx.AsyncClient() as client:
                 cava_response = await client.post(
                     "http://localhost:8080/api/v1/cava/register",
                     json={
-                        "farmer_id": farmer_id,
+                        "farmer_id": persistent_farmer_id,
                         "message": request.user_input or "",
-                        "session_id": request.session_id or f"chat-{farmer_id}"
+                        "session_id": persistent_session_key  # USE PERSISTENT SESSION KEY
                     },
                     timeout=30.0
                 )
@@ -3392,6 +3405,58 @@ async def test_cava_proxy():
             "success": False,
             "error": str(e),
             "proxy_working": False
+        }
+
+@app.get("/debug/redis/{session_id}")
+async def debug_redis_state(session_id: str):
+    """Check what's in Redis for this session"""
+    try:
+        import redis
+        import json
+        
+        # Get Redis URL from environment
+        redis_url = os.getenv('CAVA_REDIS_URL', 'redis://localhost:6379')
+        r = redis.from_url(redis_url)
+        
+        # Check different possible keys
+        keys_to_check = [
+            f"cava:conversation:{session_id}",
+            f"conversation:{session_id}",
+            f"reg_farmer_{session_id}",
+            session_id
+        ]
+        
+        results = {}
+        for key in keys_to_check:
+            value = r.get(key)
+            if value:
+                try:
+                    # Try to parse as JSON
+                    results[key] = json.loads(value.decode('utf-8'))
+                except:
+                    results[key] = value.decode('utf-8')
+            else:
+                results[key] = None
+        
+        # Also check all keys matching patterns
+        pattern_keys = []
+        for pattern in [f"*{session_id}*", f"*farmer*{session_id[-6:]}*"]:
+            matching = r.keys(pattern)
+            pattern_keys.extend([k.decode('utf-8') for k in matching])
+        
+        return {
+            "session_id": session_id,
+            "redis_url": redis_url,
+            "checked_keys": keys_to_check,
+            "found_data": results,
+            "pattern_matches": pattern_keys[:10],  # Limit to 10 matches
+            "redis_connected": True
+        }
+    except Exception as e:
+        return {
+            "session_id": session_id,
+            "error": str(e),
+            "redis_connected": False
         }
 
 # Initialize app state for logging
