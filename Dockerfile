@@ -4,4 +4,4 @@ COPY requirements.txt .
 RUN python3 -m pip install --no-cache-dir -r requirements.txt
 COPY . .
 EXPOSE 8080
-CMD ["python3", "-m", "uvicorn", "api_gateway_minimal:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python3", "api_gateway_emergency.py"]
