@@ -656,6 +656,7 @@ DASHBOARD_LANDING_HTML = """
             <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
             <p><a href="/diagnostics/">Run Connection Diagnostics</a> - Test database connections and configurations</p>
             <p><a href="/health/database" style="color: #007bff; font-weight: bold;">🔍 Database Health Check</a> - Test RDS connectivity and permissions</p>
+            <p><a href="/health/google-maps" style="color: #28a745; font-weight: bold;">🗺️ Google Maps API Check</a> - Check if API key is configured</p>
             <p><a href="/farmer-registration" style="font-weight: bold;">🌾 Register New Farmer</a> - Add new farmer with fields and app access</p>
             <p><a href="/field-drawing-test" style="color: #28a745; font-weight: bold;">🗺️ Test Field Drawing</a> - Test the interactive map functionality</p>
         </div>
@@ -3123,6 +3124,30 @@ async def database_health_check():
                 "database": os.getenv('DB_NAME', 'not_set'),
                 "user": os.getenv('DB_USER', 'not_set'),
                 "ssl_mode": "require" if ".amazonaws.com" in os.getenv('DB_HOST', '') else "disabled"
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
+
+# Google Maps API Key Check Endpoint
+@app.get("/health/google-maps")
+async def google_maps_health_check():
+    """Check Google Maps API key configuration"""
+    try:
+        google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+        
+        return {
+            "status": "configured" if google_maps_api_key else "not_configured",
+            "timestamp": datetime.now().isoformat(),
+            "api_key_present": bool(google_maps_api_key),
+            "api_key_length": len(google_maps_api_key) if google_maps_api_key else 0,
+            "api_key_starts_with": google_maps_api_key[:10] + "..." if google_maps_api_key else "not_set",
+            "environment_variables": {
+                "GOOGLE_MAPS_API_KEY": "SET" if google_maps_api_key else "NOT_SET"
             }
         }
     except Exception as e:
