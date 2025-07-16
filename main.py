@@ -646,6 +646,7 @@ DASHBOARD_LANDING_HTML = """
             <p><a href="/schema/">View Complete Database Schema</a> - Discover all tables and columns</p>
             <p><a href="/diagnostics/">Run Connection Diagnostics</a> - Test database connections and configurations</p>
             <p><a href="/farmer-registration" style="font-weight: bold;">🌾 Register New Farmer</a> - Add new farmer with fields and app access</p>
+            <p><a href="/field-drawing-test" style="color: #28a745; font-weight: bold;">🗺️ Test Field Drawing</a> - Test the interactive map functionality</p>
         </div>
         
         <!-- PART 1: Standard Agricultural Queries -->
@@ -3017,6 +3018,24 @@ async def farmer_registration_form():
     """Farmer Registration Form with password for app access"""
     with open("templates/farmer_registration.html", "r") as f:
         content = f.read()
+    
+    # Replace API key placeholder with actual API key from environment
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY')
+    content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
+    
+    return HTMLResponse(content=content)
+
+# Field Drawing Test Page
+@app.get("/field-drawing-test", response_class=HTMLResponse)
+async def field_drawing_test():
+    """Test page for field drawing functionality"""
+    with open("templates/field_drawing_test.html", "r") as f:
+        content = f.read()
+    
+    # Replace API key placeholder with actual API key from environment
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY')
+    content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
+    
     return HTMLResponse(content=content)
 
 # API endpoint for farmer registration
@@ -3033,14 +3052,14 @@ async def register_farmer(request: Request):
             if not data.get(field):
                 return JSONResponse(
                     status_code=400,
-                    content={{"success": False, "message": f"Missing required field: {field}"}}
+                    content={"success": False, "message": f"Missing required field: {field}"}
                 )
         
         # Validate password length
         if len(data['password']) < 8:
             return JSONResponse(
                 status_code=400,
-                content={{"success": False, "message": "Password must be at least 8 characters long"}}
+                content={"success": False, "message": "Password must be at least 8 characters long"}
             )
         
         # Insert farmer and fields using database operations
@@ -3048,18 +3067,18 @@ async def register_farmer(request: Request):
         result = await db_ops.insert_farmer_with_fields(data)
         
         if result['success']:
-            return JSONResponse(content={{"success": True, "farmer_id": result['farmer_id']}})
+            return JSONResponse(content={"success": True, "farmer_id": result['farmer_id']})
         else:
             return JSONResponse(
                 status_code=500,
-                content={{"success": False, "message": result.get('error', 'Failed to register farmer')}}
+                content={"success": False, "message": result.get('error', 'Failed to register farmer')}
             )
             
     except Exception as e:
-        logger.error(f"Error registering farmer: {{str(e)}}")
+        logger.error(f"Error registering farmer: {str(e)}")
         return JSONResponse(
             status_code=500,
-            content={{"success": False, "message": str(e)}}
+            content={"success": False, "message": str(e)}
         )
 
 # Add diagnostics viewer page

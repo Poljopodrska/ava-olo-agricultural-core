@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmer Registration - AVA OLO</title>
     <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=geometry,drawing&callback=initFieldMap">
+    </script>
+    <!-- Fallback if Google Maps fails -->
+    <script>
+        window.initFieldMap = window.initFieldMap || function() {
+            console.log('Google Maps not available - field drawing disabled');
+            const mapDiv = document.getElementById('field-map');
+            if (mapDiv) {
+                mapDiv.innerHTML = '<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px;"><h3>📍 Map Not Available</h3><p>Google Maps API key not configured. Field drawing is disabled but you can still register farmers.</p></div>';
+            }
+        };
+    </script>
     <style>
         body {
             font-family: var(--font-primary);
@@ -176,6 +189,81 @@
             margin-bottom: var(--spacing-4);
             display: none;
         }
+        /* Field mapping styles */
+        #field-mapping-section {
+            margin-top: var(--spacing-8);
+            padding-top: var(--spacing-6);
+            border-top: 2px solid var(--color-gray-300);
+        }
+        #field-map {
+            width: 100%;
+            height: 400px;
+            border: 2px solid var(--color-gray-300);
+            border-radius: var(--radius-lg);
+            margin-top: var(--spacing-4);
+        }
+        #field-drawing-controls {
+            margin-top: var(--spacing-4);
+            display: flex;
+            gap: var(--spacing-3);
+            flex-wrap: wrap;
+        }
+        #field-drawing-controls button {
+            padding: var(--spacing-3) var(--spacing-5);
+            border: none;
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            transition: all var(--transition-base);
+        }
+        #start-drawing {
+            background: var(--color-primary);
+            color: white;
+        }
+        #clear-drawing {
+            background: var(--color-gray-500);
+            color: white;
+        }
+        #save-field-polygon {
+            background: var(--color-success);
+            color: white;
+        }
+        #field-calculations {
+            margin-top: var(--spacing-4);
+            padding: var(--spacing-4);
+            background: var(--color-gray-50);
+            border-radius: var(--radius-base);
+            border: 1px solid var(--color-gray-200);
+        }
+        #drawing-instructions {
+            background: var(--color-info-bg);
+            border: 1px solid var(--color-info);
+            color: var(--color-info-dark);
+            padding: var(--spacing-3);
+            border-radius: var(--radius-base);
+            margin-top: var(--spacing-3);
+            display: none;
+        }
+        .field-entry {
+            cursor: pointer;
+            transition: all var(--transition-base);
+            padding: var(--spacing-3);
+            border-radius: var(--radius-base);
+            position: relative;
+        }
+        .field-entry:hover {
+            background-color: var(--color-gray-50);
+        }
+        .field-entry.active {
+            background-color: #f0f8ff !important;
+            border: 2px solid var(--color-success) !important;
+        }
+        .polygon-indicator {
+            color: var(--color-success);
+            margin-left: var(--spacing-2);
+            font-weight: var(--font-weight-semibold);
+        }
     </style>
 </head>
 <body>
@@ -306,6 +394,31 @@
                     <button type="button" class="field-add-btn" onclick="addFieldEntry()">+ Add Another Field</button>
                 </div>
                 
+                <!-- Field Mapping Section -->
+                <div id="field-mapping-section">
+                    <h3>🗺️ Draw Field Boundaries</h3>
+                    <p>Click on a field above, then draw its boundaries on the map. Click points to create the field shape.</p>
+                    
+                    <div id="drawing-instructions">
+                        📍 Click on the map to add points. Click near the first point to close the shape, or use the finish button.
+                    </div>
+                    
+                    <div id="field-map"></div>
+                    
+                    <div id="field-drawing-controls">
+                        <button id="start-drawing" class="btn">🎯 Start Drawing Field</button>
+                        <button id="clear-drawing" class="btn">🗑️ Clear Drawing</button>
+                        <button id="save-field-polygon" class="btn" disabled>💾 Save Field Shape</button>
+                    </div>
+                    
+                    <div id="field-calculations" style="display: none;">
+                        <strong>📊 Calculated Field Data:</strong>
+                        <div>📏 Area: <span id="calculated-area">0</span> hectares</div>
+                        <div>📍 Center: <span id="calculated-center">Not calculated</span></div>
+                        <div>🔢 Points: <span id="point-count">0</span></div>
+                    </div>
+                </div>
+                
                 <!-- Submit Section -->
                 <div class="submit-section">
                     <button type="submit" class="btn-submit">Register Farmer</button>
@@ -334,7 +447,7 @@
                 </div>
                 <div class="form-group">
                     <label for="field_size_${fieldCount}">Size (hectares) *</label>
-                    <input type="number" id="field_size_${fieldCount}" name="fields[${fieldCount}][size]" step="0.01" required placeholder="0.0">
+                    <input type="number" id="field_size_${fieldCount}" name="fields[${fieldCount}][size]" step="0.0001" required placeholder="0.0">
                 </div>
                 <div class="form-group">
                     <label for="field_location_${fieldCount}">Location/GPS</label>
@@ -343,6 +456,14 @@
             `;
             
             container.appendChild(newField);
+            
+            // Add click handler to make the field selectable for mapping
+            newField.addEventListener('click', function() {
+                if (typeof setActiveField === 'function') {
+                    setActiveField(fieldCount);
+                }
+            });
+            
             fieldCount++;
         }
         
@@ -415,5 +536,6 @@
             }
         }
     </script>
+    <script src="/static/js/field_drawing.js"></script>
 </body>
 </html>

@@ -409,19 +409,42 @@ class DatabaseOperations:
                 
                 # Insert fields
                 for field in data.get("fields", []):
+                    # Handle polygon data if present
+                    polygon_data = field.get("polygon_data")
+                    calculated_area = None
+                    centroid_lat = None
+                    centroid_lng = None
+                    
+                    if polygon_data:
+                        # Parse polygon data JSON
+                        import json
+                        if isinstance(polygon_data, str):
+                            polygon_data = json.loads(polygon_data)
+                        
+                        calculated_area = polygon_data.get("area")
+                        centroid = polygon_data.get("centroid", {})
+                        centroid_lat = centroid.get("lat")
+                        centroid_lng = centroid.get("lng")
+                    
                     session.execute(
                         text("""
                         INSERT INTO fields (
-                            farmer_id, field_name, area_hectares, location
+                            farmer_id, field_name, area_hectares, location,
+                            field_polygon_data, calculated_area_hectares, centroid_lat, centroid_lng
                         ) VALUES (
-                            :farmer_id, :field_name, :area_hectares, :location
+                            :farmer_id, :field_name, :area_hectares, :location,
+                            :field_polygon_data, :calculated_area_hectares, :centroid_lat, :centroid_lng
                         )
                         """),
                         {
                             "farmer_id": farmer_id,
                             "field_name": field.get("name"),
                             "area_hectares": field.get("size"),
-                            "location": field.get("location") or None
+                            "location": field.get("location") or None,
+                            "field_polygon_data": json.dumps(polygon_data) if polygon_data else None,
+                            "calculated_area_hectares": calculated_area,
+                            "centroid_lat": centroid_lat,
+                            "centroid_lng": centroid_lng
                         }
                     )
                 

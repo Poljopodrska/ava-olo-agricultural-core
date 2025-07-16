@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Drawing Test - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <style>
+        .test-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-field {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border: 2px solid #e9ecef;
+            cursor: pointer;
+        }
+        .test-field.active {
+            border-color: #4CAF50;
+            background: #f0f8ff;
+        }
+        #field-map {
+            width: 100%;
+            height: 400px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        .controls button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .calculations {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🗺️ Field Drawing Test</h1>
+        <p>Test the field drawing functionality before using it in production</p>
+        
+        <div class="test-field" data-field-index="0" onclick="setActiveField(0)">
+            <h3>Test Field #1</h3>
+            <p>Name: <input type="text" id="field_name_0" placeholder="North Field" style="border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px;"></p>
+            <p>Size: <input type="number" id="field_size_0" step="0.0001" placeholder="0.0" style="border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px;"> hectares</p>
+            <p>Location: <input type="text" id="field_location_0" placeholder="GPS coordinates" style="border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px; width: 300px;"></p>
+        </div>
+        
+        <div class="test-field" data-field-index="1" onclick="setActiveField(1)">
+            <h3>Test Field #2</h3>
+            <p>Name: <input type="text" id="field_name_1" placeholder="South Field" style="border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px;"></p>
+            <p>Size: <input type="number" id="field_size_1" step="0.0001" placeholder="0.0" style="border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px;"> hectares</p>
+            <p>Location: <input type="text" id="field_location_1" placeholder="GPS coordinates" style="border: 1px solid #ddd; padding: 0.5rem; border-radius: 4px; width: 300px;"></p>
+        </div>
+        
+        <h2>🗺️ Field Map</h2>
+        <p>Click on a field above, then use the controls below to draw its boundaries.</p>
+        
+        <div id="field-map"></div>
+        
+        <div class="controls">
+            <button id="start-drawing" class="btn-primary">🎯 Start Drawing</button>
+            <button id="clear-drawing" class="btn-secondary">🗑️ Clear</button>
+            <button id="save-field-polygon" class="btn-success" disabled>💾 Save</button>
+        </div>
+        
+        <div id="drawing-instructions" style="display: none; background: #d4edda; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+            📍 Click on the map to add points. The field will auto-close when you click near the first point.
+        </div>
+        
+        <div id="field-calculations" class="calculations" style="display: none;">
+            <h3>📊 Field Calculations</h3>
+            <p>📏 Area: <span id="calculated-area">0</span> hectares</p>
+            <p>📍 Center: <span id="calculated-center">Not calculated</span></p>
+            <p>🔢 Points: <span id="point-count">0</span></p>
+        </div>
+        
+        <div id="test-results" style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+            <h3>Test Results</h3>
+            <p>Draw some field boundaries and save them to test the functionality.</p>
+        </div>
+    </div>
+    
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=geometry,drawing&callback=initFieldMap">
+    </script>
+    <script src="/static/js/field_drawing.js"></script>
+    
+    <script>
+        // Test-specific functions
+        function setActiveField(fieldIndex) {
+            // Remove active class from all fields
+            document.querySelectorAll('.test-field').forEach(field => {
+                field.classList.remove('active');
+            });
+            
+            // Add active class to selected field
+            document.querySelector(`[data-field-index="${fieldIndex}"]`).classList.add('active');
+            
+            // Call the field drawing function
+            if (window.setActiveField) {
+                window.setActiveField(fieldIndex);
+            }
+        }
+        
+        // Initialize first field as active
+        document.addEventListener('DOMContentLoaded', function() {
+            setActiveField(0);
+        });
+    </script>
+</body>
+</html>
