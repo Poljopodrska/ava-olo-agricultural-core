@@ -1270,6 +1270,12 @@ async def dashboard_landing():
                 <p>Data management and queries</p>
                 <a href="/database-dashboard" class="constitutional-button">Enter Dashboard</a>
             </div>
+            
+            <div class="constitutional-card">
+                <h2>🏥 System Health</h2>
+                <p>Monitor all system components and API connections</p>
+                <a href="/health-dashboard" class="constitutional-button">Enter Dashboard</a>
+            </div>
         </main>
     </div>
 </body>
@@ -2112,10 +2118,10 @@ async def business_dashboard():
             }}
         }});
         
-        // Auto-refresh every 30 seconds
+        // Auto-refresh every 5 seconds
         setTimeout(() => {{
             window.location.reload();
-        }}, 30000);
+        }}, 5000);
     </script>
 </body>
 </html>
@@ -3057,8 +3063,8 @@ async def health_dashboard():
         </div>
         
         <script>
-        // Auto-refresh every 30 seconds
-        setTimeout(() => location.reload(), 30000);
+        // Auto-refresh every 5 seconds
+        setTimeout(() => location.reload(), 5000);
         </script>
     </body>
     </html>
@@ -4681,143 +4687,6 @@ async def add_farmer_submit(
 </html>
 """)
 
-# Landing Page - Main Dashboard
-@app.get("/", response_class=HTMLResponse)
-async def landing_page():
-    """Main landing page with links to all dashboards"""
-    return HTMLResponse(content="""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>AVA OLO - Agricultural Intelligence Platform</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            font-size: 20px;
-            margin-bottom: 50px;
-        }
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-        .dashboard-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-        }
-        .dashboard-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            display: block;
-        }
-        .dashboard-title {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-        .dashboard-description {
-            font-size: 16px;
-            color: #7f8c8d;
-            line-height: 1.5;
-        }
-        
-        /* Dashboard specific colors */
-        .health { border-top: 5px solid #e74c3c; }
-        .health .dashboard-icon { color: #e74c3c; }
-        
-        .business { border-top: 5px solid #2ecc71; }
-        .business .dashboard-icon { color: #2ecc71; }
-        
-        .agronomic { border-top: 5px solid #3498db; }
-        .agronomic .dashboard-icon { color: #3498db; }
-        
-        .database { border-top: 5px solid #9b59b6; }
-        .database .dashboard-icon { color: #9b59b6; }
-        
-        .footer {
-            text-align: center;
-            margin-top: 60px;
-            color: #7f8c8d;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🌾 AVA OLO</h1>
-        <p class="subtitle">Agricultural Intelligence Platform</p>
-        
-        <div class="dashboard-grid">
-            <a href="/health-dashboard" class="dashboard-card health">
-                <span class="dashboard-icon">🏥</span>
-                <div class="dashboard-title">System Health</div>
-                <div class="dashboard-description">
-                    Monitor all system components, API connections, and service status in real-time.
-                </div>
-            </a>
-            
-            <a href="/business-dashboard" class="dashboard-card business">
-                <span class="dashboard-icon">📊</span>
-                <div class="dashboard-title">Business Dashboard</div>
-                <div class="dashboard-description">
-                    View comprehensive business metrics, farmer analytics, and cost tracking.
-                </div>
-            </a>
-            
-            <a href="/agronomic-dashboard" class="dashboard-card agronomic">
-                <span class="dashboard-icon">🌱</span>
-                <div class="dashboard-title">Agronomic Dashboard</div>
-                <div class="dashboard-description">
-                    Track agricultural operations, field management, and crop analytics.
-                </div>
-            </a>
-            
-            <a href="/database-dashboard" class="dashboard-card database">
-                <span class="dashboard-icon">🗄️</span>
-                <div class="dashboard-title">Database Dashboard</div>
-                <div class="dashboard-description">
-                    Manage farmers, fields, tasks, and query agricultural data with AI assistance.
-                </div>
-            </a>
-        </div>
-        
-        <div class="footer">
-            <p>Constitutional Agricultural Intelligence | Powered by AWS</p>
-        </div>
-    </div>
-</body>
-</html>
-""")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
