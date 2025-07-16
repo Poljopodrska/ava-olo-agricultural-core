@@ -86,17 +86,17 @@ async def debug_env():
         "deployment_time": datetime.now().isoformat()
     }
 
-# Root Web Interface Route - Complete Constitutional Interface with Weather
+# Root Web Interface Route - Landing Page
 @app.get("/", response_class=HTMLResponse)
-async def main_web_interface():
-    """Complete Constitutional Farmer Web Interface"""
+async def landing_page():
+    """Landing page with Sign in and Join AVA OLO options"""
     return """
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO - Your Agricultural Assistant</title>
+        <title>AVA OLO - Welcome</title>
         <style>
             :root {
                 --primary-brown: #6B5B73; --primary-olive: #8B8C5A; --dark-olive: #5D5E3F;
@@ -105,6 +105,75 @@ async def main_web_interface():
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body { font-family: Arial, sans-serif; background: var(--cream); color: #2C2C2C; font-size: 18px; line-height: 1.6; }
             .container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+            
+            /* Landing Page Styles */
+            .landing-container { 
+                min-height: 100vh; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive));
+            }
+            .landing-box {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                max-width: 600px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                text-align: center;
+            }
+            .landing-logo {
+                font-size: 80px;
+                margin-bottom: 24px;
+            }
+            .landing-title {
+                font-size: 48px;
+                color: var(--primary-brown);
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+            .landing-subtitle {
+                font-size: 20px;
+                color: var(--dark-olive);
+                margin-bottom: 48px;
+                opacity: 0.9;
+            }
+            .landing-buttons {
+                display: flex;
+                gap: 24px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .landing-btn {
+                background: var(--primary-olive);
+                color: var(--white);
+                border: none;
+                padding: 20px 40px;
+                font-size: 20px;
+                font-weight: bold;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                min-width: 200px;
+                text-decoration: none;
+                display: inline-block;
+            }
+            .landing-btn:hover {
+                background: var(--dark-olive);
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            }
+            .landing-btn-secondary {
+                background: var(--white);
+                color: var(--primary-olive);
+                border: 3px solid var(--primary-olive);
+            }
+            .landing-btn-secondary:hover {
+                background: var(--cream);
+                border-color: var(--dark-olive);
+                color: var(--dark-olive);
+            }
             
             /* Constitutional Header */
             .constitutional-header { background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive)); color: var(--white); padding: 24px; display: flex; align-items: center; gap: 16px; border-radius: 8px; margin-bottom: 32px; }
@@ -322,591 +391,511 @@ async def main_web_interface():
         </style>
     </head>
     <body>
-        <div class="container">
-            <!-- Constitutional Header -->
-            <header class="constitutional-header">
-                <div class="constitutional-logo"></div>
-                <div class="constitutional-brand">AVA OLO</div>
-                <div class="constitutional-tagline">Your Constitutional Agricultural Assistant</div>
-            </header>
-
-            <!-- Weather Section -->
-            <section class="weather-section">
-                <!-- Real-Time Date/Time Display -->
-                <div class="datetime-display">
-                    <div class="current-time" id="currentTime">Loading...</div>
-                    <div class="current-date" id="currentDate">Loading...</div>
-                </div>
+        <div class="landing-container">
+            <div class="landing-box">
+                <div class="landing-logo">🌾</div>
+                <h1 class="landing-title">AVA OLO</h1>
+                <p class="landing-subtitle">Your Agricultural Assistant</p>
                 
-                <!-- Today's Weather Featured -->
-                <div class="weather-today">
-                    <div class="today-header">Today's Weather</div>
-                    <div class="today-main">
-                        <div class="today-icon">
-                            <div class="weather-icon">
-                                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="12" r="5" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
-                                    <g stroke="#FFD700" stroke-width="2" stroke-linecap="round">
-                                        <line x1="12" y1="1" x2="12" y2="3"/>
-                                        <line x1="12" y1="21" x2="12" y2="23"/>
-                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                                        <line x1="1" y1="12" x2="3" y2="12"/>
-                                        <line x1="21" y1="12" x2="23" y2="12"/>
-                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                                    </g>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="today-details">
-                            <div class="today-condition">Sunny</div>
-                            <div class="today-temp">22<span style="font-size:24px;">°C</span></div>
-                            <div class="today-rain">💧 0<span style="font-size:16px;">mm</span></div>
-                            <div class="today-wind">🌪️ NE 12<span style="font-size:16px;">km/h</span></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Endless 24-Hour Tape -->
-                    <div class="hourly-container">
-                        <div class="hourly-header">
-                            <div class="hourly-title">Next 24 Hours</div>
-                            <div class="hourly-controls">
-                                <button class="tape-btn" onclick="tapeLeft()">◀◀</button>
-                                <button class="tape-btn" onclick="tapeRight()">▶▶</button>
-                                <button class="tape-btn" onclick="goToNow()">NOW</button>
-                            </div>
-                        </div>
-                        <div class="hourly-tape-container">
-                            <div class="hourly-tape" id="hourlyTape">
-                                <!-- Will be populated by JavaScript with NEXT 24 hours -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 5-Day Timeline -->
-                <div class="weather-timeline" id="weatherTimeline">
-                    <!-- 5-day timeline will be populated by JavaScript -->
-                </div>
-                
-                <!-- Extended Forecast Toggle -->
-                <div style="text-align: center; margin: 24px 0;">
-                    <button class="constitutional-btn constitutional-btn-secondary" onclick="toggleExtendedForecast()" style="width: auto; padding: 12px 24px;">
-                        <span id="toggleText">Show Extended Forecast</span>
+                <div class="landing-buttons">
+                    <button class="landing-btn" onclick="window.location.href='/login'">
+                        🔐 Sign in
                     </button>
-                </div>
-                
-                <!-- Extended Forecast Section -->
-                <div class="extended-forecast-section" id="extendedForecastSection" style="display: none;">
-                    <div class="extended-header">
-                        <h3>Extended Forecast</h3>
-                        <div class="forecast-controls">
-                            <button class="forecast-btn active" onclick="showDays(5)">5 Days</button>
-                            <button class="forecast-btn" onclick="showDays(10)">10 Days</button>
-                            <button class="forecast-btn" onclick="showDays(15)">15 Days</button>
-                            <button class="forecast-btn" onclick="showDays(20)">20 Days</button>
-                        </div>
-                    </div>
-                    <div class="extended-timeline" id="extendedTimeline">
-                        <!-- Will be populated by JavaScript -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Main Query Interface -->
-            <section class="constitutional-card">
-                <h1 class="constitutional-card-title">How can I help you today?</h1>
-                <textarea class="constitutional-textarea" placeholder="Ask me anything about your crops, soil, weather, or farming techniques. I'm here to help Bulgarian mango farmers and everyone else!" onkeypress="handleEnterKey(event, 'submitQuery')"></textarea>
-                <div class="enter-hint">Press Enter to submit your question</div>
-                <button id="submitQuery" class="constitutional-btn">🔍 Submit Question</button>
-            </section>
-
-            <!-- Action Buttons -->
-            <section class="constitutional-card">
-                <h2 class="constitutional-card-title">Quick Actions</h2>
-                <button class="constitutional-btn">📋 I want to report a task</button>
-                <button class="constitutional-btn constitutional-btn-secondary">📊 I need data about my farm</button>
-            </section>
-
-            <!-- Authentication Section -->
-            <div id="authSection">
-                <!-- Registration Chat Interface -->
-                <div id="registrationChat" class="constitutional-card">
-                    <h1 class="constitutional-card-title">🚜 Join AVA OLO</h1>
-                    <div id="chatMessages" style="max-height: 400px; overflow-y: auto; margin-bottom: 16px; padding: 16px; background: var(--cream); border-radius: 8px;">
-                        <!-- Chat messages appear here -->
-                    </div>
-                    <input id="chatInput" class="constitutional-input" placeholder="Type your response..." onkeypress="handleEnterKey(event, 'sendChatMessage')" style="width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--primary-olive); border-radius: 8px; margin-bottom: 16px;">
-                    <button id="sendChatMessage" class="constitutional-btn" onclick="sendChatMessage()">💬 Send</button>
-                    <div class="enter-hint">Press Enter to send your message</div>
-                </div>
-
-                <!-- Login Interface (show after registration or for existing users) -->
-                <div id="loginSection" class="constitutional-card" style="display: none;">
-                    <h1 class="constitutional-card-title">🔐 Login to My Farm</h1>
-                    <input id="loginPhone" class="constitutional-input" placeholder="WhatsApp number (e.g., +385912345678)" style="width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--primary-olive); border-radius: 8px; margin-bottom: 16px;">
-                    <input id="loginPassword" type="password" class="constitutional-input" placeholder="Password" style="width: 100%; padding: 16px; font-size: 18px; border: 2px solid var(--primary-olive); border-radius: 8px; margin-bottom: 16px;">
-                    <button class="constitutional-btn" onclick="performLogin()">🔐 Login</button>
-                    <div id="loginError" style="color: red; margin-top: 16px; display: none;"></div>
-                </div>
-
-                <div style="text-align: center; margin: 16px 0;">
-                    <button id="toggleMode" class="constitutional-btn constitutional-btn-secondary" onclick="toggleLoginRegister()">
-                        <span id="toggleText">Already have an account? Login</span>
+                    <button class="landing-btn landing-btn-secondary" onclick="window.location.href='/register'">
+                        🚜 Join AVA OLO
                     </button>
                 </div>
             </div>
         </div>
 
+    </body>
+    </html>
+    """
+
+# Login page route
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Login page for existing users"""
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Sign In</title>
+        <style>
+            :root {
+                --primary-brown: #6B5B73; --primary-olive: #8B8C5A; --dark-olive: #5D5E3F;
+                --cream: #F5F3F0; --white: #FFFFFF; --success-green: #6B8E23; --light-gray: #E8E8E6;
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive)); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+            
+            .login-container {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                text-align: center;
+            }
+            .login-logo {
+                font-size: 60px;
+                margin-bottom: 24px;
+            }
+            .login-title {
+                font-size: 36px;
+                color: var(--primary-brown);
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+            .login-subtitle {
+                font-size: 18px;
+                color: var(--dark-olive);
+                margin-bottom: 32px;
+                opacity: 0.9;
+            }
+            .login-form {
+                text-align: left;
+            }
+            .form-group {
+                margin-bottom: 24px;
+            }
+            .form-label {
+                display: block;
+                font-size: 16px;
+                color: var(--dark-olive);
+                font-weight: bold;
+                margin-bottom: 8px;
+            }
+            .form-input {
+                width: 100%;
+                padding: 16px;
+                font-size: 18px;
+                border: 2px solid var(--light-gray);
+                border-radius: 10px;
+                transition: border-color 0.3s ease;
+            }
+            .form-input:focus {
+                outline: none;
+                border-color: var(--primary-olive);
+            }
+            .login-btn {
+                background: var(--primary-olive);
+                color: var(--white);
+                border: none;
+                padding: 16px 32px;
+                font-size: 20px;
+                font-weight: bold;
+                border-radius: 10px;
+                cursor: pointer;
+                width: 100%;
+                transition: all 0.3s ease;
+                margin-top: 16px;
+            }
+            .login-btn:hover {
+                background: var(--dark-olive);
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            }
+            .login-links {
+                margin-top: 32px;
+                text-align: center;
+            }
+            .login-link {
+                color: var(--primary-olive);
+                text-decoration: none;
+                font-size: 16px;
+                margin: 0 16px;
+                transition: color 0.3s ease;
+            }
+            .login-link:hover {
+                color: var(--dark-olive);
+                text-decoration: underline;
+            }
+            .error-message {
+                background: rgba(239, 68, 68, 0.1);
+                color: #dc2626;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                display: none;
+                font-size: 16px;
+            }
+            .success-message {
+                background: rgba(34, 197, 94, 0.1);
+                color: #16a34a;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                display: none;
+                font-size: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-container">
+            <div class="login-logo">🌾</div>
+            <h1 class="login-title">Sign In</h1>
+            <p class="login-subtitle">Welcome back to AVA OLO</p>
+            
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+            
+            <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="username">WhatsApp Number</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        class="form-input" 
+                        placeholder="+385912345678"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        required
+                    >
+                </div>
+                
+                <button type="submit" class="login-btn">
+                    🔐 Sign In
+                </button>
+            </form>
+            
+            <div class="login-links">
+                <a href="/register" class="login-link">Don't have an account? Join AVA OLO</a>
+                <br><br>
+                <a href="/" class="login-link">← Back to Home</a>
+            </div>
+        </div>
+        
         <script>
-            function handleEnterKey(event, buttonId) {
+            async function handleLogin(event) {
+                event.preventDefault();
+                
+                const errorDiv = document.getElementById('errorMessage');
+                const successDiv = document.getElementById('successMessage');
+                const form = document.getElementById('loginForm');
+                
+                // Hide messages
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                
+                try {
+                    const response = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            wa_phone_number: username,
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.token) {
+                        // Store authentication
+                        localStorage.setItem('ava_auth_token', data.token);
+                        localStorage.setItem('ava_user', JSON.stringify(data.user));
+                        
+                        // Show success message
+                        successDiv.textContent = 'Login successful! Redirecting...';
+                        successDiv.style.display = 'block';
+                        
+                        // Redirect to dashboard
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 1500);
+                    } else {
+                        errorDiv.textContent = data.message || 'Invalid credentials. Please try again.';
+                        errorDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorDiv.textContent = 'Connection error. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """
+
+# Registration page route
+@app.get("/register", response_class=HTMLResponse)
+async def register_page():
+    """Registration page (Join AVA OLO)"""
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Join</title>
+        <style>
+            :root {
+                --primary-brown: #6B5B73; --primary-olive: #8B8C5A; --dark-olive: #5D5E3F;
+                --cream: #F5F3F0; --white: #FFFFFF; --success-green: #6B8E23; --light-gray: #E8E8E6;
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive)); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+            
+            .register-container {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                max-width: 600px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            }
+            .register-header {
+                text-align: center;
+                margin-bottom: 32px;
+            }
+            .register-logo {
+                font-size: 60px;
+                margin-bottom: 24px;
+            }
+            .register-title {
+                font-size: 36px;
+                color: var(--primary-brown);
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+            .register-subtitle {
+                font-size: 18px;
+                color: var(--dark-olive);
+                opacity: 0.9;
+            }
+            .chat-container {
+                background: var(--cream);
+                border-radius: 15px;
+                padding: 20px;
+                margin-bottom: 20px;
+                min-height: 300px;
+                max-height: 400px;
+                overflow-y: auto;
+                border: 2px solid var(--light-gray);
+            }
+            .message {
+                margin-bottom: 16px;
+                padding: 12px 16px;
+                border-radius: 10px;
+                max-width: 85%;
+                font-size: 16px;
+                line-height: 1.5;
+            }
+            .message.ava {
+                background: var(--primary-olive);
+                color: var(--white);
+                margin-right: auto;
+            }
+            .message.user {
+                background: var(--white);
+                color: var(--dark-olive);
+                margin-left: auto;
+                border: 2px solid var(--primary-olive);
+                text-align: right;
+            }
+            .input-group {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+            .chat-input {
+                flex: 1;
+                padding: 16px;
+                font-size: 18px;
+                border: 2px solid var(--light-gray);
+                border-radius: 10px;
+                transition: border-color 0.3s ease;
+            }
+            .chat-input:focus {
+                outline: none;
+                border-color: var(--primary-olive);
+            }
+            .send-btn {
+                background: var(--primary-olive);
+                color: var(--white);
+                border: none;
+                padding: 16px 32px;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+            .send-btn:hover {
+                background: var(--dark-olive);
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            }
+            .send-btn:disabled {
+                background: var(--light-gray);
+                cursor: not-allowed;
+                transform: none;
+            }
+            .register-links {
+                text-align: center;
+                margin-top: 24px;
+            }
+            .register-link {
+                color: var(--primary-olive);
+                text-decoration: none;
+                font-size: 16px;
+                transition: color 0.3s ease;
+            }
+            .register-link:hover {
+                color: var(--dark-olive);
+                text-decoration: underline;
+            }
+            .hint-text {
+                text-align: center;
+                color: var(--dark-olive);
+                font-size: 14px;
+                margin-bottom: 16px;
+                font-style: italic;
+            }
+            .success-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+            .success-box {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                text-align: center;
+                max-width: 400px;
+            }
+            .success-icon {
+                font-size: 80px;
+                margin-bottom: 24px;
+            }
+            .success-title {
+                font-size: 28px;
+                color: var(--success-green);
+                font-weight: bold;
+                margin-bottom: 16px;
+            }
+            .success-text {
+                font-size: 18px;
+                color: var(--dark-olive);
+                margin-bottom: 24px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="register-container">
+            <div class="register-header">
+                <div class="register-logo">🌾</div>
+                <h1 class="register-title">Join AVA OLO</h1>
+                <p class="register-subtitle">Your Agricultural Assistant</p>
+            </div>
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="message ava">
+                    <strong>🤖 AVA:</strong> Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)
+                </div>
+            </div>
+            
+            <div class="hint-text">Press Enter to send your message</div>
+            
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    class="chat-input"
+                    placeholder="Type your response..."
+                    onkeypress="handleEnterKey(event)"
+                    autofocus
+                >
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+                    Send 💬
+                </button>
+            </div>
+            
+            <div class="register-links">
+                <a href="/login" class="register-link">Already have an account? Sign in</a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="/" class="register-link">Back to Home</a>
+            </div>
+        </div>
+        
+        <div class="success-overlay" id="successOverlay">
+            <div class="success-box">
+                <div class="success-icon">✅</div>
+                <h2 class="success-title">Registration Complete!</h2>
+                <p class="success-text">Welcome to AVA OLO. Redirecting to dashboard...</p>
+            </div>
+        </div>
+        
+        <script>
+            let conversationData = {
+                conversation_history: [],
+                last_ava_message: "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)",
+                current_data: {},
+                conversation_id: null
+            };
+            
+            function handleEnterKey(event) {
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
-                    document.getElementById(buttonId).click();
-                }
-            }
-            document.getElementById('submitQuery').addEventListener('click', function() {
-                const textarea = document.querySelector('.constitutional-textarea');
-                const query = textarea.value.trim();
-                if (query) {
-                    alert('🏛️ Constitutional Query Submitted\\n\\n' + query + '\\n\\n✅ MANGO RULE: Works for Bulgarian mango farmers');
-                    textarea.value = '';
-                }
-            });
-            // Real-time clock and weather system
-            let tapePosition = 0;
-            let currentForecastDays = 5;
-
-            // Update real-time clock
-            function updateDateTime() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('en-US', { 
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                const dateString = now.toLocaleDateString('en-US', { 
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                
-                document.getElementById('currentTime').textContent = timeString;
-                document.getElementById('currentDate').textContent = dateString;
-            }
-
-            // Generate next 24 hours from current time
-            function generateNext24Hours() {
-                const hours = [];
-                const now = new Date();
-                
-                for (let i = 0; i < 24; i++) {
-                    const hour = new Date(now.getTime() + i * 60 * 60 * 1000);
-                    const hourStr = hour.getHours().toString().padStart(2, '0') + ':00';
-                    const isCurrentHour = i === 0;
-                    
-                    // Generate weather based on hour
-                    let icon, temp, rain, wind;
-                    const h = hour.getHours();
-                    
-                    if (h >= 22 || h <= 5) {
-                        icon = getNightIcon();
-                        temp = Math.floor(12 + Math.random() * 6);
-                    } else if (h === 6 || h === 20) {
-                        icon = getDawnIcon();
-                        temp = Math.floor(14 + Math.random() * 8);
-                    } else if (h >= 10 && h <= 16) {
-                        icon = getSunnyIcon();
-                        temp = Math.floor(20 + Math.random() * 8);
-                    } else {
-                        icon = getPartlyCloudyIcon();
-                        temp = Math.floor(16 + Math.random() * 8);
-                    }
-                    
-                    rain = Math.floor(Math.random() * 3);
-                    wind = Math.floor(5 + Math.random() * 15);
-                    const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-                    const windDir = directions[Math.floor(Math.random() * directions.length)];
-                    
-                    hours.push({
-                        time: hourStr,
-                        icon: icon,
-                        temp: temp,
-                        rain: rain,
-                        wind: `${windDir} ${wind}`,
-                        isCurrent: isCurrentHour
-                    });
-                }
-                
-                return hours;
-            }
-
-            // Generate extended forecast (5-20 days)
-            function generateExtendedForecast(days) {
-                const forecast = [];
-                const now = new Date();
-                
-                for (let i = 0; i < days; i++) {
-                    const date = new Date(now.getTime() + (i + 1) * 24 * 60 * 60 * 1000);
-                    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                    const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    
-                    // Generate realistic weather
-                    const conditions = [
-                        { icon: getSunnyIcon(), condition: 'Sunny', temp: [18, 28] },
-                        { icon: getPartlyCloudyIcon(), condition: 'Partly Cloudy', temp: [16, 25] },
-                        { icon: getCloudyIcon(), condition: 'Cloudy', temp: [14, 22] },
-                        { icon: getRainIcon('moderate'), condition: 'Light Rain', temp: [12, 20] },
-                        { icon: getThunderstormIcon(), condition: 'Storms', temp: [10, 18] }
-                    ];
-                    
-                    const weather = conditions[Math.floor(Math.random() * conditions.length)];
-                    const tempMin = weather.temp[0] + Math.floor(Math.random() * 4);
-                    const tempMax = weather.temp[1] + Math.floor(Math.random() * 4);
-                    const rain = Math.floor(Math.random() * 12);
-                    
-                    forecast.push({
-                        day: dayName,
-                        date: monthDay,
-                        icon: weather.icon,
-                        condition: weather.condition,
-                        tempMin: tempMin,
-                        tempMax: tempMax,
-                        rain: rain
-                    });
-                }
-                
-                return forecast;
-            }
-
-            // Populate 24-hour tape
-            function populateHourlyTape() {
-                const hours = generateNext24Hours();
-                const tape = document.getElementById('hourlyTape');
-                
-                tape.innerHTML = hours.map(hour => `
-                    <div class="hour-square ${hour.isCurrent ? 'current-hour' : ''}">
-                        <div class="hour-time">${hour.time}</div>
-                        <div class="hour-icon"><div class="weather-icon">${hour.icon}</div></div>
-                        <div class="hour-temp">${hour.temp}°C</div>
-                        <div class="hour-rain">💧 ${hour.rain}mm</div>
-                        <div class="hour-wind">🌪️ ${hour.wind}km/h</div>
-                    </div>
-                `).join('');
-            }
-
-            // Tape controls
-            function tapeLeft() {
-                tapePosition = Math.max(tapePosition - 200, 0);
-                updateTapePosition();
-            }
-
-            function tapeRight() {
-                tapePosition = Math.min(tapePosition + 200, 1600);
-                updateTapePosition();
-            }
-
-            function goToNow() {
-                tapePosition = 0;
-                updateTapePosition();
-            }
-
-            function updateTapePosition() {
-                const tape = document.getElementById('hourlyTape');
-                tape.style.transform = `translateX(-${tapePosition}px)`;
-            }
-
-            // Extended forecast controls
-            function showDays(days) {
-                currentForecastDays = days;
-                
-                // Update button states
-                document.querySelectorAll('.forecast-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                event.target.classList.add('active');
-                
-                // Populate extended forecast
-                const forecast = generateExtendedForecast(days);
-                const timeline = document.getElementById('extendedTimeline');
-                
-                timeline.innerHTML = forecast.map(day => `
-                    <div class="extended-day">
-                        <div style="font-size: 14px; color: var(--dark-olive); margin-bottom: 8px;">${day.day}</div>
-                        <div style="font-size: 12px; color: var(--dark-olive); margin-bottom: 12px;">${day.date}</div>
-                        <div style="margin-bottom: 12px;"><div class="weather-icon">${day.icon}</div></div>
-                        <div style="font-size: 14px; color: var(--dark-olive); margin-bottom: 8px;">${day.condition}</div>
-                        <div style="font-size: 18px; font-weight: bold; color: var(--primary-brown); margin-bottom: 4px;">${day.tempMax}°C</div>
-                        <div style="font-size: 14px; color: var(--dark-olive); margin-bottom: 8px;">${day.tempMin}°C</div>
-                        <div style="font-size: 14px; color: var(--dark-olive);">💧 ${day.rain}mm</div>
-                    </div>
-                `).join('');
-            }
-
-            // Initialize everything
-            document.addEventListener('DOMContentLoaded', function() {
-                // Start real-time clock
-                updateDateTime();
-                setInterval(updateDateTime, 1000);
-                
-                // Initialize weather systems
-                populateHourlyTape();
-                populate5DayTimeline();
-                
-                // Don't initialize extended forecast until toggle is clicked
-                
-                console.log('🏛️ Constitutional Weather System: Next 24 hours + Extended forecast active');
-            });
-            
-            // Toggle Extended Forecast
-            function toggleExtendedForecast() {
-                const section = document.getElementById('extendedForecastSection');
-                const toggleText = document.getElementById('toggleText');
-                
-                if (section.style.display === 'none') {
-                    section.style.display = 'block';
-                    toggleText.textContent = 'Hide Extended Forecast';
-                    // Initialize if not already done
-                    if (!section.dataset.initialized) {
-                        showDays(5);
-                        section.dataset.initialized = 'true';
-                    }
-                } else {
-                    section.style.display = 'none';
-                    toggleText.textContent = 'Show Extended Forecast';
+                    sendMessage();
                 }
             }
             
-            // Populate hourly forecast with SVG icons
-            function populateHourlyForecast() {
-                const slider = document.getElementById('hourlySlider');
-                const hours = [
-                    {time: '00:00', icon: 'night', temp: '14°C', rain: 0, wind: 'E 5km/h'},
-                    {time: '01:00', icon: 'night', temp: '13°C', rain: 0, wind: 'E 4km/h'},
-                    {time: '02:00', icon: 'night', temp: '12°C', rain: 0, wind: 'E 3km/h'},
-                    {time: '03:00', icon: 'night', temp: '12°C', rain: 0, wind: 'NE 3km/h'},
-                    {time: '04:00', icon: 'night', temp: '11°C', rain: 0, wind: 'NE 4km/h'},
-                    {time: '05:00', icon: 'night', temp: '11°C', rain: 0, wind: 'NE 5km/h'},
-                    {time: '06:00', icon: 'dawn', temp: '12°C', rain: 0, wind: 'NE 6km/h'},
-                    {time: '07:00', icon: 'dawn', temp: '14°C', rain: 0, wind: 'NE 7km/h'},
-                    {time: '08:00', icon: 'cloudy', temp: '16°C', rain: 0, wind: 'NE 8km/h'},
-                    {time: '09:00', icon: 'cloudy', temp: '18°C', rain: 0, wind: 'NE 10km/h'},
-                    {time: '10:00', icon: 'sunny', temp: '20°C', rain: 0, wind: 'NE 11km/h'},
-                    {time: '11:00', icon: 'sunny', temp: '21°C', rain: 0, wind: 'NE 12km/h'},
-                    {time: '12:00', icon: 'sunny', temp: '22°C', rain: 0, wind: 'NE 12km/h'},
-                    {time: '13:00', icon: 'sunny', temp: '23°C', rain: 0, wind: 'E 13km/h'},
-                    {time: '14:00', icon: 'sunny', temp: '24°C', rain: 0, wind: 'E 14km/h'},
-                    {time: '15:00', icon: 'sunny', temp: '25°C', rain: 0, wind: 'E 15km/h'},
-                    {time: '16:00', icon: 'sunny', temp: '24°C', rain: 0, wind: 'E 14km/h'},
-                    {time: '17:00', icon: 'partly-cloudy', temp: '23°C', rain: 0, wind: 'E 12km/h'},
-                    {time: '18:00', icon: 'partly-cloudy', temp: '21°C', rain: 0, wind: 'E 8km/h'},
-                    {time: '19:00', icon: 'partly-cloudy', temp: '20°C', rain: 0, wind: 'SE 7km/h'},
-                    {time: '20:00', icon: 'dawn', temp: '18°C', rain: 0, wind: 'SE 6km/h'},
-                    {time: '21:00', icon: 'night', temp: '17°C', rain: 0, wind: 'SE 6km/h'},
-                    {time: '22:00', icon: 'night', temp: '16°C', rain: 0, wind: 'SE 5km/h'},
-                    {time: '23:00', icon: 'night', temp: '15°C', rain: 0, wind: 'E 5km/h'}
-                ];
-                
-                let html = '';
-                hours.forEach(hour => {
-                    let iconHtml = '';
-                    switch(hour.icon) {
-                        case 'sunny': iconHtml = getSunnyIcon(); break;
-                        case 'cloudy': iconHtml = getCloudyIcon(); break;
-                        case 'partly-cloudy': iconHtml = getPartlyCloudyIcon(); break;
-                        case 'night': iconHtml = getNightIcon(); break;
-                        case 'dawn': iconHtml = getDawnIcon(); break;
-                    }
-                    
-                    html += `<div class="hourly-square">
-                        <div class="hour-time">${hour.time}</div>
-                        <div class="hour-icon"><div class="weather-icon">${iconHtml}</div></div>
-                        <div class="hour-temp">${hour.temp}</div>
-                        <div class="hour-rain">💧 ${hour.rain}mm</div>
-                        <div class="hour-wind">🌪️ ${hour.wind}</div>
-                    </div>`;
-                });
-                
-                slider.innerHTML = html;
-            }
-            
-            // Populate 5-day timeline with SVG icons
-            function populate5DayTimeline() {
-                const timeline = document.getElementById('weatherTimeline');
-                const today = new Date();
-                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                
-                const days = [
-                    {label: 'Today', icon: 'sunny', condition: 'Sunny', temp: 22, rain: 0, wind: 'NE 12km/h', today: true},
-                    {label: 'Tomorrow', icon: 'partly-cloudy', condition: 'Partly Sunny', temp: 24, rain: 1, wind: 'N 8km/h'},
-                    {label: dayNames[(today.getDay() + 2) % 7], icon: 'rain-moderate', condition: 'Light Rain', temp: 18, rain: 8, wind: 'SW 18km/h'},
-                    {label: dayNames[(today.getDay() + 3) % 7], icon: 'cloudy', condition: 'Cloudy', temp: 20, rain: 3, wind: 'W 15km/h'},
-                    {label: dayNames[(today.getDay() + 4) % 7], icon: 'thunderstorm', condition: 'Thunderstorms', temp: 16, rain: 15, wind: 'W 22km/h'}
-                ];
-                
-                let html = '';
-                days.forEach(day => {
-                    let iconHtml = '';
-                    switch(day.icon) {
-                        case 'sunny': iconHtml = getSunnyIcon(); break;
-                        case 'cloudy': iconHtml = getCloudyIcon(); break;
-                        case 'partly-cloudy': iconHtml = getPartlyCloudyIcon(); break;
-                        case 'rain-light': iconHtml = getRainIcon('light'); break;
-                        case 'rain-moderate': iconHtml = getRainIcon('moderate'); break;
-                        case 'rain-heavy': iconHtml = getRainIcon('heavy'); break;
-                        case 'thunderstorm': iconHtml = getThunderstormIcon(); break;
-                    }
-                    
-                    html += `<div class="weather-day${day.today ? ' weather-day-today' : ''}">
-                        <div class="day-label">${day.label}</div>
-                        <div class="day-icon"><div class="weather-icon">${iconHtml}</div></div>
-                        <div class="day-condition">${day.condition}</div>
-                        <div class="day-temp">${day.temp}<span style="font-size:16px;">°C</span></div>
-                        <div class="day-rain">💧 ${day.rain}<span style="font-size:14px;">mm</span></div>
-                        <div class="day-wind">🌪️ ${day.wind}</div>
-                    </div>`;
-                });
-                
-                timeline.innerHTML = html;
-            }
-
-            console.log('🏛️ Constitutional Web Interface with Enhanced Weather System Active');
-            
-            // SVG Weather Icon Functions
-            function getSunnyIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="5" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
-                    <g stroke="#FFD700" stroke-width="2" stroke-linecap="round">
-                        <line x1="12" y1="1" x2="12" y2="3"/>
-                        <line x1="12" y1="21" x2="12" y2="23"/>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                        <line x1="1" y1="12" x2="3" y2="12"/>
-                        <line x1="21" y1="12" x2="23" y2="12"/>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </g>
-                </svg>`;
-            }
-            
-            function getCloudyIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#808080" stroke="#696969" stroke-width="2" stroke-linejoin="round"/>
-                </svg>`;
-            }
-            
-            function getPartlyCloudyIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <g>
-                        <circle cx="10" cy="10" r="3" fill="#FFD700" stroke="#FFA500" stroke-width="1.5"/>
-                        <g stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.8">
-                            <line x1="10" y1="4" x2="10" y2="5"/>
-                            <line x1="15" y1="10" x2="16" y2="10"/>
-                            <line x1="14.5" y1="5.5" x2="15.5" y2="4.5"/>
-                        </g>
-                        <path d="M16 12h-0.8A5 5 0 1 0 10 17h6a3 3 0 0 0 0-6z" 
-                              fill="#808080" stroke="#696969" stroke-width="1.5" stroke-linejoin="round"/>
-                    </g>
-                </svg>`;
-            }
-            
-            function getRainIcon(intensity = 'moderate') {
-                const drops = intensity === 'light' ? 2 : intensity === 'heavy' ? 4 : 3;
-                let dropPaths = '';
-                for (let i = 0; i < drops; i++) {
-                    const x = 8 + (i * 3);
-                    dropPaths += `<line x1="${x}" y1="13" x2="${x-1}" y2="16" stroke="#4169E1" stroke-width="1.5" stroke-linecap="round"/>`;
-                }
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#808080" stroke="#696969" stroke-width="2" stroke-linejoin="round"/>
-                    ${dropPaths}
-                </svg>`;
-            }
-            
-            function getThunderstormIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#2F4F4F" stroke="#1C1C1C" stroke-width="2" stroke-linejoin="round"/>
-                    <path d="M13 16l-3 5 3-5h-3l3-5" 
-                          fill="none" stroke="#FFD700" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-                </svg>`;
-            }
-            
-            function getSnowIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18 10h-1.26A8 8 0 1 0 9 18h9a5 5 0 0 0 0-10z" 
-                          fill="#808080" stroke="#696969" stroke-width="2" stroke-linejoin="round"/>
-                    <g fill="#FFFFFF" stroke="#4169E1" stroke-width="0.5">
-                        <circle cx="8" cy="14" r="1"/>
-                        <circle cx="12" cy="13" r="1"/>
-                        <circle cx="16" cy="14" r="1"/>
-                        <circle cx="10" cy="16" r="1"/>
-                        <circle cx="14" cy="16" r="1"/>
-                    </g>
-                </svg>`;
-            }
-            
-            function getFogIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <g stroke="#808080" stroke-width="2" stroke-linecap="round">
-                        <line x1="4" y1="8" x2="20" y2="8" opacity="0.8"/>
-                        <line x1="4" y1="12" x2="20" y2="12"/>
-                        <line x1="4" y1="16" x2="20" y2="16" opacity="0.6"/>
-                    </g>
-                </svg>`;
-            }
-            
-            function getNightIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" 
-                          fill="#FFFACD" stroke="#FFD700" stroke-width="2" stroke-linejoin="round"/>
-                </svg>`;
-            }
-            
-            function getDawnIcon() {
-                return `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <g>
-                        <path d="M12 15a5 5 0 0 0 0-10v10z" fill="#FFB347" stroke="#FF8C00" stroke-width="2"/>
-                        <line x1="4" y1="18" x2="20" y2="18" stroke="#FFD700" stroke-width="2" stroke-linecap="round"/>
-                        <line x1="6" y1="21" x2="18" y2="21" stroke="#FFD700" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-                    </g>
-                </svg>`;
-            }
-            
-            // Authentication and Chat Registration Functions
-            let conversationHistory = [];
-            let lastAvaMessage = "";
-            let registrationData = {};
-            let authToken = localStorage.getItem('ava_auth_token');
-            
-            // Check if user is already authenticated
-            if (authToken) {
-                // Hide auth section if already logged in
-                document.getElementById('authSection').style.display = 'none';
-            }
-            
-            async function sendChatMessage() {
+            async function sendMessage() {
                 const input = document.getElementById('chatInput');
+                const sendBtn = document.getElementById('sendBtn');
                 const message = input.value.trim();
                 
                 if (!message) return;
                 
                 // Add user message to chat
-                addChatMessage(message, 'user');
+                addMessageToChat(message, 'user');
+                
+                // Disable input
                 input.value = '';
+                input.disabled = true;
+                sendBtn.disabled = true;
                 
                 try {
-                    // Send to backend with conversation context
+                    // Prepare request data
+                    const formData = {
+                        user_input: message,
+                        current_data: conversationData.current_data,
+                        conversation_history: conversationData.conversation_history,
+                        last_ava_message: conversationData.last_ava_message,
+                        conversation_id: conversationData.conversation_id
+                    };
+                    
                     // Try CAVA first, fallback to old system if not available
                     let endpoint = '/api/v1/cava/register';
                     let requestBody = {
-                        farmer_id: 12345, // Temporary ID for registration
-                        message: formData.input,
+                        farmer_id: Math.floor(Math.random() * 1000000), // Temporary ID for registration
+                        message: message,
                         session_id: conversationData.conversation_id
                     };
                     
@@ -931,138 +920,306 @@ async def main_web_interface():
                     const data = await response.json();
                     
                     // Add AVA response to chat
-                    addChatMessage(data.message, 'ava');
+                    addMessageToChat(data.message, 'ava');
                     
-                    // Update context based on system (CAVA vs old)
+                    // Update conversation data
                     if (endpoint.includes('cava')) {
                         // CAVA response format
                         conversationData.conversation_id = data.session_id || conversationData.conversation_id;
-                        if (data.debug_info) {
-                            console.log('CAVA Debug:', data.debug_info);
-                        }
                     } else {
                         // Old system response format
                         if (data.extracted_data) {
-                            Object.assign(registrationData, data.extracted_data || {});
+                            conversationData.current_data = data.extracted_data;
                         }
-                        conversationHistory = data.conversation_history || conversationHistory;
-                        lastAvaMessage = data.last_ava_message || data.message;
+                        conversationData.conversation_history = data.conversation_history || conversationData.conversation_history;
+                        conversationData.last_ava_message = data.last_ava_message || data.message;
                         conversationData.conversation_id = data.conversation_id || conversationData.conversation_id;
                     }
                     
-                    // Log who handled the response (for debugging)
-                    console.log(`🤖 Handled by: ${data.handled_by || 'unknown'}`);
-                    if (data.supervision_notes) {
-                        console.log(`👁️ Supervision: ${data.supervision_notes}`);
-                    }
-                    if (data.debug_info) {
-                        console.log('🔍 Debug Info:', data.debug_info);
-                    }
-                    
-                    // Handle completion
+                    // Check if registration is complete
                     if (data.status === "COMPLETE") {
-                        // Registration complete
+                        // Show success overlay
+                        document.getElementById('successOverlay').style.display = 'flex';
+                        
+                        // Store auth token if provided
                         if (data.token) {
                             localStorage.setItem('ava_auth_token', data.token);
                             localStorage.setItem('ava_user', JSON.stringify(data.user));
-                            // Hide auth section after successful registration
-                            setTimeout(() => {
-                                document.getElementById('authSection').style.display = 'none';
-                            }, 3000);
                         }
+                        
+                        // Redirect after delay
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 3000);
                     }
+                    
                 } catch (error) {
-                    console.error('Chat registration error:', error);
-                    addChatMessage('Sorry, I had trouble processing that. Could you please try again?', 'ava');
+                    console.error('Registration error:', error);
+                    addMessageToChat('Sorry, I had trouble processing that. Could you please try again?', 'ava');
+                } finally {
+                    // Re-enable input
+                    input.disabled = false;
+                    sendBtn.disabled = false;
+                    input.focus();
                 }
             }
             
-            function addChatMessage(message, sender) {
-                const chatDiv = document.getElementById('chatMessages');
+            function addMessageToChat(text, sender) {
+                const chatContainer = document.getElementById('chatContainer');
                 const messageDiv = document.createElement('div');
-                messageDiv.style.marginBottom = '12px';
-                messageDiv.style.padding = '8px 12px';
-                messageDiv.style.borderRadius = '8px';
+                messageDiv.className = `message ${sender}`;
                 
                 if (sender === 'ava') {
-                    messageDiv.style.background = 'var(--primary-olive)';
-                    messageDiv.style.color = 'white';
-                    messageDiv.innerHTML = `<strong>🤖 AVA:</strong> ${message}`;
+                    messageDiv.innerHTML = `<strong>🤖 AVA:</strong> ${text}`;
                 } else {
-                    messageDiv.style.background = 'var(--white)';
-                    messageDiv.style.border = '1px solid var(--light-gray)';
-                    messageDiv.innerHTML = `<strong>👨‍🌾 You:</strong> ${message}`;
+                    messageDiv.innerHTML = `<strong>👨‍🌾 You:</strong> ${text}`;
                 }
                 
-                chatDiv.appendChild(messageDiv);
-                chatDiv.scrollTop = chatDiv.scrollHeight;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Add to conversation history
+                conversationData.conversation_history.push({
+                    role: sender,
+                    content: text
+                });
+            }
+        </script>
+    </body>
+    </html>
+    """
+
+# Dashboard page route (for authenticated users)
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page():
+    """Main dashboard for authenticated users"""
+    # This will contain the original main interface content
+    # For now, just redirect to the original main interface
+    # In production, you would check authentication here
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Dashboard</title>
+        <script>
+            // Check if user is authenticated
+            const authToken = localStorage.getItem('ava_auth_token');
+            if (!authToken) {
+                // Redirect to login if not authenticated
+                window.location.href = '/login';
+            } else {
+                // For now, redirect to the main interface
+                // In production, this would load the full dashboard
+                window.location.href = '/main';
+            }
+        </script>
+    </head>
+    <body>
+        <div style="text-align: center; padding: 50px;">
+            <h1>Loading dashboard...</h1>
+        </div>
+    </body>
+    </html>
+    """
+
+# Main interface for authenticated users
+@app.get("/main", response_class=HTMLResponse)
+async def main_interface():
+    """Main interface with all features for authenticated users"""
+    return """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Your Agricultural Assistant</title>
+        <style>
+            :root {
+                --primary-brown: #6B5B73; --primary-olive: #8B8C5A; --dark-olive: #5D5E3F;
+                --cream: #F5F3F0; --white: #FFFFFF; --success-green: #6B8E23; --light-gray: #E8E8E6;
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; background: var(--cream); color: #2C2C2C; font-size: 18px; line-height: 1.6; }
+            .container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+            
+            /* Constitutional Header */
+            .constitutional-header { background: linear-gradient(135deg, var(--primary-brown), var(--dark-olive)); color: var(--white); padding: 24px; display: flex; align-items: center; gap: 16px; border-radius: 8px; margin-bottom: 32px; position: relative; }
+            .constitutional-logo { width: 48px; height: 48px; background: var(--white); border-radius: 50%; position: relative; }
+            .constitutional-logo::before { content: ''; width: 12px; height: 12px; background: var(--primary-brown); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            .constitutional-brand { font-size: 32px; font-weight: bold; }
+            .constitutional-tagline { margin-left: auto; opacity: 0.9; }
+            .logout-btn { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: all 0.3s ease; }
+            .logout-btn:hover { background: rgba(255,255,255,0.3); }
+            
+            /* Weather Section */
+            .weather-card { background: var(--white); border-radius: 8px; padding: 24px; box-shadow: 0 2px 12px rgba(107,91,115,0.1); border-left: 4px solid var(--primary-olive); margin-bottom: 24px; }
+            .weather-title { font-size: 24px; color: var(--primary-brown); font-weight: bold; margin-bottom: 16px; }
+            .weather-content { display: flex; align-items: center; gap: 32px; }
+            .weather-icon { font-size: 64px; }
+            .weather-details { flex: 1; }
+            .weather-temp { font-size: 36px; font-weight: bold; color: var(--primary-brown); }
+            .weather-condition { font-size: 20px; color: var(--dark-olive); margin-bottom: 8px; }
+            .weather-info { font-size: 18px; color: var(--dark-olive); }
+            
+            /* Constitutional Cards */
+            .constitutional-card { background: var(--white); border-radius: 8px; padding: 24px; box-shadow: 0 2px 12px rgba(107,91,115,0.1); border-left: 4px solid var(--primary-olive); margin-bottom: 24px; }
+            .constitutional-card-title { font-size: 24px; color: var(--primary-brown); font-weight: bold; margin-bottom: 16px; text-align: center; }
+            .constitutional-textarea { width: 100%; padding: 16px; border: 2px solid var(--light-gray); border-radius: 8px; font-size: 18px; background: var(--white); min-height: 120px; resize: vertical; margin-bottom: 16px; }
+            .constitutional-textarea:focus { outline: none; border-color: var(--primary-olive); }
+            .constitutional-btn { background: var(--primary-olive); color: var(--white); border: none; padding: 16px 24px; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 16px; transition: all 0.3s ease; }
+            .constitutional-btn:hover { background: var(--dark-olive); transform: translateY(-1px); }
+            .constitutional-btn-secondary { background: var(--light-gray); color: #2C2C2C; }
+            .enter-hint { text-align: center; font-size: 16px; color: var(--dark-olive); margin-top: 8px; font-style: italic; }
+            
+            /* User Info */
+            .user-info { background: rgba(255,255,255,0.9); padding: 16px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--light-gray); }
+            .user-name { font-size: 20px; color: var(--primary-brown); font-weight: bold; }
+            .user-phone { font-size: 16px; color: var(--dark-olive); }
+            
+            /* Mobile Responsive */
+            @media (max-width: 768px) {
+                .weather-content { flex-direction: column; text-align: center; }
+                .constitutional-header { flex-direction: column; text-align: center; }
+                .constitutional-tagline { margin-left: 0; margin-top: 8px; }
+                .logout-btn { position: static; transform: none; margin-top: 16px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Constitutional Header -->
+            <header class="constitutional-header">
+                <div class="constitutional-logo"></div>
+                <div class="constitutional-brand">AVA OLO</div>
+                <div class="constitutional-tagline">Your Agricultural Assistant</div>
+                <button class="logout-btn" onclick="handleLogout()">Sign Out</button>
+            </header>
+
+            <!-- User Info -->
+            <div class="user-info">
+                <div>
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-phone" id="userPhone">Loading...</div>
+                </div>
+                <div>
+                    <strong>Farm:</strong> <span id="farmName">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Weather Section -->
+            <section class="weather-card">
+                <h2 class="weather-title">Today's Weather</h2>
+                <div class="weather-content">
+                    <div class="weather-icon">☀️</div>
+                    <div class="weather-details">
+                        <div class="weather-temp">22°C</div>
+                        <div class="weather-condition">Sunny</div>
+                        <div class="weather-info">💧 Humidity: 65% | 🌪️ Wind: NE 12km/h</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Query Interface -->
+            <section class="constitutional-card">
+                <h1 class="constitutional-card-title">How can I help you today?</h1>
+                <textarea class="constitutional-textarea" id="queryInput" placeholder="Ask me anything about your crops, soil, weather, or farming techniques..." onkeypress="handleEnterKey(event, 'submitQuery')"></textarea>
+                <div class="enter-hint">Press Enter to submit your question</div>
+                <button id="submitQuery" class="constitutional-btn" onclick="submitQuery()">🔍 Submit Question</button>
+            </section>
+
+            <!-- Response Section -->
+            <section id="responseSection" class="constitutional-card" style="display: none;">
+                <h2 class="constitutional-card-title">AVA's Response</h2>
+                <div id="responseContent" style="font-size: 18px; line-height: 1.6; color: #2C2C2C;"></div>
+            </section>
+
+            <!-- Action Buttons -->
+            <section class="constitutional-card">
+                <h2 class="constitutional-card-title">Quick Actions</h2>
+                <button class="constitutional-btn" onclick="alert('Task reporting feature coming soon!')">📋 Report a Task</button>
+                <button class="constitutional-btn constitutional-btn-secondary" onclick="alert('Farm data feature coming soon!')">📊 View Farm Data</button>
+            </section>
+        </div>
+
+        <script>
+            // Check authentication on load
+            const authToken = localStorage.getItem('ava_auth_token');
+            const userData = JSON.parse(localStorage.getItem('ava_user') || '{}');
+            
+            if (!authToken) {
+                window.location.href = '/login';
             }
             
-            function toggleLoginRegister() {
-                const registrationChat = document.getElementById('registrationChat');
-                const loginSection = document.getElementById('loginSection');
-                const toggleText = document.getElementById('toggleText');
-                
-                if (registrationChat.style.display === 'none') {
-                    registrationChat.style.display = 'block';
-                    loginSection.style.display = 'none';
-                    toggleText.textContent = 'Already have an account? Login';
-                } else {
-                    registrationChat.style.display = 'none';
-                    loginSection.style.display = 'block';
-                    toggleText.textContent = 'Need an account? Register';
+            // Display user information
+            document.getElementById('userName').textContent = userData.user_name || 'Farmer';
+            document.getElementById('userPhone').textContent = userData.wa_phone_number || 'Not available';
+            document.getElementById('farmName').textContent = userData.farm_name || 'My Farm';
+            
+            function handleEnterKey(event, buttonId) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    document.getElementById(buttonId).click();
                 }
             }
             
-            async function performLogin() {
-                const phone = document.getElementById('loginPhone').value.trim();
-                const password = document.getElementById('loginPassword').value;
-                const errorDiv = document.getElementById('loginError');
+            async function submitQuery() {
+                const textarea = document.getElementById('queryInput');
+                const query = textarea.value.trim();
                 
-                if (!phone || !password) {
-                    errorDiv.textContent = 'Please enter both phone number and password';
-                    errorDiv.style.display = 'block';
-                    return;
-                }
+                if (!query) return;
+                
+                const responseSection = document.getElementById('responseSection');
+                const responseContent = document.getElementById('responseContent');
+                
+                // Show loading
+                responseSection.style.display = 'block';
+                responseContent.innerHTML = '<div style="text-align: center;">🔄 Processing your question...</div>';
                 
                 try {
-                    const response = await fetch('/api/v1/auth/login', {
+                    const response = await fetch('/api/v1/query', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
                         body: JSON.stringify({
-                            wa_phone_number: phone,
-                            password: password
+                            query: query,
+                            farmer_id: userData.farmer_id,
+                            wa_phone_number: userData.wa_phone_number
                         })
                     });
                     
                     const data = await response.json();
                     
-                    if (data.success && data.token) {
-                        localStorage.setItem('ava_auth_token', data.token);
-                        localStorage.setItem('ava_user', JSON.stringify(data.user));
-                        errorDiv.style.display = 'none';
-                        // Hide auth section after successful login
-                        document.getElementById('authSection').style.display = 'none';
+                    if (data.success) {
+                        responseContent.innerHTML = `
+                            <div style="white-space: pre-wrap;">${data.answer}</div>
+                            <div style="margin-top: 16px; font-size: 14px; color: var(--dark-olive);">
+                                <strong>Confidence:</strong> ${(data.confidence * 100).toFixed(0)}%
+                            </div>
+                        `;
                     } else {
-                        errorDiv.textContent = data.message || 'Login failed';
-                        errorDiv.style.display = 'block';
+                        responseContent.innerHTML = '<div style="color: red;">Failed to get response. Please try again.</div>';
                     }
+                    
+                    // Clear input
+                    textarea.value = '';
+                    
                 } catch (error) {
-                    console.error('Login error:', error);
-                    errorDiv.textContent = 'Login failed. Please try again.';
-                    errorDiv.style.display = 'block';
+                    console.error('Query error:', error);
+                    responseContent.innerHTML = '<div style="color: red;">Connection error. Please try again.</div>';
                 }
             }
             
-            // Initialize chat on page load
-            document.addEventListener('DOMContentLoaded', function() {
-                // Only show chat if not authenticated
-                if (!authToken) {
-                    const initialMessage = "Hi! I'm AVA, your agricultural assistant. What's your full name? (first and last name)";
-                    addChatMessage(initialMessage, 'ava');
-                    lastAvaMessage = initialMessage;
+            function handleLogout() {
+                if (confirm('Are you sure you want to sign out?')) {
+                    localStorage.removeItem('ava_auth_token');
+                    localStorage.removeItem('ava_user');
+                    window.location.href = '/';
                 }
-            });
+            }
         </script>
     </body>
     </html>
