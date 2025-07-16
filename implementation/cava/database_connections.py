@@ -437,7 +437,9 @@ class CAVAPostgreSQLConnection:
             user = parsed.username or 'postgres'
             password = parsed.password or ''
             
-            logger.info(f"🔍 Connecting to PostgreSQL: {user}@{host}:{port}/{database}")
+            logger.info(f"🔍 CAVA: Raw database URL: {self.database_url}")
+            logger.info(f"🔍 CAVA: Parsed components - Host: {host}, Port: {port}, DB: {database}, User: {user}")
+            logger.info(f"🔍 CAVA: Connecting to PostgreSQL: {user}@{host}:{port}/{database}")
             
             # Connect using individual parameters instead of URL
             self.connection = await asyncpg.connect(
