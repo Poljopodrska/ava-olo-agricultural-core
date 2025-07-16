@@ -2175,28 +2175,137 @@ async def agronomic_dashboard():
     <title>AVA OLO - Agronomic Expert Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #F5F3F0; min-height: 100vh; color: #333; }
-        .header { background: #6B5B73; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .back-link { color: white; text-decoration: none; font-size: 1.1rem; }
-        .logo h1 { font-size: 1.8rem; font-weight: 700; }
-        .dashboard-container { display: flex; max-width: 1600px; margin: 2rem auto; height: 80vh; background: white; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); overflow: hidden; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .header { 
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        .back-link { 
+            color: #667eea;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .back-link:hover { color: #764ba2; transform: translateX(-5px); }
+        .logo h1 { 
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c5530;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dashboard-container { 
+            display: flex;
+            max-width: 1400px;
+            margin: 2rem auto;
+            height: calc(100vh - 160px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
         
         /* LEFT PANEL - 1/3 width */
-        .conversations-panel { width: 33.33%; background: #f8f9fa; border-right: 2px solid #ddd; overflow-y: auto; }
-        .panel-header { background: #2c5530; color: white; padding: 1rem; font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
-        .approve-all-btn { background: #ffc107; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
-        .approve-all-btn:hover { background: #e0a800; }
+        .conversations-panel { 
+            width: 33.33%;
+            background: #f5f7fa;
+            border-right: 2px solid rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+        .panel-header { 
+            background: linear-gradient(135deg, #2c5530 0%, #3a6b3e 100%);
+            color: white;
+            padding: 1.25rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .approve-all-btn { 
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+        .approve-all-btn:hover { 
+            background: #d97706;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+        }
         
         .conversations-section { padding: 1rem; }
-        .section-title { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; padding: 0.5rem; border-radius: 5px; }
-        .section-title.unapproved { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
-        .section-title.approved { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .section-title { 
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .section-title.unapproved { 
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            color: #856404;
+            border: 1px solid #ffeaa7;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+        }
+        .section-title.approved { 
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+        }
         
-        .conversation-item { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; }
-        .conversation-item.unapproved { border-left: 4px solid #ffc107; background: #fffbf0; }
-        .conversation-item.approved { border-left: 4px solid #28a745; background: #f8fff9; }
-        .conversation-item:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .conversation-item.selected { border: 2px solid #007bff; background: #e3f2fd; }
+        .conversation-item { 
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .conversation-item.unapproved { 
+            border-left: 5px solid #f59e0b;
+            background: linear-gradient(135deg, #fffbf0 0%, #fffef5 100%);
+        }
+        .conversation-item.approved { 
+            border-left: 5px solid #16a34a;
+            background: linear-gradient(135deg, #f0fdf4 0%, #f8fff9 100%);
+        }
+        .conversation-item:hover { 
+            transform: translateX(5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .conversation-item.selected { 
+            border: 2px solid #667eea;
+            background: linear-gradient(135deg, #e0e7ff 0%, #e3f2fd 100%);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        }
         
         .farmer-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .farmer-name { font-weight: 600; color: #2c5530; }
@@ -2209,9 +2318,23 @@ async def agronomic_dashboard():
         .conversation-header { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .conversation-title { font-size: 1.2rem; font-weight: 600; color: #2c5530; margin-bottom: 0.5rem; }
         .conversation-actions { display: flex; gap: 1rem; margin-bottom: 1rem; }
-        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
-        .approve-conversation-btn { background: #28a745; color: white; }
-        .approve-conversation-btn:hover { background: #218838; }
+        .action-btn { 
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .approve-conversation-btn { 
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        }
+        .approve-conversation-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+        }
         
         .messages-container { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
         .message { margin-bottom: 1rem; padding: 1rem; border-radius: 8px; }
@@ -2222,31 +2345,178 @@ async def agronomic_dashboard():
         .message-role { font-weight: 600; font-size: 0.9rem; }
         .message-time { font-size: 0.8rem; color: #666; }
         .message-content { line-height: 1.5; }
-        .message-actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; }
-        .approve-btn { background: #28a745; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 3px; cursor: pointer; font-size: 0.8rem; }
-        .approve-btn:hover { background: #218838; }
-        .manual-response-btn { background: #ffc107; color: #000; border: none; padding: 0.3rem 0.8rem; border-radius: 3px; cursor: pointer; font-size: 0.8rem; }
-        .manual-response-btn:hover { background: #e0a800; }
+        .message-actions { margin-top: 0.75rem; display: flex; gap: 0.75rem; }
+        .approve-btn { 
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        }
+        .approve-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
+        }
+        .manual-response-btn { 
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+        .manual-response-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+        }
         
-        .unrelated-message-section { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
-        .unrelated-message-title { font-weight: 600; margin-bottom: 0.5rem; }
-        .unrelated-message-form { display: flex; gap: 0.5rem; }
-        .unrelated-message-input { flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; }
-        .send-unrelated-btn { background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
-        .send-unrelated-btn:hover { background: #0056b3; }
+        .unrelated-message-section { 
+            background: linear-gradient(135deg, #f5f7fa 0%, #f8f9fa 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .unrelated-message-title { 
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #2c5530;
+        }
+        .unrelated-message-form { display: flex; gap: 0.75rem; }
+        .unrelated-message-input { 
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        .unrelated-message-input:focus { 
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .send-unrelated-btn { 
+            background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        }
+        .send-unrelated-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+        }
         
         .empty-state { text-align: center; color: #666; padding: 3rem; }
         .empty-state h3 { margin-bottom: 1rem; color: #2c5530; }
         
+        .refresh-button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .refresh-button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
         /* Modal styles */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 15% auto; padding: 2rem; border-radius: 8px; width: 400px; }
-        .modal-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; }
-        .modal-input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 1rem; }
-        .modal-buttons { display: flex; gap: 1rem; justify-content: flex-end; }
-        .modal-btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; }
-        .modal-confirm { background: #dc3545; color: white; }
-        .modal-cancel { background: #6c757d; color: white; }
+        .modal { 
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content { 
+            background: white;
+            margin: 10% auto;
+            padding: 2.5rem;
+            border-radius: 20px;
+            width: 450px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalFadeIn 0.3s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-title { 
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #2c5530;
+        }
+        .modal-input { 
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .modal-input:focus { 
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .modal-buttons { 
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        .modal-btn { 
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .modal-confirm { 
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        .modal-confirm:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+        .modal-cancel { 
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+        .modal-cancel:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+        }
     </style>
 </head>
 <body>
