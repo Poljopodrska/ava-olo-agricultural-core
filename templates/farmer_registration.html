@@ -8,18 +8,52 @@
     <script async defer 
         src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=geometry,drawing&callback=initFieldMap">
     </script>
-    <!-- Fallback if Google Maps fails -->
+    <!-- Enhanced Google Maps error handling -->
     <script>
-        // Only set fallback if Google Maps script fails to load
-        setTimeout(function() {
+        // Global error handler for Google Maps
+        window.gm_authFailure = function() {
+            console.error('Google Maps authentication failed');
+            showMapFallback('Google Maps authentication failed. Check API key.');
+        };
+        
+        // Check if Google Maps loaded properly
+        function checkGoogleMapsStatus() {
             if (typeof google === 'undefined' || !google.maps) {
                 console.log('Google Maps not available - field drawing disabled');
-                const mapDiv = document.getElementById('field-map');
-                if (mapDiv) {
-                    mapDiv.innerHTML = '<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px;"><h3>📍 Map Not Available</h3><p>Google Maps API key not configured. Field drawing is disabled but you can still register farmers.</p></div>';
-                }
+                showMapFallback('Google Maps API key not configured. Field drawing is disabled but you can still register farmers.');
+                return false;
             }
-        }, 3000); // Wait 3 seconds for Google Maps to load
+            console.log('Google Maps loaded successfully');
+            return true;
+        }
+        
+        function showMapFallback(message) {
+            const mapDiv = document.getElementById('field-map');
+            if (mapDiv) {
+                mapDiv.innerHTML = `<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6;">
+                    <h3>📍 Map Not Available</h3>
+                    <p style="color: #6c757d;">${message}</p>
+                    <p><small>You can still register farmers without the map functionality.</small></p>
+                </div>`;
+            }
+            // Disable map-related buttons
+            const drawingControls = document.getElementById('field-drawing-controls');
+            if (drawingControls) {
+                drawingControls.style.display = 'none';
+            }
+        }
+        
+        // Wait for Google Maps to load or show fallback
+        setTimeout(function() {
+            checkGoogleMapsStatus();
+        }, 4000); // Wait 4 seconds for Google Maps to load
+        
+        // Backup check in case initFieldMap is called
+        window.initFieldMap = window.initFieldMap || function() {
+            if (!checkGoogleMapsStatus()) {
+                showMapFallback('Google Maps failed to initialize.');
+            }
+        };
     </script>
     <style>
         body {

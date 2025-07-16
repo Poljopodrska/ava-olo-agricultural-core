@@ -3031,9 +3031,15 @@ async def farmer_registration_form():
         content = f.read()
     
     # Replace API key placeholder with actual API key from environment
-    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY')
-    print(f"DEBUG: Google Maps API Key loaded: {google_maps_api_key[:10]}..." if google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY' else "DEBUG: Google Maps API Key not found")
-    content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+    
+    if google_maps_api_key and google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY':
+        print(f"DEBUG: Google Maps API Key loaded: {google_maps_api_key[:10]}...")
+        content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
+    else:
+        print("DEBUG: Google Maps API Key not found or invalid - using fallback")
+        # Replace with a placeholder that will trigger the fallback
+        content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', 'MISSING_API_KEY')
     
     return HTMLResponse(content=content)
 
@@ -3045,9 +3051,15 @@ async def field_drawing_test():
         content = f.read()
     
     # Replace API key placeholder with actual API key from environment
-    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY')
-    print(f"DEBUG: Google Maps API Key loaded: {google_maps_api_key[:10]}..." if google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY' else "DEBUG: Google Maps API Key not found")
-    content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+    
+    if google_maps_api_key and google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY':
+        print(f"DEBUG: Google Maps API Key loaded: {google_maps_api_key[:10]}...")
+        content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
+    else:
+        print("DEBUG: Google Maps API Key not found or invalid - using fallback")
+        # Replace with a placeholder that will trigger the fallback
+        content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', 'MISSING_API_KEY')
     
     return HTMLResponse(content=content)
 
