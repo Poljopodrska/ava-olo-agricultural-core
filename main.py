@@ -3068,6 +3068,57 @@ async def farmer_registration_form():
     
     return HTMLResponse(content=content)
 
+# Google Maps Test Page
+@app.get("/test-maps", response_class=HTMLResponse)
+async def test_maps():
+    """Simple test page for Google Maps API"""
+    with open("test_maps.html", "r") as f:
+        return HTMLResponse(content=f.read())
+
+# Google Maps Debug Endpoint
+@app.get("/debug/google-maps")
+async def debug_google_maps():
+    """Debug Google Maps configuration and common issues"""
+    api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
+    
+    # Test if key is being injected into templates
+    injection_test = {}
+    try:
+        # Test farmer registration page
+        response = await farmer_registration_form()
+        content = response.body.decode('utf-8')
+        injection_test['farmer_registration'] = {
+            'has_api_key': api_key in content if api_key else False,
+            'has_placeholder': 'YOUR_GOOGLE_MAPS_API_KEY' in content,
+            'has_missing_key': 'MISSING_API_KEY' in content
+        }
+    except Exception as e:
+        injection_test['error'] = str(e)
+    
+    return {
+        "api_key_status": {
+            "configured": bool(api_key and api_key != 'YOUR_GOOGLE_MAPS_API_KEY'),
+            "length": len(api_key) if api_key else 0,
+            "preview": api_key[:15] + "..." + api_key[-5:] if api_key and len(api_key) > 20 else api_key
+        },
+        "injection_test": injection_test,
+        "test_urls": {
+            "simple_test": "/test-maps",
+            "farmer_registration": "/farmer-registration",
+            "field_drawing_test": "/field-drawing-test"
+        },
+        "troubleshooting_steps": [
+            "1. Visit /test-maps to see if basic map loads",
+            "2. Open browser console (F12) and check for errors",
+            "3. Common errors:",
+            "   - 'RefererNotAllowedMapError': Add your domain to API key restrictions",
+            "   - 'ApiNotActivatedMapError': Enable Maps JavaScript API in Google Cloud Console",
+            "   - 'InvalidKeyMapError': API key is invalid",
+            "   - 'BillingNotEnabledMapError': Enable billing for the Google Cloud project"
+        ],
+        "timestamp": datetime.now().isoformat()
+    }
+
 # Field Drawing Test Page
 @app.get("/field-drawing-test", response_class=HTMLResponse)
 async def field_drawing_test():
