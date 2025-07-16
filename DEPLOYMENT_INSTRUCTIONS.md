@@ -9,8 +9,12 @@ Set these environment variables in AWS App Runner:
 DB_HOST=farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com
 DB_NAME=farmer_crm
 DB_USER=postgres
-DB_PASSWORD=2hpzvrg_xP~qNbz1[_NppSK$e*O1
+DB_PASSWORD=<ACTUAL_RDS_PASSWORD_HERE>  # IMPORTANT: Use the actual RDS password!
 DB_PORT=5432
+
+# NOTE: The password shown in debug output (%3C~Xzntr2r~m6-7%29~4%2AMO%2...) 
+# decodes to something like: <~Xzntr2r~m6-7)~4*MO*...
+# This appears to be different from what was documented previously
 
 # Google Maps API
 GOOGLE_MAPS_API_KEY=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo
@@ -45,7 +49,12 @@ OPENAI_API_KEY=your_openai_key_here
 ## Known Issues and Solutions
 
 ### Issue: Database Authentication Failed
-**Solution**: The password contains special characters that need URL encoding. The application handles this automatically in `main.py` lines 32-33.
+**Solution**: 
+1. The password contains special characters that need URL encoding. The application handles this automatically.
+2. **IMPORTANT**: If you see `%3C` in the password (which is `<`), the password might be getting HTML-encoded by AWS. 
+   - Make sure to enter the password in AWS App Runner exactly as: `2hpzvrg_xP~qNbz1[_NppSK$e*O1`
+   - Do NOT use quotes around the password in AWS App Runner environment variables
+   - If the password still fails, try using the debug endpoint `/debug/test-password-encoding` to see what's being received
 
 ### Issue: Google Maps Not Loading
 **Solution**: 

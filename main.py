@@ -25,6 +25,14 @@ if not os.getenv('DATABASE_URL'):
     db_password = os.getenv('DB_PASSWORD')
     db_port = os.getenv('DB_PORT', '5432')
     
+    # Handle potential HTML encoding issues from AWS App Runner
+    if db_password:
+        # Check if password appears to be HTML-encoded
+        if '&lt;' in db_password or '&gt;' in db_password or '&amp;' in db_password:
+            import html
+            db_password = html.unescape(db_password)
+            print(f"DEBUG: Detected HTML-encoded password, unescaping...")
+    
     if db_host and db_password:
         # Clean up hostname - remove any whitespace or special characters
         db_host = db_host.strip().replace(" ", "")  # Remove all spaces
@@ -3173,6 +3181,58 @@ async def google_maps_health_check():
             "error": str(e)
         }
 
+# Password Encoding Test Endpoint
+@app.get("/debug/test-password-encoding")
+async def test_password_encoding():
+    """Test password encoding for debugging"""
+    # Two possible passwords based on our investigation
+    documented_password = "2hpzvrg_xP~qNbz1[_NppSK$e*O1"
+    # Based on the URL encoded error, the actual password might start with < 
+    detected_password_pattern = "<~Xzntr2r~m6-7)~4*MO"  # Based on decoding %3C~Xzntr2r~m6-7%29~4%2AMO%2
+    
+    # Get actual password from environment
+    actual_password = os.getenv('DB_PASSWORD', '')
+    
+    # Decode what we see in the error
+    error_encoded = "%3C~Xzntr2r~m6-7%29~4%2AMO%2"
+    error_decoded = urllib.parse.unquote(error_encoded)
+    
+    # Compare
+    result = {
+        "actual_password_length": len(actual_password),
+        "actual_password_preview": actual_password[:10] + "..." + actual_password[-5:] if len(actual_password) > 15 else actual_password,
+        "actual_encoded_preview": urllib.parse.quote(actual_password, safe='')[:40] + "..." if actual_password else "EMPTY",
+        "documented_password": "2hpzvrg_xP~qNbz1[_NppSK$e*O1",
+        "error_message_shows": error_encoded,
+        "error_decoded_to": error_decoded,
+        "passwords_analysis": {
+            "matches_documented": actual_password == documented_password,
+            "starts_with_angle_bracket": actual_password.startswith('<') if actual_password else False,
+            "contains_special_chars": any(c in actual_password for c in '<>[]$*()~') if actual_password else False
+        },
+        "environment_var_set": bool(actual_password)
+    }
+    
+    # Test direct connection with both passwords
+    if actual_password:
+        try:
+            import psycopg2
+            conn = psycopg2.connect(
+                host=os.getenv('DB_HOST', '').strip().replace(' ', ''),
+                database=os.getenv('DB_NAME', 'farmer_crm'),
+                user=os.getenv('DB_USER', 'postgres'),
+                password=actual_password,
+                port=os.getenv('DB_PORT', '5432'),
+                sslmode='require'
+            )
+            conn.close()
+            result["actual_password_works"] = True
+        except Exception as e:
+            result["actual_password_works"] = False
+            result["actual_password_error"] = str(e)
+    
+    return result
+
 # Database Connection Debug Endpoint
 @app.get("/debug/database-connection")
 async def debug_database_connection():
@@ -3200,16 +3260,37 @@ async def debug_database_connection():
             db_port = os.getenv('DB_PORT', '5432')
             
             if db_password:
+                # Debug password characters
+                password_chars = []
+                for i, char in enumerate(db_password):
+                    if i < 3 or i >= len(db_password) - 3:
+                        password_chars.append(char)
+                    else:
+                        password_chars.append('*')
+                password_preview = ''.join(password_chars)
+                
+                # Check for common issues
+                password_issues = []
+                if db_password.startswith('<') or db_password.endswith('>'):
+                    password_issues.append("Password appears to have angle brackets")
+                if '\n' in db_password or '\r' in db_password:
+                    password_issues.append("Password contains newline characters")
+                if db_password != db_password.strip():
+                    password_issues.append("Password has leading/trailing whitespace")
+                
                 db_password_encoded = urllib.parse.quote(db_password, safe='')
                 test_url = f"postgresql://{db_user}:{db_password_encoded}@{db_host}:{db_port}/{db_name}"
                 
                 debug_info["connection_tests"].append({
                     "test": "URL Construction",
-                    "status": "success",
+                    "status": "success" if not password_issues else "warning",
                     "url_length": len(test_url),
                     "url_preview": test_url[:50] + "..." + test_url[-20:],
                     "password_length": len(db_password),
-                    "password_encoded_length": len(db_password_encoded)
+                    "password_encoded_length": len(db_password_encoded),
+                    "password_preview": password_preview,
+                    "password_first_char_ord": ord(db_password[0]) if db_password else 0,
+                    "password_issues": password_issues
                 })
             else:
                 debug_info["connection_tests"].append({
