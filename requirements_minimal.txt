@@ -1,0 +1,12 @@
+# Minimal dependencies for AWS App Runner deployment
+# Only essential packages for api_gateway_minimal.py
+
+# Web Framework and API
+fastapi==0.110.0
+uvicorn[standard]==0.27.0.post1
+
+# Data validation
+pydantic==2.5.3
+
+# Environment configuration
+python-dotenv==1.0.0

@@ -3,11 +3,11 @@ runtime: python3
 build:
   commands:
     pre-build:
-      - echo "Installing dependencies for AVA OLO Agricultural Core with Authentication"
+      - echo "Installing minimal dependencies for stable deployment"
     build:
-      - pip install -r requirements.txt
+      - pip install -r requirements_minimal.txt
     post-build:
-      - echo "Build completed - Authentication system ready"
+      - echo "Build completed - Minimal API ready"
 run:
   runtime-version: 3.9
   command: python api_gateway_minimal.py
