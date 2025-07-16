@@ -26,7 +26,7 @@ if not os.getenv('DATABASE_URL'):
     
     if db_host and db_password:
         # Clean up hostname - remove any whitespace or special characters
-        db_host = db_host.strip()
+        db_host = db_host.strip().replace(" ", "")  # Remove all spaces
         DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         os.environ['DATABASE_URL'] = DATABASE_URL
         print(f"DEBUG: Constructed DATABASE_URL from components")

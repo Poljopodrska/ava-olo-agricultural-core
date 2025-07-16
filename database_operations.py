@@ -33,15 +33,32 @@ class DatabaseOperations:
         
         # Clean up connection string - remove any whitespace issues
         self.connection_string = self.connection_string.strip()
+        
+        # Fix hostname spaces in connection string
+        if "@" in self.connection_string:
+            parts = self.connection_string.split("@")
+            if len(parts) == 2:
+                before_host = parts[0]
+                after_host = parts[1]
+                # Remove spaces from hostname part
+                host_and_rest = after_host.split(":")
+                if len(host_and_rest) >= 2:
+                    hostname = host_and_rest[0].replace(" ", "")
+                    port_and_db = ":".join(host_and_rest[1:])
+                    self.connection_string = f"{before_host}@{hostname}:{port_and_db}"
+        
         print(f"DEBUG: Database connection string: {self.connection_string[:50]}...{self.connection_string[-20:]}")
         
         # Validate hostname format
         if "@" in self.connection_string:
             host_part = self.connection_string.split("@")[1].split(":")[0]
-            if " " in host_part or not host_part.endswith(".amazonaws.com"):
-                print(f"WARNING: Suspicious hostname format: '{host_part}'")
+            if " " in host_part:
+                print(f"WARNING: Still found spaces in hostname: '{host_part}'")
+            elif not host_part.endswith(".amazonaws.com"):
+                print(f"WARNING: Unusual hostname format: '{host_part}'")
                 print(f"Expected AWS RDS hostname format: *.amazonaws.com")
-                print(f"Check your DB_HOST environment variable for spaces or typos")
+            else:
+                print(f"INFO: Hostname format looks correct: '{host_part}'")
         
         # For WSL2 to Windows connection, we might need to adjust the connection
         if "host.docker.internal" in self.connection_string:
