@@ -2129,11 +2129,13 @@ async def business_dashboard():
 """)
 
 # Agronomic Dashboard Placeholder
-def generate_conversation_items(conversations_list):
+def generate_conversation_items(conversations_list, approved=False):
     """Generate HTML for conversation items - safe implementation"""
     items = []
+    status_class = "approved" if approved else "unapproved"
+    
     for conv in conversations_list:
-        item = '<div class="conversation-item" onclick="selectConversation(' + str(conv['id']) + ')">'
+        item = '<div class="conversation-item ' + status_class + '" onclick="selectConversation(' + str(conv['id']) + ')">'
         item += '<div class="farmer-info">'
         item += '<div class="farmer-name">' + str(conv['farmer_name']) + '</div>'
         item += '<div class="timestamp">' + str(format_time_ago(conv['timestamp'])) + '</div>'
@@ -2159,10 +2161,10 @@ async def agronomic_dashboard():
         conversations = {"unapproved": [], "approved": []}
     
     # Generate conversation items safely
-    unapproved_items = generate_conversation_items(conversations.get('unapproved', []))
+    unapproved_items = generate_conversation_items(conversations.get('unapproved', []), approved=False)
+    approved_items = generate_conversation_items(conversations.get('approved', []), approved=True)
     unapproved_count = len(conversations.get('unapproved', []))
     approved_count = len(conversations.get('approved', []))
-    total_count = unapproved_count + approved_count
     
     # Build HTML content safely
     html_content = '''<!DOCTYPE html>
@@ -2177,28 +2179,74 @@ async def agronomic_dashboard():
         .header { background: #6B5B73; color: white; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
         .back-link { color: white; text-decoration: none; font-size: 1.1rem; }
         .logo h1 { font-size: 1.8rem; font-weight: 700; }
-        .dashboard-container { display: flex; max-width: 1400px; margin: 2rem auto; height: 700px; background: white; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); overflow: hidden; }
-        .conversations-panel { width: 400px; background: #f8f9fa; border-right: 1px solid #ddd; overflow-y: auto; }
-        .panel-header { background: #2c5530; color: white; padding: 1rem; font-weight: 600; font-size: 1.1rem; }
+        .dashboard-container { display: flex; max-width: 1600px; margin: 2rem auto; height: 80vh; background: white; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); overflow: hidden; }
+        
+        /* LEFT PANEL - 1/3 width */
+        .conversations-panel { width: 33.33%; background: #f8f9fa; border-right: 2px solid #ddd; overflow-y: auto; }
+        .panel-header { background: #2c5530; color: white; padding: 1rem; font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between; align-items: center; }
+        .approve-all-btn { background: #ffc107; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+        .approve-all-btn:hover { background: #e0a800; }
+        
         .conversations-section { padding: 1rem; }
-        .section-title { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; color: #666; }
-        .section-title.unapproved { color: #dc3545; }
-        .conversation-item { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.3s ease; border: 1px solid #e9ecef; }
+        .section-title { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.5rem; padding: 0.5rem; border-radius: 5px; }
+        .section-title.unapproved { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .section-title.approved { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        
+        .conversation-item { background: white; border-radius: 8px; padding: 1rem; margin-bottom: 0.5rem; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; }
+        .conversation-item.unapproved { border-left: 4px solid #ffc107; background: #fffbf0; }
+        .conversation-item.approved { border-left: 4px solid #28a745; background: #f8fff9; }
         .conversation-item:hover { transform: translateX(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .conversation-item.selected { border: 2px solid #007bff; background: #e3f2fd; }
+        
         .farmer-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .farmer-name { font-weight: 600; color: #2c5530; }
         .farmer-details { font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
         .message-preview { font-size: 0.9rem; color: #555; line-height: 1.4; }
-        .details-panel { flex: 1; padding: 2rem; overflow-y: auto; }
-        .empty-state { text-align: center; color: #666; padding: 2rem; }
-        .empty-state h3 { margin-bottom: 1rem; color: #2c5530; }
-        .stats-header { display: flex; gap: 1rem; margin-bottom: 2rem; }
-        .stat-card { background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center; flex: 1; }
-        .stat-number { font-size: 2rem; font-weight: 700; color: #2c5530; margin-bottom: 0.5rem; }
-        .stat-label { font-size: 0.9rem; color: #666; }
-        .refresh-button { background: #28a745; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem; }
-        .refresh-button:hover { background: #218838; }
         .timestamp { font-size: 0.8rem; color: #999; }
+        
+        /* RIGHT PANEL - 2/3 width */
+        .details-panel { width: 66.67%; padding: 1rem; overflow-y: auto; background: #fff; }
+        .conversation-header { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .conversation-title { font-size: 1.2rem; font-weight: 600; color: #2c5530; margin-bottom: 0.5rem; }
+        .conversation-actions { display: flex; gap: 1rem; margin-bottom: 1rem; }
+        .action-btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .approve-conversation-btn { background: #28a745; color: white; }
+        .approve-conversation-btn:hover { background: #218838; }
+        
+        .messages-container { max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .message { margin-bottom: 1rem; padding: 1rem; border-radius: 8px; }
+        .message.user { background: #e3f2fd; border-left: 4px solid #2196f3; }
+        .message.ai { background: #f3e5f5; border-left: 4px solid #9c27b0; }
+        .message.ai.unapproved { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .message-role { font-weight: 600; font-size: 0.9rem; }
+        .message-time { font-size: 0.8rem; color: #666; }
+        .message-content { line-height: 1.5; }
+        .message-actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; }
+        .approve-btn { background: #28a745; color: white; border: none; padding: 0.3rem 0.8rem; border-radius: 3px; cursor: pointer; font-size: 0.8rem; }
+        .approve-btn:hover { background: #218838; }
+        .manual-response-btn { background: #ffc107; color: #000; border: none; padding: 0.3rem 0.8rem; border-radius: 3px; cursor: pointer; font-size: 0.8rem; }
+        .manual-response-btn:hover { background: #e0a800; }
+        
+        .unrelated-message-section { background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .unrelated-message-title { font-weight: 600; margin-bottom: 0.5rem; }
+        .unrelated-message-form { display: flex; gap: 0.5rem; }
+        .unrelated-message-input { flex: 1; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; }
+        .send-unrelated-btn { background: #007bff; color: white; border: none; padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; }
+        .send-unrelated-btn:hover { background: #0056b3; }
+        
+        .empty-state { text-align: center; color: #666; padding: 3rem; }
+        .empty-state h3 { margin-bottom: 1rem; color: #2c5530; }
+        
+        /* Modal styles */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 15% auto; padding: 2rem; border-radius: 8px; width: 400px; }
+        .modal-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; }
+        .modal-input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 1rem; }
+        .modal-buttons { display: flex; gap: 1rem; justify-content: flex-end; }
+        .modal-btn { padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer; }
+        .modal-confirm { background: #dc3545; color: white; }
+        .modal-cancel { background: #6c757d; color: white; }
     </style>
 </head>
 <body>
@@ -2211,50 +2259,174 @@ async def agronomic_dashboard():
     </div>
 
     <div class="dashboard-container">
+        <!-- LEFT PANEL - Conversations List -->
         <div class="conversations-panel">
-            <div class="panel-header">Live Conversations</div>
+            <div class="panel-header">
+                <span>Conversations</span>
+                <button class="approve-all-btn" onclick="showApproveAllModal()">Approve All</button>
+            </div>
+            
             <div class="conversations-section">
-                <div class="section-title unapproved">Pending Review (''' + str(unapproved_count) + ''')</div>
+                <div class="section-title unapproved">🟡 Unapproved (''' + str(unapproved_count) + ''')</div>
                 ''' + unapproved_items + '''
+                
+                <div class="section-title approved">🟢 Approved (''' + str(approved_count) + ''')</div>
+                ''' + approved_items + '''
             </div>
         </div>
 
+        <!-- RIGHT PANEL - Conversation Details -->
         <div class="details-panel">
-            <div class="stats-header">
-                <div class="stat-card">
-                    <div class="stat-number">''' + str(unapproved_count) + '''</div>
-                    <div class="stat-label">Pending Review</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">''' + str(approved_count) + '''</div>
-                    <div class="stat-label">Approved Today</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number">''' + str(total_count) + '''</div>
-                    <div class="stat-label">Total Conversations</div>
-                </div>
-            </div>
-
-            <div class="empty-state">
-                <h3>👋 Welcome to Agronomic Monitoring</h3>
-                <p>Select a conversation from the left panel to review farmer messages and AI responses.</p>
+            <div id="conversation-details" class="empty-state">
+                <h3>👋 Select a Conversation</h3>
+                <p>Choose a conversation from the left panel to view messages and manage approvals.</p>
                 <br>
-                <p><strong>Expert Actions Available:</strong></p>
+                <p><strong>Available Actions:</strong></p>
                 <ul style="text-align: left; margin-top: 1rem;">
-                    <li>📋 Review AI responses before they reach farmers</li>
-                    <li>✏️ Edit responses to improve quality</li>
-                    <li>🚨 Intervene when AI can't provide adequate answers</li>
-                    <li>📊 Monitor conversation quality and confidence levels</li>
+                    <li>✅ Approve individual AI responses</li>
+                    <li>✏️ Write manual responses as expert</li>
+                    <li>📤 Send unrelated messages to farmers</li>
+                    <li>🚀 Approve all messages in conversation</li>
                 </ul>
             </div>
         </div>
     </div>
 
+    <!-- Approve All Modal -->
+    <div id="approve-all-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">⚠️ Approve All Messages</div>
+            <p>This will approve ALL unapproved messages in the database. Type "approve all" to confirm:</p>
+            <input type="text" id="approve-all-input" class="modal-input" placeholder="Type 'approve all' to confirm">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-cancel" onclick="hideApproveAllModal()">Cancel</button>
+                <button class="modal-btn modal-confirm" onclick="confirmApproveAll()">Approve All</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let selectedConversationId = null;
+        
         function selectConversation(id) {
-            alert('Conversation details would load here. Full implementation requires additional API endpoints.');
+            selectedConversationId = id;
+            
+            // Remove previous selection
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // Add selection to clicked item
+            event.target.closest('.conversation-item').classList.add('selected');
+            
+            // Load conversation details (mock implementation)
+            loadConversationDetails(id);
         }
         
+        function loadConversationDetails(id) {
+            // Mock conversation details - in real implementation, this would fetch from backend
+            const mockMessages = [
+                { id: 1, role: 'user', content: 'My tomato plants have yellow leaves. What should I do?', timestamp: '2 hours ago', approved: true },
+                { id: 2, role: 'ai', content: 'Yellow leaves on tomato plants can indicate several issues. First, check if you are overwatering...', timestamp: '2 hours ago', approved: false },
+                { id: 3, role: 'user', content: 'I water them every day. Is that too much?', timestamp: '1 hour ago', approved: true },
+                { id: 4, role: 'ai', content: 'Yes, daily watering is likely too much for tomatoes. They prefer deep, infrequent watering...', timestamp: '1 hour ago', approved: false }
+            ];
+            
+            let messagesHtml = '<div class="conversation-header">';
+            messagesHtml += '<div class="conversation-title">Conversation with Farmer #' + id + '</div>';
+            messagesHtml += '<div class="conversation-actions">';
+            messagesHtml += '<button class="action-btn approve-conversation-btn" onclick="approveAllInConversation(' + id + ')">Approve All in Conversation</button>';
+            messagesHtml += '</div></div>';
+            
+            messagesHtml += '<div class="messages-container">';
+            mockMessages.forEach(msg => {
+                const statusClass = msg.approved ? '' : 'unapproved';
+                messagesHtml += '<div class="message ' + msg.role + ' ' + statusClass + '">';
+                messagesHtml += '<div class="message-header">';
+                messagesHtml += '<span class="message-role">' + (msg.role === 'user' ? '👨‍🌾 Farmer' : '🤖 AI Assistant') + '</span>';
+                messagesHtml += '<span class="message-time">' + msg.timestamp + '</span>';
+                messagesHtml += '</div>';
+                messagesHtml += '<div class="message-content">' + msg.content + '</div>';
+                
+                if (msg.role === 'ai' && !msg.approved) {
+                    messagesHtml += '<div class="message-actions">';
+                    messagesHtml += '<button class="approve-btn" onclick="approveMessage(' + msg.id + ')">✅ Approve</button>';
+                    messagesHtml += '<button class="manual-response-btn" onclick="writeManualResponse(' + msg.id + ')">✏️ Write Manual Response</button>';
+                    messagesHtml += '</div>';
+                }
+                messagesHtml += '</div>';
+            });
+            messagesHtml += '</div>';
+            
+            messagesHtml += '<div class="unrelated-message-section">';
+            messagesHtml += '<div class="unrelated-message-title">Send Unrelated Message</div>';
+            messagesHtml += '<div class="unrelated-message-form">';
+            messagesHtml += '<input type="text" class="unrelated-message-input" placeholder="Type your message to the farmer...">';
+            messagesHtml += '<button class="send-unrelated-btn" onclick="sendUnrelatedMessage(' + id + ')">Send</button>';
+            messagesHtml += '</div></div>';
+            
+            document.getElementById('conversation-details').innerHTML = messagesHtml;
+        }
+        
+        function approveMessage(messageId) {
+            alert('Message ' + messageId + ' approved! (Mock implementation)');
+            // In real implementation, this would send approval to backend
+        }
+        
+        function writeManualResponse(messageId) {
+            const response = prompt('Enter your manual response:');
+            if (response) {
+                alert('Manual response sent: ' + response + ' (Mock implementation)');
+                // In real implementation, this would send manual response to backend
+            }
+        }
+        
+        function approveAllInConversation(conversationId) {
+            if (confirm('Approve all messages in this conversation?')) {
+                alert('All messages in conversation ' + conversationId + ' approved! (Mock implementation)');
+                // In real implementation, this would approve all messages in conversation
+            }
+        }
+        
+        function sendUnrelatedMessage(farmerId) {
+            const input = document.querySelector('.unrelated-message-input');
+            const message = input.value.trim();
+            if (message) {
+                alert('Unrelated message sent to farmer ' + farmerId + ': ' + message + ' (Mock implementation)');
+                input.value = '';
+                // In real implementation, this would send message to backend
+            }
+        }
+        
+        function showApproveAllModal() {
+            document.getElementById('approve-all-modal').style.display = 'block';
+        }
+        
+        function hideApproveAllModal() {
+            document.getElementById('approve-all-modal').style.display = 'none';
+            document.getElementById('approve-all-input').value = '';
+        }
+        
+        function confirmApproveAll() {
+            const input = document.getElementById('approve-all-input').value.trim().toLowerCase();
+            if (input === 'approve all') {
+                alert('ALL messages approved! (Mock implementation)');
+                hideApproveAllModal();
+                // In real implementation, this would approve all messages globally
+            } else {
+                alert('Please type "approve all" to confirm');
+            }
+        }
+        
+        // Close modal if clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('approve-all-modal');
+            if (event.target === modal) {
+                hideApproveAllModal();
+            }
+        }
+        
+        // Auto-refresh every 30 seconds
         setInterval(function() {
             location.reload();
         }, 30000);
