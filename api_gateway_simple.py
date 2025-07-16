@@ -1687,6 +1687,8 @@ try:
         conversation_history: List[Dict[str, str]] = Field(default_factory=list, description="Full conversation history")
         last_ava_message: Optional[str] = Field(None, description="Last message from AVA")
         conversation_id: Optional[str] = Field(None, description="Conversation ID for memory tracking")
+        session_id: Optional[str] = Field(None, description="Session ID for CAVA tracking")
+        farmer_id: Optional[int] = Field(None, description="Farmer ID if known")
     
     class ChatRegisterResponse(BaseModel):
         message: str = Field(..., description="AVA's response")
