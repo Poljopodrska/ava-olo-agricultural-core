@@ -34,19 +34,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configure CAVA logger
+cava_logger = logging.getLogger('CAVA')
+
 # CAVA Integration - Load lazily to prevent deployment issues
 if os.getenv('DISABLE_CAVA', 'false').lower() != 'true':
     try:
         from api.cava_routes import cava_router
         app.include_router(cava_router)
         logger.info("✅ CAVA routes loaded successfully")
+        cava_logger.info("✅ CAVA: Routes successfully integrated into main API")
     except Exception as e:
         import traceback
         logger.warning(f"⚠️ CAVA routes not loaded: {e}")
         logger.warning(f"Traceback: {traceback.format_exc()}")
+        cava_logger.error(f"❌ CAVA: Failed to integrate CAVA routes: {str(e)}")
         # System continues without CAVA - constitutional principle of MODULE INDEPENDENCE
 else:
     logger.info("ℹ️ CAVA disabled by environment variable")
+    cava_logger.info("ℹ️ CAVA: Disabled by environment variable")
 
 # Root Web Interface Route - Complete Constitutional Interface with Weather
 @app.get("/", response_class=HTMLResponse)
@@ -2957,6 +2963,39 @@ def test_final_connection():
         return {"success": True, "test": "final_connection"}
     except Exception as e:
         return {"success": False, "error": str(e)[:100], "test": "final_connection"}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Application startup event with CAVA logging"""
+    logger.info("🚀 APP: Application starting up...")
+    cava_logger.info("🚀 APP: Application starting up...")
+    
+    # Check CAVA environment variables
+    cava_vars = {
+        'CAVA_DRY_RUN_MODE': os.getenv('CAVA_DRY_RUN_MODE'),
+        'CAVA_ENABLE_GRAPH': os.getenv('CAVA_ENABLE_GRAPH'),
+        'CAVA_REDIS_URL': os.getenv('CAVA_REDIS_URL'),
+        'CAVA_NEO4J_URI': os.getenv('CAVA_NEO4J_URI'),
+        'DISABLE_CAVA': os.getenv('DISABLE_CAVA')
+    }
+    
+    cava_logger.info("🔍 APP: CAVA Environment Check:")
+    for var, value in cava_vars.items():
+        status = "✅" if value else "❌"
+        cava_logger.info(f"   {status} {var}: {value}")
+    
+    # Test CAVA initialization
+    if os.getenv('DISABLE_CAVA', 'false').lower() != 'true':
+        try:
+            from implementation.cava.universal_conversation_engine import CAVAUniversalConversationEngine
+            engine = CAVAUniversalConversationEngine()
+            await engine.initialize()
+            cava_logger.info("✅ APP: CAVA engine test initialization successful")
+        except Exception as e:
+            cava_logger.error(f"❌ APP: CAVA engine test initialization failed: {str(e)}")
+    else:
+        cava_logger.info("ℹ️ APP: CAVA engine test skipped (disabled)")
 
 
 if __name__ == "__main__":

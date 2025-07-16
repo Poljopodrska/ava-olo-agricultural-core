@@ -53,22 +53,28 @@ run:
     - name: CAVA_INTEGRATED_MODE
       value: "true"  # Enable CAVA integration
     - name: CAVA_DRY_RUN_MODE
-      value: "true"  # Enable dry-run mode until databases are configured
+      value: "false"  # Production mode with real databases
     - name: DISABLE_CAVA
       value: "false"  # Enable CAVA for testing
     - name: CAVA_POSTGRESQL_SCHEMA
       value: "cava"
     - name: CAVA_REDIS_URL
-      value: "redis://cava-redis-cluster.s2bgcr.cache.amazonaws.com:6379"
+      value: "redis://cava-redis-production-rwoelf.serverless.use1.cache.amazonaws.com:6379"
     - name: CAVA_NEO4J_URI
-      value: "neo4j+s://3db86ac0.databases.neo4j.io:7687"
+      value: "neo4j+s://81df2224.databases.neo4j.io"
     - name: CAVA_NEO4J_USER
       value: "neo4j"
     - name: CAVA_NEO4J_PASSWORD
-      value: "your-auradb-password"
+      value: "H5BVZRyZiWiYUjcOE1TvKcbjJFBx3VLtYJqTOUrqI90"
     - name: CAVA_ENABLE_GRAPH
       value: "true"  # Enable Neo4j AuraDB
     - name: CAVA_ENABLE_VECTOR
       value: "true"  # Enable Pinecone vector intelligence
     - name: CAVA_ENABLE_MEMORY
       value: "true"
+    - name: CAVA_PINECONE_API_KEY
+      value: "REPLACE_WITH_ACTUAL_PINECONE_API_KEY"  # Use same as PINECONE_API_KEY
+    - name: CAVA_PINECONE_ENVIRONMENT
+      value: "eu-west-1"
+    - name: CAVA_PINECONE_INDEX
+      value: "cava-conversations"

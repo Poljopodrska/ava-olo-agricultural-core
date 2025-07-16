@@ -34,7 +34,7 @@ from implementation.cava.performance_optimization import (
 )
 from config_manager import config as main_config
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('CAVA')
 
 class CAVAUniversalConversationEngine:
     """
@@ -43,6 +43,7 @@ class CAVAUniversalConversationEngine:
     """
     
     def __init__(self):
+        logger.info("🧠 CAVA: Universal Conversation Engine starting...")
         self.db_manager = CAVADatabaseManager()
         self.llm_generator = CAVALLMQueryGenerator()
         self.dry_run = os.getenv('CAVA_DRY_RUN_MODE', 'true').lower() == 'true'
@@ -56,20 +57,33 @@ class CAVAUniversalConversationEngine:
         self.response_cache = CAVAResponseCache()
         self.parallel_processor = CAVAParallelProcessor()
         
-        logger.info("🏛️ CAVA Universal Engine initialized (dry_run: %s)", self.dry_run)
+        logger.info(f"🔍 CAVA: Configuration - dry_run: {self.dry_run}")
+        logger.info("🏛️ CAVA: Universal Conversation Engine initialized")
     
     async def initialize(self):
-        """Initialize all CAVA components"""
-        logger.info("🚀 Initializing CAVA Universal Engine...")
+        """Initialize with comprehensive logging"""
+        logger.info("🚀 CAVA: Starting initialization process...")
         
-        # Connect to all databases
-        success = await self.db_manager.connect_all()
-        if not success and not self.dry_run:
-            logger.error("❌ Failed to connect to all databases")
-            raise RuntimeError("CAVA initialization failed")
-        
-        logger.info("✅ CAVA Universal Engine ready!")
-        return success
+        try:
+            connection_status = await self.db_manager.connect_all()
+            logger.info(f"🔍 CAVA: Database connections: {connection_status}")
+            
+            # Check environment variables
+            env_vars = {
+                'CAVA_DRY_RUN_MODE': os.getenv('CAVA_DRY_RUN_MODE'),
+                'CAVA_ENABLE_GRAPH': os.getenv('CAVA_ENABLE_GRAPH'),
+                'CAVA_ENABLE_MEMORY': os.getenv('CAVA_ENABLE_MEMORY'),
+                'CAVA_REDIS_URL': os.getenv('CAVA_REDIS_URL', 'NOT_SET'),
+                'CAVA_NEO4J_URI': os.getenv('CAVA_NEO4J_URI', 'NOT_SET')
+            }
+            logger.info(f"🔍 CAVA: Environment variables: {json.dumps(env_vars, indent=2)}")
+            
+            logger.info("✅ CAVA: Initialization complete!")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ CAVA: Initialization failed: {str(e)}")
+            return False
     
     @retry_with_backoff(max_retries=3, initial_delay=0.5)
     async def _get_conversation_with_retry(self, session_id: str) -> Optional[Dict]:
@@ -83,32 +97,42 @@ class CAVAUniversalConversationEngine:
         session_id: Optional[str] = None,
         channel: str = "telegram"
     ) -> Dict[str, Any]:
-        """
-        Universal handler for ANY farmer message
-        Works for registration, farming questions, ANY crop, ANY country
-        """
+        """Enhanced message handler with detailed logging"""
+        
+        logger.info(f"📨 CAVA: Handling message from farmer {farmer_id}")
+        logger.info(f"🔍 CAVA: Message: '{message}' | Session: {session_id} | Channel: {channel}")
+        
         try:
             # Generate or retrieve session
             if not session_id:
                 session_id = str(uuid.uuid4())
-                logger.info("📝 New session: %s", session_id)
+                logger.info(f"🆔 CAVA: Generated new session: {session_id}")
             
-            # Get conversation context from Redis with failover
+            # Get conversation context from Redis
+            logger.info("💾 CAVA: Retrieving conversation context from Redis...")
             conversation = await self.failover_manager.execute_with_failover(
                 "redis",
                 self._get_conversation_with_retry,
                 session_id
-            ) or {
-                "session_id": session_id,
-                "farmer_id": farmer_id,
-                "channel": channel,
-                "started_at": datetime.now().isoformat(),
-                "messages": [],
-                "registration_state": {},
-                "conversation_type": None
-            }
+            )
+            
+            if conversation:
+                logger.info(f"📚 CAVA: Found existing conversation with {len(conversation.get('messages', []))} messages")
+                logger.info(f"🔍 CAVA: Conversation state: {json.dumps(conversation.get('registration_state', {}), indent=2)}")
+            else:
+                logger.info("🆕 CAVA: No existing conversation found, starting fresh")
+                conversation = {
+                    "session_id": session_id,
+                    "farmer_id": farmer_id,
+                    "channel": channel,
+                    "started_at": datetime.now().isoformat(),
+                    "messages": [],
+                    "registration_state": {},
+                    "conversation_type": None
+                }
             
             # Add incoming message to history
+            logger.info("💬 CAVA: Adding message to conversation history...")
             await self.db_manager.redis.add_message(session_id, {
                 "role": "farmer",
                 "content": message,
@@ -121,7 +145,8 @@ class CAVAUniversalConversationEngine:
                 "conversation_type": conversation.get("conversation_type")
             }
             
-            # LLM analyzes the message with failover and caching (Amendment #15)
+            # LLM analyzes the message
+            logger.info("🧠 CAVA: Starting LLM analysis...")
             analysis, was_cached = await self.response_cache.get_or_compute(
                 farmer_id=farmer_id,
                 message=message,
@@ -141,15 +166,21 @@ class CAVAUniversalConversationEngine:
             if was_cached:
                 logger.debug("🚀 Using cached analysis for faster response")
             
-            logger.info("🧠 LLM Analysis: intent=%s, type=%s", 
-                       analysis.get("intent"), analysis.get("conversation_type"))
+            logger.info(f"🧠 CAVA: LLM Analysis complete:")
+            logger.info(f"   Intent: {analysis.get('intent')}")
+            logger.info(f"   Conversation Type: {analysis.get('conversation_type')}")
+            logger.info(f"   Entities: {analysis.get('entities', {})}")
+            logger.info(f"   Actions Needed: {analysis.get('actions_needed', {})}")
             
-            # Route based on LLM analysis
+            # Route conversation
+            logger.info("🔀 CAVA: Routing conversation based on analysis...")
             response = await self._route_conversation(
                 farmer_id, message, analysis, conversation, session_id
             )
             
-            # Store response in conversation
+            logger.info(f"💭 CAVA: Generated response: '{response.get('message', 'NO_MESSAGE')}'")
+            
+            # Store response
             await self.db_manager.redis.add_message(session_id, {
                 "role": "ava",
                 "content": response["message"],
@@ -159,21 +190,39 @@ class CAVAUniversalConversationEngine:
             # Log to PostgreSQL for constitutional compliance
             await self._log_to_postgresql(session_id, farmer_id, message, response, analysis)
             
+            logger.info("✅ CAVA: Message handling complete!")
+            
             return {
                 "success": True,
                 "session_id": session_id,
                 "message": response["message"],
                 "conversation_type": analysis.get("conversation_type"),
                 "analysis": analysis,
-                "requires_action": response.get("requires_action", False)
+                "cava_powered": True,
+                "debug_info": {
+                    "farmer_id": farmer_id,
+                    "session_id": session_id,
+                    "message_processed": True,
+                    "llm_analysis_success": True
+                }
             }
             
         except Exception as e:
-            logger.error("❌ Error handling message: %s", str(e))
+            logger.error(f"❌ CAVA: Error handling message: {str(e)}")
+            logger.error(f"❌ CAVA: Error details: {type(e).__name__}")
+            import traceback
+            logger.error(f"❌ CAVA: Traceback: {traceback.format_exc()}")
+            
             return {
                 "success": False,
                 "error": str(e),
-                "message": "I'm having trouble understanding. Could you please try again?"
+                "message": "I'm having technical difficulties but I'm still here to help. Could you try again?",
+                "debug_info": {
+                    "farmer_id": farmer_id,
+                    "session_id": session_id,
+                    "error_type": type(e).__name__,
+                    "cava_attempted": True
+                }
             }
     
     async def _route_conversation(
@@ -184,27 +233,29 @@ class CAVAUniversalConversationEngine:
         conversation: Dict,
         session_id: str
     ) -> Dict[str, Any]:
-        """
-        Route conversation based on LLM analysis
-        Supports registration, farming questions, mixed conversations
-        """
-        intent = analysis.get("intent", "general_chat")
-        conversation_type = analysis.get("conversation_type", "farming")
+        """Enhanced routing with detailed logging"""
         
-        # Registration flow
-        if intent == "registration" or not await self._is_farmer_registered(farmer_id):
+        intent = analysis.get("intent", "unknown")
+        conversation_type = analysis.get("conversation_type", "unknown")
+        
+        logger.info(f"🔀 CAVA: Routing - Intent: {intent}, Type: {conversation_type}")
+        
+        # Check if farmer is registered
+        is_registered = await self._is_farmer_registered(farmer_id)
+        logger.info(f"👤 CAVA: Farmer {farmer_id} registration status: {is_registered}")
+        
+        if intent == "registration" or not is_registered:
+            logger.info("📝 CAVA: Handling as REGISTRATION conversation")
             return await self._handle_registration(
                 farmer_id, message, analysis, conversation, session_id
             )
-        
-        # Farming questions - use graph database
         elif intent in ["farming_question", "field_info", "harvest_timing", "product_application"]:
+            logger.info("🌾 CAVA: Handling as FARMING conversation")
             return await self._handle_farming_question(
                 farmer_id, message, analysis, session_id
             )
-        
-        # General chat or unknown
         else:
+            logger.info("💬 CAVA: Handling as GENERAL CHAT")
             return await self._handle_general_chat(
                 farmer_id, message, analysis
             )
@@ -217,65 +268,82 @@ class CAVAUniversalConversationEngine:
         conversation: Dict,
         session_id: str
     ) -> Dict[str, Any]:
-        """
-        Handle registration flow using LLM extraction
-        Solves the Peter → Knaflič re-asking problem
-        """
+        """Enhanced registration handler with detailed logging"""
+        
+        logger.info("📝 CAVA: Starting registration handling...")
+        
         registration_state = conversation.get("registration_state", {})
+        logger.info(f"📋 CAVA: Current registration state: {json.dumps(registration_state, indent=2)}")
         
         # LLM extracts registration data
+        logger.info("🧠 CAVA: Extracting registration data with LLM...")
         extracted_data = await self.llm_generator.extract_registration_data(
             message, registration_state
         )
+        logger.info(f"📊 CAVA: Extracted data: {json.dumps(extracted_data, indent=2)}")
         
         # Update registration state
         for field in extracted_data.get("updates_made", []):
             if field in extracted_data:
+                old_value = registration_state.get(field)
                 registration_state[field] = extracted_data[field]
+                logger.info(f"📝 CAVA: Updated {field}: '{old_value}' → '{extracted_data[field]}'")
         
         # Check what's still missing
         required_fields = ["full_name", "phone_number", "password"]
         missing_fields = [f for f in required_fields if not registration_state.get(f)]
         
+        logger.info(f"✅ CAVA: Required fields status:")
+        for field in required_fields:
+            status = "✅" if registration_state.get(field) else "❌"
+            logger.info(f"   {status} {field}: {registration_state.get(field, 'MISSING')}")
+        
+        logger.info(f"📋 CAVA: Missing fields: {missing_fields}")
+        
         if not missing_fields:
-            # Registration complete - store in databases
+            logger.info("🎉 CAVA: Registration complete! Storing farmer data...")
             success = await self._complete_registration(farmer_id, registration_state)
             
             if success:
-                # Store in Neo4j graph
                 await self._store_farmer_in_graph(farmer_id, registration_state)
+                logger.info("✅ CAVA: Registration successfully completed!")
                 
                 return {
                     "message": f"✅ Registration complete! Welcome {registration_state['full_name']}! You can now ask me about farming, tell me about your fields, or ask when to harvest your crops.",
-                    "registration_complete": True
+                    "registration_complete": True,
+                    "debug_info": {"registration_successful": True}
                 }
             else:
+                logger.error("❌ CAVA: Registration completion failed")
                 return {
                     "message": "There was an issue completing your registration. Please try again.",
                     "error": True
                 }
-        
         else:
-            # Ask for next missing field
+            # Generate next question
             next_field = missing_fields[0]
+            logger.info(f"❓ CAVA: Asking for next field: {next_field}")
             
-            if next_field == "full_name":
-                prompt = "👋 Welcome to AVA! What's your name?"
-            elif next_field == "phone_number":
-                prompt = f"Thanks {registration_state.get('first_name', '')}! What's your phone number (with country code)?"
-            elif next_field == "password":
-                prompt = "Almost done! Please create a password for your account:"
-            else:
-                prompt = f"Please provide your {next_field}:"
+            # Generate response with LLM
+            response = await self._generate_registration_response(
+                registration_state, missing_fields, message
+            )
             
             # Update conversation state
             conversation["registration_state"] = registration_state
             await self.db_manager.redis.store_conversation(session_id, conversation)
             
+            logger.info(f"💭 CAVA: Generated registration response: '{response}'")
+            
             return {
-                "message": prompt,
+                "message": response,
                 "registration_in_progress": True,
-                "missing_fields": missing_fields
+                "missing_fields": missing_fields,
+                "debug_info": {
+                    "next_field_needed": next_field,
+                    "fields_collected": len(required_fields) - len(missing_fields),
+                    "total_fields": len(required_fields)
+                }
             }
     
     async def _handle_farming_question(
@@ -384,6 +452,48 @@ class CAVAUniversalConversationEngine:
         return {
             "message": "I'm here to help with your farming questions. Could you tell me more about what you need?"
         }
+    
+    async def _generate_registration_response(self, current_state: Dict, missing_fields: List[str], last_message: str) -> str:
+        """Generate registration response with logging"""
+        
+        logger.info("🧠 CAVA: Generating registration response with LLM...")
+        
+        prompt = f"""
+You are AVA helping a farmer register. Generate the next question.
+
+CURRENT STATE: {json.dumps(current_state, indent=2)}
+MISSING FIELDS: {missing_fields}
+FARMER JUST SAID: "{last_message}"
+
+CRITICAL RULES:
+1. Thank them for what they just provided
+2. Ask for the NEXT missing field only
+3. NEVER re-ask for information you already have
+4. Be conversational and friendly
+5. Use their name if you have it
+
+Generate response:
+"""
+        
+        try:
+            import openai
+            openai.api_key = os.getenv('OPENAI_API_KEY')
+            
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+            
+            generated_response = response.choices[0].message.content.strip()
+            logger.info(f"🧠 CAVA: LLM generated response: '{generated_response}'")
+            return generated_response
+            
+        except Exception as e:
+            logger.error(f"❌ CAVA: LLM response generation failed: {str(e)}")
+            # Fallback response
+            next_field = missing_fields[0] if missing_fields else "information"
+            return f"Thanks! Could you please provide your {next_field.replace('_', ' ')}?"
     
     async def _handle_general_chat(
         self,

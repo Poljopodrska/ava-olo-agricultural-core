@@ -29,7 +29,12 @@ load_dotenv(os.path.join(base_dir, '.env.cava'))  # CAVA-specific
 parent_dir = os.path.dirname(base_dir)
 load_dotenv(os.path.join(parent_dir, '.env'))
 
-logger = logging.getLogger(__name__)
+# Configure CAVA-specific logger
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger('CAVA')
 
 class CAVANeo4jConnection:
     """Neo4j Graph Database Connection for CAVA"""
@@ -452,42 +457,54 @@ class CAVADatabaseManager:
         self.pinecone = CAVAPineconeConnection()
         self.postgresql = CAVAPostgreSQLConnection()
         self.connected = False
+        logger.info("🏛️ CAVA: Database Manager initialized")
     
     async def connect_all(self):
-        """Connect to all CAVA databases with error isolation"""
-        logger.info("🚀 Connecting to CAVA databases...")
+        """Connect to all CAVA databases with detailed logging"""
+        logger.info("🚀 CAVA: Starting database connections...")
+        connection_status = {}
         
-        errors = []
-        
-        # Connect with error isolation
+        # Neo4j connection
         try:
             await self.neo4j.connect()
+            logger.info("✅ CAVA: Neo4j connected successfully")
+            connection_status['neo4j'] = 'connected'
         except Exception as e:
-            errors.append(f"Neo4j: {str(e)}")
+            logger.error(f"❌ CAVA: Neo4j connection failed: {str(e)}")
+            connection_status['neo4j'] = f'failed: {str(e)}'
         
+        # Redis connection  
         try:
             await self.redis.connect()
+            logger.info("✅ CAVA: Redis connected successfully")
+            connection_status['redis'] = 'connected'
         except Exception as e:
-            errors.append(f"Redis: {str(e)}")
+            logger.error(f"❌ CAVA: Redis connection failed: {str(e)}")
+            connection_status['redis'] = f'failed: {str(e)}'
         
+        # Pinecone connection
         try:
             await self.pinecone.connect()
+            logger.info("✅ CAVA: Pinecone connected successfully")
+            connection_status['pinecone'] = 'connected'
         except Exception as e:
-            errors.append(f"Pinecone: {str(e)}")
+            logger.error(f"❌ CAVA: Pinecone connection failed: {str(e)}")
+            connection_status['pinecone'] = f'failed: {str(e)}'
         
+        # PostgreSQL connection
         try:
             await self.postgresql.connect()
+            logger.info("✅ CAVA: PostgreSQL connected successfully")
+            connection_status['postgresql'] = 'connected'
         except Exception as e:
-            errors.append(f"PostgreSQL: {str(e)}")
+            logger.error(f"❌ CAVA: PostgreSQL connection failed: {str(e)}")
+            connection_status['postgresql'] = f'failed: {str(e)}'
         
-        if errors:
-            logger.warning("⚠️ Some databases failed to connect: %s", errors)
-        else:
-            logger.info("✅ All CAVA databases connected!")
-            self.connected = True
+        logger.info(f"🔍 CAVA: Final connection status: {json.dumps(connection_status, indent=2)}")
         
         # ERROR ISOLATION - System continues even with partial failures
-        return len(errors) == 0
+        self.connected = 'failed' not in str(connection_status)
+        return connection_status
     
     async def health_check(self) -> Dict[str, str]:
         """Check health of all databases"""
