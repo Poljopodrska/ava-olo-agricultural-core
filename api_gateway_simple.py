@@ -2049,102 +2049,31 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
             }
 
     @app.post("/api/v1/auth/chat-register")
-    async def chat_register_step(request: ChatRegisterRequest):
-        """CAVA-powered registration proxy with persistent session management"""
-        
-        # CRITICAL LOGGING TO VERIFY THIS IS BEING CALLED
-        logger.error(f"🔥🔥🔥 CAVA PROXY CALLED! Message: '{request.user_input}'")
-        
-        # Enhanced logging for debugging
-        logger.info(f"🔄 CAVA Proxy: Registration request - session: {request.session_id}, message: '{request.user_input}'")
-        
-        # CRITICAL FIX: Use consistent farmer_id throughout the registration
-        # If farmer_id not provided, generate from conversation_id (which frontend maintains)
-        if request.farmer_id:
-            persistent_farmer_id = request.farmer_id
-        elif request.conversation_id:
-            # Use conversation_id to generate consistent farmer_id
-            persistent_farmer_id = abs(hash(request.conversation_id)) % 1000000
-        else:
-            # Fallback: generate from session_id or default
-            persistent_farmer_id = abs(hash(request.session_id or "default-session")) % 1000000
-        
-        # Create persistent session key that won't change between calls
-        persistent_session_key = f"reg_farmer_{persistent_farmer_id}"
-        
-        logger.info(f"📋 REGISTRATION CALL: persistent_farmer_id={persistent_farmer_id}, persistent_session={persistent_session_key}, message='{request.user_input}'")
-        
-        # Store in app state for debug endpoint
-        if hasattr(app.state, 'registration_logs'):
-            app.state.registration_logs.append({
-                "timestamp": datetime.now().isoformat(),
-                "session_id": request.session_id,
-                "persistent_session": persistent_session_key,
-                "farmer_id": persistent_farmer_id,
-                "message": request.user_input,
-                "type": "CAVA_PROXY"
-            })
+    async def chat_register_cava_proxy(request: ChatRegisterRequest):
+        """CAVA proxy using integrated engine (NOT HTTP calls)"""
         
         try:
-            # CRITICAL FIX: Use CAVA engine directly instead of HTTP calls
-            global _cava_engine
+            logger.error(f"🔥 CAVA PROXY CALLED with message: {request.user_input}")
             
-            if not _cava_engine and hasattr(app.state, 'cava_engine'):
-                _cava_engine = app.state.cava_engine
-            
-            if not _cava_engine:
-                raise Exception("CAVA engine not initialized")
+            # Use the integrated CAVA engine (NOT HTTP)
+            if not hasattr(app.state, 'cava_engine'):
+                raise Exception("CAVA engine not initialized in app.state")
                 
-            logger.info(f"🎯 CAVA Proxy: Using direct engine call with persistent_farmer_id={persistent_farmer_id}, session={persistent_session_key}")
-            
-            # Call CAVA engine directly
-            cava_result = await _cava_engine.handle_farmer_message(
-                farmer_id=persistent_farmer_id,
-                message=request.user_input or "",
-                session_id=persistent_session_key,  # USE PERSISTENT SESSION KEY
+            cava_response = await app.state.cava_engine.handle_farmer_message(
+                farmer_id=request.farmer_id or 99999,
+                message=request.user_input,
+                session_id=f"reg_farmer_{request.farmer_id or 99999}",
                 channel="registration"
             )
             
-            # Convert result to expected format
-            cava_data = {
-                "success": cava_result.get("success", True),
-                "message": cava_result.get("message", ""),
-                "session_id": cava_result.get("session_id", persistent_session_key),
-                "completed": "complete" in cava_result.get("message", "").lower()
-            }
+            logger.error(f"🔥 CAVA RESPONSE: {cava_response}")
             
-            logger.info(f"✅ CAVA Proxy: Direct engine response - {cava_data}")
-            
-            # Convert CAVA response to old format
-            is_complete = cava_data.get("success", False) and \
-                         ("complete" in cava_data.get("message", "").lower() or 
-                          cava_data.get("completed", False))
-            
-            response = {
-                "success": cava_data.get("success", True),
-                "message": cava_data.get("message", ""),
-                "status": "COMPLETE" if is_complete else "collecting",
+            return {
+                "success": cava_response.get("success", True),
+                "message": cava_response.get("message", ""),
                 "session_id": request.session_id,
-                "conversation_id": request.conversation_id,
-                "registration_successful": is_complete,
-                "extracted_data": cava_data.get("extracted_data", {}),
-                "conversation_history": request.conversation_history or [],
-                "last_ava_message": cava_data.get("message", ""),
-                "cava_enabled": True
+                "registration_complete": "complete" in cava_response.get("message", "").lower()
             }
-            
-            logger.info(f"📤 CAVA Proxy: Final response - status: {response['status']}")
-            
-            # Log successful CAVA call
-            if hasattr(app.state, 'registration_logs'):
-                app.state.registration_logs.append({
-                    "timestamp": datetime.now().isoformat(),
-                    "type": "CAVA_SUCCESS",
-                    "status": response['status'],
-                    "message": response.get('message', '')[:100]
-                })
-            
-            return response
             
         except Exception as e:
             logger.error(f"❌ CAVA Proxy failed: {str(e)}")
