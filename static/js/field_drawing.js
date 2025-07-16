@@ -26,19 +26,34 @@ function initFieldMap() {
     
     console.log('Google Maps API loaded successfully - initializing map');
     
-    // Initialize map centered on Croatia/Slovenia region (can be adjusted)
-    fieldMap = new google.maps.Map(document.getElementById('field-map'), {
-        zoom: 15,
-        center: { lat: 45.8150, lng: 15.9819 }, // Zagreb coordinates as default
-        mapTypeId: 'satellite', // Better for field visualization
-        streetViewControl: false,
-        fullscreenControl: false,
-        mapTypeControl: true,
-        mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            mapTypeIds: ['satellite', 'hybrid', 'terrain']
+    try {
+        // Check if map container exists
+        const mapContainer = document.getElementById('field-map');
+        if (!mapContainer) {
+            console.error('Map container element not found');
+            return;
         }
-    });
+        
+        // Initialize map centered on Croatia/Slovenia region (can be adjusted)
+        fieldMap = new google.maps.Map(mapContainer, {
+            zoom: 15,
+            center: { lat: 45.8150, lng: 15.9819 }, // Zagreb coordinates as default
+            mapTypeId: 'satellite', // Better for field visualization
+            streetViewControl: false,
+            fullscreenControl: false,
+            mapTypeControl: true,
+            mapTypeControlOptions: {
+                style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+                mapTypeIds: ['satellite', 'hybrid', 'terrain']
+            }
+        });
+        
+        console.log('Map initialized successfully');
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        fieldMap = null;
+        return;
+    }
 
     // Try to get user's location
     if (navigator.geolocation) {
@@ -47,7 +62,9 @@ function initFieldMap() {
                 lat: position.coords.latitude,
                 lng: position.coords.longitude
             };
-            fieldMap.setCenter(userLocation);
+            if (fieldMap && typeof fieldMap.setCenter === 'function') {
+                fieldMap.setCenter(userLocation);
+            }
         }, function(error) {
             console.log('Geolocation error:', error);
             // Default location remains
@@ -68,11 +85,15 @@ function setupDrawingListeners() {
     if (saveBtn) saveBtn.addEventListener('click', saveFieldPolygon);
 
     // Map click listener for drawing
-    fieldMap.addListener('click', function(event) {
-        if (isDrawing) {
-            addPointToField(event.latLng);
-        }
-    });
+    if (fieldMap && typeof fieldMap.addListener === 'function') {
+        fieldMap.addListener('click', function(event) {
+            if (isDrawing) {
+                addPointToField(event.latLng);
+            }
+        });
+    } else {
+        console.error('Cannot add click listener - fieldMap not initialized');
+    }
 }
 
 function startDrawing() {
@@ -83,7 +104,11 @@ function startDrawing() {
     document.getElementById('start-drawing').textContent = '🎯 Drawing... (click map to add points)';
     document.getElementById('start-drawing').disabled = true;
     
-    fieldMap.setOptions({ draggableCursor: 'crosshair' });
+    if (fieldMap && typeof fieldMap.setOptions === 'function') {
+        fieldMap.setOptions({ draggableCursor: 'crosshair' });
+    } else {
+        console.error('fieldMap not initialized - cannot set cursor');
+    }
     
     // Show instructions
     const instructions = document.getElementById('drawing-instructions');
@@ -181,7 +206,9 @@ function finishDrawing() {
     isDrawing = false;
     document.getElementById('start-drawing').textContent = '🎯 Start Drawing Field';
     document.getElementById('start-drawing').disabled = false;
-    fieldMap.setOptions({ draggableCursor: null });
+    if (fieldMap && typeof fieldMap.setOptions === 'function') {
+        fieldMap.setOptions({ draggableCursor: null });
+    }
     
     // Hide instructions
     const instructions = document.getElementById('drawing-instructions');
@@ -282,8 +309,14 @@ function clearDrawing() {
     }
     
     // Clear markers
-    markers.forEach(marker => marker.setMap(null));
-    markers = [];
+    if (markers && Array.isArray(markers)) {
+        markers.forEach(marker => {
+            if (marker && typeof marker.setMap === 'function') {
+                marker.setMap(null);
+            }
+        });
+        markers = [];
+    }
     
     // Reset drawing state
     drawingPath = [];
@@ -297,7 +330,9 @@ function clearDrawing() {
     document.getElementById('save-field-polygon').disabled = true;
     document.getElementById('save-field-polygon').textContent = '💾 Save Field Shape';
     
-    fieldMap.setOptions({ draggableCursor: null });
+    if (fieldMap && typeof fieldMap.setOptions === 'function') {
+        fieldMap.setOptions({ draggableCursor: null });
+    }
     
     // Hide instructions
     const instructions = document.getElementById('drawing-instructions');
