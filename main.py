@@ -2927,6 +2927,16 @@ async def health_dashboard():
     healthy_components = sum(1 for c in components_status.values() if c['status'] == 'healthy')
     health_percentage = int((healthy_components / total_components) * 100)
     
+    # Separate feature health from component health
+    feature_health = {}
+    component_health = {}
+    
+    for name, status in components_status.items():
+        if any(prefix in name for prefix in ['📊', '🤖', '💰', '🌾', '📋', '⭐', '🔍']):
+            feature_health[name] = status
+        else:
+            component_health[name] = status
+    
     overall_status = "🟢 All Systems Operational" if healthy_components == total_components else \
                     "🟡 Partial Degradation" if healthy_components > 0 else \
                     "🔴 System Offline"
@@ -3046,6 +3056,7 @@ async def health_dashboard():
             </div>
             
             <div class="components-table">
+                <h2 style="margin: 20px 0 10px 0; color: #2c3e50;">🔧 System Components</h2>
                 <table>
                     <thead>
                         <tr>
@@ -3056,7 +3067,44 @@ async def health_dashboard():
                         </tr>
                     </thead>
                     <tbody>
-                        {status_rows}
+                        {''.join(f"""
+                        <tr>
+                            <td style="font-weight: bold;">{component}</td>
+                            <td>
+                                <span style="font-size: 20px; margin-right: 10px;">{details['icon']}</span>
+                                <span style="color: {details['color']}; font-weight: bold;">{details['status'].upper()}</span>
+                            </td>
+                            <td>{details['message']}</td>
+                            <td style="color: #666; font-size: 0.9em;">{details['details']}</td>
+                        </tr>
+                        """ for component, details in component_health.items())}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="components-table" style="margin-top: 30px;">
+                <h2 style="margin: 20px 0 10px 0; color: #2c3e50;">🎯 Feature Health</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Status</th>
+                            <th>Message</th>
+                            <th>Dependencies</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {''.join(f"""
+                        <tr>
+                            <td style="font-weight: bold;">{feature}</td>
+                            <td>
+                                <span style="font-size: 20px; margin-right: 10px;">{details['icon']}</span>
+                                <span style="color: {details['color']}; font-weight: bold;">{details['status'].upper()}</span>
+                            </td>
+                            <td>{details['message']}</td>
+                            <td style="color: #666; font-size: 0.9em;">{details['details']}</td>
+                        </tr>
+                        """ for feature, details in feature_health.items())}
                     </tbody>
                 </table>
             </div>
@@ -3070,10 +3118,255 @@ async def health_dashboard():
     </html>
     """)
 
+async def get_feature_health_status():
+    """Check health status of specific features and their dependencies"""
+    
+    features = {}
+    
+    # Feature 1: Farmer Count Query
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM farmers")
+                farmer_count = cursor.fetchone()[0]
+                
+                features['📊 Farmer Count Query'] = {
+                    'status': 'healthy',
+                    'icon': '✅',
+                    'color': '#4caf50',
+                    'message': f'Working - {farmer_count} farmers',
+                    'details': 'Database connection + farmers table access'
+                }
+    except Exception as e:
+        features['📊 Farmer Count Query'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Cannot reach farmers table',
+            'details': str(e)[:80]
+        }
+    
+    # Feature 2: LLM Natural Language Query
+    if OPENAI_API_KEY and len(OPENAI_API_KEY) > 10:
+        try:
+            from llm_integration import test_llm_connection
+            llm_test = await test_llm_connection()
+            
+            # Also test if database is reachable from LLM context
+            with get_constitutional_db_connection() as conn:
+                if conn and llm_test.get("status") == "connected":
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
+                    table_count = cursor.fetchone()[0]
+                    
+                    features['🤖 LLM Natural Language Query'] = {
+                        'status': 'healthy',
+                        'icon': '✅',
+                        'color': '#4caf50',
+                        'message': f'Working - {table_count} tables accessible',
+                        'details': 'OpenAI API + Database connection + schema access'
+                    }
+                else:
+                    features['🤖 LLM Natural Language Query'] = {
+                        'status': 'error',
+                        'icon': '❌',
+                        'color': '#f44336',
+                        'message': 'Database not accessible from LLM',
+                        'details': 'OpenAI works but cannot reach database'
+                    }
+        except Exception as e:
+            features['🤖 LLM Natural Language Query'] = {
+                'status': 'error',
+                'icon': '❌',
+                'color': '#f44336',
+                'message': 'LLM or database connection failed',
+                'details': str(e)[:80]
+            }
+    else:
+        features['🤖 LLM Natural Language Query'] = {
+            'status': 'not_configured',
+            'icon': '⚪',
+            'color': '#9e9e9e',
+            'message': 'OpenAI API key not configured',
+            'details': 'Set OPENAI_API_KEY to enable'
+        }
+    
+    # Feature 3: Cost Analytics
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                
+                # Check if cost tables exist and have data
+                cursor.execute("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'farmer_interaction_costs')")
+                costs_table_exists = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'cost_rates')")
+                rates_table_exists = cursor.fetchone()[0]
+                
+                if costs_table_exists and rates_table_exists:
+                    cursor.execute("SELECT COUNT(*) FROM farmer_interaction_costs")
+                    cost_records = cursor.fetchone()[0]
+                    
+                    cursor.execute("SELECT COUNT(*) FROM cost_rates")
+                    rate_records = cursor.fetchone()[0]
+                    
+                    features['💰 Cost Analytics'] = {
+                        'status': 'healthy',
+                        'icon': '✅',
+                        'color': '#4caf50',
+                        'message': f'Working - {cost_records} cost records, {rate_records} rate configs',
+                        'details': 'Database + cost_rates + farmer_interaction_costs tables'
+                    }
+                else:
+                    features['💰 Cost Analytics'] = {
+                        'status': 'warning',
+                        'icon': '⚠️',
+                        'color': '#ff9800',
+                        'message': 'Cost tables not initialized',
+                        'details': 'Database connected but cost tables missing'
+                    }
+    except Exception as e:
+        features['💰 Cost Analytics'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Cannot access cost tables',
+            'details': str(e)[:80]
+        }
+    
+    # Feature 4: Farmer Fields Query
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM fields")
+                field_count = cursor.fetchone()[0]
+                
+                # Test actual farmer-fields relationship
+                cursor.execute("SELECT COUNT(DISTINCT farmer_id) FROM fields WHERE farmer_id IS NOT NULL")
+                farmers_with_fields = cursor.fetchone()[0]
+                
+                features['🌾 Farmer Fields Query'] = {
+                    'status': 'healthy',
+                    'icon': '✅',
+                    'color': '#4caf50',
+                    'message': f'Working - {field_count} fields, {farmers_with_fields} farmers have fields',
+                    'details': 'Database + fields table + farmer relationship'
+                }
+    except Exception as e:
+        features['🌾 Farmer Fields Query'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Cannot access fields table',
+            'details': str(e)[:80]
+        }
+    
+    # Feature 5: Task Management
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM tasks")
+                task_count = cursor.fetchone()[0]
+                
+                # Test task-field relationship through junction table
+                cursor.execute("SELECT COUNT(*) FROM task_fields")
+                task_field_links = cursor.fetchone()[0]
+                
+                features['📋 Task Management'] = {
+                    'status': 'healthy',
+                    'icon': '✅',
+                    'color': '#4caf50',
+                    'message': f'Working - {task_count} tasks, {task_field_links} field assignments',
+                    'details': 'Database + tasks + task_fields junction table'
+                }
+    except Exception as e:
+        features['📋 Task Management'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Cannot access tasks/task_fields tables',
+            'details': str(e)[:80]
+        }
+    
+    # Feature 6: Standard Queries
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'standard_queries')")
+                table_exists = cursor.fetchone()[0]
+                
+                if table_exists:
+                    cursor.execute("SELECT COUNT(*) FROM standard_queries")
+                    query_count = cursor.fetchone()[0]
+                    
+                    features['⭐ Standard Queries'] = {
+                        'status': 'healthy',
+                        'icon': '✅',
+                        'color': '#4caf50',
+                        'message': f'Working - {query_count} saved queries',
+                        'details': 'Database + standard_queries table'
+                    }
+                else:
+                    features['⭐ Standard Queries'] = {
+                        'status': 'warning',
+                        'icon': '⚠️',
+                        'color': '#ff9800',
+                        'message': 'Standard queries table not initialized',
+                        'details': 'Database connected but standard_queries table missing'
+                    }
+    except Exception as e:
+        features['⭐ Standard Queries'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Cannot access standard_queries table',
+            'details': str(e)[:80]
+        }
+    
+    # Feature 7: Schema Discovery
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'")
+                table_count = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = 'public'")
+                column_count = cursor.fetchone()[0]
+                
+                features['🔍 Schema Discovery'] = {
+                    'status': 'healthy',
+                    'icon': '✅',
+                    'color': '#4caf50',
+                    'message': f'Working - {table_count} tables, {column_count} columns',
+                    'details': 'Database + information_schema access'
+                }
+    except Exception as e:
+        features['🔍 Schema Discovery'] = {
+            'status': 'error',
+            'icon': '❌',
+            'color': '#f44336',
+            'message': 'Cannot access information_schema',
+            'details': str(e)[:80]
+        }
+    
+    return features
+
 async def get_comprehensive_health_status():
     """Check health status of all system components"""
     
     components = {}
+    
+    # First get feature-level health status
+    feature_health = await get_feature_health_status()
+    
+    # Combine component and feature health
+    components.update(feature_health)
     
     # 1. Database Connection
     try:
