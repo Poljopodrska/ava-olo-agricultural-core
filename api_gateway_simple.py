@@ -37,17 +37,26 @@ app.add_middleware(
 # Configure CAVA logger
 cava_logger = logging.getLogger('CAVA')
 
+# Log CAVA status immediately
+logger.info(f"🔍 DISABLE_CAVA environment variable: {os.getenv('DISABLE_CAVA', 'NOT_SET')}")
+
 # CAVA Integration - Load lazily to prevent deployment issues
 if os.getenv('DISABLE_CAVA', 'false').lower() != 'true':
+    logger.info("🚀 Attempting to load CAVA routes...")
     try:
         from api.cava_routes import cava_router
+        logger.info("✅ CAVA routes imported successfully")
         app.include_router(cava_router)
         logger.info("✅ CAVA routes loaded successfully")
         cava_logger.info("✅ CAVA: Routes successfully integrated into main API")
+    except ImportError as e:
+        import traceback
+        logger.error(f"❌ CAVA routes import failed: {e}")
+        logger.error(f"Import error traceback: {traceback.format_exc()}")
     except Exception as e:
         import traceback
-        logger.warning(f"⚠️ CAVA routes not loaded: {e}")
-        logger.warning(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"❌ CAVA routes failed to load: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
         cava_logger.error(f"❌ CAVA: Failed to integrate CAVA routes: {str(e)}")
         # System continues without CAVA - constitutional principle of MODULE INDEPENDENCE
 else:
@@ -870,15 +879,30 @@ async def main_web_interface():
                 
                 try {
                     // Send to backend with conversation context
-                    const response = await fetch('/api/v1/auth/chat-register', {
+                    // Try CAVA first, fallback to old system if not available
+                    let endpoint = '/api/v1/cava/register';
+                    let requestBody = {
+                        farmer_id: 12345, // Temporary ID for registration
+                        message: formData.input,
+                        session_id: conversationData.conversation_id
+                    };
+                    
+                    // Check if CAVA is available
+                    try {
+                        const healthCheck = await fetch('/api/v1/cava/health');
+                        if (!healthCheck.ok) {
+                            throw new Error('CAVA not available');
+                        }
+                    } catch (e) {
+                        // Fallback to old system
+                        endpoint = '/api/v1/auth/chat-register';
+                        requestBody = formData;
+                    }
+                    
+                    const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_input: message,
-                            current_data: registrationData,
-                            conversation_history: conversationHistory,
-                            last_ava_message: lastAvaMessage
-                        })
+                        body: JSON.stringify(requestBody)
                     });
                     
                     const data = await response.json();
@@ -886,12 +910,22 @@ async def main_web_interface():
                     // Add AVA response to chat
                     addChatMessage(data.message, 'ava');
                     
-                    // Update context
-                    if (data.extracted_data) {
-                        Object.assign(registrationData, data.extracted_data || {});
+                    // Update context based on system (CAVA vs old)
+                    if (endpoint.includes('cava')) {
+                        // CAVA response format
+                        conversationData.conversation_id = data.session_id || conversationData.conversation_id;
+                        if (data.debug_info) {
+                            console.log('CAVA Debug:', data.debug_info);
+                        }
+                    } else {
+                        // Old system response format
+                        if (data.extracted_data) {
+                            Object.assign(registrationData, data.extracted_data || {});
+                        }
+                        conversationHistory = data.conversation_history || conversationHistory;
+                        lastAvaMessage = data.last_ava_message || data.message;
+                        conversationData.conversation_id = data.conversation_id || conversationData.conversation_id;
                     }
-                    conversationHistory = data.conversation_history || conversationHistory;
-                    lastAvaMessage = data.last_ava_message || data.message;
                     
                     // Log who handled the response (for debugging)
                     console.log(`🤖 Handled by: ${data.handled_by || 'unknown'}`);
