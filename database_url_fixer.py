@@ -28,6 +28,28 @@ def fix_database_url() -> str:
     logger.info(f"🔍 Original DATABASE_URL: {original_url[:50]}...")
     
     try:
+        # Handle brackets in password (common AWS RDS issue)
+        if "[" in original_url and "]" in original_url:
+            # Check if brackets are in password, not hostname
+            if "://" in original_url and "@" in original_url:
+                # Extract parts: scheme://user:pass@host:port/db
+                scheme_part = original_url.split("://")[0]
+                rest = original_url.split("://")[1]
+                
+                if "@" in rest:
+                    credentials_part = rest.split("@")[0]
+                    host_part = rest.split("@")[1]
+                    
+                    # If brackets are in credentials (password), URL-encode them
+                    if "[" in credentials_part and "]" in credentials_part:
+                        # URL-encode brackets in password
+                        fixed_credentials = credentials_part.replace("[", "%5B").replace("]", "%5D")
+                        fixed_url = f"{scheme_part}://{fixed_credentials}@{host_part}"
+                        
+                        os.environ["DATABASE_URL"] = fixed_url
+                        logger.info(f"✅ Fixed brackets in password: {fixed_url[:50]}...")
+                        return fixed_url
+        
         # Parse the URL to identify components
         parsed = urlparse(original_url)
         
@@ -112,16 +134,25 @@ def get_database_components() -> dict:
             if ipv6_match:
                 hostname = ipv6_match.group(1)
         
+        # Handle URL-encoded brackets in password
+        password = parsed.password
+        if password:
+            password = password.replace("%5B", "[").replace("%5D", "]")
+        
         components = {
             "scheme": parsed.scheme,
             "username": parsed.username,
-            "password": parsed.password,
+            "password": password,
             "hostname": hostname,
             "port": parsed.port or 5432,
             "database": parsed.path.lstrip('/') if parsed.path else 'postgres'
         }
         
-        logger.info(f"🔍 Database components: {components}")
+        logger.info(f"🔍 Database components extracted successfully")
+        # Don't log password for security
+        safe_components = {k: v for k, v in components.items() if k != "password"}
+        safe_components["password"] = "[REDACTED]" if password else None
+        logger.info(f"🔍 Safe components: {safe_components}")
         return components
         
     except Exception as e:
