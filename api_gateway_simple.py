@@ -2012,7 +2012,19 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
     async def chat_register_step(request: ChatRegisterRequest):
         """CAVA-powered registration proxy - routes old endpoint to use CAVA"""
         
+        # Enhanced logging for debugging
         logger.info(f"🔄 CAVA Proxy: Registration request - session: {request.session_id}, message: '{request.user_input}'")
+        logger.info(f"📋 REGISTRATION CALL: farmer_id={request.farmer_id}, session={request.session_id}, message='{request.user_input}'")
+        
+        # Store in app state for debug endpoint
+        if hasattr(app.state, 'registration_logs'):
+            app.state.registration_logs.append({
+                "timestamp": datetime.now().isoformat(),
+                "session_id": request.session_id,
+                "farmer_id": request.farmer_id,
+                "message": request.user_input,
+                "type": "CAVA_PROXY"
+            })
         
         try:
             import httpx
@@ -2059,12 +2071,31 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
             }
             
             logger.info(f"📤 CAVA Proxy: Final response - status: {response['status']}")
+            
+            # Log successful CAVA call
+            if hasattr(app.state, 'registration_logs'):
+                app.state.registration_logs.append({
+                    "timestamp": datetime.now().isoformat(),
+                    "type": "CAVA_SUCCESS",
+                    "status": response['status'],
+                    "message": response.get('message', '')[:100]
+                })
+            
             return response
             
         except Exception as e:
             logger.error(f"❌ CAVA Proxy failed: {str(e)}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Log the error
+            if hasattr(app.state, 'registration_logs'):
+                app.state.registration_logs.append({
+                    "timestamp": datetime.now().isoformat(),
+                    "type": "CAVA_ERROR",
+                    "error": str(e),
+                    "falling_back": True
+                })
             
             # Fallback to old system
             logger.info("🔄 CAVA Proxy: Falling back to old registration system")
@@ -3251,6 +3282,119 @@ def test_final_connection():
     except Exception as e:
         return {"success": False, "error": str(e)[:100], "test": "final_connection"}
 
+
+# Emergency Debug Endpoints
+@app.get("/debug/registration")
+async def debug_registration():
+    """Emergency debug page to see what's happening with registration"""
+    from datetime import datetime
+    import inspect
+    
+    debug_info = {
+        "timestamp": datetime.now().isoformat(),
+        "cava_status": "unknown",
+        "cava_proxy_active": False,
+        "last_registration_calls": [],
+        "current_endpoints": [],
+        "chat_register_source": "unknown",
+        "environment": {
+            "disable_cava": os.getenv('DISABLE_CAVA', 'false'),
+            "cava_dry_run": os.getenv('CAVA_DRY_RUN_MODE', 'false'),
+            "port": os.getenv('PORT', '8080')
+        }
+    }
+    
+    try:
+        # Test CAVA directly
+        import httpx
+        async with httpx.AsyncClient() as client:
+            # Try local CAVA API
+            try:
+                resp = await client.get('http://localhost:8001/health', timeout=5.0)
+                debug_info["cava_status"] = resp.json()
+            except:
+                # Try on same port
+                try:
+                    resp = await client.get('http://localhost:8080/api/v1/cava/health', timeout=5.0)
+                    debug_info["cava_status"] = resp.json()
+                except:
+                    debug_info["cava_status"] = "FAILED - CAVA not responding on 8001 or 8080"
+    except Exception as e:
+        debug_info["cava_status"] = f"ERROR: {str(e)}"
+    
+    # Check which registration function is actually being called
+    try:
+        # Get the actual function being used
+        func_source = inspect.getsource(chat_register_step)
+        first_line = func_source.split('\n')[0]
+        if 'CAVA-powered' in func_source:
+            debug_info["cava_proxy_active"] = True
+            debug_info["chat_register_source"] = "CAVA PROXY VERSION"
+        elif 'LangChain' in func_source:
+            debug_info["chat_register_source"] = "OLD LANGCHAIN VERSION"
+        else:
+            debug_info["chat_register_source"] = first_line
+    except Exception as e:
+        debug_info["chat_register_source"] = f"ERROR: {str(e)}"
+    
+    # List current registration endpoints
+    for route in app.routes:
+        if 'register' in str(route.path).lower():
+            debug_info["current_endpoints"].append({
+                "path": str(route.path),
+                "methods": list(route.methods) if hasattr(route, 'methods') else []
+            })
+    
+    return debug_info
+
+@app.get("/debug/logs")
+async def debug_logs():
+    """Show recent registration activity logs"""
+    log_data = {
+        "timestamp": datetime.now().isoformat(),
+        "recent_logs": [],
+        "registration_history": getattr(app.state, 'registration_logs', [])[-20:],  # Last 20 calls
+        "message": "Debug logs endpoint active"
+    }
+    
+    # Try to read recent log entries if available
+    try:
+        # This would normally read from your logging system
+        log_data["logging_level"] = logging.getLogger().level
+        log_data["logger_name"] = logger.name
+    except:
+        log_data["logging_status"] = "Unable to access logging system"
+    
+    return log_data
+
+@app.get("/debug/test-cava-proxy")
+async def test_cava_proxy():
+    """Test the CAVA proxy directly"""
+    test_request = ChatRegisterRequest(
+        user_input="Test User Name",
+        session_id="debug-test-session",
+        conversation_id="debug-test-conv",
+        farmer_id=99999,
+        conversation_history=[]
+    )
+    
+    try:
+        result = await chat_register_step(test_request)
+        return {
+            "success": True,
+            "proxy_working": result.get("cava_enabled", False),
+            "response": result
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "proxy_working": False
+        }
+
+# Initialize app state for logging
+if not hasattr(app.state, 'registration_logs'):
+    app.state.registration_logs = []
 
 @app.on_event("startup")
 async def startup_event():
