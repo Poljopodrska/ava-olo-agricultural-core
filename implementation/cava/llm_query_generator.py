@@ -79,6 +79,17 @@ Support ALL crops including exotic ones (dragonfruit, quinoa, acai, etc).
 Return only valid JSON.
 """
         
+        # Define fallback response for registration
+        fallback_response = {
+            "intent": "registration",
+            "entities": {
+                "farmer_name": message if len(message.split()) <= 3 else None  # Simple name detection
+            },
+            "actions_needed": {"update_memory": True},
+            "conversation_type": "registration",
+            "confidence": 0.5
+        }
+        
         if self.dry_run:
             logger.info("🔍 DRY RUN: Would analyze message with LLM")
             # Return mock analysis for testing
@@ -394,10 +405,31 @@ Return only valid JSON.
                 
             return mock_data
         
+        # Define fallback extraction when OpenAI not available
+        fallback_extraction = {"updates_made": []}
+        
+        # Simple extraction logic
+        if not current_state.get("full_name"):
+            words = message.strip().split()
+            if len(words) >= 2 and all(w.replace("-", "").replace("č", "c").replace("ć", "c").isalpha() for w in words):
+                fallback_extraction["full_name"] = message.strip()
+                fallback_extraction["first_name"] = words[0]
+                fallback_extraction["last_name"] = " ".join(words[1:])
+                fallback_extraction["updates_made"] = ["full_name", "first_name", "last_name"]
+            elif len(words) == 1 and words[0].replace("-", "").isalpha():
+                fallback_extraction["first_name"] = words[0]
+                fallback_extraction["updates_made"] = ["first_name"]
+        elif not current_state.get("phone_number") and message.startswith("+"):
+            fallback_extraction["phone_number"] = message.strip()
+            fallback_extraction["updates_made"] = ["phone_number"]
+        elif not current_state.get("password") and len(message) >= 6:
+            fallback_extraction["password"] = message
+            fallback_extraction["updates_made"] = ["password"]
+            
         try:
             if not self.client:
-                logger.error("❌ OpenAI client not initialized - API key missing?")
-                return fallback_response
+                logger.error("❌ OpenAI client not initialized - Using fallback extraction")
+                return fallback_extraction
                 
             response = await self.client.chat.completions.create(
                 model=self.model,
