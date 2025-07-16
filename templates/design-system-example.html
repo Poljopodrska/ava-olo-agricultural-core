@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO Design System Example</title>
+    <link rel="stylesheet" href="/static/css/design-system.css">
+    <style>
+        /* Example of using the design system */
+        body {
+            font-family: var(--font-primary);
+            background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: var(--spacing-8);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--color-bg-white);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius-2xl);
+            padding: var(--spacing-8);
+            box-shadow: var(--shadow-xl);
+        }
+
+        h1 {
+            color: var(--color-agri-green);
+            font-size: var(--font-size-3xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--spacing-6);
+        }
+
+        .button-group {
+            display: flex;
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-8);
+        }
+
+        .btn {
+            padding: var(--spacing-3) var(--spacing-6);
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-primary);
+        }
+
+        .btn-primary:hover {
+            transform: var(--transform-hover-up);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-success);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--color-warning) 0%, var(--color-warning-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-warning);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-danger);
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-6);
+            margin-bottom: var(--spacing-4);
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition-base);
+        }
+
+        .card:hover {
+            transform: var(--transform-hover-up);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .input-group {
+            margin-bottom: var(--spacing-4);
+        }
+
+        .input-label {
+            display: block;
+            color: var(--color-gray-700);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: var(--spacing-2);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: var(--spacing-3);
+            border: 2px solid var(--color-gray-200);
+            border-radius: var(--radius-base);
+            font-size: var(--font-size-base);
+            transition: all var(--transition-base);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: var(--focus-ring);
+        }
+
+        .status-group {
+            display: flex;
+            gap: var(--spacing-4);
+            margin-bottom: var(--spacing-6);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+
+        .loading-demo {
+            height: 100px;
+            margin: var(--spacing-4) 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 AVA OLO Design System Example</h1>
+        
+        <section>
+            <h2 style="color: var(--color-agri-green); margin-bottom: var(--spacing-4);">Buttons</h2>
+            <div class="button-group">
+                <button class="btn btn-primary">Primary Button</button>
+                <button class="btn btn-success">Success Button</button>
+                <button class="btn btn-warning">Warning Button</button>
+                <button class="btn btn-danger">Danger Button</button>
+            </div>
+        </section>
+
+        <section>
+            <h2 style="color: var(--color-agri-green); margin-bottom: var(--spacing-4);">Cards</h2>
+            <div class="card">
+                <h3 style="color: var(--color-agri-green); margin-bottom: var(--spacing-3);">Card Title</h3>
+                <p style="color: var(--color-gray-600); line-height: var(--line-height-normal);">
+                    This is a card component using the design system. It has proper spacing, shadows, and hover effects.
+                </p>
+            </div>
+        </section>
+
+        <section>
+            <h2 style="color: var(--color-agri-green); margin-bottom: var(--spacing-4);">Form Elements</h2>
+            <div class="input-group">
+                <label class="input-label">Input Field</label>
+                <input type="text" class="input-field" placeholder="Type something...">
+            </div>
+        </section>
+
+        <section>
+            <h2 style="color: var(--color-agri-green); margin-bottom: var(--spacing-4);">Status Indicators</h2>
+            <div class="status-group">
+                <div class="status-item">
+                    <span class="status-dot active"></span>
+                    <span>Active</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot warning"></span>
+                    <span>Warning</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-dot error"></span>
+                    <span>Error</span>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 style="color: var(--color-agri-green); margin-bottom: var(--spacing-4);">Loading States</h2>
+            <div class="loading-demo skeleton"></div>
+        </section>
+    </div>
+</body>
+</html>
