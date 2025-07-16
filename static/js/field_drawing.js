@@ -45,7 +45,8 @@ function initFieldMap() {
             mapTypeControlOptions: {
                 style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
                 mapTypeIds: ['satellite', 'hybrid', 'terrain']
-            }
+            },
+            mapId: "e2a6d55c7b7beb3685a30de3" // AVA OLO Agricultural Maps
         });
         
         console.log('Map initialized successfully');
