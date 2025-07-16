@@ -460,3 +460,6 @@ sqlalchemy.exc.OperationalError: (psycopg2.OperationalError) connection to serve
 	Is the server running on that host and accepting TCP/IP connections?
 
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-07-16 17:08:52,772 - database_operations - ERROR - Database health check failed: (psycopg2.OperationalError) connection to server at "farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com" (172.31.0.55), port 5432 failed: timeout expired
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
