@@ -39,6 +39,9 @@ class Config:
     openai_model = os.getenv('OPENAI_MODEL', 'gpt-4')
     openai_temperature = float(os.getenv('OPENAI_TEMPERATURE', '0.7'))
     
+    # CAVA LLM settings (ensure GPT-4 for production)
+    cava_llm_model = os.getenv('CAVA_LLM_MODEL', 'gpt-4')
+    
     # External APIs
     perplexity_api_key = os.getenv('PERPLEXITY_API_KEY', '')
     

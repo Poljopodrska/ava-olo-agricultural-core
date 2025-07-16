@@ -27,9 +27,11 @@ class CAVALLMQueryGenerator:
     
     def __init__(self):
         self.api_key = main_config.openai_api_key
-        self.model = os.getenv('CAVA_LLM_MODEL', 'gpt-4')
+        self.model = getattr(main_config, 'cava_llm_model', os.getenv('CAVA_LLM_MODEL', 'gpt-4'))
         self.temperature = 0.1  # Low temperature for consistent query generation
         self.dry_run = os.getenv('CAVA_DRY_RUN_MODE', 'true').lower() == 'true'
+        
+        logger.info(f"🧠 CAVA LLM configured with model: {self.model}")
         
         # Initialize OpenAI client
         if self.api_key:
