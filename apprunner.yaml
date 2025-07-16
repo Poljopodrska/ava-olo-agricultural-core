@@ -5,8 +5,11 @@ build:
     build:
       - pip install -r requirements.txt
 run:
-  runtime-version: 3.9
-  command: ./start.sh
+  runtime-version: 3.8
+  command: python simple_test_app.py
   network:
     port: 8080
     env: PORT
+  env:
+    - name: PORT
+      value: "8080"
