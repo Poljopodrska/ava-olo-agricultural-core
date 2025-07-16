@@ -59,6 +59,9 @@ async def log_registration_calls(request: Request, call_next):
 # Configure CAVA logger
 cava_logger = logging.getLogger('CAVA')
 
+# Global CAVA engine instance
+_cava_engine = None
+
 # Log CAVA status immediately
 logger.info(f"🔍 DISABLE_CAVA environment variable: {os.getenv('DISABLE_CAVA', 'NOT_SET')}")
 
@@ -2083,27 +2086,34 @@ BE BULLETPROOF AND MAXIMALLY HELPFUL!
             })
         
         try:
-            import httpx
+            # CRITICAL FIX: Use CAVA engine directly instead of HTTP calls
+            global _cava_engine
             
-            # Call CAVA API endpoint with PERSISTENT session
-            logger.info(f"🎯 CAVA Proxy: Calling CAVA API with persistent_farmer_id={persistent_farmer_id}, session={persistent_session_key}")
+            if not _cava_engine and hasattr(app.state, 'cava_engine'):
+                _cava_engine = app.state.cava_engine
             
-            async with httpx.AsyncClient() as client:
-                cava_response = await client.post(
-                    "http://localhost:8080/api/v1/cava/register",
-                    json={
-                        "farmer_id": persistent_farmer_id,
-                        "message": request.user_input or "",
-                        "session_id": persistent_session_key  # USE PERSISTENT SESSION KEY
-                    },
-                    timeout=30.0
-                )
+            if not _cava_engine:
+                raise Exception("CAVA engine not initialized")
                 
-            if cava_response.status_code != 200:
-                raise Exception(f"CAVA API returned {cava_response.status_code}")
-                
-            cava_data = cava_response.json()
-            logger.info(f"✅ CAVA Proxy: CAVA response - {cava_data}")
+            logger.info(f"🎯 CAVA Proxy: Using direct engine call with persistent_farmer_id={persistent_farmer_id}, session={persistent_session_key}")
+            
+            # Call CAVA engine directly
+            cava_result = await _cava_engine.handle_farmer_message(
+                farmer_id=persistent_farmer_id,
+                message=request.user_input or "",
+                session_id=persistent_session_key,  # USE PERSISTENT SESSION KEY
+                channel="registration"
+            )
+            
+            # Convert result to expected format
+            cava_data = {
+                "success": cava_result.get("success", True),
+                "message": cava_result.get("message", ""),
+                "session_id": cava_result.get("session_id", persistent_session_key),
+                "completed": "complete" in cava_result.get("message", "").lower()
+            }
+            
+            logger.info(f"✅ CAVA Proxy: Direct engine response - {cava_data}")
             
             # Convert CAVA response to old format
             is_complete = cava_data.get("success", False) and \
@@ -3447,31 +3457,32 @@ async def test_cava_proxy():
 
 @app.get("/debug/test-cava-direct")
 async def test_cava_direct():
-    """Test CAVA directly without proxy"""
+    """Test CAVA engine directly"""
     try:
-        import httpx
+        global _cava_engine
         
-        # Test CAVA health first
-        async with httpx.AsyncClient() as client:
-            health_resp = await client.get("http://localhost:8080/api/v1/cava/health", timeout=5.0)
-            health_data = health_resp.json()
+        if not _cava_engine and hasattr(app.state, 'cava_engine'):
+            _cava_engine = app.state.cava_engine
             
-            # Test CAVA register
-            register_resp = await client.post(
-                "http://localhost:8080/api/v1/cava/register",
-                json={
-                    "farmer_id": 99999,
-                    "message": "Test Direct Call",
-                    "session_id": "debug-direct-test"
-                },
-                timeout=10.0
-            )
-            register_data = register_resp.json()
-            
+        if not _cava_engine:
+            return {
+                "success": False,
+                "error": "CAVA engine not initialized",
+                "hint": "Check startup logs for CAVA initialization errors"
+            }
+        
+        # Test CAVA directly
+        result = await _cava_engine.handle_farmer_message(
+            farmer_id=99999,
+            message="Test Direct Engine Call",
+            session_id="debug-direct-test",
+            channel="registration"
+        )
+        
         return {
             "success": True,
-            "health": health_data,
-            "register_response": register_data
+            "engine_initialized": True,
+            "direct_call_response": result
         }
     except Exception as e:
         import traceback
@@ -3557,17 +3568,22 @@ async def startup_event():
         status = "✅" if value else "❌"
         cava_logger.info(f"   {status} {var}: {value}")
     
-    # Test CAVA initialization
+    # Initialize CAVA engine globally for direct use
+    global _cava_engine
+    _cava_engine = None
+    
     if os.getenv('DISABLE_CAVA', 'false').lower() != 'true':
         try:
             from implementation.cava.universal_conversation_engine import CAVAUniversalConversationEngine
-            engine = CAVAUniversalConversationEngine()
-            await engine.initialize()
-            cava_logger.info("✅ APP: CAVA engine test initialization successful")
+            _cava_engine = CAVAUniversalConversationEngine()
+            await _cava_engine.initialize()
+            app.state.cava_engine = _cava_engine  # Store in app state
+            cava_logger.info("✅ APP: CAVA engine initialized and ready for direct use")
         except Exception as e:
-            cava_logger.error(f"❌ APP: CAVA engine test initialization failed: {str(e)}")
+            cava_logger.error(f"❌ APP: CAVA engine initialization failed: {str(e)}")
+            _cava_engine = None
     else:
-        cava_logger.info("ℹ️ APP: CAVA engine test skipped (disabled)")
+        cava_logger.info("ℹ️ APP: CAVA engine disabled")
 
 
 if __name__ == "__main__":

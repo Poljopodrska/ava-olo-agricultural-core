@@ -22,6 +22,18 @@ _cava_engine = None
 async def get_cava_engine():
     """Get or create CAVA engine instance"""
     global _cava_engine
+    
+    # Try to get from app state first (shared with main app)
+    try:
+        from fastapi import FastAPI
+        app = FastAPI()
+        if hasattr(app.state, 'cava_engine') and app.state.cava_engine:
+            _cava_engine = app.state.cava_engine
+            logger.info("✅ CAVA Routes: Using shared engine from app state")
+            return _cava_engine
+    except:
+        pass
+    
     if _cava_engine is None:
         try:
             _cava_engine = CAVAUniversalConversationEngine()
