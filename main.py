@@ -4,6 +4,8 @@ import os
 import json
 import psycopg2
 import asyncio
+import logging
+import traceback
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from typing import Dict, Any
@@ -17,6 +19,10 @@ import urllib.parse
 sys.path.append('.')
 from database.insert_operations import ConstitutionalInsertOperations
 from database_operations import DatabaseOperations
+
+# Set up logger properly
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Construct DATABASE_URL from individual components if not set
 if not os.getenv('DATABASE_URL'):
