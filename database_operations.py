@@ -6,6 +6,8 @@ Replaces hardcoded SQL with LLM-first approach
 
 import os
 import sys
+import json
+import traceback
 
 # Import config manager - it's in the same directory
 try:
