@@ -2,8 +2,12 @@ version: 1.0
 runtime: python3
 build:
   commands:
+    pre-build:
+      - echo "Starting build for AVA OLO Agricultural Core"
     build:
       - pip install -r requirements.txt
+    post-build:
+      - echo "Build completed successfully"
 run:
   runtime-version: 3.9
   command: python api_gateway_minimal.py
