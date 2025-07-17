@@ -5,6 +5,7 @@ Connects to existing Windows PostgreSQL with real farmer data
 import asyncio
 import logging
 import json
+import traceback
 import psycopg2
 from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime, date
@@ -529,8 +530,6 @@ class DatabaseOperations:
     
     def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new farmer with fields and app access credentials"""
-        import traceback
-        
         logger.info("=== INSERT_FARMER_WITH_FIELDS START ===")
         logger.info(f"Method type: {type(self.insert_farmer_with_fields)}")
         logger.info(f"Data received: {json.dumps(data, default=str)[:500]}...")
