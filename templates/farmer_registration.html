@@ -505,24 +505,40 @@
         }
         
         async function submitFarmerRegistration(event) {
+            console.log("=== FARMER REGISTRATION FORM SUBMISSION START ===");
             event.preventDefault();
             
             const form = document.getElementById('farmerRegistrationForm');
             const formData = new FormData(form);
             
+            console.log("Step 1: Form data collected");
+            console.log("Email:", formData.get('email'));
+            console.log("Password length:", formData.get('password')?.length || 0);
+            console.log("Manager name:", formData.get('manager_name'));
+            console.log("Manager last name:", formData.get('manager_last_name'));
+            console.log("WhatsApp:", formData.get('wa_phone_number'));
+            console.log("Farm name:", formData.get('farm_name'));
+            console.log("City:", formData.get('city'));
+            console.log("Country:", formData.get('country'));
+            
             // Collect fields data
+            console.log("Step 2: Collecting field data...");
             const fields = [];
             const fieldEntries = document.querySelectorAll('.field-entry');
+            console.log(`Found ${fieldEntries.length} field entries`);
+            
             fieldEntries.forEach((entry, index) => {
                 const name = document.getElementById(`field_name_${index}`).value;
                 const size = document.getElementById(`field_size_${index}`).value;
                 const location = document.getElementById(`field_location_${index}`).value;
+                console.log(`Field ${index}: name="${name}", size="${size}", location="${location}"`);
                 if (name && size) {
                     fields.push({ name, size: parseFloat(size), location });
                 }
             });
             
             // Build the request body
+            console.log("Step 3: Building request body...");
             const requestBody = {
                 email: formData.get('email'),
                 password: formData.get('password'),
@@ -540,7 +556,33 @@
                 fields: fields
             };
             
+            console.log("Request body prepared:", JSON.stringify(requestBody, null, 2));
+            
+            // Validate required fields on client side
+            console.log("Step 4: Validating required fields...");
+            const requiredFields = ['email', 'password', 'manager_name', 'manager_last_name', 
+                                   'wa_phone_number', 'farm_name', 'city', 'country'];
+            let missingFields = [];
+            requiredFields.forEach(field => {
+                if (!requestBody[field]) {
+                    missingFields.push(field);
+                    console.error(`❌ Missing required field: ${field}`);
+                }
+            });
+            
+            if (missingFields.length > 0) {
+                console.error("❌ VALIDATION FAILED - Missing fields:", missingFields);
+                document.getElementById('errorMessage').textContent = `❌ Missing required fields: ${missingFields.join(', ')}`;
+                document.getElementById('errorMessage').style.display = 'block';
+                return;
+            }
+            
+            console.log("✅ All required fields present");
+            
             try {
+                console.log("Step 5: Sending POST request to /api/register-farmer...");
+                console.time("API Request Duration");
+                
                 const response = await fetch('/api/register-farmer', {
                     method: 'POST',
                     headers: {
@@ -549,9 +591,35 @@
                     body: JSON.stringify(requestBody)
                 });
                 
-                const result = await response.json();
+                console.timeEnd("API Request Duration");
+                console.log("Response status:", response.status);
+                console.log("Response headers:", response.headers);
+                
+                const responseText = await response.text();
+                console.log("Raw response text:", responseText);
+                
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                    console.log("Parsed response:", result);
+                } catch (parseError) {
+                    console.error("❌ Failed to parse response as JSON:", parseError);
+                    console.error("Response was:", responseText);
+                    
+                    // Check for generator error
+                    if (responseText.includes("generator didn't stop after throw()")) {
+                        console.error("🚨 GENERATOR ERROR DETECTED!");
+                        document.getElementById('errorMessage').textContent = "❌ Server error: Generator error detected. This is a Python async/await bug.";
+                    } else {
+                        document.getElementById('errorMessage').textContent = `❌ Server returned invalid response: ${responseText.substring(0, 100)}...`;
+                    }
+                    document.getElementById('errorMessage').style.display = 'block';
+                    return;
+                }
                 
                 if (response.ok && result.success) {
+                    console.log("✅ REGISTRATION SUCCESS!");
+                    console.log("Farmer ID:", result.farmer_id);
                     document.getElementById('successMessage').style.display = 'block';
                     document.getElementById('errorMessage').style.display = 'none';
                     form.reset();
@@ -562,15 +630,23 @@
                         window.location.href = '/database-dashboard';
                     }, 2000);
                 } else {
+                    console.error("❌ REGISTRATION FAILED!");
+                    console.error("Error message:", result.message);
                     document.getElementById('errorMessage').textContent = `❌ Error: ${result.message || 'Registration failed'}`;
                     document.getElementById('errorMessage').style.display = 'block';
                     document.getElementById('successMessage').style.display = 'none';
                 }
             } catch (error) {
-                document.getElementById('errorMessage').textContent = `❌ Error: ${error.message}`;
+                console.error("❌ FETCH ERROR:", error);
+                console.error("Error type:", error.constructor.name);
+                console.error("Error stack:", error.stack);
+                
+                document.getElementById('errorMessage').textContent = `❌ Network error: ${error.message}`;
                 document.getElementById('errorMessage').style.display = 'block';
                 document.getElementById('successMessage').style.display = 'none';
             }
+            
+            console.log("=== FARMER REGISTRATION FORM SUBMISSION END ===");
         }
     </script>
     <script src="/static/js/field_drawing.js"></script>

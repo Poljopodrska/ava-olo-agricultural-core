@@ -3,6 +3,7 @@ import uvicorn
 import os
 import json
 import psycopg2
+import asyncio
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from typing import Dict, Any
@@ -3180,40 +3181,87 @@ async def field_drawing_test():
 @app.post("/api/register-farmer")
 async def register_farmer(request: Request):
     """Register a new farmer with fields and app access"""
+    import traceback
+    import sys
+    
+    logger.info("=== FARMER REGISTRATION START ===")
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"FastAPI app type: {type(app)}")
+    
     try:
+        logger.info("Step 1: Getting request data...")
         data = await request.json()
+        logger.info(f"Request data received: {json.dumps(data, default=str)[:500]}...")
+        logger.info(f"Request data type: {type(data)}")
         
         # Validate required fields
+        logger.info("Step 2: Validating required fields...")
         required_fields = ['email', 'password', 'manager_name', 'manager_last_name', 
                          'wa_phone_number', 'farm_name', 'city', 'country']
+        
         for field in required_fields:
+            logger.info(f"Checking field '{field}': {field in data} - Value: {data.get(field, 'MISSING')[:50] if data.get(field) else 'MISSING'}")
             if not data.get(field):
+                logger.error(f"❌ Missing required field: {field}")
                 return JSONResponse(
                     status_code=400,
                     content={"success": False, "message": f"Missing required field: {field}"}
                 )
         
         # Validate password length
+        logger.info("Step 3: Validating password length...")
         if len(data['password']) < 8:
+            logger.error(f"❌ Password too short: {len(data['password'])} characters")
             return JSONResponse(
                 status_code=400,
                 content={"success": False, "message": "Password must be at least 8 characters long"}
             )
+        logger.info("✅ Password validation passed")
+        
+        # Database connection test
+        logger.info("Step 4: Testing database environment...")
+        db_host = os.getenv('DB_HOST')
+        db_name = os.getenv('DB_NAME')
+        db_user = os.getenv('DB_USER')
+        logger.info(f"DB_HOST exists: {bool(db_host)}")
+        logger.info(f"DB_NAME: {db_name}")
+        logger.info(f"DB_USER: {db_user}")
         
         # Insert farmer and fields using database operations
+        logger.info("Step 5: Creating DatabaseOperations instance...")
         db_ops = DatabaseOperations()
+        logger.info(f"DatabaseOperations instance created: {type(db_ops)}")
+        
+        logger.info("Step 6: Calling insert_farmer_with_fields...")
+        logger.info(f"Method type: {type(db_ops.insert_farmer_with_fields)}")
+        logger.info(f"Is coroutine: {asyncio.iscoroutinefunction(db_ops.insert_farmer_with_fields)}")
+        
         result = db_ops.insert_farmer_with_fields(data)
         
+        logger.info(f"Step 7: Result received: {result}")
+        logger.info(f"Result type: {type(result)}")
+        
         if result['success']:
+            logger.info(f"✅ FARMER REGISTRATION SUCCESS - ID: {result['farmer_id']}")
             return JSONResponse(content={"success": True, "farmer_id": result['farmer_id']})
         else:
+            logger.error(f"❌ Registration failed: {result.get('error', 'Unknown error')}")
             return JSONResponse(
                 status_code=500,
                 content={"success": False, "message": result.get('error', 'Failed to register farmer')}
             )
             
     except Exception as e:
-        logger.error(f"Error registering farmer: {str(e)}")
+        logger.error(f"❌ GENERAL ERROR: {str(e)}")
+        logger.error(f"❌ ERROR TYPE: {type(e).__name__}")
+        logger.error(f"❌ FULL TRACEBACK:\n{traceback.format_exc()}")
+        
+        # Check if this is the generator error
+        if "generator" in str(e).lower():
+            logger.error("🚨 GENERATOR ERROR DETECTED!")
+            logger.error("This suggests async/await code in a sync context")
+            logger.error("Checking for async remnants...")
+            
         return JSONResponse(
             status_code=500,
             content={"success": False, "message": str(e)}

@@ -529,20 +529,37 @@ class DatabaseOperations:
     
     def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new farmer with fields and app access credentials"""
+        import traceback
+        
+        logger.info("=== INSERT_FARMER_WITH_FIELDS START ===")
+        logger.info(f"Method type: {type(self.insert_farmer_with_fields)}")
+        logger.info(f"Data received: {json.dumps(data, default=str)[:500]}...")
+        
         try:
-            print(f"INFO: Starting farmer registration for {data.get('manager_name')} {data.get('manager_last_name')}")
+            logger.info(f"Step 1: Starting farmer registration for {data.get('manager_name')} {data.get('manager_last_name')}")
             
             # Use the WORKING connection method instead of SQLAlchemy
+            logger.info("Step 2: Attempting database connection using get_working_db_connection...")
             with get_working_db_connection() as connection:
                 if not connection:
-                    print("ERROR: Could not establish database connection")
+                    logger.error("❌ ERROR: Could not establish database connection")
                     return {"success": False, "error": "Database connection failed"}
                 
+                logger.info("✅ Database connection established successfully")
+                logger.info(f"Connection type: {type(connection)}")
+                logger.info(f"Connection info: {connection.info if hasattr(connection, 'info') else 'No info available'}")
+                
+                logger.info("Step 3: Creating database cursor...")
                 cursor = connection.cursor()
+                logger.info(f"✅ Cursor created: {type(cursor)}")
+                
                 # First, create a user authentication entry (we'll need to create this table)
                 # For now, we'll store the password hash in a separate table or as a comment
                 
                 # Insert the farmer using psycopg2 style (like working dashboard)
+                logger.info("Step 4: Executing INSERT query for farmer...")
+                logger.info(f"Query parameters: farm_name={data.get('farm_name')}, manager={data.get('manager_name')} {data.get('manager_last_name')}")
+                
                 cursor.execute("""
                     INSERT INTO farmers (
                         farm_name, manager_name, manager_last_name, 
@@ -638,6 +655,16 @@ class DatabaseOperations:
                 return {"success": True, "farmer_id": farmer_id}
                 
         except Exception as e:
+            logger.error("❌ EXCEPTION IN INSERT_FARMER_WITH_FIELDS")
+            logger.error(f"❌ Error message: {str(e)}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            logger.error(f"❌ Full traceback:\n{traceback.format_exc()}")
+            
+            # Check for specific error patterns
+            if "generator" in str(e).lower():
+                logger.error("🚨 GENERATOR ERROR DETECTED IN DATABASE OPERATIONS!")
+            if "await" in str(e).lower() or "async" in str(e).lower():
+                logger.error("🚨 ASYNC/AWAIT ERROR DETECTED!")
+            
             print(f"❌ Error inserting farmer with fields: {str(e)}")
-            logger.error(f"Error inserting farmer with fields: {str(e)}")
             return {"success": False, "error": str(e)}
