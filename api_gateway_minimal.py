@@ -101,10 +101,11 @@ async def health_check():
     emergency_log("Health check endpoint called")
     return {
         "status": "healthy",
-        "service": "ava-olo-agricultural-core",
-        "version": "1.0.0",
-        "message": "Service is running correctly",
-        "timestamp": datetime.now().isoformat()
+        "service": "ava-olo-agricultural-core-minimal",
+        "version": "1.0.0-minimal-emergency",
+        "message": "Minimal API with emergency logging",
+        "timestamp": datetime.now().isoformat(),
+        "deployment": "2025-07-17-20:31"
     }
 
 # Simple query endpoint
