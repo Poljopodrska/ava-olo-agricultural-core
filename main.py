@@ -3274,6 +3274,23 @@ async def register_farmer(request: Request):
         )
 
 # Database Health Check Endpoint
+@app.get("/version")
+async def get_version():
+    """Get deployment version info"""
+    import subprocess
+    try:
+        git_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('utf-8').strip()[:8]
+    except:
+        git_hash = "unknown"
+    
+    return {
+        "version": "1.0.0",
+        "git_commit": git_hash,
+        "deployed_at": datetime.now().isoformat(),
+        "json_import_present": "json" in globals(),
+        "python_version": sys.version
+    }
+
 @app.get("/health/database")
 async def database_health_check():
     """Test database connectivity and return detailed status"""
