@@ -1772,8 +1772,8 @@ try:
                 message="Login failed due to system error"
             )
 
-    @app.post("/api/v1/auth/register")
-    async def register_farm_user(
+@app.post("/api/v1/auth/register")
+async def register_farm_user(
         request: RegisterUserRequest,
         current_user: dict = get_auth_deps().can_add_users()
     ):
@@ -1801,8 +1801,8 @@ try:
             logger.error(f"Registration error: {str(e)}")
             raise HTTPException(status_code=500, detail="Registration failed")
 
-    @app.get("/api/v1/auth/me")
-    async def get_current_user_info(current_user: dict = get_auth_deps().current_user()):
+@app.get("/api/v1/auth/me")
+async def get_current_user_info(current_user: dict = get_auth_deps().current_user()):
         """Get current authenticated user information"""
         return {"success": True, "user": current_user}
 
@@ -1955,13 +1955,13 @@ except Exception as e:
     logger.error(f"❌ Authentication system not available: {str(e)}")
     
     # Fallback auth functions
-    def get_auth_manager():
+def get_auth_manager():
         return None
     
-    def get_auth_middleware():
+def get_auth_middleware():
         return None
     
-    def get_auth_deps():
+def get_auth_deps():
         return None
 
 async def chat_register_step_OLD_BACKUP(request: ChatRegisterRequest):
@@ -2127,8 +2127,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             logger.error(f"Get family error: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to load family members")
 
-    @app.get("/api/v1/auth/activity")
-    async def get_farm_activity(
+@app.get("/api/v1/auth/activity")
+async def get_farm_activity(
         limit: int = 50,
         current_user: dict = get_auth_deps().can_view_activity_log()
     ):
@@ -2141,9 +2141,9 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             logger.error(f"Get activity error: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to load activity log")
 
-    # Authentication-aware versions of existing endpoints
-    @app.get("/api/v1/farmers/me")
-    async def get_my_farm_info(current_user: dict = get_auth_deps().current_user()):
+# Authentication-aware versions of existing endpoints
+@app.get("/api/v1/farmers/me")
+async def get_my_farm_info(current_user: dict = get_auth_deps().current_user()):
         """Get authenticated user's farm information"""
         try:
             db_ops = DatabaseOperations()
@@ -2156,8 +2156,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             logger.error(f"Get farmer error: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to load farm information")
 
-    @app.get("/api/v1/conversations/me")
-    async def get_my_conversations(
+@app.get("/api/v1/conversations/me")
+async def get_my_conversations(
         limit: int = 10,
         current_user: dict = get_auth_deps().current_user()
     ):
@@ -2180,8 +2180,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             logger.error(f"Get conversations error: {str(e)}")
             raise HTTPException(status_code=500, detail="Failed to load conversations")
     
-    @app.post("/api/v1/auth/migrate")
-    async def run_aurora_migration():
+@app.post("/api/v1/auth/migrate")
+async def run_aurora_migration():
         """Run Aurora database migration for authentication tables"""
         try:
             # First test if we can connect using config manager (which works)
@@ -2260,8 +2260,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "message": f"Migration failed: {str(e)}"
             }
     
-    @app.post("/api/v1/auth/migrate-direct")
-    async def run_direct_migration():
+@app.post("/api/v1/auth/migrate-direct")
+async def run_direct_migration():
         """Direct migration using the exact working pattern"""
         try:
             # Import what we need
@@ -2324,8 +2324,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "message": f"Migration failed: {str(e)[:200]}"
             }
     
-    @app.post("/api/v1/auth/migrate-working")
-    def run_working_migration():
+@app.post("/api/v1/auth/migrate-working")
+def run_working_migration():
         """Use sync function to avoid event loop issues"""
         try:
             # Use the sync wrapper
@@ -2389,8 +2389,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "message": f"Migration failed: {str(e)[:200]}"
             }
     
-    @app.post("/api/v1/auth/migrate-dashboard-style")
-    async def migrate_dashboard_style():
+@app.post("/api/v1/auth/migrate-dashboard-style")
+async def migrate_dashboard_style():
         """Migration using the exact pattern from monitoring dashboards"""
         try:
             from config_manager import config
@@ -2487,8 +2487,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "message": f"Migration failed: {str(e)[:200]}"
             }
     
-    @app.get("/api/v1/auth/list-databases")
-    async def list_databases():
+@app.get("/api/v1/auth/list-databases")
+async def list_databases():
         """List available databases on the server"""
         try:
             from config_manager import config
@@ -2531,8 +2531,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "error": str(e)[:200]
             }
     
-    @app.get("/api/v1/check-farmers-table")
-    async def check_farmers_table():
+@app.get("/api/v1/check-farmers-table")
+async def check_farmers_table():
         """Check which database has the farmers table"""
         try:
             from config_manager import config
@@ -2590,8 +2590,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "error": str(e)[:200]
             }
     
-    @app.post("/api/v1/auth/create-database")
-    async def create_database():
+@app.post("/api/v1/auth/create-database")
+async def create_database():
         """Create the farmer_crm database if it doesn't exist"""
         try:
             from config_manager import config
@@ -2637,8 +2637,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 "error": str(e)[:200]
             }
     
-    @app.post("/api/v1/auth/migrate-simple")
-    async def run_simple_migration():
+@app.post("/api/v1/auth/migrate-simple")
+async def run_simple_migration():
         """Simple migration using async pattern"""
         try:
             # Use the async database operations that work
@@ -2692,8 +2692,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             }
 
     # Diagnostic endpoints for production password issue
-    @app.get("/api/v1/auth/diagnose-env")
-    async def diagnose_environment():
+@app.get("/api/v1/auth/diagnose-env")
+async def diagnose_environment():
         """Diagnose environment variables for debugging"""
         return {
             "DB_HOST": os.getenv('DB_HOST', 'not-set'),
@@ -2706,8 +2706,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             "JWT_SECRET_SET": bool(os.getenv('JWT_SECRET'))
         }
     
-    @app.get("/api/v1/auth/test-password-sources")
-    async def test_password_sources():
+@app.get("/api/v1/auth/test-password-sources")
+async def test_password_sources():
         """Compare passwords from different sources"""
         import psycopg2
         from implementation.secrets_manager import get_database_config
@@ -2775,8 +2775,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             "secrets_has_dollar": '$' in secrets_pw
         }
     
-    @app.get("/api/v1/auth/test-llm-engine-connection")
-    def test_llm_engine_connection():
+@app.get("/api/v1/auth/test-llm-engine-connection")
+def test_llm_engine_connection():
         """Test using the exact LLM engine that works"""
         try:
             # Import and use the LLM engine directly
@@ -2815,8 +2815,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
                 }
             }
     
-    @app.get("/api/v1/auth/test-sync-connection")
-    def test_sync_connection():
+@app.get("/api/v1/auth/test-sync-connection")
+def test_sync_connection():
         """Test sync connection without async"""
         from config_manager import config
         import psycopg2
@@ -2846,8 +2846,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
         except Exception as e:
             return {"error": str(e), "method": "sync_psycopg2"}
     
-    @app.get("/api/v1/auth/test-working-connection")
-    async def test_working_connection():
+@app.get("/api/v1/auth/test-working-connection")
+async def test_working_connection():
         """Test the exact connection method that works for farmers"""
         try:
             # Use the exact same method as the farmers endpoint
@@ -2884,8 +2884,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
         except Exception as e:
             return {"error": str(e), "trace": str(type(e))}
     
-    @app.get("/api/v1/auth/test-basic-connection")
-    async def test_basic_connection():
+@app.get("/api/v1/auth/test-basic-connection")
+async def test_basic_connection():
         """Test basic psycopg2 connection like LLM engine uses"""
         import psycopg2
         from implementation.secrets_manager import get_database_config
@@ -2939,8 +2939,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             
         return {"tests": results, "password_length": len(db_config.get('password', ''))}
     
-    @app.get("/api/v1/auth/test-secrets")
-    async def test_secrets():
+@app.get("/api/v1/auth/test-secrets")
+async def test_secrets():
         """Test AWS Secrets Manager integration"""
         import os
         result = {
@@ -2974,8 +2974,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             
         return result
     
-    @app.get("/api/v1/auth/test-secrets-detailed")
-    async def test_secrets_detailed():
+@app.get("/api/v1/auth/test-secrets-detailed")
+async def test_secrets_detailed():
         """Test AWS Secrets Manager with detailed password info"""
         import os
         from implementation.secrets_manager import get_database_config, get_cached_secret
@@ -3059,8 +3059,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
             
         return result
     
-    @app.get("/api/v1/auth/test-simple-connection")
-    async def test_simple_connection():
+@app.get("/api/v1/auth/test-simple-connection")
+async def test_simple_connection():
         """Test simple database connection like regular endpoints"""
         try:
             # Test 1: Use the same connection as regular endpoints
@@ -3094,8 +3094,8 @@ async def get_farm_family(current_user: dict = get_auth_deps().current_user()):
         except Exception as e:
             return {"error": str(e)}
     
-    @app.get("/api/v1/auth/test-connections")
-    async def test_db_connections():
+@app.get("/api/v1/auth/test-connections")
+async def test_db_connections():
         """Test different database connection methods"""
         results = []
         
@@ -3136,8 +3136,8 @@ except ImportError as e:
     logger.info("📋 Service will run without authentication (backward compatibility)")
     
     # Fallback endpoints for when authentication is not available
-    @app.get("/api/v1/auth/status")
-    async def auth_status():
+@app.get("/api/v1/auth/status")
+async def auth_status():
         """Authentication system status"""
         return {
             "authentication_available": False,
@@ -3145,8 +3145,8 @@ except ImportError as e:
             "fallback_mode": True
         }
     
-    @app.get("/api/v1/auth/test-secrets")
-    async def test_secrets():
+@app.get("/api/v1/auth/test-secrets")
+async def test_secrets():
         """Test AWS Secrets Manager integration"""
         import os
         result = {

@@ -1,0 +1,54 @@
+{
+  "timestamp": "2025-07-16T20:09:42.449497",
+  "safe_to_deploy": false,
+  "checks": {
+    "passed": 20,
+    "warnings": 3,
+    "failed": 2
+  },
+  "details": {
+    "infrastructure": [
+      "Port 7474 (Neo4j Web) is available",
+      "Port 7687 (Neo4j Bolt) is available",
+      "Port 6379 (Redis) is available",
+      "Main environment file exists: .env",
+      "CAVA environment file exists: .env.cava",
+      "Configuration manager exists: config_manager.py",
+      "PostgreSQL configuration found",
+      "Python package 'asyncpg' is installed",
+      "Python package 'redis' is installed",
+      "Python package 'neo4j' is installed",
+      "Python package 'fastapi' is installed",
+      "Python package 'langchain' is installed",
+      "CAVA service healthy: degraded",
+      "Database configuration accessible",
+      "Original registration backed up",
+      "OpenAI API key for LLM configured: OPENAI_API_KEY",
+      "PostgreSQL connection string configured: DATABASE_URL",
+      "Application environment configured: APP_ENV",
+      "CAVA dry-run mode configured: CAVA_DRY_RUN_MODE",
+      "No hardcoded secrets found"
+    ],
+    "warnings": [
+      "CAVA service URL not set: CAVA_SERVICE_URL (will use defaults)",
+      "Neo4j connection URI not set: CAVA_NEO4J_URI (will use defaults)",
+      "Redis connection URL not set: CAVA_REDIS_URL (will use defaults)"
+    ],
+    "failures": [
+      "Docker is not installed",
+      "AWS credentials not configured"
+    ],
+    "aws_readiness": [
+      "Resource requirements documented"
+    ],
+    "integration_tests": {
+      "registration_flow": true,
+      "cava_connection": false,
+      "database_operations": false
+    }
+  },
+  "recommendations": [
+    "Fix all deployment risks before proceeding",
+    "Review warnings and address if necessary"
+  ]
+}
