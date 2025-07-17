@@ -24,6 +24,11 @@ from database_operations import DatabaseOperations
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# DEPLOYMENT VERIFICATION
+logger.info("🚀 DEPLOYMENT VERSION: 2025-07-17-21:37 - JSON IMPORT FIX INCLUDED")
+logger.info(f"Python version: {sys.version}")
+logger.info(f"JSON module available: {'json' in sys.modules}")
+
 # Construct DATABASE_URL from individual components if not set
 if not os.getenv('DATABASE_URL'):
     db_host = os.getenv('DB_HOST')
