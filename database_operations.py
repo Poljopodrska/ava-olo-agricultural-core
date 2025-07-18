@@ -531,6 +531,7 @@ class DatabaseOperations:
     def insert_farmer_with_fields(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Insert a new farmer with fields and app access credentials"""
         logger.info("=== INSERT_FARMER_WITH_FIELDS START ===")
+        logger.info(f"🚀 DEPLOYMENT MARKER: 2025-07-18-15:01 - JSON import is at line 7")
         logger.info(f"Method type: {type(self.insert_farmer_with_fields)}")
         logger.info(f"Data received: {json.dumps(data, default=str)[:500]}...")
         
