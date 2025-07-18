@@ -618,11 +618,14 @@ class DatabaseOperations:
                         ) VALUES (
                             %s, %s, %s
                         )
+                        RETURNING id
                     """, (
                         farmer_id,
                         field.get("name"),
                         field.get("size")
                     ))
+                    field_id = cursor.fetchone()[0]
+                    logger.info(f"✅ Inserted field '{field.get('name')}' with ID {field_id}")
                 
                 # Create user authentication record
                 # For now, we'll store a hashed password in a comment
@@ -658,6 +661,17 @@ class DatabaseOperations:
             logger.error(f"❌ Error message: {str(e)}")
             logger.error(f"❌ Error type: {type(e).__name__}")
             logger.error(f"❌ Full traceback:\n{traceback.format_exc()}")
+            
+            # Check for specific database errors
+            if "duplicate key" in str(e).lower():
+                logger.error("🚨 DUPLICATE KEY ERROR - Field ID already exists!")
+                # Extract the duplicate ID if possible
+                import re
+                match = re.search(r'Key \(id\)=\((\d+)\)', str(e))
+                if match:
+                    dup_id = match.group(1)
+                    logger.error(f"🚨 Duplicate ID: {dup_id}")
+                    return {"success": False, "error": f"Field ID {dup_id} already exists. The database may need ID sequence reset."}
             
             # Check for specific error patterns
             if "generator" in str(e).lower():
