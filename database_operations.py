@@ -632,6 +632,10 @@ class DatabaseOperations:
                         logger.info(f"✅ Inserted field '{field.get('name')}' with ID {field_id}")
                     except psycopg2.errors.UniqueViolation as e:
                         logger.warning(f"⚠️ Duplicate key error: {str(e)}")
+                        # Rollback the failed transaction
+                        connection.rollback()
+                        logger.info("Rolled back failed transaction")
+                        
                         # Try to find max ID and insert with explicit ID
                         cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM fields")
                         next_id = cursor.fetchone()[0]
