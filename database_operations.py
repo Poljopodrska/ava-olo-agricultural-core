@@ -595,7 +595,6 @@ class DatabaseOperations:
                     
                     if polygon_data:
                         # Parse polygon data JSON
-                        import json
                         if isinstance(polygon_data, str):
                             polygon_data = json.loads(polygon_data)
                         
