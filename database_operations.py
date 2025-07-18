@@ -585,9 +585,17 @@ class DatabaseOperations:
                         data.get("postal_code") or None
                     ))
                 
-                farmer_id = cursor.fetchone()[0]
+                # Get the farmer_id
+                result = cursor.fetchone()
+                if not result:
+                    logger.error("❌ No farmer_id returned from INSERT!")
+                    raise Exception("Failed to insert farmer - no ID returned")
+                    
+                farmer_id = result[0]
+                logger.info(f"✅ Farmer inserted with ID: {farmer_id}")
                 
                 # Insert fields
+                logger.info(f"Step 5: Inserting {len(data.get('fields', []))} fields...")
                 for field in data.get("fields", []):
                     # Handle polygon data if present
                     polygon_data = field.get("polygon_data")
