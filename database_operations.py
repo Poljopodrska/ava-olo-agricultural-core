@@ -56,6 +56,8 @@ def get_working_db_connection():
                     sslmode='require'
                 )
                 print("DEBUG: Connected with SSL required")
+                connection.autocommit = True
+                print("DEBUG: Autocommit enabled")
             except psycopg2.OperationalError as ssl_error:
                 print(f"DEBUG: SSL required failed: {ssl_error}")
         
@@ -72,6 +74,8 @@ def get_working_db_connection():
                     sslmode='prefer'
                 )
                 print("DEBUG: Connected with SSL preferred")
+                connection.autocommit = True
+                print("DEBUG: Autocommit enabled")
             except psycopg2.OperationalError as ssl_pref_error:
                 print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
         
@@ -88,6 +92,8 @@ def get_working_db_connection():
                     sslmode='require'
                 )
                 print("DEBUG: Connected to postgres database instead")
+                connection.autocommit = True
+                print("DEBUG: Autocommit enabled")
             except psycopg2.OperationalError as postgres_error:
                 print(f"DEBUG: Postgres database connection failed: {postgres_error}")
         
@@ -640,9 +646,8 @@ class DatabaseOperations:
                         logger.info(f"✅ Inserted field '{field.get('name')}' with ID {field_id}")
                     except psycopg2.errors.UniqueViolation as e:
                         logger.warning(f"⚠️ Duplicate key error: {str(e)}")
-                        # Rollback the failed transaction
-                        connection.rollback()
-                        logger.info("Rolled back failed transaction")
+                        # No rollback needed with autocommit
+                        logger.info("Autocommit mode - no rollback needed")
                         
                         # Try to find max ID and insert with explicit ID
                         cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM fields")
@@ -683,7 +688,8 @@ class DatabaseOperations:
                     f"AUTH_RECORD: email={data['email']}, password_hash={password_hash}"
                 ))
                 
-                connection.commit()
+                # No need for commit with autocommit enabled
+                logger.info("✅ All inserts completed successfully (autocommit mode)")
                 
                 print(f"✅ Successfully registered farmer {data['manager_name']} {data['manager_last_name']} with ID {farmer_id}")
                 print(f"   - Farm: {data.get('farm_name')}")
