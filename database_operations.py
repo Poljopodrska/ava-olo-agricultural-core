@@ -98,9 +98,11 @@ def get_working_db_connection():
             
     except Exception as e:
         print(f"DEBUG: Connection error: {e}")
-        yield None
-    finally:
         if connection:
+            connection.close()
+        raise
+    finally:
+        if connection and not connection.closed:
             connection.close()
 
 class DatabaseOperations:
@@ -611,21 +613,44 @@ class DatabaseOperations:
                     area_column = cursor.fetchone()
                     area_col_name = area_column[0] if area_column else 'area_ha'  # Use area_ha as default
                     
-                    # Insert field using psycopg2 style
-                    cursor.execute(f"""
-                        INSERT INTO fields (
-                            farmer_id, field_name, {area_col_name}
-                        ) VALUES (
-                            %s, %s, %s
-                        )
-                        RETURNING id
-                    """, (
-                        farmer_id,
-                        field.get("name"),
-                        field.get("size")
-                    ))
-                    field_id = cursor.fetchone()[0]
-                    logger.info(f"✅ Inserted field '{field.get('name')}' with ID {field_id}")
+                    # Try to insert field - handle duplicate key issues
+                    try:
+                        # First try without specifying ID (should use auto-increment)
+                        cursor.execute(f"""
+                            INSERT INTO fields (
+                                farmer_id, field_name, {area_col_name}
+                            ) VALUES (
+                                %s, %s, %s
+                            )
+                            RETURNING id
+                        """, (
+                            farmer_id,
+                            field.get("name"),
+                            field.get("size")
+                        ))
+                        field_id = cursor.fetchone()[0]
+                        logger.info(f"✅ Inserted field '{field.get('name')}' with ID {field_id}")
+                    except psycopg2.errors.UniqueViolation as e:
+                        logger.warning(f"⚠️ Duplicate key error: {str(e)}")
+                        # Try to find max ID and insert with explicit ID
+                        cursor.execute("SELECT COALESCE(MAX(id), 0) + 1 FROM fields")
+                        next_id = cursor.fetchone()[0]
+                        logger.info(f"Retrying with explicit ID: {next_id}")
+                        cursor.execute(f"""
+                            INSERT INTO fields (
+                                id, farmer_id, field_name, {area_col_name}
+                            ) VALUES (
+                                %s, %s, %s, %s
+                            )
+                            RETURNING id
+                        """, (
+                            next_id,
+                            farmer_id,
+                            field.get("name"),
+                            field.get("size")
+                        ))
+                        field_id = cursor.fetchone()[0]
+                        logger.info(f"✅ Inserted field '{field.get('name')}' with explicit ID {field_id}")
                 
                 # Create user authentication record
                 # For now, we'll store a hashed password in a comment
