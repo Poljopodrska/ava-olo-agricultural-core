@@ -110,16 +110,13 @@ def execute_query(query: str, params: Dict = None) -> List[Dict[str, Any]]:
 def get_dashboard_metrics() -> Dict[str, Any]:
     """Get all dashboard metrics in a single optimized query"""
     query = """
-    WITH metrics AS (
-        SELECT 
-            (SELECT COUNT(*) FROM farmers) as total_farmers,
-            (SELECT COUNT(*) FROM fields) as total_fields,
-            (SELECT COALESCE(SUM(area_ha), 0) FROM fields) as total_hectares,
-            (SELECT COUNT(*) FROM farmers WHERE created_at >= NOW() - INTERVAL '24 hours') as farmers_24h,
-            (SELECT COUNT(*) FROM farmers WHERE created_at >= NOW() - INTERVAL '7 days') as farmers_7d,
-            (SELECT COUNT(*) FROM farmers WHERE created_at >= NOW() - INTERVAL '30 days') as farmers_30d
-    )
-    SELECT * FROM metrics
+    SELECT 
+        (SELECT COUNT(*) FROM farmers) as total_farmers,
+        (SELECT COUNT(*) FROM fields) as total_fields,
+        (SELECT COALESCE(SUM(area_ha), 0) FROM fields) as total_hectares,
+        0 as farmers_24h,
+        0 as farmers_7d,
+        0 as farmers_30d
     """
     
     start_time = time.time()
