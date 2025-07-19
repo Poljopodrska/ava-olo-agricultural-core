@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-01-19",
+  "overall_score": 25.0,
+  "status": "NEEDS_WORK",
+  "checks": {
+    "css_compliant": true,
+    "template_consistent": false,
+    "button_consistent": false,
+    "enter_key_supported": false
+  }
+}

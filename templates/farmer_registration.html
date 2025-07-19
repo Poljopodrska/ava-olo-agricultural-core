@@ -1,644 +1,418 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farmer Registration - AVA OLO</title>
-    <link rel="stylesheet" href="/static/css/constitutional-design.css">
-    <script async defer 
-        src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=geometry,drawing&callback=initFieldMap">
-    </script>
-    <!-- Enhanced Google Maps error handling -->
-    <script>
-        // Global error handler for Google Maps
-        window.gm_authFailure = function() {
-            console.error('Google Maps authentication failed');
-            showMapFallback('Google Maps authentication failed. Check API key.');
-        };
-        
-        // Check if Google Maps loaded properly
-        function checkGoogleMapsStatus() {
-            if (typeof google === 'undefined' || !google.maps) {
-                console.log('Google Maps not available - field drawing disabled');
-                showMapFallback('Google Maps API key not configured. Field drawing is disabled but you can still register farmers.');
-                return false;
-            }
-            console.log('Google Maps loaded successfully');
-            return true;
-        }
-        
-        function showMapFallback(message) {
-            const mapDiv = document.getElementById('field-map');
-            if (mapDiv) {
-                mapDiv.innerHTML = `<div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6;">
-                    <h3>📍 Map Not Available</h3>
-                    <p style="color: #6c757d;">${message}</p>
-                    <p><small>You can still register farmers without the map functionality.</small></p>
-                </div>`;
-            }
-            // Disable map-related buttons
-            const drawingControls = document.getElementById('field-drawing-controls');
-            if (drawingControls) {
-                drawingControls.style.display = 'none';
-            }
-        }
-        
-        // Wait for Google Maps to load or show fallback
-        setTimeout(function() {
-            checkGoogleMapsStatus();
-        }, 4000); // Wait 4 seconds for Google Maps to load
-        
-        // Backup check in case initFieldMap is called
-        window.initFieldMap = window.initFieldMap || function() {
-            if (!checkGoogleMapsStatus()) {
-                showMapFallback('Google Maps failed to initialize.');
-            }
-        };
-    </script>
-    <style>
-        body {
-            font-family: var(--font-primary);
-            background: linear-gradient(135deg, var(--color-primary-gradient-start) 0%, var(--color-primary-gradient-end) 100%);
-            margin: 0;
-            min-height: 100vh;
-            color: var(--color-gray-800);
-        }
-        .dashboard-container {
-            max-width: 1400px;
-            margin: var(--spacing-8) auto;
-            background: var(--color-bg-white);
-            backdrop-filter: blur(10px);
-            border-radius: var(--radius-2xl);
-            box-shadow: var(--shadow-2xl);
-            overflow: hidden;
-        }
-        .dashboard-header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: var(--spacing-6) var(--spacing-8);
-            border-bottom: 1px solid var(--color-gray-200);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .back-link {
-            color: var(--color-primary);
-            text-decoration: none;
-            font-weight: var(--font-weight-semibold);
-            transition: all var(--transition-base);
-        }
-        .back-link:hover {
-            color: var(--color-primary-dark);
-            transform: translateX(-5px);
-        }
-        h1 {
-            color: var(--color-agri-green);
-            font-size: var(--font-size-3xl);
-            font-weight: var(--font-weight-bold);
-            margin: 0;
-        }
-        .registration-container {
-            max-width: 800px;
-            margin: var(--spacing-8) auto;
-            background: var(--color-bg-white);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-xl);
-            padding: var(--spacing-8);
-        }
-        .form-header {
-            text-align: center;
-            margin-bottom: var(--spacing-8);
-        }
-        .form-section {
-            margin-bottom: var(--spacing-6);
-            padding: var(--spacing-6);
-            background: var(--color-gray-50);
-            border-radius: var(--radius-lg);
-        }
-        .form-section h3 {
-            color: var(--color-agri-green);
-            margin-bottom: var(--spacing-4);
-            font-size: var(--font-size-xl);
-        }
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--spacing-4);
-        }
-        .form-group {
-            margin-bottom: var(--spacing-4);
-        }
-        label {
-            display: block;
-            font-weight: var(--font-weight-semibold);
-            margin-bottom: var(--spacing-2);
-            color: var(--color-gray-700);
-        }
-        input[type="text"],
-        input[type="tel"],
-        input[type="email"],
-        input[type="password"],
-        input[type="number"],
-        textarea {
-            width: 100%;
-            padding: var(--spacing-3);
-            border: 2px solid var(--color-gray-300);
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-base);
-            transition: all var(--transition-base);
-        }
-        input:focus,
-        textarea:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: var(--focus-ring);
-        }
-        .password-info {
-            background: var(--color-info-bg);
-            border: 1px solid var(--color-info);
-            border-radius: var(--radius-base);
-            padding: var(--spacing-3);
-            margin-bottom: var(--spacing-4);
-            color: var(--color-info-dark);
-        }
-        .submit-section {
-            text-align: center;
-            margin-top: var(--spacing-8);
-        }
-        .btn-submit {
-            background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
-            color: white;
-            padding: var(--spacing-4) var(--spacing-8);
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: var(--font-size-lg);
-            font-weight: var(--font-weight-semibold);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            box-shadow: var(--shadow-success);
-        }
-        .btn-submit:hover {
-            transform: var(--transform-hover-up);
-            box-shadow: 0 6px 20px rgba(22, 163, 74, 0.4);
-        }
-        .btn-cancel {
-            background: var(--color-gray-500);
-            color: white;
-            padding: var(--spacing-3) var(--spacing-6);
-            border: none;
-            border-radius: var(--radius-md);
-            font-size: var(--font-size-base);
-            font-weight: var(--font-weight-semibold);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            margin-left: var(--spacing-4);
-            text-decoration: none;
-            display: inline-block;
-        }
-        .btn-cancel:hover {
-            background: var(--color-gray-600);
-        }
-        .field-add-btn {
-            background: var(--color-primary);
-            color: white;
-            padding: var(--spacing-2) var(--spacing-4);
-            border: none;
-            border-radius: var(--radius-base);
-            cursor: pointer;
-            font-size: var(--font-size-sm);
-            margin-top: var(--spacing-2);
-        }
-        .success-message {
-            background: var(--color-success-bg);
-            border: 1px solid var(--color-success);
-            color: var(--color-success-dark);
-            padding: var(--spacing-4);
-            border-radius: var(--radius-base);
-            margin-bottom: var(--spacing-4);
-            display: none;
-        }
-        .error-message {
-            background: var(--color-danger-bg);
-            border: 1px solid var(--color-danger);
-            color: var(--color-danger-dark);
-            padding: var(--spacing-4);
-            border-radius: var(--radius-base);
-            margin-bottom: var(--spacing-4);
-            display: none;
-        }
-        /* Field mapping styles */
-        #field-mapping-section {
-            margin-top: var(--spacing-8);
-            padding-top: var(--spacing-6);
-            border-top: 2px solid var(--color-gray-300);
-        }
-        #field-map {
-            width: 100%;
-            height: 400px;
-            border: 2px solid var(--color-gray-300);
-            border-radius: var(--radius-lg);
-            margin-top: var(--spacing-4);
-        }
-        #field-drawing-controls {
-            margin-top: var(--spacing-4);
-            display: flex;
-            gap: var(--spacing-3);
-            flex-wrap: wrap;
-        }
-        #field-drawing-controls button {
-            padding: var(--spacing-3) var(--spacing-5);
-            border: none;
-            border-radius: var(--radius-base);
-            font-size: var(--font-size-base);
-            font-weight: var(--font-weight-semibold);
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-        #start-drawing {
-            background: var(--color-primary);
-            color: white;
-        }
-        #clear-drawing {
-            background: var(--color-gray-500);
-            color: white;
-        }
-        #save-field-polygon {
-            background: var(--color-success);
-            color: white;
-        }
-        #field-calculations {
-            margin-top: var(--spacing-4);
-            padding: var(--spacing-4);
-            background: var(--color-gray-50);
-            border-radius: var(--radius-base);
-            border: 1px solid var(--color-gray-200);
-        }
-        #drawing-instructions {
-            background: var(--color-info-bg);
-            border: 1px solid var(--color-info);
-            color: var(--color-info-dark);
-            padding: var(--spacing-3);
-            border-radius: var(--radius-base);
-            margin-top: var(--spacing-3);
-            display: none;
-        }
-        .field-entry {
-            cursor: pointer;
-            transition: all var(--transition-base);
-            padding: var(--spacing-3);
-            border-radius: var(--radius-base);
-            position: relative;
-        }
-        .field-entry:hover {
-            background-color: var(--color-gray-50);
-        }
-        .field-entry.active {
-            background-color: #f0f8ff !important;
-            border: 2px solid var(--color-success) !important;
-        }
-        .polygon-indicator {
-            color: var(--color-success);
-            margin-left: var(--spacing-2);
-            font-weight: var(--font-weight-semibold);
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <a href="/" class="back-link">← Back to Main Dashboard</a>
-            <h1>Farmer Registration</h1>
-        </div>
-        
-        <div class="registration-container">
-            <div class="form-header">
-                <h2>🌾 Register New Farmer</h2>
-                <p>Complete the form below to register a new farmer in the AVA OLO system</p>
-            </div>
-            
-            <div class="success-message" id="successMessage">
-                ✅ Farmer registered successfully!
-            </div>
-            
-            <div class="error-message" id="errorMessage">
-                ❌ Error registering farmer. Please try again.
-            </div>
-            
-            <form id="farmerRegistrationForm" onsubmit="submitFarmerRegistration(event)">
-                <!-- App Access Section -->
-                <div class="form-section">
-                    <h3>🔐 App Access</h3>
-                    <div class="password-info">
-                        <strong>Important:</strong> This password will be used by the farmer to access the AVA OLO mobile app.
-                    </div>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="email">Email *</label>
-                            <input type="email" id="email" name="email" required placeholder="farmer@example.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="password">App Password *</label>
-                            <input type="password" id="password" name="password" required placeholder="Minimum 8 characters">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Personal Information Section -->
-                <div class="form-section">
-                    <h3>👤 Personal Information</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="manager_name">First Name *</label>
-                            <input type="text" id="manager_name" name="manager_name" required placeholder="John">
-                        </div>
-                        <div class="form-group">
-                            <label for="manager_last_name">Last Name *</label>
-                            <input type="text" id="manager_last_name" name="manager_last_name" required placeholder="Smith">
-                        </div>
-                        <div class="form-group">
-                            <label for="wa_phone_number">WhatsApp Number *</label>
-                            <input type="tel" id="wa_phone_number" name="wa_phone_number" required placeholder="+385912345678">
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" name="phone" placeholder="+385912345678">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Farm Information Section -->
-                <div class="form-section">
-                    <h3>🚜 Farm Information</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="farm_name">Farm Name *</label>
-                            <input type="text" id="farm_name" name="farm_name" required placeholder="Green Valley Farm">
-                        </div>
-                        <div class="form-group">
-                            <label for="state_farm_number">State Farm Number</label>
-                            <input type="text" id="state_farm_number" name="state_farm_number" placeholder="12345">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Address Section -->
-                <div class="form-section">
-                    <h3>📍 Address</h3>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="street_and_no">Street and Number</label>
-                            <input type="text" id="street_and_no" name="street_and_no" placeholder="Main Street 123">
-                        </div>
-                        <div class="form-group">
-                            <label for="village">Village</label>
-                            <input type="text" id="village" name="village" placeholder="Village name">
-                        </div>
-                        <div class="form-group">
-                            <label for="city">City *</label>
-                            <input type="text" id="city" name="city" required placeholder="Zagreb">
-                        </div>
-                        <div class="form-group">
-                            <label for="postal_code">Postal Code</label>
-                            <input type="text" id="postal_code" name="postal_code" placeholder="10000">
-                        </div>
-                        <div class="form-group">
-                            <label for="country">Country *</label>
-                            <input type="text" id="country" name="country" required placeholder="Croatia">
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Fields Section -->
-                <div class="form-section">
-                    <h3>🌱 Fields (Optional)</h3>
-                    <p>Add fields now or register them later using the "Register Fields" feature</p>
-                    <div id="fieldsContainer">
-                        <!-- Fields will be added dynamically -->
-                    </div>
-                    <button type="button" class="field-add-btn" onclick="addFieldEntry()">+ Add Field</button>
-                </div>
-                
-                <!-- Field Mapping Section -->
-                <div id="field-mapping-section">
-                    <h3>🗺️ Draw Field Boundaries</h3>
-                    <p>Click on a field above, then draw its boundaries on the map. Click points to create the field shape.</p>
-                    
-                    <div id="drawing-instructions">
-                        📍 Click on the map to add points. Click near the first point to close the shape, or use the finish button.
-                    </div>
-                    
-                    <div id="field-map"></div>
-                    
-                    <div id="field-drawing-controls">
-                        <button id="start-drawing" class="btn">🎯 Start Drawing Field</button>
-                        <button id="clear-drawing" class="btn">🗑️ Clear Drawing</button>
-                        <button id="save-field-polygon" class="btn" disabled>💾 Save Field Shape</button>
-                    </div>
-                    
-                    <div id="field-calculations" style="display: none;">
-                        <strong>📊 Calculated Field Data:</strong>
-                        <div>📏 Area: <span id="calculated-area">0</span> hectares</div>
-                        <div>📍 Center: <span id="calculated-center">Not calculated</span></div>
-                        <div>🔢 Points: <span id="point-count">0</span></div>
-                    </div>
-                </div>
-                
-                <!-- Submit Section -->
-                <div class="submit-section">
-                    <button type="submit" class="btn-submit">Register Farmer</button>
-                    <a href="/" class="btn-cancel">Cancel</a>
-                </div>
-            </form>
-        </div>
+{% extends "base_constitutional.html" %}
+
+{% block title %}Register New Farmer - AVA OLO{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Constitutional Registration Form Design */
+.constitutional-registration-form {
+    max-width: 800px;
+    margin: var(--const-spacing-lg) auto;
+    padding: var(--const-spacing-lg);
+    background: white;
+    border-radius: 8px;
+    box-shadow: var(--const-shadow-lg);
+}
+
+.constitutional-form-section {
+    margin-bottom: var(--const-spacing-xl);
+    padding: var(--const-spacing-md);
+    border-left: 4px solid var(--const-olive-primary);
+    background: rgba(139, 111, 71, 0.05);
+    border-radius: 4px;
+}
+
+.constitutional-form-section h3 {
+    color: var(--const-brown-primary);
+    font-size: var(--const-text-lg);
+    margin-bottom: var(--const-spacing-md);
+    font-weight: 600;
+}
+
+.constitutional-form-row {
+    display: flex;
+    gap: var(--const-spacing-md);
+    margin-bottom: var(--const-spacing-md);
+    flex-wrap: wrap;
+}
+
+.constitutional-form-field {
+    flex: 1;
+    min-width: 250px;
+}
+
+.constitutional-form-field label {
+    display: block;
+    color: var(--const-brown-primary);
+    font-size: var(--const-text-min);
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+.constitutional-form-field input,
+.constitutional-form-field select,
+.constitutional-form-field textarea {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: var(--const-text-min);
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.constitutional-form-field input:focus,
+.constitutional-form-field select:focus,
+.constitutional-form-field textarea:focus {
+    outline: none;
+    border-color: var(--const-olive-primary);
+    box-shadow: 0 0 0 3px rgba(107, 142, 35, 0.1);
+}
+
+.constitutional-submit-section {
+    text-align: center;
+    padding: var(--const-spacing-lg);
+    background: rgba(107, 142, 35, 0.05);
+    border-radius: 8px;
+    margin-top: var(--const-spacing-xl);
+}
+
+.constitutional-submit-button {
+    background: var(--const-brown-primary);
+    color: white;
+    font-size: var(--const-text-lg);
+    font-weight: 600;
+    padding: 16px 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    min-width: 200px;
+}
+
+.constitutional-submit-button:hover {
+    background: var(--const-brown-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--const-shadow-md);
+}
+
+.constitutional-optional-note {
+    color: #666;
+    font-size: var(--const-text-min);
+    font-style: italic;
+    margin-top: 8px;
+}
+
+.constitutional-section-note {
+    color: var(--const-soil-dark);
+    font-size: var(--const-text-min);
+    margin-bottom: var(--const-spacing-md);
+    padding: var(--const-spacing-sm);
+    background: rgba(107, 142, 35, 0.1);
+    border-radius: 4px;
+}
+
+.success-message, .error-message {
+    padding: var(--const-spacing-md);
+    border-radius: 4px;
+    margin-bottom: var(--const-spacing-md);
+    font-size: var(--const-text-min);
+    display: none;
+}
+
+.success-message {
+    background: rgba(34, 139, 34, 0.1);
+    border: 1px solid var(--const-earth-green);
+    color: var(--const-earth-green);
+}
+
+.error-message {
+    background: rgba(220, 20, 60, 0.1);
+    border: 1px solid #dc143c;
+    color: #dc143c;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .constitutional-form-row {
+        flex-direction: column;
+    }
+    
+    .constitutional-form-field {
+        min-width: 100%;
+    }
+    
+    .constitutional-registration-form {
+        padding: var(--const-spacing-md);
+        margin: var(--const-spacing-md);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="constitutional-registration-form">
+    <h2 class="const-h1" style="text-align: center; color: var(--const-brown-primary);">🌾 Register New Farmer</h2>
+    <p class="const-text" style="text-align: center; margin-bottom: var(--const-spacing-xl);">
+        Complete the form below to register a new farmer in the AVA OLO system
+    </p>
+    
+    <div class="success-message" id="successMessage">
+        ✅ Farmer registered successfully!
     </div>
     
-    <script>
-        let fieldCount = 1;
+    <div class="error-message" id="errorMessage">
+        ❌ Error registering farmer. Please try again.
+    </div>
+    
+    <form id="farmerRegistrationForm" onsubmit="submitFarmerRegistration(event)" class="constitutional-form">
+        <!-- App Access Section -->
+        <div class="constitutional-form-section">
+            <h3>📱 App Access</h3>
+            <div class="constitutional-section-note">
+                This password will be used by the farmer to access the AVA OLO mobile app.
+            </div>
+            
+            <div class="constitutional-form-row">
+                <div class="constitutional-form-field">
+                    <label for="email">Email *</label>
+                    <input type="email" id="email" name="email" required 
+                           placeholder="farmer@example.com" maxlength="254">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="password">App Password *</label>
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Minimum 8 characters" minlength="8">
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Information Section -->
+        <div class="constitutional-form-section">
+            <h3>👤 Personal Information</h3>
+            
+            <div class="constitutional-form-row">
+                <div class="constitutional-form-field">
+                    <label for="manager_name">First Name *</label>
+                    <input type="text" id="manager_name" name="manager_name" required 
+                           placeholder="John">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="manager_last_name">Last Name *</label>
+                    <input type="text" id="manager_last_name" name="manager_last_name" required 
+                           placeholder="Smith">
+                </div>
+            </div>
+            
+            <div class="constitutional-form-row">
+                <div class="constitutional-form-field">
+                    <label for="wa_phone_number">WhatsApp Number *</label>
+                    <input type="tel" id="wa_phone_number" name="wa_phone_number" required 
+                           placeholder="+385912345678">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" 
+                           placeholder="+385912345678">
+                </div>
+            </div>
+        </div>
+
+        <!-- Farm Information Section -->
+        <div class="constitutional-form-section">
+            <h3>🚜 Farm Information</h3>
+            
+            <div class="constitutional-form-row">
+                <div class="constitutional-form-field">
+                    <label for="farm_name">Farm Name *</label>
+                    <input type="text" id="farm_name" name="farm_name" required 
+                           placeholder="Green Valley Farm">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="state_farm_number">State Farm Number</label>
+                    <input type="text" id="state_farm_number" name="state_farm_number" 
+                           placeholder="12345">
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Section -->
+        <div class="constitutional-form-section">
+            <h3>📍 Address</h3>
+            
+            <div class="constitutional-form-row">
+                <div class="constitutional-form-field">
+                    <label for="street_and_no">Street and Number</label>
+                    <input type="text" id="street_and_no" name="street_and_no" 
+                           placeholder="Main Street 123">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="village">Village</label>
+                    <input type="text" id="village" name="village" 
+                           placeholder="Village name">
+                </div>
+            </div>
+            
+            <div class="constitutional-form-row">
+                <div class="constitutional-form-field">
+                    <label for="city">City *</label>
+                    <input type="text" id="city" name="city" required 
+                           placeholder="Zagreb">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="postal_code">Postal Code</label>
+                    <input type="text" id="postal_code" name="postal_code" 
+                           placeholder="10000">
+                </div>
+                <div class="constitutional-form-field">
+                    <label for="country">Country *</label>
+                    <input type="text" id="country" name="country" required 
+                           placeholder="Croatia">
+                </div>
+            </div>
+        </div>
+
+        <!-- Fields Section -->
+        <div class="constitutional-form-section">
+            <h3>🌾 Fields (Optional)</h3>
+            <div class="constitutional-optional-note">
+                Add fields now or register them later using the "Register Fields" feature
+            </div>
+            
+            <div id="fieldsContainer">
+                <!-- Fields will be added dynamically -->
+            </div>
+            <button type="button" class="const-btn const-btn-primary" onclick="addFieldEntry()">+ Add Field</button>
+        </div>
+
+        <!-- Submit Section -->
+        <div class="constitutional-submit-section">
+            <button type="submit" class="constitutional-submit-button">
+                Register Farmer
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    let fieldCount = 1;
+    
+    function addFieldEntry() {
+        const container = document.getElementById('fieldsContainer');
+        const newField = document.createElement('div');
+        newField.className = 'constitutional-form-row';
+        newField.style.marginTop = 'var(--const-spacing-md)';
+        newField.style.paddingTop = 'var(--const-spacing-md)';
+        newField.style.borderTop = '1px solid #ddd';
         
-        // Fields are optional by default - no toggle function needed
+        newField.innerHTML = `
+            <div class="constitutional-form-field">
+                <label for="field_name_${fieldCount}">Field Name</label>
+                <input type="text" id="field_name_${fieldCount}" name="fields[${fieldCount}][name]" placeholder="Field name">
+            </div>
+            <div class="constitutional-form-field">
+                <label for="field_size_${fieldCount}">Size (hectares)</label>
+                <input type="number" id="field_size_${fieldCount}" name="fields[${fieldCount}][size]" step="0.0001" placeholder="0.0">
+            </div>
+            <div class="constitutional-form-field">
+                <label for="field_location_${fieldCount}">Location/GPS</label>
+                <input type="text" id="field_location_${fieldCount}" name="fields[${fieldCount}][location]" placeholder="GPS coordinates or description">
+            </div>
+        `;
         
-        function addFieldEntry() {
-            const container = document.getElementById('fieldsContainer');
-            const newField = document.createElement('div');
-            newField.className = 'field-entry form-grid';
-            newField.dataset.fieldIndex = fieldCount;
-            newField.style.marginTop = 'var(--spacing-4)';
-            newField.style.paddingTop = 'var(--spacing-4)';
-            newField.style.borderTop = '1px solid var(--color-gray-300)';
+        container.appendChild(newField);
+        fieldCount++;
+    }
+    
+    async function submitFarmerRegistration(event) {
+        console.log("=== FARMER REGISTRATION FORM SUBMISSION START ===");
+        event.preventDefault();
+        
+        const form = document.getElementById('farmerRegistrationForm');
+        const formData = new FormData(form);
+        
+        // Collect fields data
+        const fields = [];
+        const fieldEntries = document.querySelectorAll('#fieldsContainer > div');
+        
+        fieldEntries.forEach((entry, index) => {
+            const name = document.getElementById(`field_name_${index + 1}`)?.value;
+            const size = document.getElementById(`field_size_${index + 1}`)?.value;
+            const location = document.getElementById(`field_location_${index + 1}`)?.value;
             
-            // Fields are optional by default
-            newField.innerHTML = `
-                <div class="form-group">
-                    <label for="field_name_${fieldCount}">Field Name</label>
-                    <input type="text" id="field_name_${fieldCount}" name="fields[${fieldCount}][name]" placeholder="Field name">
-                </div>
-                <div class="form-group">
-                    <label for="field_size_${fieldCount}">Size (hectares)</label>
-                    <input type="number" id="field_size_${fieldCount}" name="fields[${fieldCount}][size]" step="0.0001" placeholder="0.0">
-                </div>
-                <div class="form-group">
-                    <label for="field_location_${fieldCount}">Location/GPS</label>
-                    <input type="text" id="field_location_${fieldCount}" name="fields[${fieldCount}][location]" placeholder="GPS coordinates or description">
-                </div>
-            `;
-            
-            container.appendChild(newField);
-            
-            // Add click handler to make the field selectable for mapping
-            newField.addEventListener('click', function() {
-                if (typeof setActiveField === 'function') {
-                    setActiveField(fieldCount);
-                }
-            });
-            
-            fieldCount++;
+            if (name && size) {
+                fields.push({ name, size: parseFloat(size), location });
+            }
+        });
+        
+        // Build the request body
+        const requestBody = {
+            email: formData.get('email'),
+            password: formData.get('password'),
+            manager_name: formData.get('manager_name'),
+            manager_last_name: formData.get('manager_last_name'),
+            wa_phone_number: formData.get('wa_phone_number'),
+            phone: formData.get('phone'),
+            farm_name: formData.get('farm_name'),
+            state_farm_number: formData.get('state_farm_number'),
+            street_and_no: formData.get('street_and_no'),
+            village: formData.get('village'),
+            city: formData.get('city'),
+            postal_code: formData.get('postal_code'),
+            country: formData.get('country'),
+            fields: fields
+        };
+        
+        // Validate required fields
+        const requiredFields = ['email', 'password', 'manager_name', 'manager_last_name', 
+                               'wa_phone_number', 'farm_name', 'city', 'country'];
+        let missingFields = [];
+        
+        requiredFields.forEach(field => {
+            if (!requestBody[field]) {
+                missingFields.push(field);
+            }
+        });
+        
+        if (missingFields.length > 0) {
+            document.getElementById('errorMessage').textContent = `❌ Missing required fields: ${missingFields.join(', ')}`;
+            document.getElementById('errorMessage').style.display = 'block';
+            return;
         }
         
-        async function submitFarmerRegistration(event) {
-            console.log("=== FARMER REGISTRATION FORM SUBMISSION START ===");
-            event.preventDefault();
-            
-            const form = document.getElementById('farmerRegistrationForm');
-            const formData = new FormData(form);
-            
-            console.log("Step 1: Form data collected");
-            console.log("Email:", formData.get('email'));
-            console.log("Password length:", formData.get('password')?.length || 0);
-            console.log("Manager name:", formData.get('manager_name'));
-            console.log("Manager last name:", formData.get('manager_last_name'));
-            console.log("WhatsApp:", formData.get('wa_phone_number'));
-            console.log("Farm name:", formData.get('farm_name'));
-            console.log("City:", formData.get('city'));
-            console.log("Country:", formData.get('country'));
-            
-            // Collect fields data
-            console.log("Step 2: Collecting field data...");
-            const fields = [];
-            const fieldEntries = document.querySelectorAll('.field-entry');
-            console.log(`Found ${fieldEntries.length} field entries`);
-            
-            fieldEntries.forEach((entry, index) => {
-                const name = document.getElementById(`field_name_${index}`).value;
-                const size = document.getElementById(`field_size_${index}`).value;
-                const location = document.getElementById(`field_location_${index}`).value;
-                console.log(`Field ${index}: name="${name}", size="${size}", location="${location}"`);
-                if (name && size) {
-                    fields.push({ name, size: parseFloat(size), location });
-                }
+        try {
+            const response = await fetch('/api/register-farmer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
             });
             
-            // Build the request body
-            console.log("Step 3: Building request body...");
-            const requestBody = {
-                email: formData.get('email'),
-                password: formData.get('password'),
-                manager_name: formData.get('manager_name'),
-                manager_last_name: formData.get('manager_last_name'),
-                wa_phone_number: formData.get('wa_phone_number'),
-                phone: formData.get('phone'),
-                farm_name: formData.get('farm_name'),
-                state_farm_number: formData.get('state_farm_number'),
-                street_and_no: formData.get('street_and_no'),
-                village: formData.get('village'),
-                city: formData.get('city'),
-                postal_code: formData.get('postal_code'),
-                country: formData.get('country'),
-                fields: fields
-            };
+            const result = await response.json();
             
-            console.log("Request body prepared:", JSON.stringify(requestBody, null, 2));
-            
-            // Validate required fields on client side
-            console.log("Step 4: Validating required fields...");
-            const requiredFields = ['email', 'password', 'manager_name', 'manager_last_name', 
-                                   'wa_phone_number', 'farm_name', 'city', 'country'];
-            let missingFields = [];
-            requiredFields.forEach(field => {
-                if (!requestBody[field]) {
-                    missingFields.push(field);
-                    console.error(`❌ Missing required field: ${field}`);
-                }
-            });
-            
-            if (missingFields.length > 0) {
-                console.error("❌ VALIDATION FAILED - Missing fields:", missingFields);
-                document.getElementById('errorMessage').textContent = `❌ Missing required fields: ${missingFields.join(', ')}`;
-                document.getElementById('errorMessage').style.display = 'block';
-                return;
-            }
-            
-            console.log("✅ All required fields present");
-            
-            try {
-                console.log("Step 5: Sending POST request to /api/register-farmer...");
-                console.time("API Request Duration");
+            if (response.ok && result.success) {
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('errorMessage').style.display = 'none';
+                form.reset();
+                fieldCount = 1;
                 
-                const response = await fetch('/api/register-farmer', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestBody)
-                });
-                
-                console.timeEnd("API Request Duration");
-                console.log("Response status:", response.status);
-                console.log("Response headers:", response.headers);
-                
-                const responseText = await response.text();
-                console.log("Raw response text:", responseText);
-                
-                let result;
-                try {
-                    result = JSON.parse(responseText);
-                    console.log("Parsed response:", result);
-                } catch (parseError) {
-                    console.error("❌ Failed to parse response as JSON:", parseError);
-                    console.error("Response was:", responseText);
-                    
-                    // Check for generator error
-                    if (responseText.includes("generator didn't stop after throw()")) {
-                        console.error("🚨 GENERATOR ERROR DETECTED!");
-                        document.getElementById('errorMessage').textContent = "❌ Server error: Generator error detected. This is a Python async/await bug.";
-                    } else {
-                        document.getElementById('errorMessage').textContent = `❌ Server returned invalid response: ${responseText.substring(0, 100)}...`;
-                    }
-                    document.getElementById('errorMessage').style.display = 'block';
-                    return;
-                }
-                
-                if (response.ok && result.success) {
-                    console.log("✅ REGISTRATION SUCCESS!");
-                    console.log("Farmer ID:", result.farmer_id);
-                    document.getElementById('successMessage').style.display = 'block';
-                    document.getElementById('errorMessage').style.display = 'none';
-                    form.reset();
-                    fieldCount = 1;
-                    
-                    // Redirect after 2 seconds to main landing page
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
-                } else {
-                    console.error("❌ REGISTRATION FAILED!");
-                    console.error("Error message:", result.message);
-                    document.getElementById('errorMessage').textContent = `❌ Error: ${result.message || 'Registration failed'}`;
-                    document.getElementById('errorMessage').style.display = 'block';
-                    document.getElementById('successMessage').style.display = 'none';
-                }
-            } catch (error) {
-                console.error("❌ FETCH ERROR:", error);
-                console.error("Error type:", error.constructor.name);
-                console.error("Error stack:", error.stack);
-                
-                document.getElementById('errorMessage').textContent = `❌ Network error: ${error.message}`;
+                // Redirect to main landing page after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                document.getElementById('errorMessage').textContent = `❌ Error: ${result.message || 'Registration failed'}`;
                 document.getElementById('errorMessage').style.display = 'block';
                 document.getElementById('successMessage').style.display = 'none';
             }
-            
-            console.log("=== FARMER REGISTRATION FORM SUBMISSION END ===");
+        } catch (error) {
+            document.getElementById('errorMessage').textContent = `❌ Network error: ${error.message}`;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
         }
-    </script>
-    <script src="/static/js/field_drawing.js"></script>
-</body>
-</html>
+        
+        console.log("=== FARMER REGISTRATION FORM SUBMISSION END ===");
+    }
+</script>
+{% endblock %}

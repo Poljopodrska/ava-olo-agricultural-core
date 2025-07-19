@@ -9,14 +9,131 @@ import time
 import sys
 import json
 from datetime import datetime
-from typing import Dict, List, Tuple, bool
+from typing import Dict, List, Tuple
 
 class ConstitutionalProductionVerifier:
     """Autonomous production verification according to Amendment #15"""
     
-    def __init__(self, base_url: str = "https://6pmgiripe.us-east-1.awsapprunner.com"):
+    def __init__(self, base_url: str = "https://6pmgrirjre.us-east-1.awsapprunner.com"):
         self.base_url = base_url
         self.verification_results = []
+    
+    def verify_version_on_aws_production(self) -> bool:
+        """
+        CONSTITUTIONAL REQUIREMENT: Verify correct version showing on AWS
+        NO TASK COMPLETION WITHOUT VERSION VERIFICATION
+        """
+        
+        print("🔍 CONSTITUTIONAL VERSION VERIFICATION")
+        print("=" * 50)
+        
+        # Get local version
+        try:
+            with open('version_history.json', 'r') as f:
+                version_data = json.load(f)
+                local_version = version_data.get('current_version', 'v0.0.0')
+        except:
+            local_version = 'v0.0.0'
+        
+        print(f"📊 Local Version: {local_version}")
+        
+        # Check AWS production version
+        try:
+            # Test multiple pages to ensure version consistency
+            pages_to_check = [
+                '/',
+                '/database-explorer', 
+                '/farmer-registration',
+                '/register-fields'
+            ]
+            
+            aws_versions = []
+            
+            for page in pages_to_check:
+                try:
+                    response = requests.get(f"{self.base_url}{page}", timeout=15)
+                    if response.status_code == 200:
+                        content = response.text
+                        
+                        # Look for version display in HTML
+                        import re
+                        version_match = re.search(r'v\d+\.\d+\.\d+', content)
+                        if version_match:
+                            aws_version = version_match.group()
+                            aws_versions.append(aws_version)
+                            print(f"✅ {page}: Version {aws_version}")
+                        else:
+                            print(f"❌ {page}: NO VERSION FOUND")
+                            return False
+                    else:
+                        print(f"❌ {page}: HTTP {response.status_code}")
+                        return False
+                        
+                except Exception as e:
+                    print(f"❌ {page}: ERROR - {str(e)}")
+                    return False
+            
+            # Verify version consistency
+            if not aws_versions:
+                print("❌ NO VERSIONS FOUND ON AWS PRODUCTION")
+                return False
+            
+            # Check if all pages show same version
+            unique_versions = set(aws_versions)
+            if len(unique_versions) > 1:
+                print(f"❌ VERSION INCONSISTENCY: Found {unique_versions}")
+                return False
+            
+            aws_version = aws_versions[0]
+            
+            # Verify local and AWS versions match
+            if local_version == aws_version:
+                print(f"✅ VERSION VERIFICATION SUCCESSFUL")
+                print(f"✅ Local: {local_version} = AWS: {aws_version}")
+                return True
+            else:
+                print(f"❌ VERSION MISMATCH")
+                print(f"   Local: {local_version}")
+                print(f"   AWS:   {aws_version}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ AWS VERSION CHECK FAILED: {str(e)}")
+            return False
+    
+    def constitutional_deployment_with_version_verification(self) -> bool:
+        """
+        MANDATORY: Deploy with version verification
+        NO TASK COMPLETION WITHOUT AWS VERSION CONFIRMATION
+        """
+        
+        print("🚀 CONSTITUTIONAL DEPLOYMENT WITH VERSION VERIFICATION")
+        print("=" * 60)
+        
+        # Wait for deployment to propagate
+        print("⏳ Waiting 60 seconds for deployment propagation...")
+        time.sleep(60)
+        
+        # CONSTITUTIONAL REQUIREMENT: Verify version on AWS
+        version_verified = self.verify_version_on_aws_production()
+        
+        if not version_verified:
+            print("🚨 CONSTITUTIONAL VIOLATION: Version not verified on AWS")
+            print("🔧 Auto-retrying deployment...")
+            
+            # Wait longer for retry
+            time.sleep(120)
+            
+            # Re-verify
+            version_verified = self.verify_version_on_aws_production()
+            
+            if not version_verified:
+                print("❌ VERSION VERIFICATION FAILED AFTER RETRY")
+                print("🚨 TASK CANNOT BE MARKED COMPLETE")
+                return False
+        
+        print("✅ CONSTITUTIONAL DEPLOYMENT COMPLETE WITH VERSION VERIFICATION")
+        return True
         
     async def verify_deployment_autonomous(self, service_name: str, features: List[Dict]) -> bool:
         """
