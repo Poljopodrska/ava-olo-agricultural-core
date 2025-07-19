@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DEPLOYMENT TIMESTAMP: 1752901729.6755776 - Force rebuild for dashboard features
+# DEPLOYMENT TIMESTAMP: 1752922669 - v2.1.6 Force rebuild for field registration fixes
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
@@ -51,7 +51,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # DEPLOYMENT VERIFICATION
-logger.info("🚀 DEPLOYMENT VERSION: 2025-07-17-21:37 - JSON IMPORT FIX INCLUDED")
+logger.info("🚀 DEPLOYMENT VERSION: v2.1.6-deployment-fix - Field registration fixes active")
 logger.info(f"Python version: {sys.version}")
 logger.info(f"JSON module available: {'json' in sys.modules}")
 

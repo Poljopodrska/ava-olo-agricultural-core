@@ -1,8 +1,17 @@
 {
-    "current_version": "v2.1.5-forensic-field-fix",
+    "current_version": "v2.1.6-deployment-fix",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-01-19",
     "version_history": [
+        {
+            "version": "v2.1.6-deployment-fix",
+            "date": "2025-01-19",
+            "changes": [
+                "Updated deployment timestamp to force AWS App Runner rebuild",
+                "Applied surgical fix methodology from constitutional UI",
+                "All v2.1.5 field registration fixes now active"
+            ]
+        },
         {
             "version": "v2.1.5-forensic-field-fix",
             "date": "2025-01-19",
