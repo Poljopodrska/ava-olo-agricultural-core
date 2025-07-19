@@ -3,14 +3,17 @@ runtime: python3
 build:
   commands:
     pre-build:
-      - echo "Starting build for AVA OLO Monitoring Dashboards - v2.1.9 $(date)"
-      - echo "Field registration fixes deployment"
+      - echo "🚨 FORCE REBUILD v2.2.4 - $(date) 🚨"
+      - echo "REMOVING ALL CACHE TO FORCE COMPLETE DEPLOYMENT"
+      - rm -rf /tmp/cache/* || true
+      - echo "Cache cleared - forcing fresh build"
     build:
       - pip install -r requirements.txt
-      - echo "Dependencies installed - version 2.1.9-apprunner-format"
+      - echo "Dependencies installed - version 2.2.4-force-deployment"
+      - echo "RED BANNER DEPLOYMENT - UNMISTAKABLE CHANGES"
     post-build:
-      - echo "Build completed successfully - $(date)"
-      - echo "Field registration ready - Manual entry and Google Maps enabled"
+      - echo "Build completed - v2.2.4 with RED BANNER - $(date)"
+      - echo "If deployment works, you will see a RED BANNER on dashboard"
 run:
   runtime-version: latest
   command: python main.py
@@ -19,7 +22,11 @@ run:
     env: PORT
   env:
     - name: FORCE_REBUILD
-      value: "1752922669"  # FORCE_REBUILD v2.1.7-yaml-fix
+      value: "1752947700"  # FORCE_REBUILD v2.2.4-force-deployment
+    - name: DEPLOYMENT_ID
+      value: "2.2.4-2025-07-19-20-30"
+    - name: FORCE_FRESH_DEPLOY
+      value: "TRUE"
     - name: DB_HOST
       value: "your-db-host"
     - name: DB_NAME

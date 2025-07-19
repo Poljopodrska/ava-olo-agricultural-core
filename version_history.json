@@ -1,8 +1,20 @@
 {
-    "current_version": "v2.2.3-verification-fix",
+    "current_version": "v2.2.4-force-deployment",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-07-19",
     "version_history": [
+        {
+            "version": "v2.2.4-force-deployment",
+            "date": "2025-07-19",
+            "changes": [
+                "FORCE DEPLOYMENT: Added giant red banner to make changes unmistakable",
+                "MAJOR REWRITE: Completely rewrote business dashboard function",
+                "DIRECT QUERIES: Dashboard now uses direct SQL queries for data",
+                "VERIFICATION: Added /deployment-verify endpoint",
+                "VISUAL: Red banner + yellow debug box + green metric values",
+                "NUCLEAR: Major code changes to force AWS complete deployment"
+            ]
+        },
         {
             "version": "v2.2.3-verification-fix",
             "date": "2025-07-19",
