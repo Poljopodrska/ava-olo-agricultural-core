@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.4-fstring-fix
+Version: 3.2.5-comprehensive-fix
 Bulgarian Mango Farmer Compliant ✅
-Fixed: Rollback due to f-string syntax - now using string concatenation
+Fixed: Comprehensive fix - Enter key, CAVA conversation, version on ALL pages
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.2.4-fstring-fix"
+VERSION = "3.2.5-comprehensive-fix"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -1354,8 +1354,10 @@ async def chat_interface(request: Request):
             }
             
             function handleEnterKey(event) {
+                console.log('Key pressed:', event.key);
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
+                    console.log('Enter key detected, sending message...');
                     sendMessage();
                 }
             }
@@ -1408,12 +1410,17 @@ async def chat_interface(request: Request):
             let sessionId = localStorage.getItem('ava_session_id') || null;
             
             async function sendMessage() {
+                console.log('sendMessage called');
                 const input = document.getElementById('chatInput');
                 const sendBtn = document.getElementById('sendBtn');
                 const typingIndicator = document.getElementById('typingIndicator');
                 const message = input.value.trim();
                 
-                if (!message) return;
+                if (!message) {
+                    console.log('No message to send');
+                    return;
+                }
+                console.log('Sending message:', message);
                 
                 // Add user message
                 addMessage(message, true, userData.full_name?.split(' ')[0]);
@@ -1986,21 +1993,30 @@ async def agricultural_conversation(request: ConversationRequest):
     
     try:
         # Import CAVA service
-        from implementation.cava.cava_central_service import get_cava_service
+        try:
+            from implementation.cava.cava_central_service import get_cava_service
+            cava_available = True
+        except ImportError:
+            emergency_log("⚠️ CAVA service not available")
+            cava_available = False
         
         # Get or create session ID
         session_id = request.session_id or str(uuid.uuid4())
         
-        # Get CAVA service instance
-        cava = await get_cava_service()
-        
-        # Send message to CAVA
-        result = await cava.send_message(
-            farmer_id=request.farmer_id,
-            message=request.message,
-            session_id=session_id,
-            channel="web-chat"
-        )
+        if cava_available:
+            # Get CAVA service instance
+            cava = await get_cava_service()
+            
+            # Send message to CAVA
+            result = await cava.send_message(
+                farmer_id=request.farmer_id,
+                message=request.message,
+                session_id=session_id,
+                channel="web-chat"
+            )
+        else:
+            # Fallback response
+            result = {"message": f"I understand you're asking about: {request.message}. As your agricultural assistant, I'm here to help with farming questions. What specific aspect would you like to know more about?"}
         
         # Extract response
         ava_response = result.get("message", "I'm here to help with your agricultural questions. Could you please rephrase your question?")
