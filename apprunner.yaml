@@ -15,10 +15,10 @@ run:
     port: 8080
     env:
     - name: FORCE_REBUILD
-      value: "1752901733"  # FORCE_REBUILD PORT
+      value: "1752922669"  # FORCE_REBUILD PORT v2.1.6
   env:
     - name: FORCE_REBUILD
-      value: "1752901733"  # FORCE_REBUILD
+      value: "1752922669"  # FORCE_REBUILD v2.1.6
     - name: DB_HOST
       value: "your-db-host"
     - name: DB_NAME
