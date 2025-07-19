@@ -568,6 +568,15 @@ class DatabaseOperations:
                 logger.info("Step 4: Executing INSERT query for farmer...")
                 logger.info(f"Query parameters: farm_name={data.get('farm_name')}, manager={data.get('manager_name')} {data.get('manager_last_name')}")
                 
+                # Validate field lengths before insert
+                if len(data.get('email', '')) > 20:
+                    logger.error(f"❌ Email too long: {len(data.get('email'))} characters (max 20)")
+                    return {"success": False, "error": "Email must be 20 characters or less"}
+                
+                if len(data.get('wa_phone_number', '')) > 20:
+                    logger.error(f"❌ WhatsApp number too long: {len(data.get('wa_phone_number'))} characters (max 20)")
+                    return {"success": False, "error": "WhatsApp number must be 20 characters or less"}
+                
                 cursor.execute("""
                     INSERT INTO farmers (
                         farm_name, manager_name, manager_last_name, 
