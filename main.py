@@ -37,7 +37,7 @@ except ImportError:
 
 # Service-specific deployment tracking
 SERVICE_NAME = "monitoring-dashboards"
-DEPLOYMENT_TIMESTAMP = '20250719205550'  # Updated by deploy script
+DEPLOYMENT_TIMESTAMP = '20250719210644'  # Updated by deploy script
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
 VERSION = f"v2.2.5-bulletproof-{BUILD_ID}"
 
