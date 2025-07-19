@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# DEPLOYMENT TIMESTAMP: 1752901729.6755776 - Force rebuild for dashboard features
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
