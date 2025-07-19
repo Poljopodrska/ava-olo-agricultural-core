@@ -355,7 +355,7 @@ def get_constitutional_db_connection():
     
     try:
         host = os.getenv('DB_HOST')
-        database = os.getenv('DB_NAME', 'farmer_crm')
+        database = os.getenv('DB_NAME', 'postgres')
         user = os.getenv('DB_USER', 'postgres')
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
@@ -1598,7 +1598,7 @@ async def cost_rates_management():
     try:
         # Use same connection strategy as get_constitutional_db_connection
         host = os.getenv('DB_HOST')
-        database = os.getenv('DB_NAME', 'farmer_crm')
+        database = os.getenv('DB_NAME', 'postgres')
         user = os.getenv('DB_USER', 'postgres')
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
@@ -1772,7 +1772,7 @@ async def update_cost_rate(request: Request):
         
         # Use same connection strategy as get_constitutional_db_connection
         host = os.getenv('DB_HOST')
-        database = os.getenv('DB_NAME', 'farmer_crm')
+        database = os.getenv('DB_NAME', 'postgres')
         user = os.getenv('DB_USER', 'postgres')
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
@@ -1865,7 +1865,7 @@ async def business_dashboard():
                 cursor.execute("SELECT COUNT(*) FROM farmers")
                 metrics["total_farmers"] = cursor.fetchone()[0] or 0
                 
-                cursor.execute("SELECT COALESCE(SUM(size_hectares), 0) FROM fields")
+                cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
                 metrics["total_hectares"] = round(cursor.fetchone()[0] or 0, 2)
                 
                 # 2. Hectares by crop type (using field_crops table)
@@ -1873,7 +1873,7 @@ async def business_dashboard():
                     SELECT 
                         fc.crop_name,
                         COUNT(DISTINCT f.id) as field_count,
-                        COALESCE(SUM(f.size_hectares), 0) as total_area
+                        COALESCE(SUM(f.area_ha), 0) as total_area
                     FROM fields f
                     JOIN field_crops fc ON f.id = fc.field_id
                     WHERE fc.start_year_int = EXTRACT(YEAR FROM CURRENT_DATE)

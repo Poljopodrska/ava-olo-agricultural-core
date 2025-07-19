@@ -27,7 +27,7 @@ def init_connection_pool():
     
     # Build database URL
     db_host = os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com')
-    db_name = os.getenv('DB_NAME', 'farmer_crm')
+    db_name = os.getenv('DB_NAME', 'postgres')
     db_user = os.getenv('DB_USER', 'postgres')
     db_password = os.getenv('DB_PASSWORD')
     db_port = os.getenv('DB_PORT', '5432')
@@ -114,7 +114,7 @@ def get_dashboard_metrics() -> Dict[str, Any]:
         SELECT 
             (SELECT COUNT(*) FROM farmers) as total_farmers,
             (SELECT COUNT(*) FROM fields) as total_fields,
-            (SELECT COALESCE(SUM(size_hectares), 0) FROM fields) as total_hectares,
+            (SELECT COALESCE(SUM(area_ha), 0) FROM fields) as total_hectares,
             (SELECT COUNT(*) FROM farmers WHERE created_at >= NOW() - INTERVAL '24 hours') as farmers_24h,
             (SELECT COUNT(*) FROM farmers WHERE created_at >= NOW() - INTERVAL '7 days') as farmers_7d,
             (SELECT COUNT(*) FROM farmers WHERE created_at >= NOW() - INTERVAL '30 days') as farmers_30d
