@@ -3,14 +3,22 @@ runtime: python3
 build:
   commands:
     pre-build:
-      - echo "Starting build for AVA OLO Agricultural Core"
+      - echo "Starting build for AVA OLO Agricultural Core - CACHE BUST $(date)"
+      - echo "FORENSIC_DEPLOYMENT_1737281140" > /tmp/cache_bust_marker
     build:
       - pip install -r requirements.txt
+      - echo "Dependencies installed - version 3.0.0-forensic-cache-bust"
     post-build:
-      - echo "Build completed successfully"
+      - echo "Build completed successfully - $(date)"
+      - echo "Forensic deployment cache bust complete"
 run:
   runtime-version: 3.11
-  command: python api_gateway_minimal.py
+  command: python api_gateway_minimal.py --log-level info
   network:
     port: 8080
     env: PORT
+  env:
+    - name: CACHE_BUST_TIMESTAMP
+      value: "1737281140_forensic_complete"
+    - name: DEPLOYMENT_VERSION
+      value: "3.0.0-forensic-cache-bust"

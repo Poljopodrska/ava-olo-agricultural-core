@@ -11,4 +11,5 @@ pydantic==2.5.3
 # Environment configuration
 python-dotenv==1.0.0
 
-# Cache bust: 1752904399
+# Cache bust: 1737281140_forensic_complete
+# Deployment version: 3.0.0-forensic-cache-bust

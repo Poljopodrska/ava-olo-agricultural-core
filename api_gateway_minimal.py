@@ -1,8 +1,9 @@
 """
 Minimal API Gateway for deployment safety testing
-Deployment fix: 2025-07-19 09:38 CEST - CORRECT REPOSITORY DEPLOYMENT
+Deployment fix: 2025-07-19 09:45 CEST - CACHE BUSTING DEPLOYMENT
 Root cause: All previous fixes applied to wrong repository (shared vs agricultural-core)
-Cache bust: forensic_investigation_complete
+Cache bust: force_aws_rebuild_timestamp_1737281140
+Version: 3.0.0-forensic-cache-bust
 """
 import os
 import sys
@@ -105,10 +106,10 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ava-olo-agricultural-core-minimal",
-        "version": "1.0.0-minimal-emergency",
+        "version": "3.0.0-forensic-cache-bust",
         "message": "Minimal API with emergency logging",
         "timestamp": datetime.now().isoformat(),
-        "deployment": "2025-07-17-20:31"
+        "deployment": "2025-07-19-09:45-cache-bust"
     }
 
 # Simple query endpoint
