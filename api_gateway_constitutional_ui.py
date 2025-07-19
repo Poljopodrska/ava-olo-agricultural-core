@@ -280,7 +280,7 @@ async def landing_page(request: Request):
             </div>
             
             <div class="action-buttons">
-                <button class="btn btn-primary" onclick="window.location.href='/start'">
+                <button class="btn btn-primary" onclick="window.location.href='/register'">
                     <span class="btn-icon">🌱</span>
                     <span>Start Working with Ava Olo</span>
                 </button>
@@ -322,11 +322,11 @@ async def health_check():
         }
     }
 
-# Start endpoint - Immediate conversation interface
-@app.get("/start", response_class=HTMLResponse)
-async def start_conversation(request: Request):
-    """Immediate start conversation window"""
-    emergency_log("🌱 Start conversation - immediate path")
+# Registration endpoint - Guided farmer registration flow
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    """Registration flow for new farmers"""
+    emergency_log("🌱 Registration flow - new farmer path")
     
     return HTMLResponse(content="""
     <!DOCTYPE html>
@@ -334,7 +334,7 @@ async def start_conversation(request: Request):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO - Agricultural Assistant</title>
+        <title>AVA OLO - Join Our Community</title>
         <style>
             :root {
                 --primary-brown: #8B4513;
@@ -350,116 +350,86 @@ async def start_conversation(request: Request):
             
             body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-                background: var(--cream);
-                color: var(--text-dark);
-                font-size: 18px;
-                line-height: 1.6;
+                background: linear-gradient(135deg, var(--primary-brown), var(--olive-green));
                 min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                font-size: 18px;
+            }
+            
+            .register-container {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                max-width: 700px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            }
+            
+            .register-header {
+                text-align: center;
+                margin-bottom: 32px;
+            }
+            
+            .register-logo {
+                font-size: 60px;
+                margin-bottom: 16px;
+            }
+            
+            .register-title {
+                font-size: 36px;
+                color: var(--primary-brown);
+                font-weight: bold;
+                margin-bottom: 12px;
+            }
+            
+            .register-subtitle {
+                font-size: 18px;
+                color: var(--olive-green);
+                opacity: 0.9;
             }
             
             .chat-container {
-                max-width: 800px;
-                margin: 0 auto;
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .chat-header {
-                background: linear-gradient(135deg, var(--primary-brown), var(--olive-green));
-                color: var(--white);
+                background: var(--cream);
+                border-radius: 15px;
                 padding: 20px;
-                display: flex;
-                align-items: center;
-                gap: 16px;
-            }
-            
-            .back-btn {
-                color: var(--white);
-                text-decoration: none;
-                font-size: 24px;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-                background: rgba(255,255,255,0.1);
-                transition: background 0.3s;
-            }
-            
-            .back-btn:hover {
-                background: rgba(255,255,255,0.2);
-            }
-            
-            .chat-title {
-                font-size: 24px;
-                font-weight: bold;
-            }
-            
-            .chat-messages {
-                flex: 1;
+                margin-bottom: 20px;
+                min-height: 300px;
+                max-height: 400px;
                 overflow-y: auto;
-                padding: 20px;
-                background: var(--white);
+                border: 2px solid var(--light-gray);
             }
             
             .message {
-                margin-bottom: 20px;
-                display: flex;
-                gap: 12px;
-            }
-            
-            .message-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-                flex-shrink: 0;
-            }
-            
-            .message-ava .message-avatar {
-                background: var(--olive-green);
-                color: var(--white);
-            }
-            
-            .message-user .message-avatar {
-                background: var(--light-gray);
-            }
-            
-            .message-content {
-                flex: 1;
-            }
-            
-            .message-name {
-                font-weight: bold;
-                margin-bottom: 4px;
-                color: var(--earth-brown);
-            }
-            
-            .message-text {
-                background: var(--light-gray);
+                margin-bottom: 16px;
                 padding: 12px 16px;
-                border-radius: 12px;
-                white-space: pre-wrap;
+                border-radius: 10px;
+                max-width: 85%;
+                font-size: 18px;
+                line-height: 1.5;
             }
             
-            .message-ava .message-text {
+            .message.ava {
                 background: #E8F5E8;
+                color: var(--text-dark);
+                margin-right: auto;
+                border-left: 4px solid var(--olive-green);
             }
             
-            .chat-input-container {
+            .message.user {
                 background: var(--white);
-                border-top: 2px solid var(--light-gray);
-                padding: 20px;
+                color: var(--text-dark);
+                margin-left: auto;
+                border: 2px solid var(--olive-green);
+                text-align: right;
             }
             
-            .chat-input-wrapper {
+            .input-group {
                 display: flex;
                 gap: 12px;
+                margin-bottom: 20px;
             }
             
             .chat-input {
@@ -467,10 +437,8 @@ async def start_conversation(request: Request):
                 padding: 16px;
                 font-size: 18px;
                 border: 2px solid var(--light-gray);
-                border-radius: 8px;
-                resize: none;
-                font-family: inherit;
-                line-height: 1.4;
+                border-radius: 10px;
+                transition: border-color 0.3s ease;
             }
             
             .chat-input:focus {
@@ -485,9 +453,9 @@ async def start_conversation(request: Request):
                 padding: 16px 32px;
                 font-size: 18px;
                 font-weight: bold;
-                border-radius: 8px;
+                border-radius: 10px;
                 cursor: pointer;
-                transition: background 0.3s;
+                transition: all 0.3s ease;
             }
             
             .send-btn:hover {
@@ -499,11 +467,71 @@ async def start_conversation(request: Request):
                 cursor: not-allowed;
             }
             
-            .typing-indicator {
-                display: none;
-                padding: 10px 0;
+            .footer-links {
+                text-align: center;
+                font-size: 16px;
                 color: #666;
-                font-style: italic;
+            }
+            
+            .footer-links a {
+                color: var(--olive-green);
+                text-decoration: none;
+            }
+            
+            .footer-links a:hover {
+                text-decoration: underline;
+            }
+            
+            .progress-indicator {
+                background: var(--light-gray);
+                height: 8px;
+                border-radius: 4px;
+                margin-bottom: 20px;
+                overflow: hidden;
+            }
+            
+            .progress-bar {
+                background: var(--olive-green);
+                height: 100%;
+                width: 20%;
+                transition: width 0.5s ease;
+            }
+            
+            .success-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .success-box {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                text-align: center;
+                max-width: 500px;
+            }
+            
+            .success-icon {
+                font-size: 80px;
+                margin-bottom: 24px;
+            }
+            
+            .success-title {
+                font-size: 32px;
+                color: var(--primary-brown);
+                margin-bottom: 16px;
+            }
+            
+            .success-text {
+                font-size: 18px;
+                color: var(--text-dark);
             }
             
             .version-display {
@@ -516,131 +544,192 @@ async def start_conversation(request: Request):
             }
             
             @media (max-width: 600px) {
-                .chat-header { padding: 16px; }
-                .chat-title { font-size: 20px; }
-                .chat-messages { padding: 16px; }
-                .chat-input { font-size: 16px; padding: 12px; }
+                .register-container { padding: 32px 24px; }
+                .register-title { font-size: 28px; }
+                .message { font-size: 16px; }
+                .chat-input { font-size: 16px; }
                 .send-btn { padding: 12px 24px; font-size: 16px; }
             }
         </style>
     </head>
     <body>
         <div class="version-display">v3.2.0</div>
-        <div class="chat-container">
-            <div class="chat-header">
-                <a href="/" class="back-btn">←</a>
-                <h1 class="chat-title">AVA OLO - Agricultural Assistant</h1>
+        <div class="register-container">
+            <div class="register-header">
+                <div class="register-logo">🌾</div>
+                <h1 class="register-title">Join AVA OLO</h1>
+                <p class="register-subtitle">Let's get to know you and your farm</p>
             </div>
             
-            <div class="chat-messages" id="chatMessages">
-                <div class="message message-ava">
-                    <div class="message-avatar">🌾</div>
-                    <div class="message-content">
-                        <div class="message-name">Ava Olo</div>
-                        <div class="message-text">Hello! I'm Ava Olo, your agricultural assistant. What crop questions do you have today? I can help with planting advice, pest management, weather insights, and more.</div>
-                    </div>
+            <div class="progress-indicator">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="message ava">
+                    Hi! I'm AVA, your agricultural assistant. Welcome! What's your first name?
                 </div>
             </div>
             
-            <div class="typing-indicator" id="typingIndicator">Ava Olo is typing...</div>
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    class="chat-input" 
+                    placeholder="Type your answer..."
+                    onkeypress="handleEnterKey(event)"
+                    autofocus
+                >
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+            </div>
             
-            <div class="chat-input-container">
-                <div class="chat-input-wrapper">
-                    <textarea 
-                        id="chatInput" 
-                        class="chat-input" 
-                        placeholder="Ask me about your crops..."
-                        rows="1"
-                        onkeypress="handleEnterKey(event)"
-                    ></textarea>
-                    <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
-                </div>
+            <div class="footer-links">
+                <a href="/">← Back to Home</a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="/login">Already have an account? Sign in</a>
+            </div>
+        </div>
+        
+        <div class="success-overlay" id="successOverlay">
+            <div class="success-box">
+                <div class="success-icon">✅</div>
+                <h2 class="success-title">Registration Complete!</h2>
+                <p class="success-text">Welcome to AVA OLO. Redirecting to your agricultural assistant...</p>
             </div>
         </div>
         
         <script>
+            let registrationData = {
+                step: 1,
+                firstName: '',
+                lastName: '',
+                whatsappNumber: '',
+                farmLocation: '',
+                primaryCrops: '',
+                password: ''
+            };
+            
+            const questions = {
+                1: "Hi! I'm AVA, your agricultural assistant. Welcome! What's your first name?",
+                2: "Nice to meet you, {firstName}! What's your last name?",
+                3: "Thank you, {firstName}! What's your WhatsApp number? (Include country code, e.g., +359...)",
+                4: "Great! Where is your farm located?",
+                5: "What crops do you primarily grow?",
+                6: "Almost done! Please create a password for your account (at least 6 characters):"
+            };
+            
             function handleEnterKey(event) {
-                if (event.key === 'Enter' && !event.shiftKey) {
+                if (event.key === 'Enter') {
                     event.preventDefault();
                     sendMessage();
                 }
             }
             
-            function autoResizeTextarea() {
-                const textarea = document.getElementById('chatInput');
-                textarea.style.height = 'auto';
-                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            function addMessageToChat(message, isUser = false) {
+                const chatContainer = document.getElementById('chatContainer');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'user' : 'ava'}`;
+                messageDiv.textContent = message;
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
             }
             
-            document.getElementById('chatInput').addEventListener('input', autoResizeTextarea);
-            
-            function addMessage(text, isUser = false) {
-                const messagesDiv = document.getElementById('chatMessages');
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${isUser ? 'message-user' : 'message-ava'}`;
-                
-                messageDiv.innerHTML = `
-                    <div class="message-avatar">${isUser ? '👨‍🌾' : '🌾'}</div>
-                    <div class="message-content">
-                        <div class="message-name">${isUser ? 'You' : 'Ava Olo'}</div>
-                        <div class="message-text">${text}</div>
-                    </div>
-                `;
-                
-                messagesDiv.appendChild(messageDiv);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            function updateProgress() {
+                const progressBar = document.getElementById('progressBar');
+                const progress = (registrationData.step / 6) * 100;
+                progressBar.style.width = progress + '%';
             }
             
             async function sendMessage() {
                 const input = document.getElementById('chatInput');
                 const sendBtn = document.getElementById('sendBtn');
-                const typingIndicator = document.getElementById('typingIndicator');
                 const message = input.value.trim();
                 
                 if (!message) return;
                 
                 // Add user message
-                addMessage(message, true);
+                addMessageToChat(message, true);
                 
-                // Clear input and disable
+                // Process based on step
+                switch(registrationData.step) {
+                    case 1:
+                        registrationData.firstName = message;
+                        break;
+                    case 2:
+                        registrationData.lastName = message;
+                        break;
+                    case 3:
+                        registrationData.whatsappNumber = message;
+                        break;
+                    case 4:
+                        registrationData.farmLocation = message;
+                        break;
+                    case 5:
+                        registrationData.primaryCrops = message;
+                        break;
+                    case 6:
+                        registrationData.password = message;
+                        break;
+                }
+                
+                // Clear input
                 input.value = '';
-                input.style.height = 'auto';
                 input.disabled = true;
                 sendBtn.disabled = true;
-                typingIndicator.style.display = 'block';
                 
-                try {
-                    const response = await fetch('/api/v1/query', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            query: message,
-                            farmer_id: null  // Anonymous user
-                        })
-                    });
+                // Move to next step
+                if (registrationData.step < 6) {
+                    registrationData.step++;
+                    updateProgress();
                     
-                    const data = await response.json();
+                    // Show next question
+                    setTimeout(() => {
+                        let nextQuestion = questions[registrationData.step];
+                        nextQuestion = nextQuestion.replace('{firstName}', registrationData.firstName);
+                        addMessageToChat(nextQuestion);
+                        input.disabled = false;
+                        sendBtn.disabled = false;
+                        input.focus();
+                    }, 500);
+                } else {
+                    // Registration complete
+                    updateProgress();
                     
-                    if (data.answer) {
-                        addMessage(data.answer);
-                    } else {
-                        addMessage('I apologize, but I encountered an issue processing your question. Please try again.');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    addMessage('I apologize, but I\'m having trouble connecting. Please check your internet connection and try again.');
-                } finally {
-                    input.disabled = false;
-                    sendBtn.disabled = false;
-                    typingIndicator.style.display = 'none';
-                    input.focus();
+                    // Show processing message
+                    addMessageToChat("Thank you! I'm creating your account...");
+                    
+                    // Simulate account creation
+                    setTimeout(async () => {
+                        try {
+                            // In production, this would call the actual registration API
+                            const userData = {
+                                full_name: `${registrationData.firstName} ${registrationData.lastName}`,
+                                wa_phone_number: registrationData.whatsappNumber,
+                                farm_location: registrationData.farmLocation,
+                                primary_crops: registrationData.primaryCrops,
+                                password: registrationData.password
+                            };
+                            
+                            // For now, simulate success
+                            document.getElementById('successOverlay').style.display = 'flex';
+                            
+                            // Redirect after delay
+                            setTimeout(() => {
+                                window.location.href = '/chat';
+                            }, 3000);
+                            
+                        } catch (error) {
+                            console.error('Registration error:', error);
+                            addMessageToChat('I apologize, but there was an error creating your account. Please try again.');
+                            input.disabled = false;
+                            sendBtn.disabled = false;
+                        }
+                    }, 1500);
                 }
             }
             
-            // Focus on input when page loads
-            document.getElementById('chatInput').focus();
+            // Initialize
+            updateProgress();
         </script>
     </body>
     </html>
@@ -894,7 +983,7 @@ async def login_page(request: Request):
                     successDiv.style.display = 'block';
                     
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
+                        window.location.href = '/chat';
                     }, 1500);
                     
                 } catch (error) {
@@ -910,6 +999,420 @@ async def login_page(request: Request):
     </html>
     """, status_code=200)
 
+# Chat endpoint - Agricultural conversation for authenticated users
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_interface(request: Request):
+    """Agricultural conversation interface for authenticated farmers"""
+    emergency_log("💬 Agricultural chat - authenticated area")
+    
+    # Note: In production, this would check authentication
+    # For now, we'll show the interface
+    
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Agricultural Assistant</title>
+        <style>
+            :root {
+                --primary-brown: #8B4513;
+                --olive-green: #6B8E23;
+                --earth-brown: #5C4033;
+                --cream: #F5F3F0;
+                --white: #FFFFFF;
+                --text-dark: #2C2C2C;
+                --light-gray: #E8E8E6;
+            }
+            
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                background: var(--cream);
+                color: var(--text-dark);
+                font-size: 18px;
+                line-height: 1.6;
+                min-height: 100vh;
+            }
+            
+            .chat-container {
+                max-width: 900px;
+                margin: 0 auto;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .chat-header {
+                background: linear-gradient(135deg, var(--primary-brown), var(--olive-green));
+                color: var(--white);
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .header-left {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex: 1;
+            }
+            
+            .atomic-logo {
+                width: 40px;
+                height: 40px;
+                position: relative;
+            }
+            
+            .electron {
+                position: absolute;
+                width: 40px;
+                height: 15px;
+                border: 2px solid var(--white);
+                border-radius: 50%;
+                animation: rotate 3s linear infinite;
+            }
+            
+            .electron1 { transform: rotateZ(0deg); }
+            .electron2 { transform: rotateZ(60deg); animation-delay: -1s; }
+            .electron3 { transform: rotateZ(120deg); animation-delay: -2s; }
+            
+            @keyframes rotate {
+                100% { transform: rotateZ(360deg); }
+            }
+            
+            .chat-title {
+                font-size: 24px;
+                font-weight: bold;
+            }
+            
+            .user-menu {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .user-name {
+                font-size: 16px;
+                opacity: 0.9;
+            }
+            
+            .logout-btn {
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 16px;
+                transition: all 0.3s ease;
+                text-decoration: none;
+            }
+            
+            .logout-btn:hover {
+                background: rgba(255,255,255,0.3);
+            }
+            
+            .chat-messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+                background: var(--white);
+            }
+            
+            .welcome-message {
+                text-align: center;
+                padding: 40px 20px;
+                color: var(--olive-green);
+            }
+            
+            .welcome-icon {
+                font-size: 60px;
+                margin-bottom: 16px;
+            }
+            
+            .welcome-text {
+                font-size: 20px;
+                margin-bottom: 8px;
+            }
+            
+            .welcome-hint {
+                color: #666;
+                font-size: 16px;
+            }
+            
+            .message {
+                margin-bottom: 20px;
+                display: flex;
+                gap: 12px;
+            }
+            
+            .message-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+            
+            .message-ava .message-avatar {
+                background: var(--olive-green);
+                color: var(--white);
+            }
+            
+            .message-user .message-avatar {
+                background: var(--light-gray);
+            }
+            
+            .message-content {
+                flex: 1;
+            }
+            
+            .message-name {
+                font-weight: bold;
+                margin-bottom: 4px;
+                color: var(--earth-brown);
+            }
+            
+            .message-text {
+                background: var(--light-gray);
+                padding: 12px 16px;
+                border-radius: 12px;
+                white-space: pre-wrap;
+            }
+            
+            .message-ava .message-text {
+                background: #E8F5E8;
+            }
+            
+            .chat-input-container {
+                background: var(--white);
+                border-top: 2px solid var(--light-gray);
+                padding: 20px;
+            }
+            
+            .chat-input-wrapper {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .chat-input {
+                flex: 1;
+                padding: 16px;
+                font-size: 18px;
+                border: 2px solid var(--light-gray);
+                border-radius: 8px;
+                resize: none;
+                font-family: inherit;
+                line-height: 1.4;
+            }
+            
+            .chat-input:focus {
+                outline: none;
+                border-color: var(--olive-green);
+            }
+            
+            .send-btn {
+                background: var(--olive-green);
+                color: var(--white);
+                border: none;
+                padding: 16px 32px;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            
+            .send-btn:hover {
+                background: #5A7A1C;
+            }
+            
+            .send-btn:disabled {
+                background: #CCC;
+                cursor: not-allowed;
+            }
+            
+            .typing-indicator {
+                display: none;
+                padding: 10px 20px;
+                color: #666;
+                font-style: italic;
+            }
+            
+            .version-display {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                color: #666;
+                font-size: 14px;
+                z-index: 1000;
+            }
+            
+            @media (max-width: 600px) {
+                .chat-header { 
+                    padding: 16px;
+                    flex-wrap: wrap;
+                }
+                .chat-title { font-size: 20px; }
+                .user-menu { width: 100%; justify-content: space-between; }
+                .chat-messages { padding: 16px; }
+                .chat-input { font-size: 16px; padding: 12px; }
+                .send-btn { padding: 12px 24px; font-size: 16px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="version-display">v3.2.0</div>
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="header-left">
+                    <div class="atomic-logo">
+                        <div class="electron electron1"></div>
+                        <div class="electron electron2"></div>
+                        <div class="electron electron3"></div>
+                    </div>
+                    <h1 class="chat-title">AVA OLO - Agricultural Assistant</h1>
+                </div>
+                <div class="user-menu">
+                    <span class="user-name" id="userName">Farmer</span>
+                    <a href="/" class="logout-btn">Sign Out</a>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                    <div class="welcome-icon">🌾</div>
+                    <div class="welcome-text">Welcome to your agricultural assistant!</div>
+                    <div class="welcome-hint">Ask me anything about your crops, weather, pests, or farming practices.</div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">Ava Olo is typing...</div>
+            
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask me about your crops..."
+                        rows="1"
+                        onkeypress="handleEnterKey(event)"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // Load user data from localStorage (in production, from session)
+            const userData = JSON.parse(localStorage.getItem('ava_user') || '{}');
+            if (userData.full_name) {
+                document.getElementById('userName').textContent = userData.full_name.split(' ')[0];
+            }
+            
+            function handleEnterKey(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            }
+            
+            function autoResizeTextarea() {
+                const textarea = document.getElementById('chatInput');
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            }
+            
+            document.getElementById('chatInput').addEventListener('input', autoResizeTextarea);
+            
+            function addMessage(text, isUser = false, userName = null) {
+                const messagesDiv = document.getElementById('chatMessages');
+                
+                // Remove welcome message on first interaction
+                const welcomeMsg = messagesDiv.querySelector('.welcome-message');
+                if (welcomeMsg) {
+                    welcomeMsg.remove();
+                }
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'message-user' : 'message-ava'}`;
+                
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">${isUser ? '👨‍🌾' : '🌾'}</div>
+                    <div class="message-content">
+                        <div class="message-name">${isUser ? (userName || 'You') : 'Ava Olo'}</div>
+                        <div class="message-text">${text}</div>
+                    </div>
+                `;
+                
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+            
+            async function sendMessage() {
+                const input = document.getElementById('chatInput');
+                const sendBtn = document.getElementById('sendBtn');
+                const typingIndicator = document.getElementById('typingIndicator');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message
+                addMessage(message, true, userData.full_name?.split(' ')[0]);
+                
+                // Clear input and disable
+                input.value = '';
+                input.style.height = 'auto';
+                input.disabled = true;
+                sendBtn.disabled = true;
+                typingIndicator.style.display = 'block';
+                
+                try {
+                    const response = await fetch('/api/v1/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            // In production, include auth token
+                            // 'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({
+                            query: message,
+                            farmer_id: userData.farmer_id || 1
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.answer) {
+                        addMessage(data.answer);
+                    } else {
+                        addMessage('I apologize, but I encountered an issue processing your question. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('I apologize, but I\'m having trouble connecting. Please check your internet connection and try again.');
+                } finally {
+                    input.disabled = false;
+                    sendBtn.disabled = false;
+                    typingIndicator.style.display = 'none';
+                    input.focus();
+                }
+            }
+            
+            // Focus on input when page loads
+            document.getElementById('chatInput').focus();
+        </script>
+    </body>
+    </html>
+    """, status_code=200)
+
 # Dashboard endpoint (placeholder for authenticated users)
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request):
@@ -917,8 +1420,8 @@ async def dashboard(request: Request):
     emergency_log("📊 Dashboard - authenticated user area")
     
     # In production, this would check authentication and load user data
-    # For now, redirect to the constitutional UI template
-    return HTMLResponse(content=CONSTITUTIONAL_UI_TEMPLATE, status_code=200)
+    # For now, redirect to chat
+    return HTMLResponse(content='<meta http-equiv="refresh" content="0; url=/chat">', status_code=200)
 
 # Query endpoint for form submissions
 @app.post("/web/query", response_class=HTMLResponse)
