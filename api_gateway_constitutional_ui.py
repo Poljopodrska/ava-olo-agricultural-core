@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.2-conversation-fix
+Version: 3.2.3-version-display
 Bulgarian Mango Farmer Compliant ✅
-Fixed: Complete agricultural conversation with CAVA LLM integration and database persistence
+Fixed: Version display on ALL pages + CAVA conversation integration
 """
 import os
 import sys
@@ -17,6 +17,9 @@ def emergency_log(message):
     timestamp = datetime.now().isoformat()
     print(f"🚨 CONSTITUTIONAL LOG {timestamp}: {message}", flush=True)
     sys.stdout.flush()
+
+# Version constant - update this for all pages
+VERSION = "3.2.3-version-display"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -42,7 +45,7 @@ except Exception as e:
 # Create FastAPI app with constitutional compliance
 app = FastAPI(
     title="AVA OLO Agricultural Core - Constitutional UI", 
-    version="3.2.2-conversation-fix",
+    version=VERSION,
     description="Bulgarian Mango Farmer Compliant Agricultural Assistant"
 )
 
@@ -120,7 +123,7 @@ async def landing_page(request: Request):
     """Landing page with dual authentication options"""
     emergency_log("🏠 Landing page - dual authentication paths")
     
-    return HTMLResponse(content="""
+    return HTMLResponse(content=f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -297,7 +300,7 @@ async def landing_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.1</div>
+        <div class="version-display">v{VERSION}</div>
         <div class="landing-container">
             <div class="logo-section">
                 <div class="atomic-logo">
@@ -338,7 +341,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ava-olo-agricultural-core-constitutional-ui",
-        "version": "3.2.2-conversation-fix",
+        "version": VERSION,
         "message": "Constitutional UI serving Bulgarian mango farmers",
         "timestamp": datetime.now().isoformat(),
         "ui_status": "operational",
@@ -358,7 +361,7 @@ async def register_page(request: Request):
     """Registration flow for new farmers"""
     emergency_log("🌱 Registration flow - new farmer path")
     
-    return HTMLResponse(content="""
+    return HTMLResponse(content=f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -583,7 +586,7 @@ async def register_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.1</div>
+        <div class="version-display">v{VERSION}</div>
         <div class="register-container">
             <div class="register-header">
                 <div class="register-logo">🌾</div>
@@ -771,7 +774,7 @@ async def login_page(request: Request):
     """Login page for existing users with WhatsApp authentication"""
     emergency_log("🔐 Login page - WhatsApp authentication")
     
-    return HTMLResponse(content="""
+    return HTMLResponse(content=f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -932,7 +935,7 @@ async def login_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.1</div>
+        <div class="version-display">v{VERSION}</div>
         <div class="login-container">
             <div class="login-header">
                 <h1 class="login-title">Welcome Back</h1>
@@ -1038,7 +1041,7 @@ async def chat_interface(request: Request):
     # Note: In production, this would check authentication
     # For now, we'll show the interface
     
-    return HTMLResponse(content="""
+    return HTMLResponse(content=f"""
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -1299,7 +1302,7 @@ async def chat_interface(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.1</div>
+        <div class="version-display">v{VERSION}</div>
         <div class="chat-container">
             <div class="chat-header">
                 <div class="header-left">
@@ -1546,6 +1549,7 @@ async def web_query(
         </style>
     </head>
     <body>
+        <div class="version-display" style="position: fixed; top: 10px; right: 10px; color: #666; font-size: 14px;">v{VERSION}</div>
         <div class="container">
             <h1>🥭 Agricultural Advice</h1>
             <div class="response">
