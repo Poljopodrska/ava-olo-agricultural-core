@@ -3116,24 +3116,13 @@ async def redirect_database():
     return RedirectResponse(url="/", status_code=302)
 
 # Farmer Registration Form
-@app.get("/farmer-registration", response_class=HTMLResponse)
-async def farmer_registration_form():
-    """Farmer Registration Form with password for app access"""
-    with open("templates/farmer_registration.html", "r") as f:
-        content = f.read()
-    
-    # Replace API key placeholder with actual API key from environment
-    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', '')
-    
-    if google_maps_api_key and google_maps_api_key != 'YOUR_GOOGLE_MAPS_API_KEY':
-        print(f"DEBUG: Google Maps API Key loaded: {google_maps_api_key[:10]}...")
-        content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', google_maps_api_key)
-    else:
-        print("DEBUG: Google Maps API Key not found or invalid - using fallback")
-        # Replace with a placeholder that will trigger the fallback
-        content = content.replace('YOUR_GOOGLE_MAPS_API_KEY', 'MISSING_API_KEY')
-    
-    return HTMLResponse(content=content)
+@app.get("/farmer-registration")
+async def farmer_registration_form(request: Request):
+    """Farmer Registration Form with Constitutional Design"""
+    return make_template_response("farmer_registration.html", {
+        "request": request,
+        "show_back_button": True
+    })
 
 # Google Maps Test Page
 @app.get("/test-maps", response_class=HTMLResponse)
