@@ -42,6 +42,27 @@ class CAVARegistrationEngine:
         Extract data, determine next action, generate response
         """
         
+        # Try to use the new LLM engine first
+        try:
+            from cava_registration_llm import get_llm_registration_engine
+            llm_engine = await get_llm_registration_engine()
+            
+            # Use the LLM engine
+            result = await llm_engine.process_registration_message(
+                message=message,
+                session_id=session_id,
+                conversation_history=conversation_history
+            )
+            
+            # Ensure compatible response format
+            if "redirect_to" not in result and result.get("registration_complete"):
+                result["redirect_to"] = "/chat"
+            
+            return result
+            
+        except Exception as e:
+            logger.warning(f"LLM engine not available ({e}), trying CAVA service")
+        
         # Initialize or get session
         if session_id not in registration_sessions:
             registration_sessions[session_id] = {
