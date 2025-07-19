@@ -17,6 +17,21 @@ jinja2==3.1.3
 # Form handling
 python-multipart==0.0.6
 
-# Cache bust: 1737285980_constitutional_ui_deployment
-# Deployment version: 3.1.0-constitutional-ui
-# Bulgarian mango farmer support: ENABLED
+# Database connectivity - CRITICAL for CAVA and database operations
+psycopg2-binary==2.9.9
+asyncpg==0.29.0
+sqlalchemy==2.0.25
+
+# Async HTTP client for CAVA service
+aiohttp==3.9.3
+
+# OpenAI for LLM operations
+openai==1.12.0
+
+# Additional async support
+anyio==4.2.0
+sniffio==1.3.0
+
+# Cache bust: 1737286800_v3.2.6_fix_dependencies
+# Deployment version: 3.2.6-dependency-fix
+# Fixed: Missing critical dependencies for CAVA and database operations

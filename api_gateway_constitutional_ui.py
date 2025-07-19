@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.5-comprehensive-fix
+Version: 3.2.6-dependency-fix
 Bulgarian Mango Farmer Compliant ✅
-Fixed: Comprehensive fix - Enter key, CAVA conversation, version on ALL pages
+Fixed: Missing dependencies in requirements.txt causing import failures
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.2.5-comprehensive-fix"
+VERSION = "3.2.6-dependency-fix"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
