@@ -13,12 +13,9 @@ run:
   command: python main.py
   network:
     port: 8080
-    env:
-    - name: FORCE_REBUILD
-      value: "1752922669"  # FORCE_REBUILD PORT v2.1.6
   env:
     - name: FORCE_REBUILD
-      value: "1752922669"  # FORCE_REBUILD v2.1.6
+      value: "1752922669"  # FORCE_REBUILD v2.1.7-yaml-fix
     - name: DB_HOST
       value: "your-db-host"
     - name: DB_NAME

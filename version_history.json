@@ -1,8 +1,18 @@
 {
-    "current_version": "v2.1.6-deployment-fix",
+    "current_version": "v2.1.7-yaml-fix",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-01-19",
     "version_history": [
+        {
+            "version": "v2.1.7-yaml-fix",
+            "date": "2025-01-19",
+            "changes": [
+                "Fixed apprunner.yaml duplicate env sections",
+                "Removed env from network section",
+                "Corrected YAML structure for AWS parsing",
+                "All field registration fixes now deployable"
+            ]
+        },
         {
             "version": "v2.1.6-deployment-fix",
             "date": "2025-01-19",
