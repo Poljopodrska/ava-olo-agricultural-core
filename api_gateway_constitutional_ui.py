@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.3-version-display
+Version: 3.2.4-fstring-fix
 Bulgarian Mango Farmer Compliant ✅
-Fixed: Version display on ALL pages + CAVA conversation integration
+Fixed: Rollback due to f-string syntax - now using string concatenation
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.2.3-version-display"
+VERSION = "3.2.4-fstring-fix"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -123,7 +123,7 @@ async def landing_page(request: Request):
     """Landing page with dual authentication options"""
     emergency_log("🏠 Landing page - dual authentication paths")
     
-    return HTMLResponse(content=f"""
+    html_content = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -300,7 +300,7 @@ async def landing_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v{VERSION}</div>
+        <div class="version-display">v""" + VERSION + """</div>
         <div class="landing-container">
             <div class="logo-section">
                 <div class="atomic-logo">
@@ -332,7 +332,8 @@ async def landing_page(request: Request):
         </div>
     </body>
     </html>
-    """, status_code=200)
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 # Health endpoint with UI info
 @app.get("/health")
@@ -361,7 +362,7 @@ async def register_page(request: Request):
     """Registration flow for new farmers"""
     emergency_log("🌱 Registration flow - new farmer path")
     
-    return HTMLResponse(content=f"""
+    html_content = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -586,7 +587,7 @@ async def register_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v{VERSION}</div>
+        <div class="version-display">v""" + VERSION + """</div>
         <div class="register-container">
             <div class="register-header">
                 <div class="register-logo">🌾</div>
@@ -766,7 +767,8 @@ async def register_page(request: Request):
         </script>
     </body>
     </html>
-    """, status_code=200)
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 # Login endpoint
 @app.get("/login", response_class=HTMLResponse)
@@ -774,7 +776,7 @@ async def login_page(request: Request):
     """Login page for existing users with WhatsApp authentication"""
     emergency_log("🔐 Login page - WhatsApp authentication")
     
-    return HTMLResponse(content=f"""
+    html_content = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -935,7 +937,7 @@ async def login_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v{VERSION}</div>
+        <div class="version-display">v""" + VERSION + """</div>
         <div class="login-container">
             <div class="login-header">
                 <h1 class="login-title">Welcome Back</h1>
@@ -1030,7 +1032,8 @@ async def login_page(request: Request):
         </script>
     </body>
     </html>
-    """, status_code=200)
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 # Chat endpoint - Agricultural conversation for authenticated users
 @app.get("/chat", response_class=HTMLResponse)
@@ -1041,7 +1044,7 @@ async def chat_interface(request: Request):
     # Note: In production, this would check authentication
     # For now, we'll show the interface
     
-    return HTMLResponse(content=f"""
+    html_content = """
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -1302,7 +1305,7 @@ async def chat_interface(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v{VERSION}</div>
+        <div class="version-display">v""" + VERSION + """</div>
         <div class="chat-container">
             <div class="chat-header">
                 <div class="header-left">
@@ -1494,7 +1497,8 @@ async def chat_interface(request: Request):
         </script>
     </body>
     </html>
-    """, status_code=200)
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 # Dashboard endpoint (placeholder for authenticated users)
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -1535,7 +1539,7 @@ async def web_query(
             pass
     
     # Fallback response
-    return HTMLResponse(content=f"""
+    html_content = """
     <!DOCTYPE html>
     <html>
     <head>
@@ -1563,7 +1567,8 @@ async def web_query(
         </div>
     </body>
     </html>
-    """, status_code=200)
+    """
+    return HTMLResponse(content=html_content, status_code=200)
 
 # API query endpoint (JSON)
 @app.post("/api/v1/query", response_model=QueryResponse)
