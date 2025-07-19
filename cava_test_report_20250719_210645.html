@@ -1,0 +1,204 @@
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>CAVA Test Dialogues - 20250719_210645</title>
+        <style>
+            body { 
+                font-family: Arial, sans-serif; 
+                margin: 20px;
+                background: #f5f5f5;
+            }
+            h1 {
+                color: #2e7d32;
+                border-bottom: 3px solid #2e7d32;
+                padding-bottom: 10px;
+            }
+            .test { 
+                background: white;
+                border: 1px solid #ddd; 
+                margin: 20px 0; 
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .test h2 {
+                margin-top: 0;
+                color: #1976d2;
+            }
+            .description {
+                font-style: italic;
+                color: #666;
+                margin-bottom: 20px;
+            }
+            .exchange {
+                margin: 15px 0;
+                border-left: 3px solid #ddd;
+                padding-left: 15px;
+            }
+            .farmer { 
+                background: #e8f5e9; 
+                padding: 10px; 
+                margin: 5px 0;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            .ava { 
+                background: #f3e5f5; 
+                padding: 10px; 
+                margin: 5px 0;
+                border-radius: 4px;
+            }
+            .extracted { 
+                background: #fff3cd; 
+                padding: 10px; 
+                margin: 5px 0; 
+                font-size: 12px;
+                font-family: monospace;
+                border-radius: 4px;
+            }
+            .error { 
+                background: #f8d7da; 
+                padding: 10px;
+                border-radius: 4px;
+                color: #721c24;
+            }
+            .final-data {
+                background: #d4edda;
+                padding: 15px;
+                margin-top: 20px;
+                border-radius: 4px;
+            }
+            .completed {
+                color: #155724;
+                font-weight: bold;
+            }
+            .incomplete {
+                color: #856404;
+                font-weight: bold;
+            }
+            .summary {
+                background: white;
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🎭 CAVA Registration Test Dialogues</h1>
+        <p>Generated: 2025-07-19 21:06:45</p>
+        <p>Version: 3.3.6-cava-direct-gpt4</p>
+    
+        <div class='summary'>
+            <h2>Summary</h2>
+            <p>Total Tests: 9</p>
+            <p>Completed: 1</p>
+            <p>Incomplete: 8</p>
+        </div>
+    <div class='test'><h2>✅ Simple Peter Test</h2><div class='description'>Basic registration flow with single-word answers</div><div class='exchange'><div class='farmer'>👤 FARMER: Peter</div><div class='ava'>🤖 AVA: Hello, Peter! Nice to meet you. I would need some more information for the registration. Could you please tell me your last name, the location of your farm, the main crops you grow, and your WhatsApp number with the country code?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d",
+  "whatsapp_number": "+38640123456",
+  "farm_location": "Ljubljana",
+  "primary_crops": "corn"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Knaflič</div><div class='ava'>🤖 AVA: Thank you, Peter Knaflič. Now, could you please tell me where your farm is located and the main crops you grow there? Also, I'll need your WhatsApp number with the country code for further communication.</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d",
+  "whatsapp_number": "+38640123456",
+  "farm_location": "Ljubljana",
+  "primary_crops": "corn"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: +38640123456</div><div class='ava'>🤖 AVA: Thanks for sharing your WhatsApp number, Peter. Now, could you please tell me where your farm is located and what are the main crops you grow there?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d",
+  "whatsapp_number": "+38640123456",
+  "farm_location": "Ljubljana",
+  "primary_crops": "corn"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Ljubljana</div><div class='ava'>🤖 AVA: Great, Peter! Ljubljana is a beautiful place. Now, could you please tell me what are the main crops you grow on your farm?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d",
+  "whatsapp_number": "+38640123456",
+  "farm_location": "Ljubljana",
+  "primary_crops": "corn"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: corn</div><div class='ava'>🤖 AVA: Corn, that's wonderful, Peter! Corn is a very versatile crop. Thank you for providing all the necessary information for the registration. Let me know if you need any further assistance.</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d",
+  "whatsapp_number": "+38640123456",
+  "farm_location": "Ljubljana",
+  "primary_crops": "corn"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d",
+  "whatsapp_number": "+38640123456",
+  "farm_location": "Ljubljana",
+  "primary_crops": "corn"
+}</pre><p class='completed'>Status: ✅ Registration Complete</p></div></div><div class='test'><h2>❌ Ljubljana First Test</h2><div class='description'>What happens when they start with a city name?</div><div class='exchange'><div class='farmer'>👤 FARMER: Ljubljana</div><div class='ava'>🤖 AVA: It's great to meet you! Ljubljana is a beautiful place. Could I please have your first and last name for registration? Also, could you let me know the main crops you grow on your farm?</div><div class='extracted'>📊 Extracted: <pre>{
+  "farm_location": "Ljubljana"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "farm_location": "Ljubljana"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Full Name Test</h2><div class='description'>Should extract both first and last name</div><div class='exchange'><div class='farmer'>👤 FARMER: Peter Knaflič</div><div class='ava'>🤖 AVA: Nice to meet you, Peter Knaflič! Now, could you please provide me with your WhatsApp number, including the country code? Also, I would like to know the location of your farm and the main crops you grow there.</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "first_name": "Peter",
+  "last_name": "Knafli\u010d"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Complex Sentence Test</h2><div class='description'>Should extract multiple pieces of information</div><div class='exchange'><div class='farmer'>👤 FARMER: I'm Ana Horvat from Ljubljana, I grow tomatoes</div><div class='ava'>🤖 AVA: Hello Ana, it's great to meet a farmer from Ljubljana who grows tomatoes. I still need to get your WhatsApp number. Could you please provide it, including your country code?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Ana",
+  "last_name": "Horvat",
+  "farm_location": "Ljubljana",
+  "primary_crops": "tomatoes"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "first_name": "Ana",
+  "last_name": "Horvat",
+  "farm_location": "Ljubljana",
+  "primary_crops": "tomatoes"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Correction Test</h2><div class='description'>Should handle corrections</div><div class='exchange'><div class='farmer'>👤 FARMER: Petre</div><div class='ava'>🤖 AVA: Hello Petre! It's nice to meet you. Could you please tell me your last name? Also, can you share with me the location of your farm?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Sorry, I meant Peter</div><div class='ava'>🤖 AVA: No problem at all, Peter. Can you please tell me your last name? And could you also share with me the location of your farm?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "Peter"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "first_name": "Peter"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Invalid Phone Test</h2><div class='description'>Should recognize invalid phone and ask again</div><div class='exchange'><div class='farmer'>👤 FARMER: John</div><div class='ava'>🤖 AVA: Nice to meet you, John! To continue with your registration, could you please tell me your last name, the location of your farm, the main crops you grow, and your WhatsApp number including the country code?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "John",
+  "last_name": "Smith"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Smith</div><div class='ava'>🤖 AVA: Thanks, John Smith. Now, could you please tell me where your farm is located, the main crops you grow, and your WhatsApp number including the country code?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "John",
+  "last_name": "Smith"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: 123</div><div class='ava'>🤖 AVA: I'm sorry, John, but '123' doesn't seem like a complete phone number or a location. Could you please provide your WhatsApp number with the country code, the location of your farm, and the main crops you grow?</div><div class='extracted'>📊 Extracted: <pre>{
+  "first_name": "John",
+  "last_name": "Smith"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "first_name": "John",
+  "last_name": "Smith"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Crocodile Test</h2><div class='description'>Should redirect from off-topic to registration</div><div class='exchange'><div class='farmer'>👤 FARMER: My crocodile ate my mangoes</div><div class='ava'>🤖 AVA: Oh dear, that's quite unusual! I'm sorry to hear about your mangoes. By the way, I'm here to help register your farm. Could you please tell me your full name?</div><div class='extracted'>📊 Extracted: <pre>{
+  "primary_crops": "mangoes",
+  "first_name": "Peter"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Peter</div><div class='ava'>🤖 AVA: Nice to meet you, Peter! Could you please tell me your last name as well?</div><div class='extracted'>📊 Extracted: <pre>{
+  "primary_crops": "mangoes",
+  "first_name": "Peter"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "primary_crops": "mangoes",
+  "first_name": "Peter"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Negation Test</h2><div class='description'>Should understand Ljubljana is location, not name</div><div class='exchange'><div class='farmer'>👤 FARMER: My name is not Ljubljana, I'm from there</div><div class='ava'>🤖 AVA: Nice to meet you! And my apologies for any confusion. Could you please tell me your first and last name? Also, it's great to know you're from Ljubljana. What crops do you mainly grow on your farm?</div><div class='extracted'>📊 Extracted: <pre>{
+  "farm_location": "Ljubljana",
+  "first_name": "Ana",
+  "last_name": "Kova\u010d"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Ana Kovač</div><div class='ava'>🤖 AVA: Nice to meet you, Ana Kovač! Now, could you please share with me the main crops you grow on your farm in Ljubljana?</div><div class='extracted'>📊 Extracted: <pre>{
+  "farm_location": "Ljubljana",
+  "first_name": "Ana",
+  "last_name": "Kova\u010d"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "farm_location": "Ljubljana",
+  "first_name": "Ana",
+  "last_name": "Kova\u010d"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div><div class='test'><h2>❌ Question Context Test</h2><div class='description'>Should extract Sisak as location from question</div><div class='exchange'><div class='farmer'>👤 FARMER: Sisak, you know where that is?</div><div class='ava'>🤖 AVA: Hello! Of course, I know Sisak. It's a beautiful place in Croatia. Are you registering a farm located in Sisak?</div><div class='extracted'>📊 Extracted: <pre>{
+  "farm_location": "Sisak"
+}</pre></div></div><div class='exchange'><div class='farmer'>👤 FARMER: Yes, that's my farm location</div><div class='ava'>🤖 AVA: That's wonderful! Now, could you please tell me your full name?</div><div class='extracted'>📊 Extracted: <pre>{
+  "farm_location": "Sisak"
+}</pre></div></div><div class='final-data'><strong>Final Collected Data:</strong><pre>{
+  "farm_location": "Sisak"
+}</pre><p class='incomplete'>Status: ❌ Registration Incomplete</p></div></div>
+    </body>
+    </html>
+    

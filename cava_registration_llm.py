@@ -400,3 +400,11 @@ async def get_llm_registration_engine() -> CAVARegistrationLLM:
     if _llm_engine is None:
         _llm_engine = CAVARegistrationLLM()
     return _llm_engine
+
+def reset_all_sessions():
+    """Emergency reset - call between tests if needed"""
+    global registration_sessions
+    old_count = len(registration_sessions)
+    registration_sessions.clear()
+    logger.info(f"🔄 Reset all registration sessions (cleared {old_count} sessions)")
+    return old_count

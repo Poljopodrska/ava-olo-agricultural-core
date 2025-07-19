@@ -7,7 +7,7 @@ Shows complete conversations, not just pass/fail
 import asyncio
 import json
 from datetime import datetime
-from cava_registration_llm import get_llm_registration_engine, registration_sessions
+from cava_registration_llm import get_llm_registration_engine, registration_sessions, reset_all_sessions
 
 # Test cases with expected outcomes
 DIALOGUE_TEST_CASES = [
@@ -66,13 +66,35 @@ async def run_dialogue_test(test_case):
     print(f"Description: {test_case['description']}")
     print(f"{'='*70}\n")
     
-    # Initialize
-    llm = await get_llm_registration_engine()
-    session_id = f"test_{test_case['name'].replace(' ', '_').lower()}"
+    # Create truly unique session ID with timestamp
+    import time
+    timestamp = int(time.time() * 1000000)  # Microsecond precision
+    session_id = f"test_{timestamp}_{test_case['name'].replace(' ', '_').lower()}"
     
-    # Clear any existing session
+    print(f"📌 Using session ID: {session_id}")
+    
+    # VERIFY no contamination
+    print(f"🔍 Pre-test session check:")
+    print(f"   Total sessions in memory: {len(registration_sessions)}")
+    
+    # Check for any pre-existing data
     if session_id in registration_sessions:
+        print(f"   ⚠️ WARNING: Session already exists! Clearing...")
         del registration_sessions[session_id]
+    
+    # Double-check for contamination in ALL sessions
+    all_data = []
+    for sid, session in registration_sessions.items():
+        if 'collected_data' in session:
+            all_data.append(session['collected_data'])
+    
+    if any('Knaflič' in str(data) for data in all_data):
+        print("   🚨 CONTAMINATION DETECTED: Found 'Knaflič' in other sessions!")
+        print("   🧹 Forcing complete session reset...")
+        registration_sessions.clear()
+    
+    # Initialize fresh
+    llm = await get_llm_registration_engine()
     
     # Store complete dialogue
     dialogue = {
@@ -146,6 +168,13 @@ async def run_dialogue_test(test_case):
         print(f"\n📋 FINAL COLLECTED DATA:")
         print(json.dumps(final_data, indent=2))
         dialogue['final_collected_data'] = final_data
+        
+        # Debug: Dump session state
+        dump_session_state(session_id)
+        
+        # Clean up this test's session after capturing data
+        del registration_sessions[session_id]
+        print(f"🧹 Cleaned up session: {session_id}")
     else:
         dialogue['final_collected_data'] = {}
     
@@ -154,12 +183,52 @@ async def run_dialogue_test(test_case):
     
     return dialogue
 
+def dump_session_state(session_id):
+    """Debug function to see what's in session"""
+    if session_id in registration_sessions:
+        session = registration_sessions[session_id]
+        print(f"\n📦 Session State Dump for {session_id}:")
+        print(f"   Collected Data: {session.get('collected_data', {})}")
+        print(f"   History Length: {len(session.get('conversation_history', []))}")
+        print(f"   Language: {session.get('language_detected', 'None')}")
+        
+        # Check for contamination
+        data_str = str(session.get('collected_data', {}))
+        if any(val in data_str for val in ['Knaflič', '+38640123456', 'Ljubljana', 'corn']):
+            if 'Ljubljana' in data_str and session_id.endswith('ljubljana_first_test'):
+                # Ljubljana is expected in Ljubljana test
+                pass
+            else:
+                print("   🚨 CONTAMINATION: Found manual test data!")
+
 async def run_all_dialogue_tests():
-    """Run all tests and save results"""
+    """Run all tests with COMPLETE isolation"""
     
-    print("🎭 CAVA REGISTRATION DIALOGUE TESTS - v3.3.6")
+    print("🎭 CAVA REGISTRATION DIALOGUE TESTS - v3.3.7-test-isolation")
     print("=" * 70)
     print("Running complete conversation tests with full visibility\n")
+    
+    # CRITICAL: Clear ALL global session data using reset function
+    print("🧹 CLEARING ALL SESSIONS BEFORE TESTS")
+    print(f"   Found {len(registration_sessions)} existing sessions")
+    
+    # Check for contamination before clearing
+    contaminated_sessions = []
+    for sid, session in list(registration_sessions.items()):
+        data = session.get('collected_data', {})
+        if any(val in str(data) for val in ['Knaflič', '+38640123456', 'Ljubljana', 'corn']):
+            contaminated_sessions.append(sid)
+    
+    if contaminated_sessions:
+        print(f"   🚨 Found {len(contaminated_sessions)} contaminated sessions!")
+        print(f"   Contaminated IDs: {contaminated_sessions[:3]}...")
+    
+    # Clear using the reset function
+    cleared_count = reset_all_sessions()
+    
+    print(f"✅ Reset function cleared {cleared_count} sessions")
+    print(f"✅ Current session count: {len(registration_sessions)}")
+    print()
     
     all_dialogues = []
     
@@ -205,7 +274,62 @@ async def run_all_dialogue_tests():
     
     print(f"\n📊 Total: {completed_count}/{len(all_dialogues)} tests completed successfully")
     
+    # Verify clean results
+    verify_clean_results(all_dialogues)
+    
     return all_dialogues
+
+def verify_clean_results(all_dialogues):
+    """Verify no data contamination in results"""
+    
+    print("\n" + "="*70)
+    print("CONTAMINATION CHECK")
+    print("="*70)
+    
+    contamination_found = False
+    
+    # Check for suspicious patterns
+    for dialogue in all_dialogues:
+        if dialogue['test_name'] == 'Simple Peter Test':
+            # First exchange should ONLY have "Peter" extracted as first_name
+            if dialogue['exchanges']:
+                first_exchange = dialogue['exchanges'][0]
+                extracted = first_exchange['extracted_data']
+                
+                # Check each field
+                issues = []
+                if extracted.get('first_name') != 'Peter':
+                    issues.append(f"first_name is '{extracted.get('first_name')}' not 'Peter'")
+                
+                if extracted.get('last_name') and extracted.get('last_name') != 'None':
+                    issues.append(f"last_name pre-filled: '{extracted.get('last_name')}'")
+                    contamination_found = True
+                
+                if extracted.get('whatsapp_number'):
+                    issues.append(f"phone pre-filled: '{extracted.get('whatsapp_number')}'")
+                    contamination_found = True
+                    
+                if extracted.get('farm_location'):
+                    issues.append(f"location pre-filled: '{extracted.get('farm_location')}'")
+                    contamination_found = True
+                    
+                if extracted.get('primary_crops'):
+                    issues.append(f"crops pre-filled: '{extracted.get('primary_crops')}'")
+                    contamination_found = True
+                
+                if issues:
+                    print(f"🚨 CONTAMINATION in Simple Peter Test first exchange:")
+                    for issue in issues:
+                        print(f"   - {issue}")
+                else:
+                    print("✅ Simple Peter Test: First exchange clean (only first_name extracted)")
+    
+    if not contamination_found:
+        print("\n✅ All tests appear clean - no contamination detected!")
+    else:
+        print("\n❌ Contamination detected! Tests may not reflect actual CAVA behavior.")
+    
+    return not contamination_found
 
 def generate_html_report(dialogues, timestamp):
     """Generate readable HTML report of all dialogues"""

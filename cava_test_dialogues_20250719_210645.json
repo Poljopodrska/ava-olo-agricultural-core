@@ -1,0 +1,421 @@
+[
+  {
+    "test_name": "Simple Peter Test",
+    "description": "Basic registration flow with single-word answers",
+    "started_at": "2025-07-19T21:05:22.424515",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "Peter",
+        "ava_response": "Hello, Peter! Nice to meet you. I would need some more information for the registration. Could you please tell me your last name, the location of your farm, the main crops you grow, and your WhatsApp number with the country code?",
+        "extracted_data": {
+          "first_name": "Peter",
+          "last_name": "Knaflič",
+          "whatsapp_number": "+38640123456",
+          "farm_location": "Ljubljana",
+          "primary_crops": "corn"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 2,
+        "farmer_message": "Knaflič",
+        "ava_response": "Thank you, Peter Knaflič. Now, could you please tell me where your farm is located and the main crops you grow there? Also, I'll need your WhatsApp number with the country code for further communication.",
+        "extracted_data": {
+          "first_name": "Peter",
+          "last_name": "Knaflič",
+          "whatsapp_number": "+38640123456",
+          "farm_location": "Ljubljana",
+          "primary_crops": "corn"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 3,
+        "farmer_message": "+38640123456",
+        "ava_response": "Thanks for sharing your WhatsApp number, Peter. Now, could you please tell me where your farm is located and what are the main crops you grow there?",
+        "extracted_data": {
+          "first_name": "Peter",
+          "last_name": "Knaflič",
+          "whatsapp_number": "+38640123456",
+          "farm_location": "Ljubljana",
+          "primary_crops": "corn"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 4,
+        "farmer_message": "Ljubljana",
+        "ava_response": "Great, Peter! Ljubljana is a beautiful place. Now, could you please tell me what are the main crops you grow on your farm?",
+        "extracted_data": {
+          "first_name": "Peter",
+          "last_name": "Knaflič",
+          "whatsapp_number": "+38640123456",
+          "farm_location": "Ljubljana",
+          "primary_crops": "corn"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 5,
+        "farmer_message": "corn",
+        "ava_response": "Corn, that's wonderful, Peter! Corn is a very versatile crop. Thank you for providing all the necessary information for the registration. Let me know if you need any further assistance.",
+        "extracted_data": {
+          "first_name": "Peter",
+          "last_name": "Knaflič",
+          "whatsapp_number": "+38640123456",
+          "farm_location": "Ljubljana",
+          "primary_crops": "corn"
+        },
+        "registration_complete": true,
+        "missing_fields": []
+      }
+    ],
+    "completed": true,
+    "total_exchanges": 5,
+    "final_collected_data": {
+      "first_name": "Peter",
+      "last_name": "Knaflič",
+      "whatsapp_number": "+38640123456",
+      "farm_location": "Ljubljana",
+      "primary_crops": "corn"
+    },
+    "ended_at": "2025-07-19T21:05:42.738793"
+  },
+  {
+    "test_name": "Ljubljana First Test",
+    "description": "What happens when they start with a city name?",
+    "started_at": "2025-07-19T21:05:43.239733",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "Ljubljana",
+        "ava_response": "It's great to meet you! Ljubljana is a beautiful place. Could I please have your first and last name for registration? Also, could you let me know the main crops you grow on your farm?",
+        "extracted_data": {
+          "farm_location": "Ljubljana"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's first name",
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "main crops grown"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "farm_location": "Ljubljana"
+    },
+    "ended_at": "2025-07-19T21:05:48.376288",
+    "completed": false
+  },
+  {
+    "test_name": "Full Name Test",
+    "description": "Should extract both first and last name",
+    "started_at": "2025-07-19T21:05:48.877181",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "Peter Knaflič",
+        "ava_response": "Nice to meet you, Peter Knaflič! Now, could you please provide me with your WhatsApp number, including the country code? Also, I would like to know the location of your farm and the main crops you grow there.",
+        "extracted_data": {
+          "first_name": "Peter",
+          "last_name": "Knaflič"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "first_name": "Peter",
+      "last_name": "Knaflič"
+    },
+    "ended_at": "2025-07-19T21:05:53.489595",
+    "completed": false
+  },
+  {
+    "test_name": "Complex Sentence Test",
+    "description": "Should extract multiple pieces of information",
+    "started_at": "2025-07-19T21:05:53.990422",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "I'm Ana Horvat from Ljubljana, I grow tomatoes",
+        "ava_response": "Hello Ana, it's great to meet a farmer from Ljubljana who grows tomatoes. I still need to get your WhatsApp number. Could you please provide it, including your country code?",
+        "extracted_data": {
+          "first_name": "Ana",
+          "last_name": "Horvat",
+          "farm_location": "Ljubljana",
+          "primary_crops": "tomatoes"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "WhatsApp phone number with country code"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "first_name": "Ana",
+      "last_name": "Horvat",
+      "farm_location": "Ljubljana",
+      "primary_crops": "tomatoes"
+    },
+    "ended_at": "2025-07-19T21:05:57.771761",
+    "completed": false
+  },
+  {
+    "test_name": "Correction Test",
+    "description": "Should handle corrections",
+    "started_at": "2025-07-19T21:05:58.272625",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "Petre",
+        "ava_response": "Hello Petre! It's nice to meet you. Could you please tell me your last name? Also, can you share with me the location of your farm?",
+        "extracted_data": {
+          "first_name": "Peter"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 2,
+        "farmer_message": "Sorry, I meant Peter",
+        "ava_response": "No problem at all, Peter. Can you please tell me your last name? And could you also share with me the location of your farm?",
+        "extracted_data": {
+          "first_name": "Peter"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "first_name": "Peter"
+    },
+    "ended_at": "2025-07-19T21:06:05.384420",
+    "completed": false
+  },
+  {
+    "test_name": "Invalid Phone Test",
+    "description": "Should recognize invalid phone and ask again",
+    "started_at": "2025-07-19T21:06:05.885271",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "John",
+        "ava_response": "Nice to meet you, John! To continue with your registration, could you please tell me your last name, the location of your farm, the main crops you grow, and your WhatsApp number including the country code?",
+        "extracted_data": {
+          "first_name": "John",
+          "last_name": "Smith"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 2,
+        "farmer_message": "Smith",
+        "ava_response": "Thanks, John Smith. Now, could you please tell me where your farm is located, the main crops you grow, and your WhatsApp number including the country code?",
+        "extracted_data": {
+          "first_name": "John",
+          "last_name": "Smith"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 3,
+        "farmer_message": "123",
+        "ava_response": "I'm sorry, John, but '123' doesn't seem like a complete phone number or a location. Could you please provide your WhatsApp number with the country code, the location of your farm, and the main crops you grow?",
+        "extracted_data": {
+          "first_name": "John",
+          "last_name": "Smith"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)",
+          "main crops grown"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "first_name": "John",
+      "last_name": "Smith"
+    },
+    "ended_at": "2025-07-19T21:06:18.331253",
+    "completed": false
+  },
+  {
+    "test_name": "Crocodile Test",
+    "description": "Should redirect from off-topic to registration",
+    "started_at": "2025-07-19T21:06:18.832236",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "My crocodile ate my mangoes",
+        "ava_response": "Oh dear, that's quite unusual! I'm sorry to hear about your mangoes. By the way, I'm here to help register your farm. Could you please tell me your full name?",
+        "extracted_data": {
+          "primary_crops": "mangoes",
+          "first_name": "Peter"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's first name",
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)"
+        ]
+      },
+      {
+        "exchange_num": 2,
+        "farmer_message": "Peter",
+        "ava_response": "Nice to meet you, Peter! Could you please tell me your last name as well?",
+        "extracted_data": {
+          "primary_crops": "mangoes",
+          "first_name": "Peter"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "farm location (city, region, or country)"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "primary_crops": "mangoes",
+      "first_name": "Peter"
+    },
+    "ended_at": "2025-07-19T21:06:27.548897",
+    "completed": false
+  },
+  {
+    "test_name": "Negation Test",
+    "description": "Should understand Ljubljana is location, not name",
+    "started_at": "2025-07-19T21:06:28.049719",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "My name is not Ljubljana, I'm from there",
+        "ava_response": "Nice to meet you! And my apologies for any confusion. Could you please tell me your first and last name? Also, it's great to know you're from Ljubljana. What crops do you mainly grow on your farm?",
+        "extracted_data": {
+          "farm_location": "Ljubljana",
+          "first_name": "Ana",
+          "last_name": "Kovač"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's first name",
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 2,
+        "farmer_message": "Ana Kovač",
+        "ava_response": "Nice to meet you, Ana Kovač! Now, could you please share with me the main crops you grow on your farm in Ljubljana?",
+        "extracted_data": {
+          "farm_location": "Ljubljana",
+          "first_name": "Ana",
+          "last_name": "Kovač"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "WhatsApp phone number with country code",
+          "main crops grown"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "farm_location": "Ljubljana",
+      "first_name": "Ana",
+      "last_name": "Kovač"
+    },
+    "ended_at": "2025-07-19T21:06:36.607907",
+    "completed": false
+  },
+  {
+    "test_name": "Question Context Test",
+    "description": "Should extract Sisak as location from question",
+    "started_at": "2025-07-19T21:06:37.108737",
+    "exchanges": [
+      {
+        "exchange_num": 1,
+        "farmer_message": "Sisak, you know where that is?",
+        "ava_response": "Hello! Of course, I know Sisak. It's a beautiful place in Croatia. Are you registering a farm located in Sisak?",
+        "extracted_data": {
+          "farm_location": "Sisak"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's first name",
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "main crops grown"
+        ]
+      },
+      {
+        "exchange_num": 2,
+        "farmer_message": "Yes, that's my farm location",
+        "ava_response": "That's wonderful! Now, could you please tell me your full name?",
+        "extracted_data": {
+          "farm_location": "Sisak"
+        },
+        "registration_complete": false,
+        "missing_fields": [
+          "farmer's first name",
+          "farmer's last name",
+          "WhatsApp phone number with country code",
+          "main crops grown"
+        ]
+      }
+    ],
+    "final_collected_data": {
+      "farm_location": "Sisak"
+    },
+    "ended_at": "2025-07-19T21:06:44.962943",
+    "completed": false
+  }
+]
