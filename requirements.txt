@@ -9,4 +9,6 @@ uvicorn[standard]==0.27.0.post1
 pydantic==2.5.3
 
 # Environment configuration
-python-dotenv==1.0.0# Cache bust: 1752904399
+python-dotenv==1.0.0
+
+# Cache bust: 1752904399
