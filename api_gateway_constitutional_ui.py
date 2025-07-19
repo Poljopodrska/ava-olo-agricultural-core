@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.7-pipeline-fix
+Version: 3.2.8-verification
 Bulgarian Mango Farmer Compliant ✅
-Fixed: JavaScript error handling and session initialization
+Fixed: OBVIOUS changes - Send→STOP button, BLACK version, Enter key
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.2.7-pipeline-fix"
+VERSION = "3.2.8-verification"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -129,7 +129,7 @@ async def landing_page(request: Request):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO - Agricultural Intelligence Platform</title>
+        <title>AVA OLO - VERIFICATION TEST v3.2.8</title>
         <style>
             :root {
                 --primary-brown: #8B4513;
@@ -286,9 +286,14 @@ async def landing_page(request: Request):
                 position: fixed;
                 top: 10px;
                 right: 10px;
-                color: #666;
-                font-size: 14px;
+                color: black !important;
+                background: white;
+                padding: 10px;
+                border: 3px solid black;
+                font-size: 18px;
+                font-weight: bold;
                 z-index: 1000;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
             }
             
             @media (max-width: 600px) {
@@ -572,9 +577,14 @@ async def register_page(request: Request):
                 position: fixed;
                 top: 10px;
                 right: 10px;
-                color: #666;
-                font-size: 14px;
+                color: black !important;
+                background: white;
+                padding: 10px;
+                border: 3px solid black;
+                font-size: 18px;
+                font-weight: bold;
                 z-index: 1000;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
             }
             
             @media (max-width: 600px) {
@@ -614,7 +624,7 @@ async def register_page(request: Request):
                     onkeypress="handleEnterKey(event)"
                     autofocus
                 >
-                <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: red; color: white; font-size: 24px; font-weight: bold;">STOP</button>
             </div>
             
             <div class="footer-links">
@@ -925,9 +935,14 @@ async def login_page(request: Request):
                 position: fixed;
                 top: 10px;
                 right: 10px;
-                color: #666;
-                font-size: 14px;
+                color: black !important;
+                background: white;
+                padding: 10px;
+                border: 3px solid black;
+                font-size: 18px;
+                font-weight: bold;
                 z-index: 1000;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
             }
             
             @media (max-width: 600px) {
@@ -1050,7 +1065,7 @@ async def chat_interface(request: Request):
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO - Agricultural Assistant</title>
+        <title>AVA OLO - VERIFICATION TEST v3.2.8</title>
         <style>
             :root {
                 --primary-brown: #8B4513;
@@ -1286,9 +1301,14 @@ async def chat_interface(request: Request):
                 position: fixed;
                 top: 10px;
                 right: 10px;
-                color: #666;
-                font-size: 14px;
+                color: black !important;
+                background: white;
+                padding: 10px;
+                border: 3px solid black;
+                font-size: 18px;
+                font-weight: bold;
                 z-index: 1000;
+                box-shadow: 0 0 10px rgba(0,0,0,0.5);
             }
             
             @media (max-width: 600px) {
@@ -1305,6 +1325,9 @@ async def chat_interface(request: Request):
         </style>
     </head>
     <body>
+        <div style="background: red; color: white; text-align: center; padding: 20px; font-size: 24px; font-weight: bold;">
+            🚨 VERIFICATION TEST v3.2.8 - DEPLOYMENT SUCCESSFUL 🚨
+        </div>
         <div class="version-display">v""" + VERSION + """</div>
         <div class="chat-container">
             <div class="chat-header">
@@ -1341,7 +1364,7 @@ async def chat_interface(request: Request):
                         rows="1"
                         onkeypress="handleEnterKey(event)"
                     ></textarea>
-                    <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+                    <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: red; color: white; font-size: 24px; font-weight: bold;">STOP</button>
                 </div>
             </div>
         </div>
@@ -1365,15 +1388,15 @@ async def chat_interface(request: Request):
             }
             
             function handleEnterKey(event) {
-                try {
-                    console.log('Key pressed:', event.key);
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        console.log('Enter key detected, sending message...');
-                        sendMessage();
-                    }
-                } catch (e) {
-                    console.error('handleEnterKey error:', e);
+                console.log('🔴🔴🔴 KEY PRESSED:', event.key);
+                console.log('VERIFICATION TEST - KEY EVENT FIRED');
+                
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    console.log('🚨🚨🚨 ENTER KEY DETECTED!!! 🚨🚨🚨');
+                    console.log('CALLING sendMessage() NOW...');
+                    alert('ENTER KEY PRESSED - SENDING MESSAGE');
+                    sendMessage();
                 }
             }
             
@@ -1425,7 +1448,10 @@ async def chat_interface(request: Request):
             let sessionId = localStorage.getItem('ava_session_id') || null;
             
             async function sendMessage() {
-                console.log('sendMessage called');
+                console.log('🟢🟢🟢 sendMessage() CALLED 🟢🟢🟢');
+                console.log('VERIFICATION TEST - SEND FUNCTION EXECUTING');
+                alert('sendMessage() function called!');
+                
                 try {
                     const input = document.getElementById('chatInput');
                     if (!input) {
@@ -1441,9 +1467,10 @@ async def chat_interface(request: Request):
                         console.log('No message to send');
                         return;
                     }
-                    console.log('Sending message:', message);
-                    console.log('Using endpoint: /api/v1/conversation/chat');
-                    console.log('Farmer ID:', userData.farmer_id || 1);
+                    console.log('📤📤📤 SENDING MESSAGE:', message);
+                    console.log('🔗 ENDPOINT: /api/v1/conversation/chat');
+                    console.log('👨‍🌾 FARMER ID:', userData.farmer_id || 1);
+                    console.log('VERIFICATION TEST - ABOUT TO CALL API');
                 
                 // Add user message
                 addMessage(message, true, userData.full_name?.split(' ')[0]);
