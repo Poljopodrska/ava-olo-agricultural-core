@@ -6948,4 +6948,4 @@ async def register_machinery_api(request: Request):
         )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)Sat Jul 19 11:22:10 CEST 2025
+    uvicorn.run(app, host="0.0.0.0", port=8080)
