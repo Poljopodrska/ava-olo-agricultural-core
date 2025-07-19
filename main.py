@@ -100,6 +100,10 @@ app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Initialize Jinja2 templates
+from fastapi.templating import Jinja2Templates
+templates = Jinja2Templates(directory="templates")
+
 # Helper function to get design system CSS
 def get_design_system_css():
     """Return the CSS link tag for the shared constitutional design system v2"""
@@ -1409,8 +1413,14 @@ async def dashboard_landing():
             </div>
             
             <div class="constitutional-card">
+                <h2>🎯 Management Dashboard</h2>
+                <p>Enhanced UI with navigation, pagination, and registration features</p>
+                <a href="/ui-dashboard" class="constitutional-button">Enter Dashboard</a>
+            </div>
+            
+            <div class="constitutional-card">
                 <h2>💾 Database Dashboard</h2>
-                <p>Data management and queries</p>
+                <p>Direct database queries and management</p>
                 <a href="/database-dashboard" class="constitutional-button">Enter Dashboard</a>
             </div>
             
