@@ -142,10 +142,20 @@ class CAVARegistrationLLM:
         
         print(f"🟢 OPENAI RESPONDED: {llm_result}")
         
-        # Update session with new data
+        # Update session with new data and validate phone numbers
         if llm_result.get("extracted_data"):
             for field, value in llm_result["extracted_data"].items():
                 if value and value not in ["null", "none", ""]:
+                    # Basic phone number validation
+                    if field == "whatsapp_number":
+                        import re
+                        # Count digits only
+                        digits_only = re.sub(r'\D', '', value)
+                        if len(digits_only) < 10:
+                            # Invalid phone - ask for complete number
+                            llm_result["response"] += " Please include the full number with country code (e.g., +38640123456)."
+                            continue  # Don't save this phone number
+                    
                     collected_data[field] = value
                     
         session["collected_data"] = collected_data
@@ -179,15 +189,17 @@ class CAVARegistrationLLM:
         # Build conversation context
         context = self._build_conversation_context(conversation_history)
         
-        # Enhanced prompt with collected data context
+        # Simple, direct user prompt
         user_prompt = f"""
-Farmer said: "{message}"
+Previous conversation:
+{context}
 
-Previous conversation: {context}
-Already collected: {collected_data}
+Farmer says: "{message}"
 
-Understand their message and respond naturally. If they provided information you already have, acknowledge it and ask for what's still needed.
-"""
+What we've collected so far:
+{json.dumps(collected_data, indent=2)}
+
+Respond naturally and collect any registration information provided."""
         
         # Call OpenAI using v1.0+ API
         try:
@@ -211,36 +223,32 @@ Always return ONLY a JSON object with helpful response."""
             else:
                 missing_fields = self._get_missing_fields(collected_data)
                 msg_count = conversation_state.message_count if conversation_state else 0
-                system_prompt = f"""You are AVA, an agricultural assistant helping farmers register efficiently.
+                system_prompt = f"""You are AVA, a friendly agricultural assistant helping farmers register.
 
-REGISTRATION GOAL: Collect required information in 5-7 natural exchanges:
-- first_name, last_name, farm_location, primary_crops, whatsapp_number
+Collect these details through natural conversation:
+- Full name (first and last)
+- WhatsApp number with country code  
+- Farm location
+- Main crops grown
 
-CURRENT STATUS:
-- Progress: {progress_percent}% complete
-- Still needed: {', '.join(missing_fields)}
-- Conversation length: {msg_count} messages
+Understand context naturally:
+- Recognize city names vs personal names
+- Handle corrections and clarifications
+- Validate phone numbers (need full international format)
+- Keep the conversation focused on registration
 
-CONVERSATION GUIDELINES:
-1. Stay friendly and natural, acknowledge their input briefly
-2. For off-topic topics: acknowledge (1 sentence max) then redirect to registration
-3. Always work toward collecting missing registration fields
-4. {context_guidance}
+Examples of natural understanding:
+- "Ljubljana" alone → They're likely telling you their location
+- "How do you mean that?" → They're confused, rephrase your question
+- "123" → Not a valid phone number, ask for complete number
+- Off-topic (crocodiles) → Acknowledge briefly, redirect to registration
+- "X, you know where that is?" → They're telling you X is their location
 
-REDIRECTION EXAMPLES:
-- Crocodiles: "That's unusual! Let's get you registered first. What's your name?"
-- Philosophy: "Interesting question! First, may I have your name for registration?"
-- Weather chat: "Yes, weather matters for farming! What crops do you grow?"
+Progress: {progress_percent}% complete. Still needed: {', '.join(missing_fields)}
 
-INTELLIGENCE RULES:
-- Convert emojis to words (🥭 = mango)
-- Fix typos intelligently
-- Use same language as input when possible
-- Extract information naturally
-
-Always return ONLY a JSON object:
+IMPORTANT: Respond ONLY with valid JSON in this exact format:
 {{
-  "response": "your natural, business-focused response",
+  "response": "your natural, conversational response",
   "extracted_data": {{
     "first_name": "value or null",
     "last_name": "value or null",
@@ -248,23 +256,31 @@ Always return ONLY a JSON object:
     "primary_crops": "value or null",
     "whatsapp_number": "value or null"
   }}
-}}"""
+}}
+Do not include any text before or after the JSON."""
 
             print(f"🔵 SENDING TO OPENAI:")
-            print(f"   Model: gpt-3.5-turbo")
+            print(f"   Model: gpt-4")
             print(f"   System: {system_prompt[:100]}...")
             print(f"   User: {user_prompt[:100]}...")
             
-            response = await client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
+            # Build parameters conditionally
+            model = "gpt-4"  # or from config
+            params = {
+                "model": model,
+                "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt}
                 ],
-                temperature=0.7,  # Natural conversation variation
-                max_tokens=300,
-                response_format={"type": "json_object"}  # Force JSON output
-            )
+                "temperature": 0.7,
+                "max_tokens": 300
+            }
+            
+            # Only add response_format for models that support it
+            if "gpt-3.5" in model:
+                params["response_format"] = {"type": "json_object"}
+            
+            response = await client.chat.completions.create(**params)
             
             print(f"🟢 LLM RESPONSE RECEIVED:")
             print(f"   Tokens used: {response.usage.total_tokens}")
@@ -274,25 +290,46 @@ Always return ONLY a JSON object:
             # Parse the response
             content = response.choices[0].message.content.strip()
             
-            # Try to parse as JSON
+            # Parse response with enhanced fallback
             try:
                 result = json.loads(content)
                 return result
             except json.JSONDecodeError:
-                logger.error(f"Failed to parse OpenAI response as JSON: {content}")
-                # Try to extract JSON from the response
+                # Try to extract JSON from response
                 import re
-                json_match = re.search(r'\{.*\}', content, re.DOTALL)
-                if json_match:
-                    try:
-                        result = json.loads(json_match.group())
-                        return result
-                    except:
-                        pass
                 
-                # If all parsing fails, return a simple response
+                # Try different JSON patterns
+                json_patterns = [
+                    r'\{.*\}',  # Standard JSON
+                    r'```json\s*(\{.*?\})\s*```',  # Markdown code block
+                    r'```\s*(\{.*?\})\s*```',  # Code block without json tag
+                ]
+                
+                for pattern in json_patterns:
+                    json_match = re.search(pattern, content, re.DOTALL)
+                    if json_match:
+                        try:
+                            json_str = json_match.group(1) if '```' in pattern else json_match.group()
+                            result = json.loads(json_str)
+                            logger.warning(f"GPT-4 returned wrapped JSON, extracted successfully")
+                            return result
+                        except:
+                            continue
+                
+                # Create fallback structure
+                logger.warning(f"GPT-4 returned non-JSON, using fallback: {content[:100]}...")
+                
+                # Check if it looks like a clarification question
+                if "?" in content or "mean" in content.lower():
+                    return {
+                        "response": content,
+                        "extracted_data": {},
+                        "language_detected": "en"
+                    }
+                
+                # Pure text response - create structure
                 return {
-                    "response": content,
+                    "response": content if content else "I'm here to help you register. What's your name?",
                     "extracted_data": {},
                     "language_detected": "en"
                 }

@@ -164,7 +164,7 @@ Generate a natural, helpful response."""
         """
         try:
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",  # Faster model for simple task
+                model="gpt-4",  # Faster model for simple task
                 messages=[
                     {
                         "role": "system", 
@@ -268,7 +268,7 @@ Context: {' | '.join(context_parts)}
 Return only the enhanced query, nothing else."""
             
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
                     {"role": "system", "content": "Enhance queries with context."},
                     {"role": "user", "content": prompt}

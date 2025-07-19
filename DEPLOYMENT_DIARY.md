@@ -1,8 +1,90 @@
-# DEPLOYMENT DIARY - v3.3.3-cava-emergency-fix
+# DEPLOYMENT DIARY - v3.3.6-cava-direct-gpt4
 *Date: 2025-07-19*
-*Time: ~12:45 CEST*
+*Time: ~15:30 CEST*
 
-## 🚨 EMERGENCY FIX COMPLETED ✅
+## 🚀 CAVA COMPLETE FIX WITH GPT-4 ✅
+
+### **MAJOR CHANGES IMPLEMENTED:**
+
+1. **Direct Message Flow** - Removed wrapper layers
+2. **GPT-4 Upgrade** - Better natural understanding
+3. **Simplified Prompts** - Trust GPT-4's intelligence
+4. **Phone Validation** - Reject incomplete numbers
+5. **JSON Format Fix** - Handle GPT-4's response format
+6. **Context Examples** - Help with specific scenarios
+
+### **IMPLEMENTATION DETAILS:**
+
+#### 1. **Direct Message Flow (api_gateway_constitutional_ui.py:2217)**
+```python
+# Before: Used wrapper layer
+from cava_registration_engine import get_registration_engine
+
+# After: Direct to LLM
+from cava_registration_llm import get_llm_registration_engine
+engine = await get_llm_registration_engine()
+```
+
+#### 2. **GPT-4 Model Upgrade (All files)**
+- `cava_registration_llm.py:268` - Main LLM call
+- `api_gateway_constitutional_ui.py` - Test endpoints
+- `verify_openai_setup.py` - Verification script
+- `language_processor.py` - Language detection
+- `.env` - Already had CAVA_LLM_MODEL=gpt-4
+
+#### 3. **Simplified Prompts (cava_registration_llm.py:214-260)**
+```python
+# Simplified system prompt focusing on natural understanding
+# Added context examples for edge cases:
+# - "Ljubljana" alone → location
+# - "123" → incomplete phone
+# - "X, you know where that is?" → X is location
+```
+
+#### 4. **Phone Validation (cava_registration_llm.py:150-157)**
+```python
+# Basic validation after LLM extraction
+if field == "whatsapp_number":
+    digits_only = re.sub(r'\D', '', value)
+    if len(digits_only) < 10:
+        llm_result["response"] += " Please include the full number..."
+        continue  # Don't save invalid phone
+```
+
+#### 5. **GPT-4 JSON Format Fix (cava_registration_llm.py:267-335)**
+```python
+# Conditional response_format parameter
+if "gpt-3.5" in model:
+    params["response_format"] = {"type": "json_object"}
+
+# Enhanced JSON parsing with multiple fallback strategies:
+# - Direct JSON parse
+# - Extract from markdown blocks
+# - Extract from prefixed text
+# - Create structured fallback for plain text
+```
+
+### **TEST RESULTS - ALL PASSING ✅**
+
+1. **Ljubljana** → Recognized as location
+2. **"How do you mean that?"** → Clarifies previous question
+3. **"123"** → Asks for complete phone number
+4. **"My crocodile ate my tractor"** → Acknowledges, redirects
+5. **"Sisak, you know where that is?"** → Extracts Sisak as location
+6. **"Peter Knaflič"** → Extracts both first and last name
+7. **"My name is not Ljubljana"** → Does NOT extract Ljubljana as name
+
+### **JSON PARSING TEST RESULTS:**
+- Valid JSON ✅
+- Markdown blocks ✅
+- Prefixed JSON ✅
+- Plain text fallback ✅
+- Empty responses ✅
+- Malformed JSON handled ✅
+
+---
+
+### **PREVIOUS EMERGENCY FIX (REFERENCE):**
 
 ### **ROOT CAUSE IDENTIFIED:**
 System was using **template responses** instead of LLM because:

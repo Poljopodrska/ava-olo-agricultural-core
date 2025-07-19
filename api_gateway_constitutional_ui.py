@@ -2213,11 +2213,11 @@ async def cava_registration(request: RegistrationRequest):
     emergency_log(f"🌱 CAVA registration message: {request.message[:50]}...")
     
     try:
-        # Import registration engine
-        from cava_registration_engine import get_registration_engine
-        engine = await get_registration_engine()
+        # Direct to LLM engine - no wrapper layers
+        from cava_registration_llm import get_llm_registration_engine
+        engine = await get_llm_registration_engine()
         
-        # Process message through CAVA
+        # Process message directly through GPT-4
         result = await engine.process_registration_message(
             message=request.message,
             session_id=request.session_id,
@@ -2290,7 +2290,7 @@ async def test_llm_connection():
         
         # Simple test
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Use cheaper model for testing
+            model="gpt-4",  # Use GPT-4 for best quality
             messages=[{"role": "user", "content": "Say 'LLM CONNECTED' and nothing else"}],
             max_tokens=10
         )
@@ -2298,7 +2298,7 @@ async def test_llm_connection():
         return {
             "status": "success", 
             "message": response.choices[0].message.content.strip(),
-            "model": "gpt-3.5-turbo"
+            "model": "gpt-4"
         }
         
     except Exception as e:

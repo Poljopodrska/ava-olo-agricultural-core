@@ -227,7 +227,7 @@ async def test_api_connectivity():
         
         # Simple test
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4",
             messages=[{"role": "user", "content": "Say 'API CONNECTED'"}],
             max_tokens=10
         )
