@@ -1,7 +1,7 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.3.0-cava-registration
+Version: 3.3.5-cava-business-focused
 Bulgarian Mango Farmer Compliant ✅
 Fixed: CAVA-powered registration - zero hardcoded steps
 """
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.3.2-cava-natural"
+VERSION = "3.3.5-cava-business-focused"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -1334,7 +1334,7 @@ async def chat_interface(request: Request):
     </head>
     <body>
         <div style="background: purple; color: white; text-align: center; padding: 20px; font-size: 24px; font-weight: bold;">
-            🤖 CAVA REGISTRATION v3.3.0 - Natural AI Conversations 🤖
+            🤖 CAVA REGISTRATION v3.3.5 - BUSINESS FOCUSED 🤖
         </div>
         <div class="version-display">v""" + VERSION + """</div>
         <div class="chat-container">
