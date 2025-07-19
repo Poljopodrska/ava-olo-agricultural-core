@@ -1,8 +1,19 @@
 {
-    "current_version": "v2.1.5",
+    "current_version": "v2.1.5-forensic-field-fix",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-01-19",
     "version_history": [
+        {
+            "version": "v2.1.5-forensic-field-fix",
+            "date": "2025-01-19",
+            "changes": [
+                "FORENSIC FIX: AWS App Runner cache-bust deployment",
+                "Fixed manual hectare entry in field registration",
+                "Fixed Google Maps field boundary drawing functionality",
+                "Added smart toggle between manual and map calculation modes",
+                "Improved error handling for Google Maps failures"
+            ]
+        },
         {
             "version": "v2.1.5",
             "date": "2025-01-19",
