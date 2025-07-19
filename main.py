@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DEPLOYMENT TIMESTAMP: 1752936000 - v2.1.10-db-column-fix Fixed database columns
+# DEPLOYMENT TIMESTAMP: 1752937800 - v2.1.11-performance-fix VPC optimization
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sys
 import urllib.parse
+import time
 
 # Version Management System
 def get_current_service_version():
@@ -51,7 +52,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # DEPLOYMENT VERIFICATION
-logger.info("🚀 DEPLOYMENT VERSION: v2.1.10-db-column-fix - Fixed database columns and environment variables")
+logger.info("🚀 DEPLOYMENT VERSION: v2.1.11-performance-fix - VPC-optimized connection and caching")
 logger.info(f"Python version: {sys.version}")
 logger.info(f"JSON module available: {'json' in sys.modules}")
 
@@ -118,6 +119,9 @@ if OPENAI_API_KEY and len(OPENAI_API_KEY) > 10:
         print(f"DEBUG: OpenAI setup error: {e}")
 else:
     print(f"DEBUG: OpenAI key issue - Present: {bool(OPENAI_API_KEY)}, Length: {len(OPENAI_API_KEY) if OPENAI_API_KEY else 0}")
+
+# Global cache for dashboard metrics
+dashboard_cache = {'data': None, 'timestamp': 0}
 
 app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 
@@ -336,61 +340,18 @@ def get_constitutional_db_connection():
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
         
-        print(f"DEBUG: Attempting connection to {host}:{port}/{database} as {user}")
-        
-        # Strategy 1: Try with SSL required (AWS RDS default)
-        if not connection:
-            try:
-                connection = psycopg2.connect(
-                    host=host,
-                    database=database,
-                    user=user,
-                    password=password,
-                    port=port,
-                    connect_timeout=10,
-                    sslmode='require'
-                )
-                print("DEBUG: Connected with SSL required")
-            except psycopg2.OperationalError as ssl_error:
-                print(f"DEBUG: SSL required failed: {ssl_error}")
-        
-        # Strategy 2: Try with SSL preferred
-        if not connection:
-            try:
-                connection = psycopg2.connect(
-                    host=host,
-                    database=database,
-                    user=user,
-                    password=password,
-                    port=port,
-                    connect_timeout=10,
-                    sslmode='prefer'
-                )
-                print("DEBUG: Connected with SSL preferred")
-            except psycopg2.OperationalError as ssl_pref_error:
-                print(f"DEBUG: SSL preferred failed: {ssl_pref_error}")
-        
-        # Strategy 3: Try connecting to postgres database instead
-        if not connection:
-            try:
-                connection = psycopg2.connect(
-                    host=host,
-                    database='postgres',  # Fallback database
-                    user=user,
-                    password=password,
-                    port=port,
-                    connect_timeout=10,
-                    sslmode='require'
-                )
-                print("DEBUG: Connected to postgres database")
-            except psycopg2.OperationalError as postgres_error:
-                print(f"DEBUG: Postgres database failed: {postgres_error}")
-        
-        # Yield the connection (successful or None)
-        if connection:
-            print("DEBUG: Yielding successful connection")
-        else:
-            print("DEBUG: All connection strategies failed, yielding None")
+        # VPC-optimized: Single fast connection attempt
+        start_time = time.time()
+        connection = psycopg2.connect(
+            host=host,
+            database=database,
+            user=user,
+            password=password,
+            port=port,
+            connect_timeout=2,  # 2 seconds for VPC
+            sslmode='require'
+        )
+        print(f"DEBUG: Connected in {(time.time() - start_time)*1000:.0f}ms")
         
         yield connection
         
@@ -1837,6 +1798,12 @@ async def update_cost_rate(request: Request):
 @app.get("/business-dashboard", response_class=HTMLResponse)
 async def business_dashboard():
     """Business Dashboard - Comprehensive Agricultural Metrics"""
+    global dashboard_cache
+    
+    # Check cache first (1 minute TTL)
+    if dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60):
+        print("DEBUG: Returning cached dashboard data")
+        return dashboard_cache['data']
     
     # Initialize metrics with safe defaults
     metrics = {
@@ -3100,7 +3067,48 @@ async def agronomic_dashboard():
 </body>
 </html>'''
     
-    return HTMLResponse(content=html_content)
+    # Cache the response
+    response = HTMLResponse(content=html_content)
+    dashboard_cache['data'] = response
+    dashboard_cache['timestamp'] = time.time()
+    
+    return response
+
+# Performance test endpoint
+@app.get("/test/performance")
+async def test_performance():
+    """Test database performance"""
+    results = {}
+    
+    # Test 1: Simple query
+    start = time.time()
+    with get_constitutional_db_connection() as conn:
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+            cursor.close()
+    results["simple_query_ms"] = int((time.time() - start) * 1000)
+    
+    # Test 2: Farmer count
+    start = time.time()
+    with get_constitutional_db_connection() as conn:
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM farmers")
+            count = cursor.fetchone()[0]
+            cursor.close()
+    results["farmer_count_ms"] = int((time.time() - start) * 1000)
+    results["farmer_count"] = count if 'count' in locals() else 0
+    
+    # Test 3: Cache status
+    results["cache_active"] = bool(dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60))
+    results["cache_age_seconds"] = int(time.time() - dashboard_cache['timestamp']) if dashboard_cache['timestamp'] else -1
+    
+    results["version"] = "v2.1.11-performance-fix"
+    results["status"] = "fast" if results.get("simple_query_ms", 1000) < 200 else "slow"
+    
+    return results
 
 # Legacy redirects
 @app.get("/business")

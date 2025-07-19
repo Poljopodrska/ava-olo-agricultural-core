@@ -1,8 +1,19 @@
 {
-    "current_version": "v2.1.10-db-column-fix",
+    "current_version": "v2.1.11-performance-fix",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-07-19",
     "version_history": [
+        {
+            "version": "v2.1.11-performance-fix",
+            "date": "2025-07-19",
+            "changes": [
+                "VPC-optimized database connection with 2s timeout (was 10s x 3)",
+                "Removed unnecessary connection fallback strategies",
+                "Added 60-second caching for dashboard metrics",
+                "Added /test/performance endpoint for monitoring",
+                "Dramatically improved page load times"
+            ]
+        },
         {
             "version": "v2.1.10-db-column-fix",
             "date": "2025-07-19",
