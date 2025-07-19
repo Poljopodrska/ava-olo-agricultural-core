@@ -3,6 +3,104 @@
 {% block title %}Register New Fields - AVA OLO{% endblock %}
 
 {% block extra_css %}
+<!-- Google Maps Integration -->
+<script>
+// Global error handler for Google Maps
+window.gm_authFailure = function() {
+    console.error('Google Maps authentication failed');
+    handleGoogleMapsError('Google Maps authentication failed. Please check API configuration.');
+};
+
+// Handle Google Maps errors
+function handleGoogleMapsError(message) {
+    console.log('🗺️ Google Maps Error:', message);
+    
+    const mapElement = document.getElementById('field-map');
+    if (mapElement) {
+        mapElement.innerHTML = `
+            <div style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 8px; border: 2px dashed #dee2e6;">
+                <h3>📍 Map Drawing Unavailable</h3>
+                <p style="color: #6c757d;">${message}</p>
+                <p><strong>✅ Manual field size entry is available above</strong></p>
+                <p><small>You can still register fields by entering the size manually.</small></p>
+            </div>
+        `;
+    }
+    
+    // Disable map-related buttons
+    const drawingButtons = ['start-drawing', 'clear-drawing'];
+    drawingButtons.forEach(id => {
+        const button = document.getElementById(id);
+        if (button) {
+            button.disabled = true;
+            button.style.opacity = '0.5';
+        }
+    });
+    
+    // Show manual entry mode
+    const checkbox = document.getElementById('use-map-calculation');
+    if (checkbox) {
+        checkbox.checked = false;
+        checkbox.disabled = true;
+    }
+}
+
+// Initialize Google Maps or show fallback
+window.initFieldMap = function() {
+    if (typeof google === 'undefined' || !google.maps) {
+        handleGoogleMapsError('Google Maps failed to load. Using manual entry mode.');
+        return;
+    }
+    
+    console.log('✅ Google Maps loaded successfully for field registration');
+    window.googleMapsLoaded = true;
+    
+    // Initialize map immediately if DOM is ready
+    if (document.readyState === 'complete') {
+        initializeMap();
+    }
+};
+
+// Check if Google Maps is available
+function checkGoogleMaps() {
+    return typeof google !== 'undefined' && google.maps && google.maps.geometry;
+}
+
+// Toggle between manual and map calculation modes
+function toggleSizeMode() {
+    const checkbox = document.getElementById('use-map-calculation');
+    const sizeInput = document.getElementById('field-size');
+    const mapSection = document.getElementById('field-map').parentElement;
+    const helpText = document.getElementById('size-help');
+    
+    if (checkbox.checked) {
+        // Switch to map mode
+        if (checkGoogleMaps()) {
+            sizeInput.readOnly = true;
+            sizeInput.placeholder = 'Will be calculated from map drawing';
+            mapSection.style.display = 'block';
+            helpText.textContent = 'Draw on the map below to calculate field size automatically';
+        } else {
+            // Google Maps not available, fall back to manual
+            checkbox.checked = false;
+            handleGoogleMapsError('Google Maps not available. Please enter field size manually.');
+            toggleSizeMode(); // Recursive call to handle manual mode
+        }
+    } else {
+        // Switch to manual mode
+        sizeInput.readOnly = false;
+        sizeInput.placeholder = '0.0000';
+        helpText.textContent = 'Enter field size manually, or check the box to draw on map for automatic calculation';
+        // Keep map visible but make manual entry primary
+    }
+}
+</script>
+
+<!-- Load Google Maps API -->
+<script async defer 
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAH5PBVYemYDcGgf46Taf_3nRiiOEkGwG4&libraries=geometry,drawing&callback=initFieldMap"
+    onerror="handleGoogleMapsError('Failed to load Google Maps script');">
+</script>
 <style>
     .field-form {
         background: var(--const-card-bg);
@@ -103,8 +201,14 @@
             <div class="const-form-group">
                 <label class="const-label" for="field-size">Field Size (hectares)</label>
                 <input type="number" id="field-size" class="const-input" 
-                       step="0.0001" placeholder="0.0000" readonly>
-                <small class="const-text">Size will be calculated automatically from the drawn area</small>
+                       step="0.0001" placeholder="0.0000" min="0.0001" max="10000">
+                <div style="margin-top: 8px;">
+                    <input type="checkbox" id="use-map-calculation" onchange="toggleSizeMode()">
+                    <label for="use-map-calculation" style="margin-left: 8px; font-size: var(--const-text-min);">
+                        🗺️ Calculate from map drawing (or enter manually above)
+                    </label>
+                </div>
+                <small class="const-text" id="size-help">Enter field size manually, or check the box to draw on map for automatic calculation</small>
             </div>
             
             <div class="const-form-group">
@@ -154,7 +258,6 @@
     </div>
 </div>
 
-<script src="/static/js/field-drawing.js"></script>
 <script>
 // State management
 let selectedFarmerId = null;
@@ -163,10 +266,57 @@ let drawingManager = null;
 let currentPolygon = null;
 let isDrawing = false;
 
+// Get polygon data for saving
+function getFieldPolygonData() {
+    if (!currentPolygon) return null;
+    
+    const path = currentPolygon.getPath();
+    const coordinates = [];
+    
+    path.forEach(latLng => {
+        coordinates.push({
+            lat: latLng.lat(),
+            lng: latLng.lng()
+        });
+    });
+    
+    const bounds = new google.maps.LatLngBounds();
+    path.forEach(latLng => bounds.extend(latLng));
+    const center = bounds.getCenter();
+    
+    return {
+        coordinates: coordinates,
+        centroid: {
+            lat: center.lat(),
+            lng: center.lng()
+        }
+    };
+}
+
 // Load farmers on page load
 document.addEventListener('DOMContentLoaded', async function() {
     await loadFarmers();
-    initializeMap();
+    
+    // Initialize map when Google Maps is ready
+    if (window.googleMapsLoaded) {
+        initializeMap();
+    } else {
+        // Wait for Google Maps to load
+        const checkMaps = setInterval(() => {
+            if (window.googleMapsLoaded) {
+                clearInterval(checkMaps);
+                initializeMap();
+            }
+        }, 500);
+        
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            clearInterval(checkMaps);
+            if (!window.googleMapsLoaded) {
+                handleGoogleMapsError('Google Maps failed to load within timeout');
+            }
+        }, 10000);
+    }
 });
 
 // Load farmers from API
@@ -233,28 +383,118 @@ async function farmerSelected() {
 
 // Initialize Google Maps
 function initializeMap() {
-    // Map will be initialized by field-drawing.js
-    // This is a placeholder for map initialization
+    if (!checkGoogleMaps()) {
+        handleGoogleMapsError('Google Maps failed to initialize');
+        return;
+    }
+    
+    const mapElement = document.getElementById('field-map');
+    if (!mapElement) return;
+    
+    // Default center (Sofia, Bulgaria - for our mango farmers!)
+    const defaultCenter = { lat: 42.6977, lng: 23.3219 };
+    
+    map = new google.maps.Map(mapElement, {
+        zoom: 12,
+        center: defaultCenter,
+        mapTypeId: 'satellite',
+        gestureHandling: 'greedy'
+    });
+    
+    // Initialize drawing manager
+    drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: null,
+        drawingControl: false,
+        polygonOptions: {
+            fillColor: '#6B8E23',
+            fillOpacity: 0.3,
+            strokeColor: '#556B2F',
+            strokeWeight: 2,
+            clickable: false,
+            editable: true
+        }
+    });
+    
+    drawingManager.setMap(map);
+    
+    // Listen for polygon completion
+    google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
+        if (currentPolygon) {
+            currentPolygon.setMap(null);
+        }
+        currentPolygon = polygon;
+        calculatePolygonArea();
+        drawingManager.setDrawingMode(null);
+        isDrawing = false;
+    });
+    
+    console.log('✅ Map initialized successfully');
 }
 
-// Drawing functions (delegated to field-drawing.js)
-function startDrawing() {
-    if (window.startFieldDrawing) {
-        window.startFieldDrawing();
-        document.getElementById('drawing-instructions').style.display = 'block';
-        document.getElementById('start-drawing').disabled = true;
+// Calculate polygon area in hectares
+function calculatePolygonArea() {
+    if (!currentPolygon || !google.maps.geometry) return;
+    
+    const path = currentPolygon.getPath();
+    const area = google.maps.geometry.spherical.computeArea(path);
+    const hectares = area / 10000; // Convert m² to hectares
+    
+    // Get centroid
+    const bounds = new google.maps.LatLngBounds();
+    path.forEach(latLng => bounds.extend(latLng));
+    const center = bounds.getCenter();
+    
+    // Update UI
+    if (window.onFieldPolygonComplete) {
+        window.onFieldPolygonComplete(hectares, {
+            lat: center.lat(),
+            lng: center.lng()
+        }, path.getLength());
     }
+}
+
+// Drawing functions
+function startDrawing() {
+    if (!checkGoogleMaps() || !drawingManager) {
+        handleGoogleMapsError('Drawing not available. Please enter field size manually.');
+        return;
+    }
+    
+    // Enable drawing mode
+    drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYGON);
+    isDrawing = true;
+    
+    // Update UI
+    document.getElementById('drawing-instructions').style.display = 'block';
+    document.getElementById('start-drawing').disabled = true;
+    document.getElementById('use-map-calculation').checked = true;
+    document.getElementById('field-size').readOnly = true;
+    
+    console.log('🎯 Drawing mode activated');
 }
 
 function clearDrawing() {
-    if (window.clearFieldDrawing) {
-        window.clearFieldDrawing();
-        document.getElementById('field-size').value = '';
-        document.getElementById('field-calculations').style.display = 'none';
-        document.getElementById('save-field').disabled = true;
-        document.getElementById('start-drawing').disabled = false;
-        document.getElementById('drawing-instructions').style.display = 'none';
+    if (currentPolygon) {
+        currentPolygon.setMap(null);
+        currentPolygon = null;
     }
+    
+    if (drawingManager) {
+        drawingManager.setDrawingMode(null);
+    }
+    
+    isDrawing = false;
+    
+    // Reset UI
+    document.getElementById('field-size').value = '';
+    document.getElementById('field-size').readOnly = false;
+    document.getElementById('field-calculations').style.display = 'none';
+    document.getElementById('save-field').disabled = true;
+    document.getElementById('start-drawing').disabled = false;
+    document.getElementById('drawing-instructions').style.display = 'none';
+    document.getElementById('use-map-calculation').checked = false;
+    
+    console.log('🗑️ Drawing cleared');
 }
 
 // Save field to database
@@ -273,13 +513,13 @@ async function saveField() {
         return;
     }
     
-    if (!currentPolygon || fieldSize === 0) {
-        alert('Please draw the field boundaries');
+    if (fieldSize === 0) {
+        alert('Please enter field size manually or draw field boundaries on the map');
         return;
     }
     
     // Get polygon data from drawing
-    const polygonData = window.getFieldPolygonData ? window.getFieldPolygonData() : null;
+    const polygonData = getFieldPolygonData();
     
     try {
         const response = await fetch('/api/fields', {
@@ -345,8 +585,4 @@ window.onFieldPolygonComplete = function(area, centroid, pointCount) {
 };
 </script>
 
-<!-- Google Maps API -->
-<script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAU68ar5S8QwWblJXd3o0F8EH7zwfadKr0&libraries=drawing,geometry&callback=initMap&map_ids=e2a6d55c7b7beb3685a30de3">
-</script>
 {% endblock %}
