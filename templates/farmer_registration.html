@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farmer Registration - AVA OLO</title>
-    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <link rel="stylesheet" href="/static/css/constitutional-design.css">
     <script async defer 
         src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&libraries=geometry,drawing&callback=initFieldMap">
     </script>
@@ -306,7 +306,7 @@
 <body>
     <div class="dashboard-container">
         <div class="dashboard-header">
-            <a href="/database-dashboard" class="back-link">← Back to Database Dashboard</a>
+            <a href="/" class="back-link">← Back to Main Dashboard</a>
             <h1>Farmer Registration</h1>
         </div>
         
@@ -452,7 +452,7 @@
                 <!-- Submit Section -->
                 <div class="submit-section">
                     <button type="submit" class="btn-submit">Register Farmer</button>
-                    <a href="/database-dashboard" class="btn-cancel">Cancel</a>
+                    <a href="/" class="btn-cancel">Cancel</a>
                 </div>
             </form>
         </div>
@@ -644,9 +644,9 @@
                     form.reset();
                     fieldCount = 1;
                     
-                    // Redirect after 2 seconds
+                    // Redirect after 2 seconds to main landing page
                     setTimeout(() => {
-                        window.location.href = '/database-dashboard';
+                        window.location.href = '/';
                     }, 2000);
                 } else {
                     console.error("❌ REGISTRATION FAILED!");

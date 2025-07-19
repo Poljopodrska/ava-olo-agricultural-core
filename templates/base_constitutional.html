@@ -51,21 +51,18 @@
         function navigateBack() {
             const currentPath = window.location.pathname;
             
-            // Navigation hierarchy mapping
+            // Navigation hierarchy mapping - All roads lead to main landing
             const navigationHierarchy = {
-                // Sub-pages -> Dashboard
-                '/database-explorer': '/ui-dashboard',
-                '/agronomic-dashboard': '/ui-dashboard',
-                '/business-dashboard': '/ui-dashboard',
-                '/health-dashboard': '/ui-dashboard',
-                '/farmer-registration': '/ui-dashboard',
-                '/field-drawing-test': '/ui-dashboard',
-                '/register-fields': '/ui-dashboard',
-                '/register-task': '/ui-dashboard',
-                '/register-machinery': '/ui-dashboard',
-                
-                // Dashboards -> Landing
-                '/ui-dashboard': '/',
+                // Sub-pages -> Main Landing
+                '/database-explorer': '/',
+                '/agronomic-dashboard': '/',
+                '/business-dashboard': '/',
+                '/health-dashboard': '/',
+                '/farmer-registration': '/',
+                '/field-drawing-test': '/',
+                '/register-fields': '/',
+                '/register-task': '/',
+                '/register-machinery': '/',
                 '/database-dashboard': '/',
                 
                 // Default -> Landing
