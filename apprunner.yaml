@@ -13,8 +13,12 @@ run:
   command: python main.py
   network:
     port: 8080
-    env: PORT
+    env:
+    - name: FORCE_REBUILD
+      value: "1752901733"  # FORCE_REBUILD PORT
   env:
+    - name: FORCE_REBUILD
+      value: "1752901733"  # FORCE_REBUILD
     - name: DB_HOST
       value: "your-db-host"
     - name: DB_NAME
