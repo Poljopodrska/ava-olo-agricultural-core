@@ -155,4 +155,4 @@ if __name__ == "__main__":
     except Exception as e:
         emergency_log(f"❌ Uvicorn failed to start: {e}")
         traceback.print_exc()
-        sys.exit(1)
+        sys.exit(1)# Force rebuild: Sat Jul 19 07:53:19 CEST 2025
