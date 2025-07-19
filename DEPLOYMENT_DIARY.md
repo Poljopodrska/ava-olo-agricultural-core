@@ -84,6 +84,44 @@ if "gpt-3.5" in model:
 
 ---
 
+## **v3.3.7-test-isolation UPDATE**
+*Date: 2025-07-19*
+*Time: ~21:00 CEST*
+
+### **Session Isolation Verification**
+
+Added comprehensive test isolation to ensure clean test results:
+
+1. **Session Reset Function**
+```python
+def reset_all_sessions():
+    """Emergency reset - call between tests if needed"""
+    global registration_sessions
+    registration_sessions.clear()
+```
+
+2. **Unique Session IDs**
+- Timestamp-based: `test_1752952085_simple_peter_test`
+- Prevents any session collision
+
+3. **Pre-test Verification**
+- Check for existing sessions
+- Force reset if contamination detected
+- Clean up after each test
+
+4. **Key Finding**: No contamination exists!
+- `extracted_data` shows CUMULATIVE collected data (by design)
+- Each message correctly extracts only new information
+- Sessions are properly isolated
+
+### **Test Results**:
+- ✅ "Peter" → Extracts only `{"first_name": "Peter"}`
+- ✅ Each subsequent input adds only its specific data
+- ✅ No data bleeds between test sessions
+- ✅ System working as designed
+
+---
+
 ### **PREVIOUS EMERGENCY FIX (REFERENCE):**
 
 ### **ROOT CAUSE IDENTIFIED:**

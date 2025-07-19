@@ -1,7 +1,7 @@
 {
   "service": "agricultural-core",
-  "deployment_id": "agricultural-core-deploy-1752952011",
-  "timestamp": "2025-07-19T19:06:51.101080",
+  "deployment_id": "agricultural-core-deploy-1752953066",
+  "timestamp": "2025-07-19T19:24:26.972057",
   "version": "v3.2.5-bulletproof",
   "files": {
     "api_gateway_constitutional.py": {
@@ -9,7 +9,7 @@
       "size": 14954
     },
     "api_gateway_constitutional_ui.py": {
-      "hash": "2315463a46314b68cd781841a59cf089c3cb5e51390f2b34fad0fe7cdfe5d8dc",
+      "hash": "8ef738477d9dd08de71165a7a03d6d53d73db90a31c49c4fdb92cfbd6bf6b43a",
       "size": 88210
     },
     "api_gateway_emergency.py": {
@@ -133,7 +133,7 @@
       "size": 7304
     },
     "main.py": {
-      "hash": "7e63c1e1546d98999b1761516e3a6e1b8ac1b09c4055fbbe0768a7e413caa120",
+      "hash": "9279631a6984aaa223fa7867140d7161561a0884b61a63895c171e91146991bf",
       "size": 2553
     },
     "manual_aurora_migration.py": {
@@ -199,6 +199,10 @@
     "test_cava_business_flow.py": {
       "hash": "f7513997a8c13742f5c8589b4902ef9de90e4705ee7d1fc794b479089d8bd8b8",
       "size": 10541
+    },
+    "test_cava_clean_isolation.py": {
+      "hash": "1e1c5be2d1bff7908b72a13d8b1f350365b62b8a5ce718ad7ac202c10270cff9",
+      "size": 3314
     },
     "test_cava_complete.py": {
       "hash": "6974a2236a94c1b636b6f7936dd24ee1a51c05c4c6d872b74c985b9e69fc0965",
