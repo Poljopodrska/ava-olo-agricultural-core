@@ -1,184 +1,196 @@
 {
-    "current_version": "v2.2.4-force-deployment",
-    "service_name": "Monitoring Dashboards",
-    "last_updated": "2025-07-19",
-    "version_history": [
-        {
-            "version": "v2.2.4-force-deployment",
-            "date": "2025-07-19",
-            "changes": [
-                "FORCE DEPLOYMENT: Added giant red banner to make changes unmistakable",
-                "MAJOR REWRITE: Completely rewrote business dashboard function",
-                "DIRECT QUERIES: Dashboard now uses direct SQL queries for data",
-                "VERIFICATION: Added /deployment-verify endpoint",
-                "VISUAL: Red banner + yellow debug box + green metric values",
-                "NUCLEAR: Major code changes to force AWS complete deployment"
-            ]
-        },
-        {
-            "version": "v2.2.3-verification-fix",
-            "date": "2025-07-19",
-            "changes": [
-                "VERIFICATION: Added visible debug output to confirm data flow",
-                "TESTING: Enhanced dashboard with yellow debug box showing live data",
-                "CONFIRMATION: Dashboard already working - shows 16 farmers, 211.95 hectares",
-                "ANALYSIS: Debug endpoints confirm database connection and queries working",
-                "CACHE BUSTER: Force new deployment to verify changes are visible"
-            ]
-        },
-        {
-            "version": "v2.2.2-data-display-fix",
-            "date": "2025-07-19",
-            "changes": [
-                "Added debug endpoints to trace data retrieval failures",
-                "Enhanced business dashboard with comprehensive debug logging",
-                "Added /api/v1/debug/deployment endpoint to verify deployment status",
-                "Added /api/v1/debug/database-test endpoint to test all connection methods",
-                "Added /api/v1/debug/file-info endpoint to verify file deployment",
-                "Dashboard shows debug info when data displays as '--' placeholders",
-                "Improved error handling with detailed tracing of failure points"
-            ]
-        },
-        {
-            "version": "v2.2.1-pool-migration",
-            "date": "2025-07-19",
-            "changes": [
-                "Migrated business dashboard to use SQLAlchemy pool (was using slow psycopg2)",
-                "Added real-time database connection indicator on dashboard header",
-                "Added GET /api/v1/database/test endpoint for connection testing",
-                "Business dashboard now loads in <1s using pool metrics",
-                "Visual status: 🟢 Connected, 🔴 Disconnected, 🟡 Error",
-                "Displays live farmer count and hectares in header"
-            ]
-        },
-        {
-            "version": "v2.2.0-performance-restore",
-            "date": "2025-07-19",
-            "changes": [
-                "Implemented SQLAlchemy connection pool (5-10 persistent connections)",
-                "Added GET /api/v1/database/schema endpoint for schema access",
-                "Added GET /api/v1/health/performance for monitoring query times",
-                "Connection recycling every 3600 seconds with health checks",
-                "Expected performance: <200ms queries, <1s dashboard loads",
-                "Graceful fallback when pool unavailable"
-            ]
-        },
-        {
-            "version": "v2.1.11-performance-fix",
-            "date": "2025-07-19",
-            "changes": [
-                "VPC-optimized database connection with 2s timeout (was 10s x 3)",
-                "Removed unnecessary connection fallback strategies",
-                "Added 60-second caching for dashboard metrics",
-                "Added /test/performance endpoint for monitoring",
-                "Dramatically improved page load times"
-            ]
-        },
-        {
-            "version": "v2.1.10-db-column-fix",
-            "date": "2025-07-19",
-            "changes": [
-                "Fixed database column names: area_ha -> size_hectares",
-                "Updated AWS App Runner environment variables with correct DB credentials",
-                "Fixed slow loading and dashboard metrics not showing",
-                "Resolved database connection issues"
-            ]
-        },
-        {
-            "version": "v2.1.9-apprunner-format",
-            "date": "2025-01-19",
-            "changes": [
-                "Fixed apprunner.yaml format to match working service",
-                "Removed quotes from runtime-version: 3.11",
-                "Added env: PORT under network section",
-                "Enhanced build output messages"
-            ]
-        },
-        {
-            "version": "v2.1.8-runtime-fix",
-            "date": "2025-01-19",
-            "changes": [
-                "Updated runtime-version from 3.9 to 3.11",
-                "Fixed unsupported runtime version error",
-                "All field registration fixes included"
-            ]
-        },
-        {
-            "version": "v2.1.7-yaml-fix",
-            "date": "2025-01-19",
-            "changes": [
-                "Fixed apprunner.yaml duplicate env sections",
-                "Removed env from network section",
-                "Corrected YAML structure for AWS parsing",
-                "All field registration fixes now deployable"
-            ]
-        },
-        {
-            "version": "v2.1.6-deployment-fix",
-            "date": "2025-01-19",
-            "changes": [
-                "Updated deployment timestamp to force AWS App Runner rebuild",
-                "Applied surgical fix methodology from constitutional UI",
-                "All v2.1.5 field registration fixes now active"
-            ]
-        },
-        {
-            "version": "v2.1.5-forensic-field-fix",
-            "date": "2025-01-19",
-            "changes": [
-                "FORENSIC FIX: AWS App Runner cache-bust deployment",
-                "Fixed manual hectare entry in field registration",
-                "Fixed Google Maps field boundary drawing functionality",
-                "Added smart toggle between manual and map calculation modes",
-                "Improved error handling for Google Maps failures"
-            ]
-        },
-        {
-            "version": "v2.1.5",
-            "date": "2025-01-19",
-            "changes": [
-                "Fixed manual hectare entry in field registration",
-                "Fixed Google Maps field boundary drawing functionality",
-                "Added smart toggle between manual and map calculation modes",
-                "Improved error handling for Google Maps failures"
-            ]
-        },
-        {
-            "version": "v2.1.4",
-            "date": "2025-01-19",
-            "changes": [
-                "Version update verification test",
-                "Deployment confirmation protocol"
-            ]
-        },
-        {
-            "version": "v2.1.3",
-            "date": "2025-01-19",
-            "changes": [
-                "Navigation fixes to main landing page",
-                "Field length restrictions removed",
-                "Post-registration redirect fix",
-                "Constitutional design compliance"
-            ]
-        },
-        {
-            "version": "v2.1.2", 
-            "date": "2025-01-19",
-            "changes": [
-                "Dashboard organization and database integration",
-                "Template engine fixes",
-                "Mock data fallbacks"
-            ]
-        },
-        {
-            "version": "v2.1.1",
-            "date": "2025-01-19", 
-            "changes": [
-                "Enhanced farmer registration",
-                "Field mapping with Google Maps",
-                "Task registration with cascading dropdowns",
-                "Machinery registration"
-            ]
-        }
-    ]
+  "current_version": "v2.2.5-bulletproof",
+  "service_name": "Monitoring Dashboards",
+  "last_updated": "2025-07-19",
+  "version_history": [
+    {
+      "version": "v2.2.5-bulletproof",
+      "date": "2025-07-19",
+      "changes": [
+        "BULLETPROOF DEPLOYMENT: Shared deployment verification system for all services",
+        "DEPLOYMENT MANAGER: Added deployment_manager.py for file hash verification",
+        "ENDPOINTS: Added /api/deployment/verify and /api/deployment/health",
+        "BUILD ID: Unique build IDs for every deployment based on timestamp",
+        "YELLOW DEBUG BOX: Kept yellow debug box showing real database data",
+        "VERIFICATION: Full deployment validation with manifest files"
+      ]
+    },
+    {
+      "version": "v2.2.4-force-deployment",
+      "date": "2025-07-19",
+      "changes": [
+        "FORCE DEPLOYMENT: Added giant red banner to make changes unmistakable",
+        "MAJOR REWRITE: Completely rewrote business dashboard function",
+        "DIRECT QUERIES: Dashboard now uses direct SQL queries for data",
+        "VERIFICATION: Added /deployment-verify endpoint",
+        "VISUAL: Red banner + yellow debug box + green metric values",
+        "NUCLEAR: Major code changes to force AWS complete deployment"
+      ]
+    },
+    {
+      "version": "v2.2.3-verification-fix",
+      "date": "2025-07-19",
+      "changes": [
+        "VERIFICATION: Added visible debug output to confirm data flow",
+        "TESTING: Enhanced dashboard with yellow debug box showing live data",
+        "CONFIRMATION: Dashboard already working - shows 16 farmers, 211.95 hectares",
+        "ANALYSIS: Debug endpoints confirm database connection and queries working",
+        "CACHE BUSTER: Force new deployment to verify changes are visible"
+      ]
+    },
+    {
+      "version": "v2.2.2-data-display-fix",
+      "date": "2025-07-19",
+      "changes": [
+        "Added debug endpoints to trace data retrieval failures",
+        "Enhanced business dashboard with comprehensive debug logging",
+        "Added /api/v1/debug/deployment endpoint to verify deployment status",
+        "Added /api/v1/debug/database-test endpoint to test all connection methods",
+        "Added /api/v1/debug/file-info endpoint to verify file deployment",
+        "Dashboard shows debug info when data displays as '--' placeholders",
+        "Improved error handling with detailed tracing of failure points"
+      ]
+    },
+    {
+      "version": "v2.2.1-pool-migration",
+      "date": "2025-07-19",
+      "changes": [
+        "Migrated business dashboard to use SQLAlchemy pool (was using slow psycopg2)",
+        "Added real-time database connection indicator on dashboard header",
+        "Added GET /api/v1/database/test endpoint for connection testing",
+        "Business dashboard now loads in <1s using pool metrics",
+        "Visual status: \ud83d\udfe2 Connected, \ud83d\udd34 Disconnected, \ud83d\udfe1 Error",
+        "Displays live farmer count and hectares in header"
+      ]
+    },
+    {
+      "version": "v2.2.0-performance-restore",
+      "date": "2025-07-19",
+      "changes": [
+        "Implemented SQLAlchemy connection pool (5-10 persistent connections)",
+        "Added GET /api/v1/database/schema endpoint for schema access",
+        "Added GET /api/v1/health/performance for monitoring query times",
+        "Connection recycling every 3600 seconds with health checks",
+        "Expected performance: <200ms queries, <1s dashboard loads",
+        "Graceful fallback when pool unavailable"
+      ]
+    },
+    {
+      "version": "v2.1.11-performance-fix",
+      "date": "2025-07-19",
+      "changes": [
+        "VPC-optimized database connection with 2s timeout (was 10s x 3)",
+        "Removed unnecessary connection fallback strategies",
+        "Added 60-second caching for dashboard metrics",
+        "Added /test/performance endpoint for monitoring",
+        "Dramatically improved page load times"
+      ]
+    },
+    {
+      "version": "v2.1.10-db-column-fix",
+      "date": "2025-07-19",
+      "changes": [
+        "Fixed database column names: area_ha -> size_hectares",
+        "Updated AWS App Runner environment variables with correct DB credentials",
+        "Fixed slow loading and dashboard metrics not showing",
+        "Resolved database connection issues"
+      ]
+    },
+    {
+      "version": "v2.1.9-apprunner-format",
+      "date": "2025-01-19",
+      "changes": [
+        "Fixed apprunner.yaml format to match working service",
+        "Removed quotes from runtime-version: 3.11",
+        "Added env: PORT under network section",
+        "Enhanced build output messages"
+      ]
+    },
+    {
+      "version": "v2.1.8-runtime-fix",
+      "date": "2025-01-19",
+      "changes": [
+        "Updated runtime-version from 3.9 to 3.11",
+        "Fixed unsupported runtime version error",
+        "All field registration fixes included"
+      ]
+    },
+    {
+      "version": "v2.1.7-yaml-fix",
+      "date": "2025-01-19",
+      "changes": [
+        "Fixed apprunner.yaml duplicate env sections",
+        "Removed env from network section",
+        "Corrected YAML structure for AWS parsing",
+        "All field registration fixes now deployable"
+      ]
+    },
+    {
+      "version": "v2.1.6-deployment-fix",
+      "date": "2025-01-19",
+      "changes": [
+        "Updated deployment timestamp to force AWS App Runner rebuild",
+        "Applied surgical fix methodology from constitutional UI",
+        "All v2.1.5 field registration fixes now active"
+      ]
+    },
+    {
+      "version": "v2.1.5-forensic-field-fix",
+      "date": "2025-01-19",
+      "changes": [
+        "FORENSIC FIX: AWS App Runner cache-bust deployment",
+        "Fixed manual hectare entry in field registration",
+        "Fixed Google Maps field boundary drawing functionality",
+        "Added smart toggle between manual and map calculation modes",
+        "Improved error handling for Google Maps failures"
+      ]
+    },
+    {
+      "version": "v2.1.5",
+      "date": "2025-01-19",
+      "changes": [
+        "Fixed manual hectare entry in field registration",
+        "Fixed Google Maps field boundary drawing functionality",
+        "Added smart toggle between manual and map calculation modes",
+        "Improved error handling for Google Maps failures"
+      ]
+    },
+    {
+      "version": "v2.1.4",
+      "date": "2025-01-19",
+      "changes": [
+        "Version update verification test",
+        "Deployment confirmation protocol"
+      ]
+    },
+    {
+      "version": "v2.1.3",
+      "date": "2025-01-19",
+      "changes": [
+        "Navigation fixes to main landing page",
+        "Field length restrictions removed",
+        "Post-registration redirect fix",
+        "Constitutional design compliance"
+      ]
+    },
+    {
+      "version": "v2.1.2",
+      "date": "2025-01-19",
+      "changes": [
+        "Dashboard organization and database integration",
+        "Template engine fixes",
+        "Mock data fallbacks"
+      ]
+    },
+    {
+      "version": "v2.1.1",
+      "date": "2025-01-19",
+      "changes": [
+        "Enhanced farmer registration",
+        "Field mapping with Google Maps",
+        "Task registration with cascading dropdowns",
+        "Machinery registration"
+      ]
+    }
+  ]
 }

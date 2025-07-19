@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DEPLOYMENT TIMESTAMP: 1752942000 - v2.2.1-pool-migration Complete SQLAlchemy migration
+# DEPLOYMENT TIMESTAMP: 20250719210000 - v2.2.5-bulletproof Bulletproof deployment system
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
@@ -19,6 +19,30 @@ from pydantic import BaseModel
 import sys
 import urllib.parse
 import time
+import hashlib
+
+# Import shared deployment manager
+sys.path.append('../ava-olo-shared/shared')
+try:
+    from deployment_manager import DeploymentManager
+except ImportError:
+    # Fallback if shared folder not available
+    class DeploymentManager:
+        def __init__(self, service_name):
+            self.service_name = service_name
+        def generate_deployment_manifest(self, version):
+            return {"service": self.service_name, "version": version}
+        def verify_deployment(self):
+            return {"valid": False, "error": "Deployment manager not available"}
+
+# Service-specific deployment tracking
+SERVICE_NAME = "monitoring-dashboards"
+DEPLOYMENT_TIMESTAMP = '20250719204116'  # Updated by deploy script
+BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
+VERSION = f"v2.2.5-bulletproof-{BUILD_ID}"
+
+deployment_manager = DeploymentManager(SERVICE_NAME)
+
 try:
     from database_pool import (
         init_connection_pool, get_db_session, get_db_connection as get_pool_connection,
@@ -27,17 +51,11 @@ try:
     POOL_AVAILABLE = True
 except ImportError:
     POOL_AVAILABLE = False
-    logger.warning("SQLAlchemy pool not available, using direct connections")
 
 # Version Management System
 def get_current_service_version():
-    """Get the current version from version_history.json"""
-    try:
-        with open('version_history.json', 'r') as f:
-            version_data = json.load(f)
-            return version_data.get('current_version', 'v0.0.0')
-    except:
-        return 'v0.0.0'
+    """Get the current version - now using deployment manager version"""
+    return VERSION
 
 def constitutional_deployment_completion():
     """Report version after every deployment - CONSTITUTIONAL REQUIREMENT"""
@@ -61,7 +79,8 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # DEPLOYMENT VERIFICATION
-logger.info("🚀 DEPLOYMENT VERSION: v2.2.1-pool-migration - Complete migration to SQLAlchemy pool with real-time DB status")
+logger.info(f"🚀 DEPLOYMENT VERSION: {VERSION} - Bulletproof deployment system")
+logger.info(f"Build ID: {BUILD_ID}")
 logger.info(f"Python version: {sys.version}")
 logger.info(f"JSON module available: {'json' in sys.modules}")
 
@@ -166,6 +185,97 @@ async def startup_event():
             logger.info(f"Startup DB test: {message}")
         except Exception as e:
             logger.error(f"Failed to initialize pool on startup: {e}")
+
+# Deployment verification endpoints
+@app.get("/api/deployment/verify")
+async def deployment_verify_endpoint():
+    verification = deployment_manager.verify_deployment()
+    return {
+        "service": SERVICE_NAME,
+        "deployment_valid": verification.get("valid", False),
+        "version": VERSION,
+        "build_id": BUILD_ID,
+        "details": verification
+    }
+
+@app.get("/api/deployment/health")
+async def deployment_health():
+    verification = deployment_manager.verify_deployment()
+    status_color = "green" if verification.get("valid") else "red"
+    
+    # Get database metrics if available
+    db_status = "Unknown"
+    farmer_count = "--"
+    hectare_total = "--"
+    
+    if POOL_AVAILABLE:
+        try:
+            metrics = get_pool_metrics()
+            if metrics:
+                farmer_count = metrics.get("farmers", "--")
+                hectare_total = metrics.get("hectares", "--")
+                db_status = "Connected"
+        except:
+            db_status = "Error"
+    
+    return HTMLResponse(f"""
+    <html>
+    <head>
+        <title>Deployment Health - {SERVICE_NAME}</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 40px;
+                font-family: Arial, sans-serif;
+                background: {status_color};
+                color: white;
+            }}
+            .status-box {{
+                background: rgba(255,255,255,0.2);
+                border-radius: 10px;
+                padding: 30px;
+                max-width: 800px;
+                margin: 0 auto;
+            }}
+            h1 {{ margin: 0 0 20px 0; }}
+            .metric {{ 
+                font-size: 24px; 
+                margin: 10px 0;
+                padding: 10px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 5px;
+            }}
+            .yellow-box {{
+                background: #FFD700;
+                color: #333;
+                padding: 20px;
+                margin: 20px 0;
+                border-radius: 5px;
+                font-weight: bold;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="status-box">
+            <h1>📊 Monitoring Dashboards: {VERSION}</h1>
+            <div class="metric">Service: {SERVICE_NAME}</div>
+            <div class="metric">Build ID: {BUILD_ID}</div>
+            <div class="metric">Deployment Valid: {verification.get('valid', False)}</div>
+            <div class="metric">Database: {db_status}</div>
+            <div class="metric">Farmers: {farmer_count}</div>
+            <div class="metric">Hectares: {hectare_total}</div>
+            
+            <div class="yellow-box">
+                🚨 DEBUG MODE - v2.2.5-bulletproof 🚨<br>
+                If you see this YELLOW box, deployment succeeded!<br>
+                Real data from DB: {farmer_count} farmers, {hectare_total} hectares
+            </div>
+            
+            <p>If background is GREEN and you see real data, monitoring service deployed successfully!</p>
+        </div>
+    </body>
+    </html>
+    """)
 
 # Initialize Jinja2 templates
 from fastapi.templating import Jinja2Templates
@@ -1845,25 +1955,18 @@ async def update_cost_rate(request: Request):
 # Business Dashboard Implementation - v2.2.4 FORCE DEPLOYMENT
 @app.get("/business-dashboard", response_class=HTMLResponse)
 async def business_dashboard():
-    """Business Dashboard - v2.2.4 with GIANT RED BANNER"""
+    """Business Dashboard - v2.2.5-bulletproof with deployment verification"""
     # SKIP CACHE - FORCE FRESH DATA
     
-    # UNMISTAKABLE VISUAL CHANGE - GIANT RED BANNER
-    giant_banner = """
-    <div style="background: #FF0000; color: white; font-size: 32px; 
-                padding: 20px; text-align: center; font-weight: bold;
-                border: 5px solid black;">
-        🚨 DEPLOYMENT 2.2.4 SUCCESSFUL - DELETE THIS BANNER 🚨<br>
-        THIS PROVES AWS DEPLOYED THE FULL CODE
-    </div>
-    """
-    
-    # Initialize debug HTML
+    # Initialize debug HTML with yellow box
     debug_html = f"""
-    <div style='background: yellow; border: 3px solid orange; 
-                padding: 15px; margin: 10px; font-family: monospace;'>
-        <h3>🔍 DEBUG INFO - v2.2.4-force-deployment</h3>
+    <div style='background: #FFD700; border: 3px solid orange; 
+                padding: 15px; margin: 10px; font-family: monospace;
+                color: #333; font-weight: bold;'>
+        <h3>🔍 DEBUG INFO - {VERSION}</h3>
+        <p>Build ID: {BUILD_ID}</p>
         <p>Timestamp: {datetime.now()}</p>
+        <p>Service: {SERVICE_NAME}</p>
     """
     
     # Get real data with direct SQL
@@ -1907,7 +2010,7 @@ async def business_dashboard():
 <!DOCTYPE html>
 <html>
 <head>
-    <title>AVA OLO Dashboard v2.2.4-force-deployment</title>
+    <title>AVA OLO Dashboard {VERSION}</title>
     <style>
         body {{ font-family: Arial, sans-serif; margin: 0; padding: 0; }}
         .container {{ padding: 20px; }}
@@ -1930,12 +2033,11 @@ async def business_dashboard():
     </style>
 </head>
 <body>
-    {giant_banner}
     {debug_html}
     
     <div class="container">
         <h1>Agricultural Management Dashboard</h1>
-        <p>Version 2.2.4-force-deployment</p>
+        <p>Version {VERSION}</p>
         
         <div class="metrics-grid">
             <div class="metric-card">
@@ -1955,7 +2057,7 @@ async def business_dashboard():
         </div>
         
         <hr>
-        <p>If you see the RED BANNER above, deployment worked!</p>
+        <p>If you see the YELLOW DEBUG BOX above, deployment worked!</p>
         <p>If you see real numbers (not ERROR), database works!</p>
     </div>
 </body>
@@ -1968,10 +2070,10 @@ async def business_dashboard():
 @app.get("/deployment-verify")
 async def deployment_verify():
     """Simple endpoint to verify deployment worked"""
-    return HTMLResponse("""
-    <h1 style="color:red;text-align:center;">DEPLOYMENT 2.2.4 VERIFIED</h1>
-    <p style="text-align:center;font-size:24px;">If you see this, deployment worked!</p>
-    <p style="text-align:center;font-size:20px;">Now check <a href="/business-dashboard">/business-dashboard</a> for red banner</p>
+    return HTMLResponse(f"""
+    <h1 style="color:green;text-align:center;">DEPLOYMENT {VERSION} VERIFIED</h1>
+    <p style="text-align:center;font-size:24px;">Build ID: {BUILD_ID}</p>
+    <p style="text-align:center;font-size:20px;">Now check <a href="/business-dashboard">/business-dashboard</a> for yellow debug box</p>
     """)
 
 # Performance test endpoint

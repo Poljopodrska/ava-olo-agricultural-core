@@ -1,0 +1,373 @@
+{
+  "service": "monitoring-dashboards",
+  "deployment_id": "monitoring-dashboards-deploy-1752950476",
+  "timestamp": "2025-07-19T18:41:16.449639",
+  "version": "v2.2.5-bulletproof",
+  "files": {
+    "add_test_farmer.py": {
+      "hash": "cae337b5d965d1866fcc949ab251004d0d814a9cfe3c716dac81650875377d75",
+      "size": 2028
+    },
+    "admin_dashboard.py": {
+      "hash": "44a7607c0c791de25377c93940acacd2481f47a0af5b7ae04cc56391447266fd",
+      "size": 1654
+    },
+    "agronomic_approval.py": {
+      "hash": "456ffd4e58904db49b0bcd25fea8bed70068632f53efc468ea66511f365b04c3",
+      "size": 7516
+    },
+    "autonomous_verify.py": {
+      "hash": "ce0549616bce9bbe524e3a1d65d8185591a59f7f60050ec410544f9865bd7f8e",
+      "size": 2665
+    },
+    "business_dashboard.py": {
+      "hash": "058ec22c168c668530deac9dcda27b53de1bd874e0de02afcfb353c88648e691",
+      "size": 23449
+    },
+    "business_dashboard_backup.py": {
+      "hash": "dec1e94002cb2695113a38f555d53a0b691069e915062752458d3cb8c4d40341",
+      "size": 7829
+    },
+    "business_dashboard_updated.py": {
+      "hash": "f91c23a918fd725e6f2a4e163c03c57d3f786f9102915cf188c7b48c25ac79d5",
+      "size": 25952
+    },
+    "check_and_add_data.py": {
+      "hash": "ad4b900f85df763d7a38406d6fc7d963a873e5952fbbe47d632c2f338dc313e2",
+      "size": 7275
+    },
+    "check_aws_tables.py": {
+      "hash": "71f8a7590f62b4dfbde6aaa0c60de4445cb57260e17088585b8fd2ae5b733a9b",
+      "size": 2374
+    },
+    "check_deployment_ready.py": {
+      "hash": "4a1f35425e519790d4b7da99f63202b879ec1b5a17a2c5a9b11b24ab03f9accd",
+      "size": 5134
+    },
+    "check_recent_farmers.py": {
+      "hash": "7c28845942f3cb00f00d7774dc34c819c08686baf4d44921510466efdc65389a",
+      "size": 3017
+    },
+    "config.py": {
+      "hash": "8087357d148bc1c95f9ecfac12c40d62ed24cd56d0f5ca16388615631f47fdcd",
+      "size": 4441
+    },
+    "constitutional_button_audit.py": {
+      "hash": "b62e0e1dbdc60cbfce064aa2f88b13cd6f0697023dd8190e4a68b9f9a3f5a59a",
+      "size": 8551
+    },
+    "constitutional_design_checker.py": {
+      "hash": "4bffa548487c7e4dedc56a8e2d261daab6ae4e598f146912b6ff0553c545e029",
+      "size": 7253
+    },
+    "create_aws_tables.py": {
+      "hash": "b60d9a23f20bb7aab7b1e7b41dac2850d27d1a2148e3936279f5393664924771",
+      "size": 3009
+    },
+    "create_ordered_data.py": {
+      "hash": "d4d1aefebfd945ab4db2257e7c25ab97e73d4ad7fd92bc20387be15731683f49",
+      "size": 2654
+    },
+    "create_tables_endpoint.py": {
+      "hash": "d5a2ee4aa4fb758a65f964140a6b09c9eb2b4983423d9a108dba09df56a3febb",
+      "size": 1915
+    },
+    "create_tables_via_bastion.py": {
+      "hash": "1a5fa2c28b19605bf28adcdc694400a52f13fb3ac367f1885076dc1ddd511aa7",
+      "size": 2124
+    },
+    "database_explorer.py": {
+      "hash": "491d4bb5e498e36cc97b73fc756d55f9c692496f581bba95d41341263a254bfa",
+      "size": 53510
+    },
+    "database_explorer_backup.py": {
+      "hash": "4da2b11988c07ce7b08a0d3984bfc2e6cdd5416a5c08a45cf69d640cf378c78a",
+      "size": 14152
+    },
+    "database_import_endpoint.py": {
+      "hash": "373564dd2e3dfa4fd3750f15dbb0518787648e198cfd7ec20a42593f7efb004f",
+      "size": 3344
+    },
+    "database_operations.py": {
+      "hash": "9261578934dbbab904640ba635b35bf76e2511bcea397c80f8e695c329e9a477",
+      "size": 34541
+    },
+    "database_pool.py": {
+      "hash": "c93a5d9312b337a209cb438a94a44e531ebe5cb1ece05c98daae53e0cfc25639",
+      "size": 8352
+    },
+    "db_connection_fixed.py": {
+      "hash": "57905b9048da0ad2570dbffc8844ace1a2adfb1267d4a95b6bc63e6a7d0fdc5d",
+      "size": 13024
+    },
+    "db_diagnostics.py": {
+      "hash": "787769a7e9374a04a6d39e1f565f54e785462e551ef3e9b3d933a6c2c096b3b4",
+      "size": 10073
+    },
+    "design_compliance_verifier.py": {
+      "hash": "2186a75e97d80afd67385266d546b63de74047fc6dda6417c1d48a56365c1325",
+      "size": 9938
+    },
+    "design_rules_clarity_assessment.py": {
+      "hash": "16008e52541bcc2deec97ef4c3a1ea2615a06476cb4775628e821260842f3c4c",
+      "size": 9421
+    },
+    "diagnostic.py": {
+      "hash": "82975dd3bab600d7a1acbfc5342524b3ea4358294452043a225cc44ce55d75bc",
+      "size": 1337
+    },
+    "emergency_deploy.py": {
+      "hash": "3947b7329204800cb6ea1fe62cb633c8626a6a93718f68788661fce244b6195e",
+      "size": 5195
+    },
+    "emergency_main.py": {
+      "hash": "cb69f7c9d58b445945ac11fdc1318e55642ab787328028dd980e30d7e7713db4",
+      "size": 5874
+    },
+    "enhanced_diagnostics.py": {
+      "hash": "5c6ca7494a4a43f87cbd8b2651d9f03be0272d748cdb6772564d5b3528537633",
+      "size": 12328
+    },
+    "extract_data_only.py": {
+      "hash": "468c7209fd42ae04d10401c2e4eb5679c2afc020c25c81372cc9fb0c8d1a24a7",
+      "size": 2172
+    },
+    "final_autonomous_report.py": {
+      "hash": "f07fdc2e7f316ec24921b55746c0c378e7bf1524a145616630ee56f2f24eb9dc",
+      "size": 1918
+    },
+    "final_mango_compliance_test.py": {
+      "hash": "6aa852245244c0840e47e91f9e9effc4569e20096e1bc1117c51adba3465938d",
+      "size": 9072
+    },
+    "fix_business_dashboard.py": {
+      "hash": "1c2c41a71c43d3515957aa540c7b93f124798abc8fd15f4082b675960aab8d66",
+      "size": 6998
+    },
+    "fix_farmer_registration.py": {
+      "hash": "c85e46bedec2d412af16a76b5bc3c8dc0341710e20fef2511608ef9d24f42a46",
+      "size": 4231
+    },
+    "fix_field_sequence.py": {
+      "hash": "7c4087a69ab09017bf49f1d3e93e93738576f3a446affdb5d13c61f8813247e7",
+      "size": 2726
+    },
+    "front_page.py": {
+      "hash": "89a7b2bb4eae4b3577a0cc8c0d6e0c153896aa1331b280fd9fb81eb9a32948e9",
+      "size": 10935
+    },
+    "gradual_main_step1.py": {
+      "hash": "29d1b87538c4beb4375b7bc509f452580a2c05a6cd26887e83b19f102cc04a2d",
+      "size": 6528
+    },
+    "health_check_dashboard.py": {
+      "hash": "8c4914b6b6f2bc55df2621b4f377f79fcc01d4442fdd74bb748781cedfb0a722",
+      "size": 22711
+    },
+    "import_database.py": {
+      "hash": "79978dc7b9a70777ed91043df24517cbabacdd05654cdc7862975602c2926152",
+      "size": 5408
+    },
+    "import_data_only.py": {
+      "hash": "c00d17ede3df1c99e90574f2c3d8b8d62ac3876e3adc737b4f67ce7337e9c16f",
+      "size": 4040
+    },
+    "import_via_app_runner.py": {
+      "hash": "c5e0483015634e516f8c62c608250dbadbbd36069b2414ab1317a2c0c8fd6cea",
+      "size": 2391
+    },
+    "inspect_rds_api.py": {
+      "hash": "27c26328771f1d44008e65e587a465db12fd85e6c24d426ebadef37040807ad6",
+      "size": 8994
+    },
+    "inspect_rds_standalone.py": {
+      "hash": "1c400c5570a89059ad2bd0c33cf162913e44837a63258c1f0843c93cd4210df0",
+      "size": 6839
+    },
+    "integrated_app.py": {
+      "hash": "cbf6630796b84fa9e56566c932c92091f585a1e520cc38a71cabfe02e7ecea8d",
+      "size": 9250
+    },
+    "llm_integration.py": {
+      "hash": "c5ae847a08b650134c9b4074a697904fc28b711ca84265290d7b291e2f441073",
+      "size": 36960
+    },
+    "llm_query_handler.py": {
+      "hash": "8ad3083e219ef2ed5bda00b5861bfb7e4b703d98eb27706414ab004f18e1b2ac",
+      "size": 5830
+    },
+    "main.py": {
+      "hash": "bc203b3bdf51722cc079815844aa7d95405ba80617664d03be85c2466c2c9eb3",
+      "size": 259199
+    },
+    "main_emergency_backup.py": {
+      "hash": "cb69f7c9d58b445945ac11fdc1318e55642ab787328028dd980e30d7e7713db4",
+      "size": 5874
+    },
+    "main_full_dashboards.py": {
+      "hash": "bd0383e6e425b4f336eaaf1c58a10269e50043d706fb13a783b0baf7d5cb34ba",
+      "size": 5101
+    },
+    "main_health_only.py": {
+      "hash": "4342d9e4f0d968072eabb826715a29499457143636099d0a2647abc2d935df6e",
+      "size": 9207
+    },
+    "main_optimized.py": {
+      "hash": "9c02170b4f1e60f5ac6ab4d8651a8246a5c919cdabb87b03f10a420f5bb1f5c5",
+      "size": 5075
+    },
+    "main_original.py": {
+      "hash": "bd0383e6e425b4f336eaaf1c58a10269e50043d706fb13a783b0baf7d5cb34ba",
+      "size": 5101
+    },
+    "migrate_db_structure.py": {
+      "hash": "7e0dca06c107ce760bd7cea20031cf25030206b9c51d6f280141b87a82e026bd",
+      "size": 4727
+    },
+    "migrate_to_constitutional.py": {
+      "hash": "a46a75d1065e96ff1fa7d5ce45bf06d49f5d5956f52110c8077e4811b4b5b85d",
+      "size": 4289
+    },
+    "minimal_debug.py": {
+      "hash": "3b2f4c2d98e8510e541a9bac8195009e95ff3e8459dc7c6de94d2b6ad314e73e",
+      "size": 942
+    },
+    "monitor_deployment.py": {
+      "hash": "12bc0655ca9af07c0a15f7b4a0251566ff8415cc85bb7ec3587d2452bef14c5a",
+      "size": 1918
+    },
+    "monitor_farmer_registration_deployment.py": {
+      "hash": "df6a0af3dda60eada9d7d303072496eadef71edc19dbe8f1df687fc92973e77a",
+      "size": 5217
+    },
+    "monitor_until_complete.py": {
+      "hash": "dc81ada49356d55bc23257328dbdfb205cb3b731dfed62e66d37c00012443e05",
+      "size": 2129
+    },
+    "monitor_version_deployment.py": {
+      "hash": "ec45e6dc9111a1f8d939f8bc9f15c979ad70e807e2c07e8c31c5fab964d1482f",
+      "size": 4834
+    },
+    "performance_patch.py": {
+      "hash": "22095a151dc992064caad720f5c4f00753c6cc54467d7604d4c89161f472c64e",
+      "size": 4958
+    },
+    "pre_deployment_check.py": {
+      "hash": "710df8abde84c43f4e6cb45476f3f6675782a67e6ad9733c3d6d6e1b6132b8a1",
+      "size": 11173
+    },
+    "quick_data_check.py": {
+      "hash": "1602d38f126da398c8db519902171cdfd52701e5902c8c17c5d9f5f4c9db4b64",
+      "size": 1982
+    },
+    "quick_schema_check.py": {
+      "hash": "02cecda6ce64fcfb8401203824dd60b1f897fd6a9441395f6b1565ae73f3e4a6",
+      "size": 2001
+    },
+    "quick_verify.py": {
+      "hash": "7952cfd8c710251e79aa599047b47aa95a36f8551527e4b1e0170dafe5c3fb70",
+      "size": 3477
+    },
+    "run_business_dashboard.py": {
+      "hash": "9a608128f7ac19971385d83cbaa203178a875795218e8f20018e3aaf70c34ae0",
+      "size": 2972
+    },
+    "run_business_migrations.py": {
+      "hash": "43789a6291729cbe07cfec917f661d57aa46bacd8020208006c9a2f22670fb80",
+      "size": 4054
+    },
+    "run_migration.py": {
+      "hash": "c2ba3d03006d78f95a0310f93dec5480a3ad47b18da0c5b167671492acbf13a2",
+      "size": 4423
+    },
+    "test_bulgarian_mango_farmer.py": {
+      "hash": "a8bbb75aab35b51bd5ee4af4f86deaa92c94086e5b75d9939580c2fc9e76b2a8",
+      "size": 8672
+    },
+    "test_connections.py": {
+      "hash": "97d9498dddfb13dfadf458947654d95715f970ddf61c5fd753ddd9a9e64a3e2a",
+      "size": 2953
+    },
+    "test_database.py": {
+      "hash": "61d00ae094ad0241874d96de9ca83e17eb5bff2681abec9c87d03aeed4e02e7e",
+      "size": 5689
+    },
+    "test_db_connection.py": {
+      "hash": "efca51c1fda9cd833abe75350c72378c11560120df587ff25ef2705fa778c105",
+      "size": 2315
+    },
+    "test_db_simple.py": {
+      "hash": "aed8d3bc2a2b3fafc6e28bac6d1d753a32ef457091e0b636cb3723168a6692f2",
+      "size": 2197
+    },
+    "test_deployment.py": {
+      "hash": "0daa2e9bde9e5913bb2860fc900bd196fe8179c7ee8b90362412d6653f2e2180",
+      "size": 4245
+    },
+    "test_farmer_registration.py": {
+      "hash": "3ec4ddb94c08d5480e289c6d2c2c0ae23f6fcbcb73898ace053d05bb41a03e4c",
+      "size": 1871
+    },
+    "test_farmer_registration_design.py": {
+      "hash": "48abdf0d16f6534e51c38f3c7504af48639aa54a37bdc3abe4a0d4026d5cb878",
+      "size": 5039
+    },
+    "test_farmer_registration_fix.py": {
+      "hash": "2c165da73feef67564e593a33d76ef72d6da44e814f8dbcfc3255ba91ed5118a",
+      "size": 6745
+    },
+    "test_google_maps.py": {
+      "hash": "96712e22a08e2aec3960b38d00de806319c68705a95be8f5a41853d32e0954e1",
+      "size": 1507
+    },
+    "test_inspect_rds.py": {
+      "hash": "f870a6ac79c25412c38e99a9e750aee399757081cb0a264c3dc8bc4f3636b2cd",
+      "size": 2925
+    },
+    "test_local_performance.py": {
+      "hash": "c285b3940ebfd2faa9f8c4df4b78e064fc54bb7cd15f424d3bd7572da6e876eb",
+      "size": 3704
+    },
+    "test_openai_connection.py": {
+      "hash": "d0f9b39e498c1de7ed4812f578c3ee1e7655d3efee38b89d77c0ba6a4c3c7432",
+      "size": 3291
+    },
+    "test_performance.py": {
+      "hash": "04a796e7ff8c35d9f748405ca8075b474e2e5ee856add363d710bb0ccca29ac6",
+      "size": 5749
+    },
+    "test_pool_performance.py": {
+      "hash": "1585ee41463f2bf96e5595cb51b63826d0b2735453c76233064e4b9b7b122a4f",
+      "size": 3154
+    },
+    "test_real_db_connection.py": {
+      "hash": "b4aff5b516cef047b93329bc540fda515b276394afd8547114d42438daf47bc9",
+      "size": 2414
+    },
+    "test_template_fix.py": {
+      "hash": "4943a2da806c3e2fd8799aeaa72e2afea9508c935b11f93ffde801f0d09cd2c5",
+      "size": 1164
+    },
+    "verify_all_tasks.py": {
+      "hash": "ddaf4233ba85db4715b43f48822684f34a28f68f546f9da6350d7602cf6435b6",
+      "size": 7129
+    },
+    "verify_db_schema.py": {
+      "hash": "1817be99565fb9258165d3045d1966cdef20f3ff13bdadbd625fe99835cf6b8e",
+      "size": 4669
+    },
+    "verify_deployment.py": {
+      "hash": "d70230f80b57c869919333f9f409e037638e723c44e954f1b9d29b9cd3455bc1",
+      "size": 4579
+    },
+    "verify_schema.py": {
+      "hash": "205b1bef6835c78db7748e766f18bf9748e9f264d4f3c5d529a93aa62f9730a7",
+      "size": 5430
+    }
+  },
+  "expected_features": {
+    "yellow_debug_box": true,
+    "sqlalchemy_pool": true,
+    "real_data_display": true
+  }
+}
