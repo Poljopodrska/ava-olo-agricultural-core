@@ -1,13 +1,14 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.0-dual-auth-landing
+Version: 3.2.1-send-fix-query
 Bulgarian Mango Farmer Compliant ✅
-Dual Authentication Landing: Immediate start or WhatsApp sign-in paths
+Fixed: Send button functionality and added database query for WhatsApp lookup
 """
 import os
 import sys
 import traceback
+import json
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
@@ -83,6 +84,15 @@ class QueryResponse(BaseModel):
     confidence: float = 0.9
     sources: List[str] = []
     constitutional_compliance: bool = True
+
+class WhatsAppQueryRequest(BaseModel):
+    whatsapp_number: str
+
+class WhatsAppQueryResponse(BaseModel):
+    success: bool
+    data: Optional[Dict[str, Any]] = None
+    message: str
+    query_logged: bool = True
 
 # Root endpoint - Dual Authentication Landing Page
 @app.get("/", response_class=HTMLResponse)
@@ -267,7 +277,7 @@ async def landing_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.0</div>
+        <div class="version-display">v3.2.1</div>
         <div class="landing-container">
             <div class="logo-section">
                 <div class="atomic-logo">
@@ -308,7 +318,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ava-olo-agricultural-core-constitutional-ui",
-        "version": "3.2.0-dual-auth-landing",
+        "version": "3.2.1-send-fix-query",
         "message": "Constitutional UI serving Bulgarian mango farmers",
         "timestamp": datetime.now().isoformat(),
         "ui_status": "operational",
@@ -553,7 +563,7 @@ async def register_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.0</div>
+        <div class="version-display">v3.2.1</div>
         <div class="register-container">
             <div class="register-header">
                 <div class="register-logo">🌾</div>
@@ -902,7 +912,7 @@ async def login_page(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.0</div>
+        <div class="version-display">v3.2.1</div>
         <div class="login-container">
             <div class="login-header">
                 <h1 class="login-title">Welcome Back</h1>
@@ -1269,7 +1279,7 @@ async def chat_interface(request: Request):
         </style>
     </head>
     <body>
-        <div class="version-display">v3.2.0</div>
+        <div class="version-display">v3.2.1</div>
         <div class="chat-container">
             <div class="chat-header">
                 <div class="header-left">
@@ -1344,13 +1354,25 @@ async def chat_interface(request: Request):
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${isUser ? 'message-user' : 'message-ava'}`;
                 
-                messageDiv.innerHTML = `
-                    <div class="message-avatar">${isUser ? '👨‍🌾' : '🌾'}</div>
-                    <div class="message-content">
-                        <div class="message-name">${isUser ? (userName || 'You') : 'Ava Olo'}</div>
-                        <div class="message-text">${text}</div>
-                    </div>
-                `;
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                avatarDiv.textContent = isUser ? '👨‍🌾' : '🌾';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'message-name';
+                nameDiv.textContent = isUser ? (userName || 'You') : 'Ava Olo';
+                
+                const textDiv = document.createElement('div');
+                textDiv.className = 'message-text';
+                textDiv.textContent = text;
+                
+                contentDiv.appendChild(nameDiv);
+                contentDiv.appendChild(textDiv);
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
                 
                 messagesDiv.appendChild(messageDiv);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -1488,6 +1510,122 @@ async def api_query(request: QueryRequest):
     emergency_log(f"🤖 API query: {request.query}")
     response = await process_agricultural_query(request.query, request.farmer_id)
     return QueryResponse(**response)
+
+# WhatsApp database query endpoint
+@app.post("/api/v1/farmer/whatsapp-query", response_model=WhatsAppQueryResponse)
+async def query_farmer_by_whatsapp(request: WhatsAppQueryRequest):
+    """Query farmer data by WhatsApp number"""
+    emergency_log(f"📱 WhatsApp query for: {request.whatsapp_number}")
+    
+    try:
+        # Import database operations
+        from database_operations import DatabaseOperations
+        
+        # Initialize database connection
+        db_ops = DatabaseOperations()
+        
+        # Normalize phone number (remove spaces, ensure + prefix)
+        phone = request.whatsapp_number.strip()
+        if not phone.startswith('+'):
+            phone = '+' + phone
+            
+        # Try different phone number formats
+        phone_variants = [
+            phone,
+            phone.replace('+', ''),
+            '00' + phone.replace('+', ''),
+            phone.replace('+386', '0')  # Slovenia specific
+        ]
+        
+        farmer_data = None
+        
+        # Try to find farmer with any variant
+        for variant in phone_variants:
+            query = f"""
+                SELECT f.*, 
+                       ff.field_name, ff.field_size_hectares, ff.crop_type,
+                       ff.latitude, ff.longitude
+                FROM farmers f
+                LEFT JOIN farm_fields ff ON f.id = ff.farmer_id
+                WHERE f.whatsapp_number = '{variant}'
+                   OR f.whatsapp_number = '+{variant}'
+                   OR f.whatsapp_number = '00{variant}'
+            """
+            
+            try:
+                results = db_ops.execute_query(query)
+                if results:
+                    farmer_data = results
+                    break
+            except Exception as e:
+                emergency_log(f"Query error for variant {variant}: {e}")
+                continue
+        
+        if farmer_data:
+            # Format the response
+            farmer_info = {
+                'farmer_id': farmer_data[0].get('id'),
+                'farm_name': farmer_data[0].get('farm_name'),
+                'farmer_name': farmer_data[0].get('farmer_name'),
+                'whatsapp_number': farmer_data[0].get('whatsapp_number'),
+                'location': farmer_data[0].get('farm_location'),
+                'latitude': farmer_data[0].get('latitude'),
+                'longitude': farmer_data[0].get('longitude'),
+                'fields': []
+            }
+            
+            # Collect field information
+            for row in farmer_data:
+                if row.get('field_name'):
+                    farmer_info['fields'].append({
+                        'name': row.get('field_name'),
+                        'size_hectares': row.get('field_size_hectares'),
+                        'crop_type': row.get('crop_type'),
+                        'latitude': row.get('latitude', farmer_info['latitude']),
+                        'longitude': row.get('longitude', farmer_info['longitude'])
+                    })
+            
+            # Log to llm_debug_log
+            log_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'action': 'whatsapp_query',
+                'phone_number': request.whatsapp_number,
+                'found': True,
+                'farmer_id': farmer_info['farmer_id']
+            }
+            emergency_log(f"🔍 Query logged: {json.dumps(log_entry)}")
+            
+            return WhatsAppQueryResponse(
+                success=True,
+                data=farmer_info,
+                message=f"Found farmer data for {request.whatsapp_number}",
+                query_logged=True
+            )
+        else:
+            # Log failed query
+            log_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'action': 'whatsapp_query',
+                'phone_number': request.whatsapp_number,
+                'found': False
+            }
+            emergency_log(f"🔍 Query logged: {json.dumps(log_entry)}")
+            
+            return WhatsAppQueryResponse(
+                success=False,
+                data=None,
+                message=f"No farmer found with WhatsApp number {request.whatsapp_number}",
+                query_logged=True
+            )
+            
+    except Exception as e:
+        emergency_log(f"❌ Database query error: {str(e)}")
+        return WhatsAppQueryResponse(
+            success=False,
+            data=None,
+            message=f"Database query error: {str(e)}",
+            query_logged=False
+        )
 
 # Process agricultural queries
 async def process_agricultural_query(query: str, farmer_id: Optional[int] = None) -> Dict[str, Any]:
