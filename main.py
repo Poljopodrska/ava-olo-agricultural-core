@@ -1842,7 +1842,7 @@ async def update_cost_rate(request: Request):
         if connection:
             connection.close()
 
-# Business Dashboard Implementation - Enhanced with Debug Logging
+# Business Dashboard Implementation - Full Production with Debug
 @app.get("/business-dashboard", response_class=HTMLResponse)
 async def business_dashboard():
     """Business Dashboard - Comprehensive Agricultural Metrics with Debug Info"""
@@ -1851,7 +1851,7 @@ async def business_dashboard():
     debug_info = []
     debug_info.append(f"Starting dashboard at {datetime.now()}")
     
-    # Skip cache for debugging - we need fresh data
+    # Skip cache for debugging - we need fresh data to see what's happening
     # if dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60):
     #     print("DEBUG: Returning cached dashboard data")
     #     return dashboard_cache['data']
@@ -1861,7 +1861,12 @@ async def business_dashboard():
         "total_farmers": "--",
         "total_hectares": "--", 
         "total_fields": "--",
-        "hectares_by_crop": {},
+        "hectares_by_crop": {
+            "herbal": 0.0,
+            "vineyard": 0.0, 
+            "orchard": 0.0,
+            "others": 0.0
+        },
         "farmers_24h": 0,
         "farmers_7d": 0,
         "farmers_30d": 0,
