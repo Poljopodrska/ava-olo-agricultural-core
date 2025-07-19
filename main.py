@@ -37,7 +37,7 @@ except ImportError:
 
 # Service-specific deployment tracking
 SERVICE_NAME = "monitoring-dashboards"
-DEPLOYMENT_TIMESTAMP = '20250719210644'  # Updated by deploy script
+DEPLOYMENT_TIMESTAMP = '20250719212420'  # Updated by deploy script
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
 VERSION = f"v2.2.5-bulletproof-{BUILD_ID}"
 
@@ -276,6 +276,225 @@ async def deployment_health():
     </body>
     </html>
     """)
+
+# Audit endpoints for diagnosing deployment issues
+@app.get("/api/audit/deployment")
+async def audit_deployment():
+    """Audit endpoint to diagnose deployment issues"""
+    import inspect
+    import gc
+    import platform
+    
+    audit_results = {
+        "timestamp": datetime.now().isoformat(),
+        "version": VERSION,
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        
+        # Environment analysis
+        "environment": {
+            "pythondontwritebytecode": os.environ.get('PYTHONDONTWRITEBYTECODE'),
+            "pythonpath": os.environ.get('PYTHONPATH'),
+            "pwd": os.getcwd(),
+            "file_location": __file__,
+            "file_modified": datetime.fromtimestamp(os.path.getmtime(__file__)).isoformat(),
+            "file_size": os.path.getsize(__file__),
+        },
+        
+        # Module analysis
+        "modules": {
+            "total_loaded": len(sys.modules),
+            "main_module": sys.modules.get('__main__').__file__ if '__main__' in sys.modules else None,
+            "has_pyc_files": any(m.__file__.endswith('.pyc') if hasattr(m, '__file__') and m.__file__ else False 
+                                 for m in sys.modules.values()),
+        },
+        
+        # Function analysis
+        "functions": {},
+        
+        # Import analysis
+        "imports": {
+            "import_style": "unknown",
+            "circular_imports": False,
+            "dynamic_imports": False,
+        },
+        
+        # Git information
+        "git_info": {},
+        
+        # AWS specific
+        "aws_info": {
+            "app_runner_arn": os.environ.get('AWS_APP_RUNNER_SERVICE_ARN'),
+            "region": os.environ.get('AWS_REGION'),
+            "deployment_id": os.environ.get('AWS_APP_RUNNER_DEPLOYMENT_ID'),
+        },
+        
+        # Memory analysis
+        "memory": {
+            "cached_objects": len(gc.get_objects()),
+            "garbage_collection_stats": gc.get_stats(),
+        }
+    }
+    
+    # Analyze key functions
+    for func_name in ['business_dashboard', 'register_farmer', 'deployment_verify_endpoint']:
+        if func_name in globals():
+            func = globals()[func_name]
+            audit_results["functions"][func_name] = {
+                "exists": True,
+                "type": str(type(func)),
+                "module": getattr(func, '__module__', 'unknown'),
+                "code_size": len(func.__code__.co_code) if hasattr(func, '__code__') else 0,
+                "code_hash": hashlib.md5(func.__code__.co_code).hexdigest()[:8] if hasattr(func, '__code__') else None,
+                "has_yellow_box": "yellow" in str(func.__code__.co_consts) if hasattr(func, '__code__') else False,
+            }
+        else:
+            audit_results["functions"][func_name] = {"exists": False}
+    
+    # Check for suspicious patterns
+    suspicious_patterns = []
+    
+    # Check if functions are defined inside other functions
+    if any(f.__code__.co_flags & 0x10 for f in globals().values() 
+           if hasattr(f, '__code__')):
+        suspicious_patterns.append("Nested function definitions detected")
+    
+    # Check for exec/eval usage
+    with open(__file__, 'r') as f:
+        content = f.read()
+        if 'exec(' in content or 'eval(' in content:
+            suspicious_patterns.append("Dynamic code execution detected")
+        if 'import *' in content:
+            suspicious_patterns.append("Wildcard imports detected")
+        if content.count('def business_dashboard') > 1:
+            suspicious_patterns.append("Multiple definitions of business_dashboard")
+    
+    # Check git history
+    try:
+        git_log = os.popen('git log --oneline -5').read()
+        audit_results["git_info"]["recent_commits"] = git_log.strip().split('\n')
+        
+        git_status = os.popen('git status --porcelain').read()
+        audit_results["git_info"]["uncommitted_changes"] = bool(git_status.strip())
+        
+        git_diff = os.popen('git diff HEAD~1 HEAD --stat').read()
+        audit_results["git_info"]["last_commit_stats"] = git_diff.strip()
+    except:
+        audit_results["git_info"]["error"] = "Git commands failed"
+    
+    audit_results["suspicious_patterns"] = suspicious_patterns
+    
+    return audit_results
+
+@app.get("/api/audit/file-comparison")
+async def audit_file_comparison():
+    """Compare deployed file with expected content"""
+    comparison = {
+        "version_in_file": VERSION,
+        "actual_functions": {},
+        "bytecode_analysis": {}
+    }
+    
+    # Read actual file content
+    with open(__file__, 'r') as f:
+        content = f.read()
+        
+    # Check what's actually in the file
+    comparison["file_stats"] = {
+        "size": len(content),
+        "lines": content.count('\n'),
+        "has_yellow_debug": 'yellow' in content and 'debug_html' in content,
+        "has_deployment_manager": 'deployment_manager' in content,
+        "version_line": next((line for line in content.split('\n') if 'VERSION =' in line), None)
+    }
+    
+    # Check Python bytecode cache
+    pyc_file = __file__.replace('.py', '.pyc')
+    pycache_dir = os.path.join(os.path.dirname(__file__), '__pycache__')
+    
+    comparison["bytecode_analysis"] = {
+        "pyc_exists": os.path.exists(pyc_file),
+        "pycache_exists": os.path.exists(pycache_dir),
+        "pycache_files": os.listdir(pycache_dir) if os.path.exists(pycache_dir) else [],
+    }
+    
+    return comparison
+
+@app.get("/api/audit/import-tree")
+async def audit_import_tree():
+    """Analyze import dependencies"""
+    import_analysis = {
+        "module_import_times": {},
+        "import_order": [],
+        "circular_dependencies": []
+    }
+    
+    # Check which modules were imported and when
+    for name, module in sys.modules.items():
+        if hasattr(module, '__file__') and module.__file__:
+            if 'site-packages' not in str(module.__file__):
+                import_analysis["module_import_times"][name] = {
+                    "file": module.__file__,
+                    "cached": module.__file__.endswith('.pyc')
+                }
+    
+    return import_analysis
+
+@app.get("/api/audit/summary")
+async def audit_summary():
+    """Simple HTML summary of audit findings"""
+    # Run all audits
+    deployment = await audit_deployment()
+    comparison = await audit_file_comparison()
+    
+    issues = []
+    
+    # Check for issues
+    if not deployment["functions"].get("business_dashboard", {}).get("has_yellow_box"):
+        issues.append("❌ business_dashboard function missing yellow debug box")
+    
+    if comparison["bytecode_analysis"]["pyc_exists"]:
+        issues.append("⚠️ Bytecode cache (.pyc) files detected")
+        
+    if comparison["bytecode_analysis"]["pycache_exists"]:
+        issues.append("⚠️ __pycache__ directory exists")
+    
+    if not comparison["file_stats"]["has_yellow_debug"]:
+        issues.append("❌ File content missing yellow debug code")
+    
+    if deployment["suspicious_patterns"]:
+        issues.extend([f"⚠️ {p}" for p in deployment["suspicious_patterns"]])
+    
+    html = f"""
+    <html>
+    <head><title>Deployment Audit</title></head>
+    <body style="font-family: monospace; padding: 20px;">
+        <h1>AWS App Runner Deployment Audit</h1>
+        <h2>Version: {VERSION}</h2>
+        
+        <h3>Issues Found ({len(issues)}):</h3>
+        <ul>
+            {''.join(f'<li>{issue}</li>' for issue in issues) if issues else '<li>✅ No issues detected</li>'}
+        </ul>
+        
+        <h3>Function Analysis:</h3>
+        <pre>{json.dumps(deployment['functions'], indent=2)}</pre>
+        
+        <h3>Environment:</h3>
+        <pre>{json.dumps(deployment['environment'], indent=2)}</pre>
+        
+        <h3>File Stats:</h3>
+        <pre>{json.dumps(comparison['file_stats'], indent=2)}</pre>
+        
+        <h3>AWS Info:</h3>
+        <pre>{json.dumps(deployment['aws_info'], indent=2)}</pre>
+        
+        <p>Generated: {datetime.now()}</p>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(html)
 
 # Initialize Jinja2 templates
 from fastapi.templating import Jinja2Templates

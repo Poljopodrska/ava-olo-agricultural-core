@@ -1,7 +1,7 @@
 {
   "service": "monitoring-dashboards",
-  "deployment_id": "monitoring-dashboards-deploy-1752952004",
-  "timestamp": "2025-07-19T19:06:44.389864",
+  "deployment_id": "monitoring-dashboards-deploy-1752953060",
+  "timestamp": "2025-07-19T19:24:20.468554",
   "version": "v2.2.5-bulletproof",
   "files": {
     "add_test_farmer.py": {
@@ -197,8 +197,8 @@
       "size": 5830
     },
     "main.py": {
-      "hash": "ccce80331f208c638cd0214170f77bf91ccf6addca7475fbeb28eec2ea4de44e",
-      "size": 259199
+      "hash": "c3d99a465015372e7519a3db435a22fdb742f9c2637af7c2dd8527a1be3ab691",
+      "size": 267240
     },
     "main_emergency_backup.py": {
       "hash": "cb69f7c9d58b445945ac11fdc1318e55642ab787328028dd980e30d7e7713db4",
