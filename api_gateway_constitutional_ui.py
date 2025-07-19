@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.9-enter-fix
+Version: 3.3.0-cava-registration
 Bulgarian Mango Farmer Compliant ✅
-Fixed: Enter key actually sends messages now
+Fixed: CAVA-powered registration - zero hardcoded steps
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.2.9-enter-fix"
+VERSION = "3.3.0-cava-registration"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -116,6 +116,19 @@ class ConversationHistoryResponse(BaseModel):
     messages: List[Dict[str, Any]]
     session_id: Optional[str] = None
     farmer_id: int
+
+class RegistrationRequest(BaseModel):
+    message: str
+    session_id: str
+    conversation_history: List[Dict[str, Any]] = []
+
+class RegistrationResponse(BaseModel):
+    response: str
+    registration_complete: bool
+    farmer_id: Optional[int] = None
+    redirect_to: Optional[str] = None
+    missing_fields: Optional[List[str]] = None
+    extracted_data: Optional[Dict[str, Any]] = None
 
 # Root endpoint - Dual Authentication Landing Page
 @app.get("/", response_class=HTMLResponse)
@@ -624,7 +637,7 @@ async def register_page(request: Request):
                     onkeypress="handleEnterKey(event)"
                     autofocus
                 >
-                <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: green; color: white; font-size: 24px; font-weight: bold;">SEND NOW</button>
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: purple; color: white; font-size: 20px; font-weight: bold;">SEND</button>
             </div>
             
             <div class="footer-links">
@@ -643,24 +656,9 @@ async def register_page(request: Request):
         </div>
         
         <script>
-            let registrationData = {
-                step: 1,
-                firstName: '',
-                lastName: '',
-                whatsappNumber: '',
-                farmLocation: '',
-                primaryCrops: '',
-                password: ''
-            };
-            
-            const questions = {
-                1: "Hi! I'm AVA, your agricultural assistant. Welcome! What's your first name?",
-                2: "Nice to meet you, {firstName}! What's your last name?",
-                3: "Thank you, {firstName}! What's your WhatsApp number? (Include country code, e.g., +359...)",
-                4: "Great! Where is your farm located?",
-                5: "What crops do you primarily grow?",
-                6: "Almost done! Please create a password for your account (at least 6 characters):"
-            };
+            // CAVA-powered registration - no hardcoded steps
+            let sessionId = 'reg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            let conversationHistory = [];
             
             function handleEnterKey(event) {
                 if (event.key === 'Enter') {
@@ -676,12 +674,13 @@ async def register_page(request: Request):
                 messageDiv.textContent = message;
                 chatContainer.appendChild(messageDiv);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-            
-            function updateProgress() {
-                const progressBar = document.getElementById('progressBar');
-                const progress = (registrationData.step / 6) * 100;
-                progressBar.style.width = progress + '%';
+                
+                // Track conversation
+                conversationHistory.push({
+                    message: message,
+                    is_farmer: isUser,
+                    timestamp: new Date().toISOString()
+                });
             }
             
             async function sendMessage() {
@@ -694,86 +693,95 @@ async def register_page(request: Request):
                 // Add user message
                 addMessageToChat(message, true);
                 
-                // Process based on step
-                switch(registrationData.step) {
-                    case 1:
-                        registrationData.firstName = message;
-                        break;
-                    case 2:
-                        registrationData.lastName = message;
-                        break;
-                    case 3:
-                        registrationData.whatsappNumber = message;
-                        break;
-                    case 4:
-                        registrationData.farmLocation = message;
-                        break;
-                    case 5:
-                        registrationData.primaryCrops = message;
-                        break;
-                    case 6:
-                        registrationData.password = message;
-                        break;
-                }
-                
-                // Clear input
+                // Clear input and disable
                 input.value = '';
                 input.disabled = true;
                 sendBtn.disabled = true;
                 
-                // Move to next step
-                if (registrationData.step < 6) {
-                    registrationData.step++;
-                    updateProgress();
+                try {
+                    // Send to CAVA registration engine
+                    const response = await fetch('/api/v1/registration/cava', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: message,
+                            session_id: sessionId,
+                            conversation_history: conversationHistory
+                        })
+                    });
                     
-                    // Show next question
-                    setTimeout(() => {
-                        let nextQuestion = questions[registrationData.step];
-                        nextQuestion = nextQuestion.replace('{firstName}', registrationData.firstName);
-                        addMessageToChat(nextQuestion);
-                        input.disabled = false;
-                        sendBtn.disabled = false;
-                        input.focus();
-                    }, 500);
-                } else {
-                    // Registration complete
-                    updateProgress();
+                    const data = await response.json();
                     
-                    // Show processing message
-                    addMessageToChat("Thank you! I'm creating your account...");
+                    // Show CAVA's response
+                    if (data.response) {
+                        addMessageToChat(data.response);
+                    }
                     
-                    // Simulate account creation
-                    setTimeout(async () => {
-                        try {
-                            // In production, this would call the actual registration API
-                            const userData = {
-                                full_name: `${registrationData.firstName} ${registrationData.lastName}`,
-                                wa_phone_number: registrationData.whatsappNumber,
-                                farm_location: registrationData.farmLocation,
-                                primary_crops: registrationData.primaryCrops,
-                                password: registrationData.password
-                            };
-                            
-                            // For now, simulate success
+                    // Check if registration is complete
+                    if (data.registration_complete) {
+                        // Store farmer data
+                        if (data.farmer_id) {
+                            localStorage.setItem('ava_user', JSON.stringify({
+                                farmer_id: data.farmer_id,
+                                session_id: sessionId
+                            }));
+                        }
+                        
+                        // Show success overlay
+                        setTimeout(() => {
                             document.getElementById('successOverlay').style.display = 'flex';
                             
                             // Redirect after delay
                             setTimeout(() => {
-                                window.location.href = '/chat';
-                            }, 3000);
-                            
-                        } catch (error) {
-                            console.error('Registration error:', error);
-                            addMessageToChat('I apologize, but there was an error creating your account. Please try again.');
-                            input.disabled = false;
-                            sendBtn.disabled = false;
+                                window.location.href = data.redirect_to || '/chat';
+                            }, 2000);
+                        }, 1000);
+                    } else {
+                        // Continue conversation
+                        input.disabled = false;
+                        sendBtn.disabled = false;
+                        input.focus();
+                        
+                        // Update progress based on missing fields
+                        if (data.missing_fields) {
+                            const totalFields = 5;
+                            const completedFields = totalFields - data.missing_fields.length;
+                            const progress = (completedFields / totalFields) * 100;
+                            document.getElementById('progressBar').style.width = progress + '%';
                         }
-                    }, 1500);
+                    }
+                    
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    addMessageToChat('I apologize, but I had trouble processing that. Could you please try again?');
+                    input.disabled = false;
+                    sendBtn.disabled = false;
                 }
             }
             
-            // Initialize
-            updateProgress();
+            // Initialize - no hardcoded welcome message!
+            window.addEventListener('DOMContentLoaded', async function() {
+                // Let CAVA generate the welcome message
+                try {
+                    const response = await fetch('/api/v1/registration/cava', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: '',  // Empty message to start conversation
+                            session_id: sessionId,
+                            conversation_history: []
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.response) {
+                        // Replace hardcoded welcome with CAVA's response
+                        document.querySelector('.message.ava').textContent = data.response;
+                    }
+                } catch (error) {
+                    console.error('Failed to get welcome message:', error);
+                }
+            });
         </script>
     </body>
     </html>
@@ -1325,8 +1333,8 @@ async def chat_interface(request: Request):
         </style>
     </head>
     <body>
-        <div style="background: green; color: white; text-align: center; padding: 20px; font-size: 24px; font-weight: bold;">
-            ✅ ENTER KEY FIX v3.2.9 - Press Enter to Send ✅
+        <div style="background: purple; color: white; text-align: center; padding: 20px; font-size: 24px; font-weight: bold;">
+            🤖 CAVA REGISTRATION v3.3.0 - Natural AI Conversations 🤖
         </div>
         <div class="version-display">v""" + VERSION + """</div>
         <div class="chat-container">
@@ -1364,7 +1372,7 @@ async def chat_interface(request: Request):
                         rows="1"
                         onkeypress="handleEnterKey(event)"
                     ></textarea>
-                    <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: green; color: white; font-size: 24px; font-weight: bold;">SEND NOW</button>
+                    <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: purple; color: white; font-size: 20px; font-weight: bold;">SEND</button>
                 </div>
             </div>
         </div>
@@ -2196,6 +2204,38 @@ async def get_conversation_history(farmer_id: int):
             messages=[],
             session_id=None,
             farmer_id=farmer_id
+        )
+
+# CAVA Registration endpoint
+@app.post("/api/v1/registration/cava", response_model=RegistrationResponse)
+async def cava_registration(request: RegistrationRequest):
+    """Handle registration through CAVA natural conversation"""
+    emergency_log(f"🌱 CAVA registration message: {request.message[:50]}...")
+    
+    try:
+        # Import registration engine
+        from cava_registration_engine import get_registration_engine
+        engine = await get_registration_engine()
+        
+        # Process message through CAVA
+        result = await engine.process_registration_message(
+            message=request.message,
+            session_id=request.session_id,
+            conversation_history=request.conversation_history
+        )
+        
+        return RegistrationResponse(**result)
+        
+    except Exception as e:
+        emergency_log(f"❌ Registration error: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback response
+        return RegistrationResponse(
+            response="I'm here to help you register. Could you tell me your first name?",
+            registration_complete=False,
+            missing_fields=["first_name", "last_name", "whatsapp_number", "farm_location", "primary_crops"]
         )
 
 # Deployment verification endpoint
