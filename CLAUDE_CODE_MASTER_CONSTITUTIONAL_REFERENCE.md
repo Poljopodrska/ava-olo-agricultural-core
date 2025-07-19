@@ -16,4 +16,36 @@
 12. **ERROR CONTEXT** - Clear, contextual error messages
 13. **SECURITY FIRST** - Never expose credentials or secrets
 14. **ACCESSIBILITY** - High contrast, keyboard navigation
-15. **🚨 DEPLOYMENT VERIFICATION** - No feature complete until AWS verified
+15. **🤖 AUTONOMOUS DEPLOYMENT VERIFICATION** - Mandatory autonomous production testing
+
+## 🤖 Autonomous Deployment Verification (Amendment #15)
+
+### Standard Autonomous Procedure:
+```bash
+# Autonomous verification (no manual checks)
+python implementation/autonomous_production_verifier.py
+
+# Constitutional deployment with verification
+python implementation/deployment_automation.py --deploy monitoring-dashboards
+
+# Version creation with verification
+python implementation/version_cli.py create "Feature description"
+```
+
+### Constitutional Requirements:
+- ✅ All verification must be autonomous and programmatic
+- ✅ No "manual check required" responses allowed
+- ✅ Auto-fix deployment cache issues automatically
+- ✅ Report success only after autonomous AWS confirmation
+
+### Verification Output:
+```
+🤖 AUTONOMOUS PRODUCTION VERIFICATION INITIATED
+🔍 Testing: Navigation System
+✅ Navigation System: ALL ELEMENTS FOUND
+🔍 Testing: Pagination System  
+✅ Pagination System: ALL ELEMENTS FOUND
+📋 CONSTITUTIONAL VERIFICATION REPORT
+✅ AUTONOMOUS VERIFICATION SUCCESSFUL
+✅ DEPLOYMENT CONSTITUTIONALLY COMPLIANT
+```
