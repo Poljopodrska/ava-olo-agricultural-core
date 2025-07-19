@@ -1,8 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.1.0-constitutional-ui
+Version: 3.1.1-main-py-fix
 Bulgarian Mango Farmer Compliant ✅
+Fixed: main.py entry point now correctly imports constitutional UI
 """
 import os
 import sys
@@ -120,7 +121,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ava-olo-agricultural-core-constitutional-ui",
-        "version": "3.1.0-constitutional-ui",
+        "version": "3.1.1-main-py-fix",
         "message": "Constitutional UI serving Bulgarian mango farmers",
         "timestamp": datetime.now().isoformat(),
         "ui_status": "operational",

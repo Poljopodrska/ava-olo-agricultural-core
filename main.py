@@ -3,6 +3,8 @@
 🚨 EMERGENCY CACHE-BUSTING FILE - New entry point to force AWS rebuild
 Emergency deployment fix: 2025-07-19 07:59 CEST
 CACHE_BUST_SIGNATURE: b7791d2_emergency_main_py
+Constitutional UI Fix: 2025-07-19 12:30 CEST
+Version: 3.1.1-main-py-fix
 """
 import os
 import sys
@@ -18,13 +20,13 @@ def emergency_log(message):
 emergency_log("=== CACHE-BUSTING MAIN.PY STARTUP ===")
 emergency_log(f"Python version: {sys.version}")
 emergency_log(f"Working directory: {os.getcwd()}")
-emergency_log("Attempting to import api_gateway_minimal...")
+emergency_log("Attempting to import api_gateway_constitutional_ui...")
 
 try:
-    from api_gateway_minimal import app
-    emergency_log("✅ Successfully imported app from api_gateway_minimal")
+    from api_gateway_constitutional_ui import app
+    emergency_log("✅ Successfully imported app from api_gateway_constitutional_ui")
 except Exception as e:
-    emergency_log(f"❌ Failed to import api_gateway_minimal: {e}")
+    emergency_log(f"❌ Failed to import api_gateway_constitutional_ui: {e}")
     sys.exit(1)
 
 # Expose app variable for uvicorn main:app
