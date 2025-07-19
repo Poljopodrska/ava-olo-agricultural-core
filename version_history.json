@@ -1,8 +1,20 @@
 {
-    "current_version": "v2.2.0-performance-restore",
+    "current_version": "v2.2.1-pool-migration",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-07-19",
     "version_history": [
+        {
+            "version": "v2.2.1-pool-migration",
+            "date": "2025-07-19",
+            "changes": [
+                "Migrated business dashboard to use SQLAlchemy pool (was using slow psycopg2)",
+                "Added real-time database connection indicator on dashboard header",
+                "Added GET /api/v1/database/test endpoint for connection testing",
+                "Business dashboard now loads in <1s using pool metrics",
+                "Visual status: 🟢 Connected, 🔴 Disconnected, 🟡 Error",
+                "Displays live farmer count and hectares in header"
+            ]
+        },
         {
             "version": "v2.2.0-performance-restore",
             "date": "2025-07-19",

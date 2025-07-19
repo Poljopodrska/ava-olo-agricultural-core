@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DEPLOYMENT TIMESTAMP: 1752938400 - v2.2.0-performance-restore SQLAlchemy pool
+# DEPLOYMENT TIMESTAMP: 1752942000 - v2.2.1-pool-migration Complete SQLAlchemy migration
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
@@ -61,7 +61,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # DEPLOYMENT VERIFICATION
-logger.info("🚀 DEPLOYMENT VERSION: v2.2.0-performance-restore - SQLAlchemy connection pool and schema API")
+logger.info("🚀 DEPLOYMENT VERSION: v2.2.1-pool-migration - Complete migration to SQLAlchemy pool with real-time DB status")
 logger.info(f"Python version: {sys.version}")
 logger.info(f"JSON module available: {'json' in sys.modules}")
 
@@ -137,6 +137,22 @@ app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Database connection test function
+async def test_database_connection():
+    """Test real database connectivity"""
+    try:
+        if POOL_AVAILABLE:
+            with get_db_session() as session:
+                from sqlalchemy import text
+                result = session.execute(text("SELECT COUNT(*) FROM farmers"))
+                count = result.scalar()
+                return True, f"Connected: {count} farmers found"
+        else:
+            return False, "SQLAlchemy pool not available"
+    except Exception as e:
+        logger.error(f"DB test failed: {e}")
+        return False, f"Connection failed: {str(e)}"
+
 # Initialize connection pool on startup
 @app.on_event("startup")
 async def startup_event():
@@ -145,6 +161,9 @@ async def startup_event():
         try:
             init_connection_pool()
             logger.info("✅ Connection pool initialized on startup")
+            # Test connection immediately
+            is_connected, message = await test_database_connection()
+            logger.info(f"Startup DB test: {message}")
         except Exception as e:
             logger.error(f"Failed to initialize pool on startup: {e}")
 
@@ -1857,16 +1876,27 @@ async def business_dashboard():
     }
     
     try:
-        with get_constitutional_db_connection() as connection:
-            if connection:
-                cursor = connection.cursor()
-                
-                # 1. Total farmers and hectares
-                cursor.execute("SELECT COUNT(*) FROM farmers")
-                metrics["total_farmers"] = cursor.fetchone()[0] or 0
-                
-                cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
-                metrics["total_hectares"] = round(cursor.fetchone()[0] or 0, 2)
+        # Use SQLAlchemy pool for fast queries
+        if POOL_AVAILABLE:
+            pool_metrics = get_pool_metrics()
+            metrics.update({
+                "total_farmers": pool_metrics.get('total_farmers', 0),
+                "total_hectares": round(pool_metrics.get('total_hectares', 0), 2),
+                "total_fields": pool_metrics.get('total_fields', 0),
+                "query_time_ms": pool_metrics.get('query_time_ms', 0)
+            })
+        else:
+            # Fallback to old method if pool unavailable
+            with get_constitutional_db_connection() as connection:
+                if connection:
+                    cursor = connection.cursor()
+                    
+                    # 1. Total farmers and hectares
+                    cursor.execute("SELECT COUNT(*) FROM farmers")
+                    metrics["total_farmers"] = cursor.fetchone()[0] or 0
+                    
+                    cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
+                    metrics["total_hectares"] = round(cursor.fetchone()[0] or 0, 2)
                 
                 # 2. Hectares by crop type (using field_crops table)
                 cursor.execute("""
@@ -2048,6 +2078,20 @@ async def business_dashboard():
             font-size: 28px;
         }}
         
+        .db-status {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            font-size: 14px;
+        }}
+        
+        .db-indicator {{
+            font-size: 12px;
+        }}
+        
         .back-link {{
             color: white;
             text-decoration: none;
@@ -2205,6 +2249,10 @@ async def business_dashboard():
     <div class="header">
         <div class="header-content">
             <div class="logo">AVA OLO Business Dashboard</div>
+            <div class="db-status" id="db-status">
+                <span class="db-indicator">🔴</span>
+                <span class="db-text">Connecting...</span>
+            </div>
             <a href="/" class="back-link">← Back to Dashboard Hub</a>
         </div>
     </div>
@@ -3090,6 +3138,33 @@ async def agronomic_dashboard():
             refreshTimer = setInterval(smartRefresh, 5000);
         });
         
+        // Update database connection status
+        async function updateDbStatus() {
+            try {
+                const response = await fetch('/api/v1/database/test');
+                const data = await response.json();
+                const indicator = document.querySelector('.db-indicator');
+                const text = document.querySelector('.db-text');
+                
+                if (data.connected) {
+                    indicator.textContent = '🟢';
+                    text.textContent = `Connected (${data.total_farmers} farmers, ${data.total_hectares?.toFixed(1)}ha)`;
+                } else {
+                    indicator.textContent = '🔴';
+                    text.textContent = 'Disconnected';
+                }
+            } catch (error) {
+                const indicator = document.querySelector('.db-indicator');
+                const text = document.querySelector('.db-text');
+                indicator.textContent = '🟡';
+                text.textContent = 'Connection error';
+            }
+        }
+        
+        // Update status every 10 seconds
+        updateDbStatus();
+        setInterval(updateDbStatus, 10000);
+        
         // Save state before page unload
         window.addEventListener('beforeunload', saveState);
     </script>
@@ -3138,7 +3213,7 @@ async def test_performance():
     results["cache_active"] = bool(dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60))
     results["cache_age_seconds"] = int(time.time() - dashboard_cache['timestamp']) if dashboard_cache['timestamp'] else -1
     
-    results["version"] = "v2.2.0-performance-restore"
+    results["version"] = "v2.2.1-pool-migration"
     results["status"] = "fast" if results.get("simple_query_ms", 1000) < 200 else "slow"
     results["pool_available"] = POOL_AVAILABLE
     
@@ -3192,13 +3267,42 @@ async def get_schema_api():
                 "timestamp": time.time()
             }
 
+# Database test endpoint
+@app.get("/api/v1/database/test")
+async def database_test():
+    """Test database connectivity with real query"""
+    is_connected, message = await test_database_connection()
+    
+    if is_connected:
+        # Get additional stats if connected
+        try:
+            if POOL_AVAILABLE:
+                metrics = get_pool_metrics()
+                return {
+                    "connected": True,
+                    "message": message,
+                    "total_farmers": metrics.get('total_farmers', 0),
+                    "total_fields": metrics.get('total_fields', 0),
+                    "total_hectares": metrics.get('total_hectares', 0),
+                    "query_time_ms": metrics.get('query_time_ms', 0),
+                    "timestamp": time.time()
+                }
+        except Exception as e:
+            pass
+    
+    return {
+        "connected": is_connected,
+        "message": message,
+        "timestamp": time.time()
+    }
+
 # Performance monitoring endpoint
 @app.get("/api/v1/health/performance")
 async def health_performance():
     """Monitor query execution times and connection pool health"""
     metrics = {
         "timestamp": time.time(),
-        "version": "v2.2.0-performance-restore",
+        "version": "v2.2.1-pool-migration",
         "pool_available": POOL_AVAILABLE
     }
     
