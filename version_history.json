@@ -1,8 +1,21 @@
 {
-    "current_version": "v2.2.1-pool-migration",
+    "current_version": "v2.2.2-data-display-fix",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-07-19",
     "version_history": [
+        {
+            "version": "v2.2.2-data-display-fix",
+            "date": "2025-07-19",
+            "changes": [
+                "Added debug endpoints to trace data retrieval failures",
+                "Enhanced business dashboard with comprehensive debug logging",
+                "Added /api/v1/debug/deployment endpoint to verify deployment status",
+                "Added /api/v1/debug/database-test endpoint to test all connection methods",
+                "Added /api/v1/debug/file-info endpoint to verify file deployment",
+                "Dashboard shows debug info when data displays as '--' placeholders",
+                "Improved error handling with detailed tracing of failure points"
+            ]
+        },
         {
             "version": "v2.2.1-pool-migration",
             "date": "2025-07-19",

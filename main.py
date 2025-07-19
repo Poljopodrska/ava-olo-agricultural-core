@@ -1842,21 +1842,25 @@ async def update_cost_rate(request: Request):
         if connection:
             connection.close()
 
-# Business Dashboard Implementation
+# Business Dashboard Implementation - Enhanced with Debug Logging
 @app.get("/business-dashboard", response_class=HTMLResponse)
 async def business_dashboard():
-    """Business Dashboard - Comprehensive Agricultural Metrics"""
+    """Business Dashboard - Comprehensive Agricultural Metrics with Debug Info"""
     global dashboard_cache
     
-    # Check cache first (1 minute TTL)
-    if dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60):
-        print("DEBUG: Returning cached dashboard data")
-        return dashboard_cache['data']
+    debug_info = []
+    debug_info.append(f"Starting dashboard at {datetime.now()}")
+    
+    # Skip cache for debugging - we need fresh data
+    # if dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60):
+    #     print("DEBUG: Returning cached dashboard data")
+    #     return dashboard_cache['data']
     
     # Initialize metrics with safe defaults
     metrics = {
-        "total_farmers": 0,
-        "total_hectares": 0,
+        "total_farmers": "--",
+        "total_hectares": "--", 
+        "total_fields": "--",
         "hectares_by_crop": {},
         "farmers_24h": 0,
         "farmers_7d": 0,
@@ -1876,27 +1880,59 @@ async def business_dashboard():
     }
     
     try:
-        # Use SQLAlchemy pool for fast queries
-        if POOL_AVAILABLE:
-            pool_metrics = get_pool_metrics()
-            metrics.update({
-                "total_farmers": pool_metrics.get('total_farmers', 0),
-                "total_hectares": round(pool_metrics.get('total_hectares', 0), 2),
-                "total_fields": pool_metrics.get('total_fields', 0),
-                "query_time_ms": pool_metrics.get('query_time_ms', 0)
-            })
+        debug_info.append(f"Starting dashboard query at {datetime.now()}")
+        
+        # Test 1: Can we access the pool?
+        if POOL_AVAILABLE and 'get_pool_metrics' in globals():
+            debug_info.append("✓ get_pool_metrics found")
+            try:
+                pool_metrics = get_pool_metrics()
+                debug_info.append(f"✓ Pool metrics returned: {pool_metrics}")
+                
+                if pool_metrics:
+                    metrics["total_farmers"] = pool_metrics.get('total_farmers', '--')
+                    metrics["total_hectares"] = round(pool_metrics.get('total_hectares', 0), 2) if pool_metrics.get('total_hectares', 0) != 0 else '--'
+                    metrics["total_fields"] = pool_metrics.get('total_fields', '--')
+                    debug_info.append(f"✓ Metrics assigned: farmers={metrics['total_farmers']}, hectares={metrics['total_hectares']}")
+                else:
+                    debug_info.append("✗ Pool metrics returned None")
+            except Exception as e:
+                debug_info.append(f"✗ Pool metrics error: {str(e)}")
+        elif POOL_AVAILABLE:
+            debug_info.append("✗ POOL_AVAILABLE but get_pool_metrics NOT FOUND - using fallback")
+            # Fallback: Try direct query via pool
+            try:
+                from database_pool import get_db_connection as get_pool_connection
+                async with get_pool_connection() as conn:
+                    result = await conn.execute(text("SELECT COUNT(*) FROM farmers"))
+                    farmers_count = result.scalar()
+                    metrics["total_farmers"] = farmers_count
+                    debug_info.append(f"✓ Direct pool query worked: {farmers_count} farmers")
+            except Exception as e:
+                debug_info.append(f"✗ Direct pool query failed: {str(e)}")
         else:
+            debug_info.append("✗ POOL NOT AVAILABLE - using direct connection")
             # Fallback to old method if pool unavailable
-            with get_constitutional_db_connection() as connection:
-                if connection:
-                    cursor = connection.cursor()
-                    
-                    # 1. Total farmers and hectares
-                    cursor.execute("SELECT COUNT(*) FROM farmers")
-                    metrics["total_farmers"] = cursor.fetchone()[0] or 0
-                    
-                    cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
-                    metrics["total_hectares"] = round(cursor.fetchone()[0] or 0, 2)
+            try:
+                with get_constitutional_db_connection() as connection:
+                    if connection:
+                        debug_info.append("✓ Direct connection established")
+                        cursor = connection.cursor()
+                        
+                        # 1. Total farmers and hectares
+                        cursor.execute("SELECT COUNT(*) FROM farmers")
+                        farmers_count = cursor.fetchone()[0] or 0
+                        metrics["total_farmers"] = farmers_count
+                        debug_info.append(f"✓ Direct query farmers: {farmers_count}")
+                        
+                        cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
+                        hectares = round(cursor.fetchone()[0] or 0, 2)
+                        metrics["total_hectares"] = hectares
+                        debug_info.append(f"✓ Direct query hectares: {hectares}")
+                    else:
+                        debug_info.append("✗ Direct connection failed")
+            except Exception as e:
+                debug_info.append(f"✗ Direct connection error: {str(e)}")
                 
                 # 2. Hectares by crop type (using field_crops table)
                 cursor.execute("""
@@ -2023,11 +2059,21 @@ async def business_dashboard():
                 }
                 
     except Exception as e:
+        debug_info.append(f"✗ Dashboard error: {str(e)}")
         print(f"Error fetching business metrics: {e}")
+        import traceback
+        logger.error(f"Dashboard error with trace: {traceback.format_exc()}")
         # Continue with default values
     
-    # Generate HTML with constitutional design
+    # Generate HTML with constitutional design and debug info
+    debug_html = ""
+    if metrics['total_farmers'] == '--':
+        debug_html = f'<div style="color:red;font-size:12px;padding:10px;background:#ffe6e6;margin:10px;border-radius:5px;"><strong>DEBUG INFO:</strong><br>{"<br>".join(debug_info)}</div>'
+    
     return HTMLResponse(content=f"""
+<!-- DEBUG INFO:
+{chr(10).join(debug_info)}
+-->""")
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2258,17 +2304,18 @@ async def business_dashboard():
     </div>
     
     <div class="dashboard-container">
+        {debug_html}
         <!-- Section 1: Database Overview -->
         <div class="section">
             <h2 class="section-title">📈 DATABASE OVERVIEW</h2>
             <div class="overview-grid">
                 <div class="overview-card">
                     <div class="overview-label">👨‍🌾 Total Farmers</div>
-                    <div class="overview-value">{metrics['total_farmers']:,}</div>
+                    <div class="overview-value">{metrics['total_farmers']}</div>
                 </div>
                 <div class="overview-card">
                     <div class="overview-label">🌾 Total Hectares</div>
-                    <div class="overview-value">{metrics['total_hectares']:,.1f}</div>
+                    <div class="overview-value">{metrics['total_hectares']}</div>
                     <div class="breakdown-container">
                         <div class="breakdown-item">
                             <span>🌿 Herbal Crops:</span>
@@ -3266,6 +3313,81 @@ async def get_schema_api():
                 "error": str(e),
                 "timestamp": time.time()
             }
+
+# DEBUG ENDPOINTS - v2.2.2-data-display-fix
+import hashlib
+from datetime import timezone
+from sqlalchemy import text
+
+# Add deployment marker
+DEPLOYMENT_MARKER = "2.2.2-data-display-fix-FULL-DEPLOYMENT"
+try:
+    FILE_HASH = hashlib.md5(open(__file__, 'rb').read()).hexdigest()
+except:
+    FILE_HASH = "HASH_ERROR"
+
+@app.get("/api/v1/debug/deployment")
+async def debug_deployment():
+    """Verify what code is actually deployed"""
+    return {
+        "version": get_current_service_version(),
+        "pool_metrics_function_exists": 'get_pool_metrics' in globals(),
+        "engine_exists": 'engine' in globals(),
+        "sqlalchemy_imported": 'sqlalchemy' in sys.modules,
+        "dashboard_function_hash": hash(business_dashboard.__code__.co_code),
+        "deployment_timestamp": datetime.now(timezone.utc).isoformat(),
+        "file_modified": os.path.getmtime(__file__),
+        "deployment_marker": DEPLOYMENT_MARKER,
+        "pool_available": POOL_AVAILABLE
+    }
+
+@app.get("/api/v1/debug/database-test")
+async def debug_database_test():
+    """Test all database connection methods"""
+    results = {}
+    
+    # Test 1: SQLAlchemy pool
+    try:
+        if POOL_AVAILABLE:
+            pool_metrics = get_pool_metrics()
+            results["pool_metrics"] = pool_metrics
+            results["pool_farmers_count"] = pool_metrics.get('total_farmers', 'NO_DATA')
+        else:
+            results["pool_error"] = "Pool not available"
+    except Exception as e:
+        results["pool_error"] = str(e)
+    
+    # Test 2: Direct connection
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) as count FROM farmers")
+                row = cursor.fetchone()
+                results["direct_farmers_count"] = row[0] if row else "No result"
+        else:
+            results["direct_error"] = "No connection"
+    except Exception as e:
+        results["direct_error"] = str(e)
+    
+    # Test 3: Environment variables
+    results["db_host"] = os.getenv('DB_HOST', 'NOT_SET')
+    results["db_name"] = os.getenv('DB_NAME', 'NOT_SET')
+    results["db_user"] = os.getenv('DB_USER', 'NOT_SET')
+    results["db_password_set"] = bool(os.getenv('DB_PASSWORD'))
+    
+    return results
+
+@app.get("/api/v1/debug/file-info")
+async def debug_file_info():
+    """Verify this file was actually deployed"""
+    return {
+        "deployment_marker": DEPLOYMENT_MARKER,
+        "file_hash": FILE_HASH,
+        "version": get_current_service_version(),
+        "file_size": os.path.getsize(__file__),
+        "last_modified": datetime.fromtimestamp(os.path.getmtime(__file__)).isoformat()
+    }
 
 # Database test endpoint
 @app.get("/api/v1/database/test")
