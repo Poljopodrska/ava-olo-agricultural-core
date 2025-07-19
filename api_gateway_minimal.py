@@ -1,5 +1,6 @@
 """
 Minimal API Gateway for deployment safety testing
+Deployment fix: 2025-07-19 07:37 CEST
 """
 import os
 import sys
