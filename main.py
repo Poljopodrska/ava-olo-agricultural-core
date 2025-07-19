@@ -27,6 +27,9 @@ except Exception as e:
     emergency_log(f"❌ Failed to import api_gateway_minimal: {e}")
     sys.exit(1)
 
+# Expose app variable for uvicorn main:app
+# This is required for AWS App Runner to find the FastAPI app
+
 if __name__ == "__main__":
     import uvicorn
     emergency_log("Starting uvicorn server from main.py...")
