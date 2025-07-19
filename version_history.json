@@ -1,8 +1,18 @@
 {
-    "current_version": "v2.1.9-apprunner-format",
+    "current_version": "v2.1.10-db-column-fix",
     "service_name": "Monitoring Dashboards",
-    "last_updated": "2025-01-19",
+    "last_updated": "2025-07-19",
     "version_history": [
+        {
+            "version": "v2.1.10-db-column-fix",
+            "date": "2025-07-19",
+            "changes": [
+                "Fixed database column names: area_ha -> size_hectares",
+                "Updated AWS App Runner environment variables with correct DB credentials",
+                "Fixed slow loading and dashboard metrics not showing",
+                "Resolved database connection issues"
+            ]
+        },
         {
             "version": "v2.1.9-apprunner-format",
             "date": "2025-01-19",

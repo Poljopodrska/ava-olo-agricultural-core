@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DEPLOYMENT TIMESTAMP: 1752924905 - v2.1.7-yaml-fix YAML syntax corrected
+# DEPLOYMENT TIMESTAMP: 1752936000 - v2.1.10-db-column-fix Fixed database columns
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
@@ -51,7 +51,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # DEPLOYMENT VERIFICATION
-logger.info("🚀 DEPLOYMENT VERSION: v2.1.7-yaml-fix - YAML syntax corrected, field registration fixes active")
+logger.info("🚀 DEPLOYMENT VERSION: v2.1.10-db-column-fix - Fixed database columns and environment variables")
 logger.info(f"Python version: {sys.version}")
 logger.info(f"JSON module available: {'json' in sys.modules}")
 
@@ -1869,7 +1869,7 @@ async def business_dashboard():
                 cursor.execute("SELECT COUNT(*) FROM farmers")
                 metrics["total_farmers"] = cursor.fetchone()[0] or 0
                 
-                cursor.execute("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
+                cursor.execute("SELECT COALESCE(SUM(size_hectares), 0) FROM fields")
                 metrics["total_hectares"] = round(cursor.fetchone()[0] or 0, 2)
                 
                 # 2. Hectares by crop type (using field_crops table)
@@ -1877,7 +1877,7 @@ async def business_dashboard():
                     SELECT 
                         fc.crop_name,
                         COUNT(DISTINCT f.id) as field_count,
-                        COALESCE(SUM(f.area_ha), 0) as total_area
+                        COALESCE(SUM(f.size_hectares), 0) as total_area
                     FROM fields f
                     JOIN field_crops fc ON f.id = fc.field_id
                     WHERE fc.start_year_int = EXTRACT(YEAR FROM CURRENT_DATE)
