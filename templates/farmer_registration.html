@@ -416,12 +416,6 @@
                         <!-- Fields will be added dynamically -->
                     </div>
                     <button type="button" class="field-add-btn" onclick="addFieldEntry()">+ Add Field</button>
-                    <div style="margin-top: 10px;">
-                        <label style="font-size: 16px;">
-                            <input type="checkbox" id="skip-fields" onchange="toggleFieldRequirement()">
-                            Register farmer without fields (can add fields later)
-                        </label>
-                    </div>
                 </div>
                 
                 <!-- Field Mapping Section -->
@@ -461,32 +455,10 @@
     <script>
         let fieldCount = 1;
         
-        function toggleFieldRequirement() {
-            const skipFields = document.getElementById('skip-fields').checked;
-            const fieldsContainer = document.getElementById('fieldsContainer');
-            const fieldMappingSection = document.getElementById('field-mapping-section');
-            const fieldInputs = fieldsContainer.querySelectorAll('input[required]');
-            
-            if (skipFields) {
-                // Remove required from all field inputs
-                fieldInputs.forEach(input => {
-                    input.removeAttribute('required');
-                });
-                fieldsContainer.style.opacity = '0.5';
-                fieldMappingSection.style.display = 'none';
-            } else {
-                // Add required back to field name and size inputs
-                fieldsContainer.querySelectorAll('input[id^="field_name_"], input[id^="field_size_"]').forEach(input => {
-                    input.setAttribute('required', 'required');
-                });
-                fieldsContainer.style.opacity = '1';
-                fieldMappingSection.style.display = 'block';
-            }
-        }
+        // Fields are optional by default - no toggle function needed
         
         function addFieldEntry() {
             const container = document.getElementById('fieldsContainer');
-            const skipFields = document.getElementById('skip-fields').checked;
             const newField = document.createElement('div');
             newField.className = 'field-entry form-grid';
             newField.dataset.fieldIndex = fieldCount;
@@ -494,16 +466,15 @@
             newField.style.paddingTop = 'var(--spacing-4)';
             newField.style.borderTop = '1px solid var(--color-gray-300)';
             
-            const requiredAttr = skipFields ? '' : 'required';
-            
+            // Fields are optional by default
             newField.innerHTML = `
                 <div class="form-group">
-                    <label for="field_name_${fieldCount}">Field Name ${requiredAttr ? '*' : ''}</label>
-                    <input type="text" id="field_name_${fieldCount}" name="fields[${fieldCount}][name]" ${requiredAttr} placeholder="Field name">
+                    <label for="field_name_${fieldCount}">Field Name</label>
+                    <input type="text" id="field_name_${fieldCount}" name="fields[${fieldCount}][name]" placeholder="Field name">
                 </div>
                 <div class="form-group">
-                    <label for="field_size_${fieldCount}">Size (hectares) ${requiredAttr ? '*' : ''}</label>
-                    <input type="number" id="field_size_${fieldCount}" name="fields[${fieldCount}][size]" step="0.0001" ${requiredAttr} placeholder="0.0">
+                    <label for="field_size_${fieldCount}">Size (hectares)</label>
+                    <input type="number" id="field_size_${fieldCount}" name="fields[${fieldCount}][size]" step="0.0001" placeholder="0.0">
                 </div>
                 <div class="form-group">
                     <label for="field_location_${fieldCount}">Location/GPS</label>

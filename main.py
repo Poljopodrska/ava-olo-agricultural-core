@@ -18,6 +18,30 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sys
 import urllib.parse
+
+# Version Management System
+def get_current_service_version():
+    """Get the current version from version_history.json"""
+    try:
+        with open('version_history.json', 'r') as f:
+            version_data = json.load(f)
+            return version_data.get('current_version', 'v0.0.0')
+    except:
+        return 'v0.0.0'
+
+def constitutional_deployment_completion():
+    """Report version after every deployment - CONSTITUTIONAL REQUIREMENT"""
+    current_version = get_current_service_version()
+    
+    print("=" * 50)
+    print("🏛️ CONSTITUTIONAL DEPLOYMENT COMPLETE")
+    print(f"📊 CURRENT VERSION: {current_version}")
+    print(f"🌐 SERVICE: Monitoring Dashboards")
+    print(f"⏰ DEPLOYED: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 50)
+    print(f"FINAL VERSION CHECK: {current_version}")
+    
+    return current_version
 sys.path.append('.')
 from database.insert_operations import ConstitutionalInsertOperations
 from database_operations import DatabaseOperations
@@ -103,6 +127,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize Jinja2 templates
 from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="templates")
+
+# Add version injection to all templates
+def inject_version_context(context: dict):
+    """Inject version into all template contexts"""
+    context['current_version'] = get_current_service_version()
+    return context
+
+def make_template_response(template_name: str, context: dict):
+    """Create template response with version injection"""
+    inject_version_context(context)
+    return templates.TemplateResponse(template_name, context)
 
 # Helper function to get design system CSS
 def get_design_system_css():
@@ -1290,7 +1325,7 @@ DASHBOARD_LANDING_HTML = """
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_landing(request: Request):
     """Main Landing Page - Unified Agricultural Management"""
-    return templates.TemplateResponse("ui_dashboard_enhanced.html", {
+    return make_template_response("ui_dashboard_enhanced.html", {
         "request": request,
         "show_back_button": False
     })
@@ -3078,7 +3113,7 @@ async def redirect_agronomic():
 
 @app.get("/database")
 async def redirect_database():
-    return RedirectResponse(url="/database-dashboard", status_code=302)
+    return RedirectResponse(url="/", status_code=302)
 
 # Farmer Registration Form
 @app.get("/farmer-registration", response_class=HTMLResponse)
@@ -6016,7 +6051,7 @@ async def database_add_data_form():
 <body>
     <div class="constitutional-container">
         <header class="constitutional-header">
-            <a href="/database-dashboard" class="back-link">← Back to Database Dashboard</a>
+            <a href="/" class="back-link">← Back to Main Dashboard</a>
             <h1 class="constitutional-title">🌾 Add Agricultural Data</h1>
             <p>Constitutional Data Entry System</p>
         </header>
@@ -6388,7 +6423,7 @@ async def add_farmer_submit(
         </div>
         <div style="margin-top: 30px;">
             <a href="/database-dashboard/add-data" class="constitutional-button">Add More Data</a>
-            <a href="/database-dashboard" class="constitutional-button">Back to Dashboard</a>
+            <a href="/" class="constitutional-button">Back to Main Dashboard</a>
         </div>
     </div>
 </body>
@@ -6425,7 +6460,7 @@ async def ui_dashboard():
 # Database Explorer Route
 @app.get("/database-explorer")
 async def database_explorer(request: Request):
-    return templates.TemplateResponse("database_explorer_enhanced.html", {
+    return make_template_response("database_explorer_enhanced.html", {
         "request": request,
         "show_back_button": True
     })
@@ -6433,7 +6468,7 @@ async def database_explorer(request: Request):
 # Register Fields Route
 @app.get("/register-fields")
 async def register_fields(request: Request):
-    return templates.TemplateResponse("register_fields.html", {
+    return make_template_response("register_fields.html", {
         "request": request,
         "show_back_button": True
     })
@@ -6609,7 +6644,7 @@ async def register_field(request: Request):
 # Register Task Route
 @app.get("/register-task")
 async def register_task(request: Request):
-    return templates.TemplateResponse("register_task.html", {
+    return make_template_response("register_task.html", {
         "request": request,
         "show_back_button": True,
         "today": datetime.now().strftime("%Y-%m-%d")
@@ -6762,7 +6797,7 @@ async def register_task_api(request: Request):
 # Register Machinery Route
 @app.get("/register-machinery")
 async def register_machinery(request: Request):
-    return templates.TemplateResponse("register_machinery.html", {
+    return make_template_response("register_machinery.html", {
         "request": request,
         "show_back_button": True
     })
