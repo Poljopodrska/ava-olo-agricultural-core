@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.2.8-verification
+Version: 3.2.9-enter-fix
 Bulgarian Mango Farmer Compliant ✅
-Fixed: OBVIOUS changes - Send→STOP button, BLACK version, Enter key
+Fixed: Enter key actually sends messages now
 """
 import os
 import sys
@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.2.8-verification"
+VERSION = "3.2.9-enter-fix"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -624,7 +624,7 @@ async def register_page(request: Request):
                     onkeypress="handleEnterKey(event)"
                     autofocus
                 >
-                <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: red; color: white; font-size: 24px; font-weight: bold;">STOP</button>
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: green; color: white; font-size: 24px; font-weight: bold;">SEND NOW</button>
             </div>
             
             <div class="footer-links">
@@ -1325,8 +1325,8 @@ async def chat_interface(request: Request):
         </style>
     </head>
     <body>
-        <div style="background: red; color: white; text-align: center; padding: 20px; font-size: 24px; font-weight: bold;">
-            🚨 VERIFICATION TEST v3.2.8 - DEPLOYMENT SUCCESSFUL 🚨
+        <div style="background: green; color: white; text-align: center; padding: 20px; font-size: 24px; font-weight: bold;">
+            ✅ ENTER KEY FIX v3.2.9 - Press Enter to Send ✅
         </div>
         <div class="version-display">v""" + VERSION + """</div>
         <div class="chat-container">
@@ -1364,7 +1364,7 @@ async def chat_interface(request: Request):
                         rows="1"
                         onkeypress="handleEnterKey(event)"
                     ></textarea>
-                    <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: red; color: white; font-size: 24px; font-weight: bold;">STOP</button>
+                    <button id="sendBtn" class="send-btn" onclick="sendMessage()" style="background: green; color: white; font-size: 24px; font-weight: bold;">SEND NOW</button>
                 </div>
             </div>
         </div>
@@ -1388,15 +1388,14 @@ async def chat_interface(request: Request):
             }
             
             function handleEnterKey(event) {
-                console.log('🔴🔴🔴 KEY PRESSED:', event.key);
-                console.log('VERIFICATION TEST - KEY EVENT FIRED');
+                console.log('🔴 KEY PRESSED:', event.key);
                 
                 if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
-                    console.log('🚨🚨🚨 ENTER KEY DETECTED!!! 🚨🚨🚨');
-                    console.log('CALLING sendMessage() NOW...');
-                    alert('ENTER KEY PRESSED - SENDING MESSAGE');
+                    console.log('🚨 ENTER KEY DETECTED - SENDING MESSAGE');
+                    // Call sendMessage directly, don't rely on button click
                     sendMessage();
+                    return false; // Prevent default form submission
                 }
             }
             
@@ -1448,14 +1447,12 @@ async def chat_interface(request: Request):
             let sessionId = localStorage.getItem('ava_session_id') || null;
             
             async function sendMessage() {
-                console.log('🟢🟢🟢 sendMessage() CALLED 🟢🟢🟢');
-                console.log('VERIFICATION TEST - SEND FUNCTION EXECUTING');
-                alert('sendMessage() function called!');
+                console.log('🟢 sendMessage() CALLED');
                 
                 try {
                     const input = document.getElementById('chatInput');
                     if (!input) {
-                        console.error('chatInput element not found!');
+                        console.error('ERROR: chatInput element not found!');
                         return;
                     }
                     
@@ -1467,10 +1464,10 @@ async def chat_interface(request: Request):
                         console.log('No message to send');
                         return;
                     }
-                    console.log('📤📤📤 SENDING MESSAGE:', message);
-                    console.log('🔗 ENDPOINT: /api/v1/conversation/chat');
-                    console.log('👨‍🌾 FARMER ID:', userData.farmer_id || 1);
-                    console.log('VERIFICATION TEST - ABOUT TO CALL API');
+                    
+                    console.log('📤 SENDING MESSAGE:', message);
+                    console.log('🔗 Using endpoint: /api/v1/conversation/chat');
+                    console.log('👨‍🌾 Farmer ID:', userData.farmer_id || 1);
                 
                 // Add user message
                 addMessage(message, true, userData.full_name?.split(' ')[0]);
@@ -1509,12 +1506,10 @@ async def chat_interface(request: Request):
                         addMessage('I apologize, but I encountered an issue processing your question. Please try again.');
                     }
                 } catch (error) {
-                    console.error('Chat error:', error);
-                    console.error('Error details:', error.message, error.stack);
-                    addMessage('I apologize, but I\'m having trouble connecting. Error: ' + error.message);
-                } catch (e) {
-                    console.error('sendMessage error:', e);
-                    console.error('Error details:', e.message, e.stack);
+                    console.error('🔴 CRITICAL ERROR in sendMessage:', error);
+                    console.error('Error message:', error.message);
+                    console.error('Error stack:', error.stack);
+                    addMessage('Error: ' + error.message);
                 }
                 
                 try {
@@ -1557,28 +1552,29 @@ async def chat_interface(request: Request):
             
             // Initialize on page load
             window.addEventListener('DOMContentLoaded', function() {
-                console.log('Page loaded, initializing chat...');
+                console.log('🟢 Page loaded, initializing chat...');
                 const chatInput = document.getElementById('chatInput');
                 if (chatInput) {
+                    // CRITICAL: Add event listener directly
+                    chatInput.addEventListener('keypress', function(event) {
+                        console.log('🔑 Key pressed in textarea:', event.key);
+                        if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            console.log('✅ ENTER KEY - CALLING sendMessage()');
+                            sendMessage();
+                            return false;
+                        }
+                    });
+                    
                     chatInput.focus();
-                    console.log('Chat input focused');
+                    console.log('✅ Chat input found and event listener attached');
                 } else {
-                    console.error('Chat input not found on page load');
+                    console.error('❌ Chat input not found!');
                 }
                 
-                // Test Enter key handler
-                console.log('Testing Enter key handler...');
-                if (typeof handleEnterKey === 'function') {
-                    console.log('✓ handleEnterKey function exists');
-                } else {
-                    console.error('✗ handleEnterKey function not found!');
-                }
-                
-                if (typeof sendMessage === 'function') {
-                    console.log('✓ sendMessage function exists');
-                } else {
-                    console.error('✗ sendMessage function not found!');
-                }
+                // Test functions exist
+                console.log('handleEnterKey exists:', typeof handleEnterKey === 'function');
+                console.log('sendMessage exists:', typeof sendMessage === 'function');
             });
         </script>
     </body>

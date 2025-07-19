@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter Key Test</title>
+</head>
+<body>
+    <h1>Testing Enter Key</h1>
+    <textarea id="chatInput" placeholder="Type and press Enter"></textarea>
+    <button onclick="sendMessage()">Send</button>
+    
+    <div id="messages"></div>
+    
+    <script>
+        function handleEnterKey(event) {
+            console.log('Key pressed:', event.key);
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                console.log('Enter detected!');
+                sendMessage();
+                return false;
+            }
+        }
+        
+        function sendMessage() {
+            console.log('sendMessage called!');
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (message) {
+                document.getElementById('messages').innerHTML += '<p>Sent: ' + message + '</p>';
+                input.value = '';
+            }
+        }
+        
+        document.getElementById('chatInput').addEventListener('keypress', handleEnterKey);
+    </script>
+</body>
+</html>
