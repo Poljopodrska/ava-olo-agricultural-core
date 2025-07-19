@@ -19,7 +19,7 @@ def emergency_log(message):
     sys.stdout.flush()
 
 # Version constant - update this for all pages
-VERSION = "3.3.0-cava-registration"
+VERSION = "3.3.0-cava-debug-fix"
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -2271,6 +2271,39 @@ async def verify_deployment():
         "timestamp": datetime.now().isoformat(),
         "deployment_status": "verified"
     }
+
+# Test LLM connectivity endpoint
+@app.get("/api/test-llm")
+async def test_llm_connection():
+    """Test LLM connectivity for debugging"""
+    emergency_log("🧪 Testing LLM connection")
+    
+    try:
+        # Try OpenAI directly
+        import openai
+        import os
+        
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        
+        if not openai.api_key:
+            return {"status": "error", "message": "OPENAI_API_KEY not configured"}
+        
+        # Simple test
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Use cheaper model for testing
+            messages=[{"role": "user", "content": "Say 'LLM CONNECTED' and nothing else"}],
+            max_tokens=10
+        )
+        
+        return {
+            "status": "success", 
+            "message": response.choices[0].message.content.strip(),
+            "model": "gpt-3.5-turbo"
+        }
+        
+    except Exception as e:
+        emergency_log(f"❌ LLM test failed: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.on_event("startup")
 async def startup_event():

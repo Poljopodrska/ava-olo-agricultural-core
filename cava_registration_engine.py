@@ -13,6 +13,9 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
+# In-memory session storage (will be replaced with Redis)
+registration_sessions = {}
+
 class CAVARegistrationEngine:
     """
     LLM-powered registration conversations
@@ -39,19 +42,33 @@ class CAVARegistrationEngine:
         Extract data, determine next action, generate response
         """
         
+        # Initialize or get session
+        if session_id not in registration_sessions:
+            registration_sessions[session_id] = {
+                "collected_data": {},
+                "conversation_history": conversation_history or [],
+                "extracted_data_history": []
+            }
+        
+        session = registration_sessions[session_id]
+        
+        # Update conversation history if provided
+        if conversation_history:
+            session["conversation_history"] = conversation_history
+        
         # Get CAVA service
         try:
             from implementation.cava.cava_central_service import get_cava_service
             cava = await get_cava_service()
-        except:
-            logger.warning("CAVA not available, using fallback")
+        except Exception as e:
+            logger.warning(f"CAVA not available ({e}), using fallback")
             return await self._fallback_registration(message, session_id, conversation_history)
         
         # Build context for LLM
-        context = self._build_conversation_context(conversation_history)
+        context = self._build_conversation_context(session["conversation_history"])
         
-        # Extract farmer data from current session
-        farmer_data = self._extract_session_data(conversation_history)
+        # Use session's collected data instead of extracting from history
+        farmer_data = session["collected_data"]
         
         # Generate LLM prompt for intelligent analysis
         analysis_prompt = f"""
@@ -107,22 +124,31 @@ class CAVARegistrationEngine:
         try:
             llm_analysis = json.loads(result.get("message", "{}"))
         except:
-            # If LLM response isn't JSON, use it as direct response
-            llm_analysis = {
-                "response": result.get("message", "I'm here to help you register. Could you tell me your first name?"),
-                "extracted_data": {},
-                "missing_fields": self.required_fields,
-                "registration_complete": False
-            }
+            # If LLM response isn't JSON, fallback to simple extraction
+            logger.warning(f"CAVA returned non-JSON response: {result.get('message', '')}")
+            # Use the fallback registration logic instead
+            return await self._fallback_registration(message, session_id, session.get("conversation_history", []))
         
         # Update farmer data with extracted information
         if llm_analysis.get("extracted_data"):
-            farmer_data.update(llm_analysis["extracted_data"])
+            # Filter out placeholder values
+            for field, value in llm_analysis["extracted_data"].items():
+                if value and value != "value if found" and value != "":
+                    farmer_data[field] = value
+                    session["collected_data"][field] = value
+        
+        # Update session with latest data
+        registration_sessions[session_id] = session
         
         # Check if registration is complete
-        if llm_analysis.get("registration_complete") or not llm_analysis.get("missing_fields"):
+        missing_fields = self._get_missing_fields(farmer_data)
+        if llm_analysis.get("registration_complete") or not missing_fields:
             # Create farmer account
             farmer_id = await self._complete_registration(farmer_data, session_id)
+            
+            # Clear session after completion
+            if session_id in registration_sessions:
+                del registration_sessions[session_id]
             
             return {
                 "response": llm_analysis.get("response", "Welcome to AVA OLO! Your registration is complete."),
@@ -135,7 +161,7 @@ class CAVARegistrationEngine:
             "response": llm_analysis.get("response"),
             "registration_complete": False,
             "extracted_data": farmer_data,
-            "missing_fields": llm_analysis.get("missing_fields", [])
+            "missing_fields": missing_fields
         }
     
     def _build_conversation_context(self, history: List[Dict[str, str]]) -> str:
@@ -223,6 +249,17 @@ class CAVARegistrationEngine:
     ) -> Dict[str, Any]:
         """Fallback when CAVA not available - still no hardcoding!"""
         
+        # Initialize or get session
+        if session_id not in registration_sessions:
+            registration_sessions[session_id] = {
+                "collected_data": {},
+                "conversation_history": conversation_history or [],
+                "extracted_data_history": []
+            }
+        
+        session = registration_sessions[session_id]
+        farmer_data = session["collected_data"]
+        
         # Simple pattern matching for data extraction
         extracted = {}
         message_lower = message.lower()
@@ -238,6 +275,18 @@ class CAVARegistrationEngine:
                         if i + 2 < len(words) and not any(c.isdigit() for c in words[i + 2]):
                             extracted["last_name"] = words[i + 2].strip(",.")
         
+        # Also check for single word that might be a name
+        if not extracted.get("first_name") and "first_name" not in farmer_data:
+            words = message.strip().split()
+            if len(words) == 1 and words[0].isalpha() and len(words[0]) > 1:
+                # Single word, likely a first name
+                extracted["first_name"] = words[0].title()
+        elif not extracted.get("last_name") and "last_name" not in farmer_data and "first_name" in farmer_data:
+            # If we already have first name, single word is likely last name
+            words = message.strip().split()
+            if len(words) == 1 and words[0].isalpha() and len(words[0]) > 1:
+                extracted["last_name"] = words[0].title()
+        
         # Look for phone number
         import re
         phone_pattern = r'\+?\d{10,15}'
@@ -251,6 +300,10 @@ class CAVARegistrationEngine:
             for i, word in enumerate(words):
                 if word.lower() == "from" and i + 1 < len(words):
                     extracted["farm_location"] = " ".join(words[i+1:i+3])
+        elif "farm_location" not in farmer_data and "whatsapp_number" in farmer_data:
+            # If we're asking for location and get a single word/phrase, assume it's the location
+            if len(message.strip()) > 0 and not any(char.isdigit() for char in message):
+                extracted["farm_location"] = message.strip().title()
         
         # Look for crops
         crop_keywords = ["grow", "farm", "cultivate", "plant"]
@@ -262,9 +315,21 @@ class CAVARegistrationEngine:
                     if word.lower() == keyword and i + 1 < len(words):
                         extracted["primary_crops"] = " ".join(words[i+1:i+3])
         
-        # Update farmer data
-        farmer_data = self._extract_session_data(conversation_history)
+        # If we're asking for crops and get a response without keywords, assume it's the crop
+        if "primary_crops" not in farmer_data and "farm_location" in farmer_data:
+            if len(message.strip()) > 0 and not extracted.get("primary_crops"):
+                extracted["primary_crops"] = message.strip().lower()
+        
+        # Update farmer data with newly extracted info
         farmer_data.update(extracted)
+        session["collected_data"] = farmer_data
+        
+        # Update session
+        registration_sessions[session_id] = session
+        
+        # Debug logging
+        logger.info(f"Message: '{message}' → Extracted: {extracted}")
+        logger.info(f"Total collected data: {farmer_data}")
         
         # Determine missing fields
         missing = self._get_missing_fields(farmer_data)
@@ -279,18 +344,29 @@ class CAVARegistrationEngine:
                 "redirect_to": "/chat"
             }
         
-        # Generate next question
+        # Generate next question based on what we have
         next_field = missing[0]
-        responses = {
-            "first_name": "I'm AVA, your agricultural assistant. What's your first name?",
-            "last_name": f"Nice to meet you, {farmer_data.get('first_name', 'there')}! What's your last name?",
-            "whatsapp_number": "Could you share your WhatsApp number? Include the country code (e.g., +359...)",
-            "farm_location": "Where is your farm located?",
-            "primary_crops": "What crops do you grow on your farm?"
-        }
+        
+        # Special case: if message is empty, provide welcome
+        if not message:
+            response = "Hi! I'm AVA, your agricultural assistant. Welcome! What's your first name?"
+        elif next_field == "first_name":
+            response = "I'm AVA, your agricultural assistant. What's your first name?"
+        elif next_field == "last_name":
+            first_name = farmer_data.get('first_name', 'there')
+            response = f"Nice to meet you, {first_name}! What's your last name?"
+        elif next_field == "whatsapp_number":
+            name = farmer_data.get('first_name', 'there')
+            response = f"Great, {name}! What's your WhatsApp number? Please include the country code (e.g., +359...)"
+        elif next_field == "farm_location":
+            response = "Perfect! Where is your farm located?"
+        elif next_field == "primary_crops":
+            response = "And what crops do you grow on your farm?"
+        else:
+            response = "Could you tell me more about yourself?"
         
         return {
-            "response": responses.get(next_field, "Could you tell me more about yourself?"),
+            "response": response,
             "registration_complete": False,
             "extracted_data": farmer_data,
             "missing_fields": missing
