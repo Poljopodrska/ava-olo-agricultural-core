@@ -1,8 +1,17 @@
 {
-    "current_version": "v2.1.7-yaml-fix",
+    "current_version": "v2.1.8-runtime-fix",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-01-19",
     "version_history": [
+        {
+            "version": "v2.1.8-runtime-fix",
+            "date": "2025-01-19",
+            "changes": [
+                "Updated runtime-version from 3.9 to 3.11",
+                "Fixed unsupported runtime version error",
+                "All field registration fixes included"
+            ]
+        },
         {
             "version": "v2.1.7-yaml-fix",
             "date": "2025-01-19",
