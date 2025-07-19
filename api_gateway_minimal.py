@@ -1,6 +1,8 @@
 """
 Minimal API Gateway for deployment safety testing
-Deployment fix: 2025-07-19 07:37 CEST
+Deployment fix: 2025-07-19 09:38 CEST - CORRECT REPOSITORY DEPLOYMENT
+Root cause: All previous fixes applied to wrong repository (shared vs agricultural-core)
+Cache bust: forensic_investigation_complete
 """
 import os
 import sys
