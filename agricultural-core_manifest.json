@@ -1,0 +1,361 @@
+{
+  "service": "agricultural-core",
+  "deployment_id": "agricultural-core-deploy-1752950483",
+  "timestamp": "2025-07-19T18:41:23.701653",
+  "version": "v3.2.5-bulletproof",
+  "files": {
+    "api_gateway_constitutional.py": {
+      "hash": "74156d9bbdbb0ecce883dbf018916852ce50e9b8fa8bbf8c27ebda7b81df025a",
+      "size": 14954
+    },
+    "api_gateway_constitutional_ui.py": {
+      "hash": "b9e66c690989964362b937f68d4adce9dbe03e6cc2707e3c63a97cfb9e45f24f",
+      "size": 88210
+    },
+    "api_gateway_emergency.py": {
+      "hash": "04676b760186db5f31238b453bc2989442c80b9f0259f8286cd6f43e162db553",
+      "size": 1488
+    },
+    "api_gateway_localized.py": {
+      "hash": "635fa94840d2603400fea968f146333f98e609df8cb6c59376be9ca74fbc1a20",
+      "size": 8232
+    },
+    "api_gateway_minimal.py": {
+      "hash": "d15d38b75af3280fa9f479878fe02bc3b810105b4482d00e0a3b2d7c416a8759",
+      "size": 5205
+    },
+    "api_gateway_simple.py": {
+      "hash": "29f76972bf0896c7c494b229754368f226d51f4b0d37bcd88df2ccde58769fa2",
+      "size": 146786
+    },
+    "api_gateway_simple_fixed.py": {
+      "hash": "b346d112916cd96e7edc151f55871f140fba53705e760baf01aaea3d9534576f",
+      "size": 10146
+    },
+    "api_gateway_with_cava.py": {
+      "hash": "9f6e94edd5f9d63740ed2dd4ed860b253cae0e70b881fc8f2a73771be44f5fe1",
+      "size": 8055
+    },
+    "api_migration_endpoint.py": {
+      "hash": "259e54b65fd440beabb7e63e0e26dad5e94e158c0c14894f5c8dd7e0e4a67aa4",
+      "size": 4806
+    },
+    "app.py": {
+      "hash": "28c374eeb44bce65abc1df66344e98027d20295951f3257810c89b16710e5d72",
+      "size": 2017
+    },
+    "cava_registration_engine.py": {
+      "hash": "35c6bb00691f0068f9842da409e3270842004032ca7fe1d91a5cdfb4957b7aa0",
+      "size": 16777
+    },
+    "cava_registration_llm.py": {
+      "hash": "2af9f0c72a82da251b17954144c2a13592bfbd5f82cdd1b8ff33052ab8b3b92c",
+      "size": 16335
+    },
+    "check_farmer_schema.py": {
+      "hash": "500319791748f5bc01c0e99cddd85c7bad0ff278cf56e52f7217249274522029",
+      "size": 5088
+    },
+    "cloudshell_insert_peter.py": {
+      "hash": "7588c90dc67fd0189d1c35f0b2c50071728a0cca107faf17e2f78ddb9c18ca7c",
+      "size": 5127
+    },
+    "compare_gpt_models.py": {
+      "hash": "c98ebfd78121f059a935492cdb9e8acb674ffac319790d3af89fc197577a8116",
+      "size": 7498
+    },
+    "config.py": {
+      "hash": "8087357d148bc1c95f9ecfac12c40d62ed24cd56d0f5ca16388615631f47fdcd",
+      "size": 4441
+    },
+    "config_manager.py": {
+      "hash": "218775aa8ecf06f196ea11265953abe7070d8b3773979013e6571881aa6a85fe",
+      "size": 3784
+    },
+    "create_test_farmer.py": {
+      "hash": "ac37015de2fc9430c79e76107dbb9bdd09e976a81359474785a72a11cf8f1dec",
+      "size": 7671
+    },
+    "database_operations.py": {
+      "hash": "9e097753c303917547bcc9a9ed830ae7578ded98452e369c6a9d4b6d4c4f5e5f",
+      "size": 11463
+    },
+    "database_operations_migrated.py": {
+      "hash": "7b1e3f4bead1a4ea0da6d8d5232ebd285a2d4a77241f4cc34c53c99dc0fad925",
+      "size": 6934
+    },
+    "database_operations_old_hardcoded.py": {
+      "hash": "213caa6093536dd738105f65997e4a049facf9566ab997614746a08480cee8a1",
+      "size": 16306
+    },
+    "database_url_fixer.py": {
+      "hash": "bf3dae0e668304cbb44c9991e91339b26e9cb66c132e5d0b1c8a1ea31214fb4d",
+      "size": 7614
+    },
+    "debug_registration.py": {
+      "hash": "efcba9828c95ecf8b808cda458e861aef12c4273d71d865200b61662e423e218",
+      "size": 5185
+    },
+    "deployment_safety_check.py": {
+      "hash": "1925cad2dc74d116616df733c7161f0f08fe71583386301c8060cf66ddb735db",
+      "size": 15823
+    },
+    "diagnose_startup.py": {
+      "hash": "2687caedf71cae8ce0fb4e66484314c6b709ac27490e586f3ea41375065ee66e",
+      "size": 7628
+    },
+    "external_search.py": {
+      "hash": "810ffd2140d6e5e193c30282317145fa3d92e33308e206bd2dd92eba9bbd3e75",
+      "size": 9668
+    },
+    "fix_type_annotations.py": {
+      "hash": "ec81d908fe29c8b6b8c09b4d0a31f9359ea88c19f844c6763cce29f15d52a4d9",
+      "size": 3041
+    },
+    "insert_peter_farmer.py": {
+      "hash": "b5f0bf4d4e804340eef9c7d7cdfbd2a911ddf76cdb666e53b07360bc88738569",
+      "size": 8338
+    },
+    "knowledge_search.py": {
+      "hash": "334a7e187aa8560b93c66d74da9a50bc2508d9906044ab7c344b1ece330e14bd",
+      "size": 10140
+    },
+    "language_processor.py": {
+      "hash": "aa5ffd03517b6f3a8ac8e048db75c953beee61610f3a06de3dc0e4ebe68fb466",
+      "size": 10792
+    },
+    "llm_first_database_engine.py": {
+      "hash": "9a75b08f013a0cd3c1473350bd3344f47cbac2831336a8365042ab08fc40cf9e",
+      "size": 20575
+    },
+    "llm_router.py": {
+      "hash": "11852125ee53b30bf702b63f326b9603511736a397c76c48b87f12ce7588cdcf",
+      "size": 7304
+    },
+    "main.py": {
+      "hash": "6ded54849fea3578d3cf425949a0b136647d0e0f3d12de36fc3b457bb19ad70e",
+      "size": 2553
+    },
+    "manual_aurora_migration.py": {
+      "hash": "a28cf0563bb212c33842ff591129108eece84dbbd20c7bb7db74db65c56113fe",
+      "size": 4713
+    },
+    "registration_memory.py": {
+      "hash": "3efb080758e42c8402b2238de314b1b4a58691139991652ce7a615cb02371af9",
+      "size": 11684
+    },
+    "registration_memory_cava.py": {
+      "hash": "d732f80d86b35b5a7e8e83b61cfbfe944f05b7a13953af53dc22eb8c58991e0c",
+      "size": 8141
+    },
+    "registration_memory_original.py": {
+      "hash": "5f58ce19bd43528a253e36fb537ce8d93b2d726c2516d4dba47ee563efa639f2",
+      "size": 10284
+    },
+    "run_comprehensive_tests.py": {
+      "hash": "90cb076f3765598300f5e6bbc9055113f5110c885a6053ac1f8b32218013afd9",
+      "size": 3240
+    },
+    "run_intelligence_tests.py": {
+      "hash": "da6439975263d870dbeae691d34eb8107bbfefd95e26ae76a488965de971f69c",
+      "size": 10430
+    },
+    "simple_test_app.py": {
+      "hash": "cc3dfcca9b3e9176e35dd2aef2ab680da1137fd496b45e859ca3ee82af349b23",
+      "size": 808
+    },
+    "start_app_runner.py": {
+      "hash": "224ed7eb856243cf57084546c730a9209cc49252efa1f17228d374badd901ffb",
+      "size": 2726
+    },
+    "start_simple.py": {
+      "hash": "0bb34df750c35791ddcf233e0b7811a381c3111be892024105dfa81d919f2031",
+      "size": 1434
+    },
+    "test_amendment_15_scenarios.py": {
+      "hash": "de52970da9ad6490494609c8b1d32e01475a7b2f35217906c5efb65259c0e4ca",
+      "size": 14200
+    },
+    "test_aurora_connection_simple.py": {
+      "hash": "cf7a6dee9ddef1bcaf90c7e5be11653607213f877375473647fe138952a74f2f",
+      "size": 4114
+    },
+    "test_aurora_direct.py": {
+      "hash": "c629f9104c56b24f0a2bb3c53295011d3dafa76f99cea93f195c6c6f53777155",
+      "size": 2014
+    },
+    "test_authentication_system.py": {
+      "hash": "4ac547f5bbe73373f51dea3fd8192a0ac7fa91fe68d7ce7975527247363eef18",
+      "size": 6112
+    },
+    "test_auth_aurora_migration.py": {
+      "hash": "8a8a4b22c883cbc0998d0476705ed39cd14752694a264dfc6d8802dd39f0e558",
+      "size": 13258
+    },
+    "test_bulletproof_registration.py": {
+      "hash": "1be9e1d73864c47ce4992ea23330b8de587e435df37563299395f095a95e72c8",
+      "size": 6939
+    },
+    "test_cava_business_flow.py": {
+      "hash": "f7513997a8c13742f5c8589b4902ef9de90e4705ee7d1fc794b479089d8bd8b8",
+      "size": 10541
+    },
+    "test_cava_complete.py": {
+      "hash": "6974a2236a94c1b636b6f7936dd24ee1a51c05c4c6d872b74c985b9e69fc0965",
+      "size": 7749
+    },
+    "test_cava_direct_flow.py": {
+      "hash": "74bea86f352ed9e1de510685db45f04c55d128c18790f3440678dbb724e8749a",
+      "size": 4157
+    },
+    "test_cava_import.py": {
+      "hash": "71759c92111dabfb6413e074e548896e574b005f4f3cacd2f4cdd6965259ad0e",
+      "size": 998
+    },
+    "test_cava_integration.py": {
+      "hash": "2594946333ad067674a7968b82f437f7e2c0ce004a95d9e9ebd4717ea8ca5101",
+      "size": 3695
+    },
+    "test_cava_intelligence.py": {
+      "hash": "817b2e9eae49711e7676a1fe0cf01bd101cca3ff84069d4a6a60b6f5567d5f26",
+      "size": 9643
+    },
+    "test_cava_llm_registration.py": {
+      "hash": "75bb83b22824e5d4b938ec57515ed6ce719db1dc0d7c62c07c3bdcf712cc1551",
+      "size": 9203
+    },
+    "test_cava_registration.py": {
+      "hash": "ae49d1ff8c355bcda575fb40f7d8d4ec010d3f099d31d6e51f38adb3725d4a66",
+      "size": 2494
+    },
+    "test_constitutional_fix.py": {
+      "hash": "0506f8ef2ee71e5ff43faeb446668c897263a31fdca126437144cb39fc5f644f",
+      "size": 5302
+    },
+    "test_constitutional_ui.py": {
+      "hash": "bd0907d51d9d2d8536a0ad01ac07bc5e4aaf5b1f9ad3695bc32829d7d7e9898d",
+      "size": 3219
+    },
+    "test_constitutional_weather.py": {
+      "hash": "b0f44d72134417a0a2d2044a8da809fcb47d49508e28530b8c63b417afe64a95",
+      "size": 14322
+    },
+    "test_db_connection.py": {
+      "hash": "ba68c81b0133ee12dd7d364cce46e1feed3fd84ef21f3554aa063ded38906990",
+      "size": 3151
+    },
+    "test_deployment_safety.py": {
+      "hash": "2a8611a5ef495c53ec795c58f7be689dc44273ccd891e42a662b6f862782705d",
+      "size": 5539
+    },
+    "test_emergency_fix.py": {
+      "hash": "61a724860b35d5668f72f55238b18bfd7b4f83c7ee564d2a129e706b4ed667e6",
+      "size": 2379
+    },
+    "test_endless_weather.py": {
+      "hash": "9f1636541eb9ca018629ef6643b98b405aa9fba7d1b8a770c83d1538f41462e7",
+      "size": 4758
+    },
+    "test_fallback_ljubljana.py": {
+      "hash": "91b2926cad65516ef054e3b0c54aef1708a4bd56fb8af62af047d726081eddf5",
+      "size": 1858
+    },
+    "test_farmer_weather.py": {
+      "hash": "11633989ead71016b0f3f91461ed8489783ecd6a96b54e96e648381608ad741e",
+      "size": 12385
+    },
+    "test_json_parsing.py": {
+      "hash": "81c8ae58ee6faf8e9f4de0ac33bfd148b51864986a2879d5a27f0b7f878d7415",
+      "size": 4612
+    },
+    "test_langchain_memory.py": {
+      "hash": "1ec30c3f62ab6797e61b74306c79efcbc08df1196744ed93fce8d2204fad7602",
+      "size": 4847
+    },
+    "test_natural_understanding.py": {
+      "hash": "c7127e29b3b83646037e222bcf9110ca5e646a89755a579fce0140218ef7463e",
+      "size": 5567
+    },
+    "test_real_world_failures.py": {
+      "hash": "600e93c290cdfd7bd10e7f687918dec8aaec78471aa50ac021cde257d509eaf5",
+      "size": 5772
+    },
+    "test_registration_fix.py": {
+      "hash": "11cf19f515399754e01ce8b3bd22c22f8e261855914ec34840d58046dbb7c311",
+      "size": 4050
+    },
+    "test_schematic_pictograms.py": {
+      "hash": "90ccd846fd24cfa1f4d1bab35a0741083718927b0fc5603c7570dd771c26dc95",
+      "size": 4286
+    },
+    "test_self_test_endpoint.py": {
+      "hash": "27140604d953eabcfb5246404aba88b17bd828d7f432f7da85cde2081e09069c",
+      "size": 1799
+    },
+    "test_simple_registration.py": {
+      "hash": "183c429e033585611d18641ddfebf29049a9917b29f1b4fb6a0c91b03347e9d6",
+      "size": 1197
+    },
+    "test_specific_cases.py": {
+      "hash": "6b48b0199035d45bf8c62552fb8c62b10ddb36c59d4366b539f0ed5580bbde41",
+      "size": 3998
+    },
+    "test_startup.py": {
+      "hash": "b1da6266aeb058e5105f8bfa2896ef5b83d9238c22c63d58cc0377f63a0727f3",
+      "size": 958
+    },
+    "test_svg_weather_icons.py": {
+      "hash": "2a98920f3ad03b8cbc586460c9184922a842fac30d0a2e22e6a7d963bc1c51e4",
+      "size": 5143
+    },
+    "test_weather_api_key.py": {
+      "hash": "7f261370645905df2d0ebe637a042bcfa81308b78bbaf10575f612b0965b57c6",
+      "size": 1668
+    },
+    "test_weather_improvements.py": {
+      "hash": "6a77223d4472a56700e45398d6493f5376e74430ff4e96e792d7b0b8bd622598",
+      "size": 4269
+    },
+    "test_weather_updates.py": {
+      "hash": "c99ff227f39e7cf600fc7991ef6aa5ab88422ff863825726a5bf2e33ce0012f1",
+      "size": 3603
+    },
+    "test_web_route.py": {
+      "hash": "fe25f988212dca699e815cd3b72d445406c6137ef164dd5ab23588bb976077a4",
+      "size": 508
+    },
+    "test_web_routes_final.py": {
+      "hash": "54618a1ccd6050620f5b70e4d2f8ac4f5ce8f6416daf3365826c3d5488641c95",
+      "size": 3624
+    },
+    "test_with_mock_openai.py": {
+      "hash": "b04d582ed3c28221ad1b1b7855616336494fa4182226a976b5a6f3f69759ea36",
+      "size": 8167
+    },
+    "verify_openai_setup.py": {
+      "hash": "46f857f0bb704c1a5575e02d4786a2668b1eef6f895a4fbfaff6d06d3dc49ca5",
+      "size": 1779
+    },
+    "verify_registration_fix.py": {
+      "hash": "65dd16b007fd07c82dad929fa28df00dd0b1981d0ee83ec6b11066a38154f6e5",
+      "size": 3343
+    },
+    "verify_web_interface.py": {
+      "hash": "505bdc4a4b99b2253d9151dcc6b6705e13dbf9229f4cf0d505e7449c37f7da9d",
+      "size": 2316
+    },
+    "web_ui_connector.py": {
+      "hash": "cf5bd1eb37296d5cb711fab420db190423db5bf5133cf62adce6f2c62e95439b",
+      "size": 8310
+    },
+    "whatsapp_mock.py": {
+      "hash": "ca28939ee299cbed04382675c011df6be36fccf568c62980f698a4233ebb9530",
+      "size": 5339
+    }
+  },
+  "expected_features": {
+    "whatsapp_integration": true,
+    "cava_llm": true,
+    "registration_flow": true
+  }
+}

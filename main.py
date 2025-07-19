@@ -1,15 +1,38 @@
 #!/usr/bin/env python3
 """
-🚨 EMERGENCY CACHE-BUSTING FILE - New entry point to force AWS rebuild
-Emergency deployment fix: 2025-07-19 07:59 CEST
-CACHE_BUST_SIGNATURE: b7791d2_emergency_main_py
-Constitutional UI Fix: 2025-07-19 12:30 CEST
-Version: 3.1.1-main-py-fix
+🚨 BULLETPROOF DEPLOYMENT - Shared verification system
+Deployment fix: 2025-07-19 21:00 CEST
+CACHE_BUST_SIGNATURE: bulletproof_main_py
+Version: 3.2.5-bulletproof
+DEPLOYMENT_TIMESTAMP: 20250719210000
 """
 import os
 import sys
 import traceback
 from datetime import datetime
+import hashlib
+
+# Import shared deployment manager
+sys.path.append('../ava-olo-shared/shared')
+try:
+    from deployment_manager import DeploymentManager
+except ImportError:
+    # Fallback if shared folder not available
+    class DeploymentManager:
+        def __init__(self, service_name):
+            self.service_name = service_name
+        def generate_deployment_manifest(self, version):
+            return {"service": self.service_name, "version": version}
+        def verify_deployment(self):
+            return {"valid": False, "error": "Deployment manager not available"}
+
+# Service-specific deployment tracking
+SERVICE_NAME = "agricultural-core"
+DEPLOYMENT_TIMESTAMP = '20250719204116'  # Updated by deploy script
+BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
+VERSION = f"v3.2.5-bulletproof-{BUILD_ID}"
+
+deployment_manager = DeploymentManager(SERVICE_NAME)
 
 def emergency_log(message):
     """Emergency logging that goes to stdout (shows in AWS logs)"""
@@ -17,7 +40,8 @@ def emergency_log(message):
     print(f"🚨 EMERGENCY LOG {timestamp}: {message}", flush=True)
     sys.stdout.flush()
 
-emergency_log("=== CACHE-BUSTING MAIN.PY STARTUP ===")
+emergency_log(f"=== BULLETPROOF DEPLOYMENT STARTUP {VERSION} ===")
+emergency_log(f"Build ID: {BUILD_ID}")
 emergency_log(f"Python version: {sys.version}")
 emergency_log(f"Working directory: {os.getcwd()}")
 emergency_log("Attempting to import api_gateway_constitutional_ui...")

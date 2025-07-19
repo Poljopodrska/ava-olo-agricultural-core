@@ -1,14 +1,16 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.3.6-cava-direct-gpt4
+Version: 3.2.5-bulletproof
 Bulgarian Mango Farmer Compliant ✅
 Fixed: CAVA-powered registration - zero hardcoded steps
+With bulletproof deployment verification
 """
 import os
 import sys
 import traceback
 import json
+import hashlib
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
@@ -18,8 +20,27 @@ def emergency_log(message):
     print(f"🚨 CONSTITUTIONAL LOG {timestamp}: {message}", flush=True)
     sys.stdout.flush()
 
-# Version constant - update this for all pages
-VERSION = "3.3.6-cava-direct-gpt4"
+# Import shared deployment manager
+sys.path.append('../ava-olo-shared/shared')
+try:
+    from deployment_manager import DeploymentManager
+except ImportError:
+    # Fallback if shared folder not available
+    class DeploymentManager:
+        def __init__(self, service_name):
+            self.service_name = service_name
+        def generate_deployment_manifest(self, version):
+            return {"service": self.service_name, "version": version}
+        def verify_deployment(self):
+            return {"valid": False, "error": "Deployment manager not available"}
+
+# Service-specific deployment tracking
+SERVICE_NAME = "agricultural-core"
+DEPLOYMENT_TIMESTAMP = '20250719204116'  # Updated by deploy script
+BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
+VERSION = f"v3.2.5-bulletproof-{BUILD_ID}"
+
+deployment_manager = DeploymentManager(SERVICE_NAME)
 
 emergency_log("=== CONSTITUTIONAL UI STARTUP BEGINS ===")
 emergency_log(f"Python version: {sys.version}")
@@ -373,6 +394,64 @@ async def health_check():
             "mobile_responsive": True
         }
     }
+
+# Deployment verification endpoints
+@app.get("/api/deployment/verify")
+async def deployment_verify_endpoint():
+    verification = deployment_manager.verify_deployment()
+    return {
+        "service": SERVICE_NAME,
+        "deployment_valid": verification.get("valid", False),
+        "version": VERSION,
+        "build_id": BUILD_ID,
+        "details": verification
+    }
+
+@app.get("/api/deployment/health")
+async def deployment_health():
+    verification = deployment_manager.verify_deployment()
+    status_color = "green" if verification.get("valid") else "red"
+    
+    return HTMLResponse(f"""
+    <html>
+    <head>
+        <title>Deployment Health - {SERVICE_NAME}</title>
+        <style>
+            body {{
+                margin: 0;
+                padding: 40px;
+                font-family: Arial, sans-serif;
+                background: {status_color};
+                color: white;
+            }}
+            .status-box {{
+                background: rgba(255,255,255,0.2);
+                border-radius: 10px;
+                padding: 30px;
+                max-width: 800px;
+                margin: 0 auto;
+            }}
+            h1 {{ margin: 0 0 20px 0; }}
+            .metric {{ 
+                font-size: 24px; 
+                margin: 10px 0;
+                padding: 10px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 5px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="status-box">
+            <h1>🌾 Agricultural Core: {VERSION}</h1>
+            <div class="metric">Service: {SERVICE_NAME}</div>
+            <div class="metric">Build ID: {BUILD_ID}</div>
+            <div class="metric">Deployment Valid: {verification.get('valid', False)}</div>
+            <p>If background is GREEN, agricultural service deployed successfully!</p>
+        </div>
+    </body>
+    </html>
+    """)
 
 # Registration endpoint - Guided farmer registration flow
 @app.get("/register", response_class=HTMLResponse)
