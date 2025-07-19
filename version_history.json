@@ -1,8 +1,20 @@
 {
-    "current_version": "v2.1.11-performance-fix",
+    "current_version": "v2.2.0-performance-restore",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-07-19",
     "version_history": [
+        {
+            "version": "v2.2.0-performance-restore",
+            "date": "2025-07-19",
+            "changes": [
+                "Implemented SQLAlchemy connection pool (5-10 persistent connections)",
+                "Added GET /api/v1/database/schema endpoint for schema access",
+                "Added GET /api/v1/health/performance for monitoring query times",
+                "Connection recycling every 3600 seconds with health checks",
+                "Expected performance: <200ms queries, <1s dashboard loads",
+                "Graceful fallback when pool unavailable"
+            ]
+        },
         {
             "version": "v2.1.11-performance-fix",
             "date": "2025-07-19",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DEPLOYMENT TIMESTAMP: 1752937800 - v2.1.11-performance-fix VPC optimization
+# DEPLOYMENT TIMESTAMP: 1752938400 - v2.2.0-performance-restore SQLAlchemy pool
 # main.py - Safe Agricultural Dashboard with Optional LLM
 import uvicorn
 import os
@@ -19,6 +19,15 @@ from pydantic import BaseModel
 import sys
 import urllib.parse
 import time
+try:
+    from database_pool import (
+        init_connection_pool, get_db_session, get_db_connection as get_pool_connection,
+        get_dashboard_metrics as get_pool_metrics, get_database_schema, test_connection_pool
+    )
+    POOL_AVAILABLE = True
+except ImportError:
+    POOL_AVAILABLE = False
+    logger.warning("SQLAlchemy pool not available, using direct connections")
 
 # Version Management System
 def get_current_service_version():
@@ -52,7 +61,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # DEPLOYMENT VERIFICATION
-logger.info("🚀 DEPLOYMENT VERSION: v2.1.11-performance-fix - VPC-optimized connection and caching")
+logger.info("🚀 DEPLOYMENT VERSION: v2.2.0-performance-restore - SQLAlchemy connection pool and schema API")
 logger.info(f"Python version: {sys.version}")
 logger.info(f"JSON module available: {'json' in sys.modules}")
 
@@ -340,18 +349,23 @@ def get_constitutional_db_connection():
         password = os.getenv('DB_PASSWORD')
         port = int(os.getenv('DB_PORT', '5432'))
         
-        # VPC-optimized: Single fast connection attempt
-        start_time = time.time()
-        connection = psycopg2.connect(
-            host=host,
-            database=database,
-            user=user,
-            password=password,
-            port=port,
-            connect_timeout=2,  # 2 seconds for VPC
-            sslmode='require'
-        )
-        print(f"DEBUG: Connected in {(time.time() - start_time)*1000:.0f}ms")
+        # Use SQLAlchemy pool if available
+        if POOL_AVAILABLE:
+            connection = get_pool_connection().__enter__()
+            print("DEBUG: Using SQLAlchemy connection pool")
+        else:
+            # Fallback to direct connection
+            start_time = time.time()
+            connection = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+                port=port,
+                connect_timeout=2,  # 2 seconds for VPC
+                sslmode='require'
+            )
+            print(f"DEBUG: Direct connection in {(time.time() - start_time)*1000:.0f}ms")
         
         yield connection
         
@@ -361,8 +375,12 @@ def get_constitutional_db_connection():
     finally:
         if connection:
             try:
-                connection.close()
-                print("DEBUG: Connection closed")
+                if POOL_AVAILABLE:
+                    # Pool connections are managed by context manager
+                    pass
+                else:
+                    connection.close()
+                    print("DEBUG: Connection closed")
             except:
                 pass
 
@@ -3078,6 +3096,10 @@ async def agronomic_dashboard():
 @app.get("/test/performance")
 async def test_performance():
     """Test database performance"""
+    if POOL_AVAILABLE:
+        return test_connection_pool()
+    
+    # Fallback test for non-pool connections
     results = {}
     
     # Test 1: Simple query
@@ -3105,10 +3127,116 @@ async def test_performance():
     results["cache_active"] = bool(dashboard_cache['data'] and (time.time() - dashboard_cache['timestamp'] < 60))
     results["cache_age_seconds"] = int(time.time() - dashboard_cache['timestamp']) if dashboard_cache['timestamp'] else -1
     
-    results["version"] = "v2.1.11-performance-fix"
+    results["version"] = "v2.2.0-performance-restore"
     results["status"] = "fast" if results.get("simple_query_ms", 1000) < 200 else "slow"
+    results["pool_available"] = POOL_AVAILABLE
     
     return results
+
+# Database Schema API endpoint
+@app.get("/api/v1/database/schema")
+async def get_schema_api():
+    """Get database schema in JSON format"""
+    if POOL_AVAILABLE:
+        try:
+            schema = get_database_schema()
+            return {
+                "status": "success",
+                "tables": len(schema),
+                "schema": schema,
+                "timestamp": time.time()
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": time.time()
+            }
+    else:
+        # Fallback implementation
+        try:
+            with get_constitutional_db_connection() as conn:
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT table_name 
+                        FROM information_schema.tables 
+                        WHERE table_schema = 'public'
+                        ORDER BY table_name
+                    """)
+                    tables = [row[0] for row in cursor.fetchall()]
+                    cursor.close()
+                    
+                    return {
+                        "status": "success",
+                        "tables": len(tables),
+                        "table_list": tables,
+                        "message": "Full schema requires SQLAlchemy pool",
+                        "timestamp": time.time()
+                    }
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "timestamp": time.time()
+            }
+
+# Performance monitoring endpoint
+@app.get("/api/v1/health/performance")
+async def health_performance():
+    """Monitor query execution times and connection pool health"""
+    metrics = {
+        "timestamp": time.time(),
+        "version": "v2.2.0-performance-restore",
+        "pool_available": POOL_AVAILABLE
+    }
+    
+    if POOL_AVAILABLE:
+        # Use optimized pool metrics
+        try:
+            dashboard_data = get_pool_metrics()
+            metrics.update({
+                "status": "healthy",
+                "dashboard_query_ms": dashboard_data.get('query_time_ms', 0),
+                "total_farmers": dashboard_data.get('total_farmers', 0),
+                "total_fields": dashboard_data.get('total_fields', 0),
+                "total_hectares": dashboard_data.get('total_hectares', 0)
+            })
+        except Exception as e:
+            metrics["status"] = "degraded"
+            metrics["error"] = str(e)
+    else:
+        # Fallback performance check
+        start = time.time()
+        try:
+            with get_constitutional_db_connection() as conn:
+                if conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT COUNT(*) FROM farmers")
+                    count = cursor.fetchone()[0]
+                    cursor.close()
+                    
+                    metrics.update({
+                        "status": "healthy",
+                        "query_time_ms": int((time.time() - start) * 1000),
+                        "farmer_count": count
+                    })
+        except Exception as e:
+            metrics["status"] = "unhealthy"
+            metrics["error"] = str(e)
+    
+    # Add performance rating
+    query_time = metrics.get("dashboard_query_ms", metrics.get("query_time_ms", 1000))
+    if query_time < 200:
+        metrics["performance"] = "excellent"
+    elif query_time < 500:
+        metrics["performance"] = "good"
+    elif query_time < 1000:
+        metrics["performance"] = "acceptable"
+    else:
+        metrics["performance"] = "poor"
+    
+    return metrics
 
 # Legacy redirects
 @app.get("/business")
