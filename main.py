@@ -2073,7 +2073,7 @@ async def business_dashboard():
     return HTMLResponse(content=f"""
 <!-- DEBUG INFO:
 {chr(10).join(debug_info)}
--->""")
+-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -3365,8 +3365,8 @@ async def debug_database_test():
                 cursor.execute("SELECT COUNT(*) as count FROM farmers")
                 row = cursor.fetchone()
                 results["direct_farmers_count"] = row[0] if row else "No result"
-        else:
-            results["direct_error"] = "No connection"
+            else:
+                results["direct_error"] = "No connection"
     except Exception as e:
         results["direct_error"] = str(e)
     
