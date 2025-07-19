@@ -1,9 +1,9 @@
 """
 Constitutional UI-enabled API Gateway for AVA OLO Agricultural Core
 Implements Constitutional Principle #14: Design-First with farmer-centric UI
-Version: 3.1.1-main-py-fix
+Version: 3.2.0-dual-auth-landing
 Bulgarian Mango Farmer Compliant ✅
-Fixed: main.py entry point now correctly imports constitutional UI
+Dual Authentication Landing: Immediate start or WhatsApp sign-in paths
 """
 import os
 import sys
@@ -84,35 +84,222 @@ class QueryResponse(BaseModel):
     sources: List[str] = []
     constitutional_compliance: bool = True
 
-# Root endpoint - Constitutional Farmer Dashboard
+# Root endpoint - Dual Authentication Landing Page
 @app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    """Serve constitutional farmer dashboard with full UI"""
-    emergency_log("🏠 Root endpoint - serving constitutional UI")
+async def landing_page(request: Request):
+    """Landing page with dual authentication options"""
+    emergency_log("🏠 Landing page - dual authentication paths")
     
-    # Try template first
-    if templates:
-        try:
-            if os.path.exists("templates/web/farmer-dashboard.html"):
-                return templates.TemplateResponse(
-                    "web/farmer-dashboard.html",
-                    {
-                        "request": request,
-                        "weather_data": {"current_temp": "22", "condition": "Sunny"},
-                        "farmer_data": {"id": 1, "name": "Bulgarian Mango Farmer"},
-                        "recent_activities": []
-                    }
-                )
-            elif os.path.exists("templates/main_dashboard.html"):
-                return templates.TemplateResponse(
-                    "main_dashboard.html",
-                    {"request": request}
-                )
-        except Exception as e:
-            emergency_log(f"Template error: {e}")
-    
-    # Constitutional fallback UI
-    return HTMLResponse(content=CONSTITUTIONAL_UI_TEMPLATE, status_code=200)
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Agricultural Intelligence Platform</title>
+        <style>
+            :root {
+                --primary-brown: #8B4513;
+                --olive-green: #6B8E23;
+                --earth-brown: #5C4033;
+                --cream: #F5F3F0;
+                --white: #FFFFFF;
+                --text-dark: #2C2C2C;
+            }
+            
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                background: linear-gradient(135deg, var(--primary-brown), var(--olive-green));
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                line-height: 1.6;
+            }
+            
+            .landing-container {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                max-width: 600px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                text-align: center;
+            }
+            
+            .logo-section {
+                margin-bottom: 32px;
+            }
+            
+            .atomic-logo {
+                width: 80px;
+                height: 80px;
+                margin: 0 auto 16px;
+                position: relative;
+            }
+            
+            .electron {
+                position: absolute;
+                width: 80px;
+                height: 30px;
+                border: 3px solid var(--olive-green);
+                border-radius: 50%;
+                animation: rotate 3s linear infinite;
+            }
+            
+            .electron1 { transform: rotateZ(0deg); }
+            .electron2 { transform: rotateZ(60deg); animation-delay: -1s; }
+            .electron3 { transform: rotateZ(120deg); animation-delay: -2s; }
+            
+            @keyframes rotate {
+                100% { transform: rotateZ(360deg); }
+            }
+            
+            .brand-name {
+                font-size: 48px;
+                font-weight: bold;
+                color: var(--primary-brown);
+                margin-bottom: 8px;
+            }
+            
+            .tagline {
+                font-size: 20px;
+                color: var(--olive-green);
+                margin-bottom: 48px;
+            }
+            
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                margin-bottom: 32px;
+            }
+            
+            .btn {
+                display: inline-block;
+                padding: 20px 40px;
+                font-size: 20px;
+                font-weight: 600;
+                text-decoration: none;
+                border-radius: 10px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                border: none;
+                min-height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }
+            
+            .btn-primary {
+                background: var(--olive-green);
+                color: var(--white);
+            }
+            
+            .btn-primary:hover {
+                background: #5A7A1C;
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(107, 142, 35, 0.3);
+            }
+            
+            .btn-secondary {
+                background: var(--white);
+                color: var(--olive-green);
+                border: 3px solid var(--olive-green);
+            }
+            
+            .btn-secondary:hover {
+                background: var(--cream);
+                border-color: #5A7A1C;
+                color: #5A7A1C;
+            }
+            
+            .btn-icon {
+                font-size: 24px;
+            }
+            
+            .divider {
+                text-align: center;
+                color: #999;
+                font-size: 16px;
+                margin: 20px 0;
+                position: relative;
+            }
+            
+            .divider::before,
+            .divider::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                width: 40%;
+                height: 1px;
+                background: #DDD;
+            }
+            
+            .divider::before { left: 0; }
+            .divider::after { right: 0; }
+            
+            .footer-text {
+                font-size: 14px;
+                color: #666;
+                margin-top: 24px;
+            }
+            
+            .version-display {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                color: #666;
+                font-size: 14px;
+                z-index: 1000;
+            }
+            
+            @media (max-width: 600px) {
+                .landing-container { padding: 32px 24px; }
+                .brand-name { font-size: 36px; }
+                .tagline { font-size: 18px; }
+                .btn { font-size: 18px; padding: 16px 32px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="version-display">v3.2.0</div>
+        <div class="landing-container">
+            <div class="logo-section">
+                <div class="atomic-logo">
+                    <div class="electron electron1"></div>
+                    <div class="electron electron2"></div>
+                    <div class="electron electron3"></div>
+                </div>
+                <h1 class="brand-name">AVA OLO</h1>
+                <p class="tagline">Your Agricultural Intelligence Assistant</p>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="window.location.href='/start'">
+                    <span class="btn-icon">🌱</span>
+                    <span>Start Working with Ava Olo</span>
+                </button>
+                
+                <div class="divider">or</div>
+                
+                <button class="btn btn-secondary" onclick="window.location.href='/login'">
+                    <span class="btn-icon">🔐</span>
+                    <span>Sign In</span>
+                </button>
+            </div>
+            
+            <p class="footer-text">
+                Supporting farmers worldwide with AI-powered agricultural insights
+            </p>
+        </div>
+    </body>
+    </html>
+    """, status_code=200)
 
 # Health endpoint with UI info
 @app.get("/health")
@@ -121,7 +308,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "ava-olo-agricultural-core-constitutional-ui",
-        "version": "3.1.1-main-py-fix",
+        "version": "3.2.0-dual-auth-landing",
         "message": "Constitutional UI serving Bulgarian mango farmers",
         "timestamp": datetime.now().isoformat(),
         "ui_status": "operational",
@@ -134,6 +321,604 @@ async def health_check():
             "mobile_responsive": True
         }
     }
+
+# Start endpoint - Immediate conversation interface
+@app.get("/start", response_class=HTMLResponse)
+async def start_conversation(request: Request):
+    """Immediate start conversation window"""
+    emergency_log("🌱 Start conversation - immediate path")
+    
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Agricultural Assistant</title>
+        <style>
+            :root {
+                --primary-brown: #8B4513;
+                --olive-green: #6B8E23;
+                --earth-brown: #5C4033;
+                --cream: #F5F3F0;
+                --white: #FFFFFF;
+                --text-dark: #2C2C2C;
+                --light-gray: #E8E8E6;
+            }
+            
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                background: var(--cream);
+                color: var(--text-dark);
+                font-size: 18px;
+                line-height: 1.6;
+                min-height: 100vh;
+            }
+            
+            .chat-container {
+                max-width: 800px;
+                margin: 0 auto;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .chat-header {
+                background: linear-gradient(135deg, var(--primary-brown), var(--olive-green));
+                color: var(--white);
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .back-btn {
+                color: var(--white);
+                text-decoration: none;
+                font-size: 24px;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.1);
+                transition: background 0.3s;
+            }
+            
+            .back-btn:hover {
+                background: rgba(255,255,255,0.2);
+            }
+            
+            .chat-title {
+                font-size: 24px;
+                font-weight: bold;
+            }
+            
+            .chat-messages {
+                flex: 1;
+                overflow-y: auto;
+                padding: 20px;
+                background: var(--white);
+            }
+            
+            .message {
+                margin-bottom: 20px;
+                display: flex;
+                gap: 12px;
+            }
+            
+            .message-avatar {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+            
+            .message-ava .message-avatar {
+                background: var(--olive-green);
+                color: var(--white);
+            }
+            
+            .message-user .message-avatar {
+                background: var(--light-gray);
+            }
+            
+            .message-content {
+                flex: 1;
+            }
+            
+            .message-name {
+                font-weight: bold;
+                margin-bottom: 4px;
+                color: var(--earth-brown);
+            }
+            
+            .message-text {
+                background: var(--light-gray);
+                padding: 12px 16px;
+                border-radius: 12px;
+                white-space: pre-wrap;
+            }
+            
+            .message-ava .message-text {
+                background: #E8F5E8;
+            }
+            
+            .chat-input-container {
+                background: var(--white);
+                border-top: 2px solid var(--light-gray);
+                padding: 20px;
+            }
+            
+            .chat-input-wrapper {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .chat-input {
+                flex: 1;
+                padding: 16px;
+                font-size: 18px;
+                border: 2px solid var(--light-gray);
+                border-radius: 8px;
+                resize: none;
+                font-family: inherit;
+                line-height: 1.4;
+            }
+            
+            .chat-input:focus {
+                outline: none;
+                border-color: var(--olive-green);
+            }
+            
+            .send-btn {
+                background: var(--olive-green);
+                color: var(--white);
+                border: none;
+                padding: 16px 32px;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            
+            .send-btn:hover {
+                background: #5A7A1C;
+            }
+            
+            .send-btn:disabled {
+                background: #CCC;
+                cursor: not-allowed;
+            }
+            
+            .typing-indicator {
+                display: none;
+                padding: 10px 0;
+                color: #666;
+                font-style: italic;
+            }
+            
+            .version-display {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                color: #666;
+                font-size: 14px;
+                z-index: 1000;
+            }
+            
+            @media (max-width: 600px) {
+                .chat-header { padding: 16px; }
+                .chat-title { font-size: 20px; }
+                .chat-messages { padding: 16px; }
+                .chat-input { font-size: 16px; padding: 12px; }
+                .send-btn { padding: 12px 24px; font-size: 16px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="version-display">v3.2.0</div>
+        <div class="chat-container">
+            <div class="chat-header">
+                <a href="/" class="back-btn">←</a>
+                <h1 class="chat-title">AVA OLO - Agricultural Assistant</h1>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message message-ava">
+                    <div class="message-avatar">🌾</div>
+                    <div class="message-content">
+                        <div class="message-name">Ava Olo</div>
+                        <div class="message-text">Hello! I'm Ava Olo, your agricultural assistant. What crop questions do you have today? I can help with planting advice, pest management, weather insights, and more.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">Ava Olo is typing...</div>
+            
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask me about your crops..."
+                        rows="1"
+                        onkeypress="handleEnterKey(event)"
+                    ></textarea>
+                    <button id="sendBtn" class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            function handleEnterKey(event) {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            }
+            
+            function autoResizeTextarea() {
+                const textarea = document.getElementById('chatInput');
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            }
+            
+            document.getElementById('chatInput').addEventListener('input', autoResizeTextarea);
+            
+            function addMessage(text, isUser = false) {
+                const messagesDiv = document.getElementById('chatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${isUser ? 'message-user' : 'message-ava'}`;
+                
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">${isUser ? '👨‍🌾' : '🌾'}</div>
+                    <div class="message-content">
+                        <div class="message-name">${isUser ? 'You' : 'Ava Olo'}</div>
+                        <div class="message-text">${text}</div>
+                    </div>
+                `;
+                
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+            
+            async function sendMessage() {
+                const input = document.getElementById('chatInput');
+                const sendBtn = document.getElementById('sendBtn');
+                const typingIndicator = document.getElementById('typingIndicator');
+                const message = input.value.trim();
+                
+                if (!message) return;
+                
+                // Add user message
+                addMessage(message, true);
+                
+                // Clear input and disable
+                input.value = '';
+                input.style.height = 'auto';
+                input.disabled = true;
+                sendBtn.disabled = true;
+                typingIndicator.style.display = 'block';
+                
+                try {
+                    const response = await fetch('/api/v1/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            query: message,
+                            farmer_id: null  // Anonymous user
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.answer) {
+                        addMessage(data.answer);
+                    } else {
+                        addMessage('I apologize, but I encountered an issue processing your question. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('I apologize, but I\'m having trouble connecting. Please check your internet connection and try again.');
+                } finally {
+                    input.disabled = false;
+                    sendBtn.disabled = false;
+                    typingIndicator.style.display = 'none';
+                    input.focus();
+                }
+            }
+            
+            // Focus on input when page loads
+            document.getElementById('chatInput').focus();
+        </script>
+    </body>
+    </html>
+    """, status_code=200)
+
+# Login endpoint
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Login page for existing users with WhatsApp authentication"""
+    emergency_log("🔐 Login page - WhatsApp authentication")
+    
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>AVA OLO - Sign In</title>
+        <style>
+            :root {
+                --primary-brown: #8B4513;
+                --olive-green: #6B8E23;
+                --earth-brown: #5C4033;
+                --cream: #F5F3F0;
+                --white: #FFFFFF;
+                --text-dark: #2C2C2C;
+                --light-gray: #E8E8E6;
+                --error-red: #D32F2F;
+                --success-green: #388E3C;
+            }
+            
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                background: linear-gradient(135deg, var(--primary-brown), var(--olive-green));
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+            }
+            
+            .login-container {
+                background: var(--white);
+                border-radius: 20px;
+                padding: 48px;
+                max-width: 450px;
+                width: 90%;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            }
+            
+            .login-header {
+                text-align: center;
+                margin-bottom: 32px;
+            }
+            
+            .login-title {
+                font-size: 32px;
+                color: var(--primary-brown);
+                margin-bottom: 8px;
+            }
+            
+            .login-subtitle {
+                color: var(--olive-green);
+                font-size: 18px;
+            }
+            
+            .form-group {
+                margin-bottom: 24px;
+            }
+            
+            .form-label {
+                display: block;
+                margin-bottom: 8px;
+                color: var(--earth-brown);
+                font-weight: 600;
+            }
+            
+            .form-input {
+                width: 100%;
+                padding: 16px;
+                font-size: 18px;
+                border: 2px solid var(--light-gray);
+                border-radius: 8px;
+                transition: border-color 0.3s;
+            }
+            
+            .form-input:focus {
+                outline: none;
+                border-color: var(--olive-green);
+            }
+            
+            .whatsapp-hint {
+                font-size: 14px;
+                color: #666;
+                margin-top: 4px;
+            }
+            
+            .login-btn {
+                width: 100%;
+                background: var(--olive-green);
+                color: var(--white);
+                border: none;
+                padding: 16px;
+                font-size: 20px;
+                font-weight: bold;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            
+            .login-btn:hover {
+                background: #5A7A1C;
+            }
+            
+            .login-btn:disabled {
+                background: #CCC;
+                cursor: not-allowed;
+            }
+            
+            .message {
+                margin-top: 16px;
+                padding: 12px;
+                border-radius: 8px;
+                text-align: center;
+                display: none;
+            }
+            
+            .error-message {
+                background: #FFEBEE;
+                color: var(--error-red);
+                border: 1px solid #FFCDD2;
+            }
+            
+            .success-message {
+                background: #E8F5E9;
+                color: var(--success-green);
+                border: 1px solid #C8E6C9;
+            }
+            
+            .footer-links {
+                text-align: center;
+                margin-top: 24px;
+                font-size: 16px;
+            }
+            
+            .footer-links a {
+                color: var(--olive-green);
+                text-decoration: none;
+            }
+            
+            .footer-links a:hover {
+                text-decoration: underline;
+            }
+            
+            .version-display {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                color: #666;
+                font-size: 14px;
+                z-index: 1000;
+            }
+            
+            @media (max-width: 600px) {
+                .login-container { padding: 32px 24px; }
+                .login-title { font-size: 28px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="version-display">v3.2.0</div>
+        <div class="login-container">
+            <div class="login-header">
+                <h1 class="login-title">Welcome Back</h1>
+                <p class="login-subtitle">Sign in to access your farm dashboard</p>
+            </div>
+            
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="username">WhatsApp Number</label>
+                    <input 
+                        type="tel" 
+                        id="username" 
+                        class="form-input" 
+                        placeholder="+359 123 456 789"
+                        required
+                        onkeypress="handleEnterKey(event)"
+                    >
+                    <p class="whatsapp-hint">Enter your WhatsApp number with country code</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        class="form-input" 
+                        placeholder="Enter your password"
+                        required
+                        onkeypress="handleEnterKey(event)"
+                    >
+                </div>
+                
+                <button type="submit" id="loginBtn" class="login-btn">Sign In</button>
+            </form>
+            
+            <div id="errorMessage" class="message error-message"></div>
+            <div id="successMessage" class="message success-message"></div>
+            
+            <div class="footer-links">
+                <a href="/">← Back to Home</a>
+                &nbsp;&nbsp;|&nbsp;&nbsp;
+                <a href="/start">Use without signing in</a>
+            </div>
+        </div>
+        
+        <script>
+            function handleEnterKey(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    document.getElementById('loginBtn').click();
+                }
+            }
+            
+            async function handleLogin(event) {
+                event.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const loginBtn = document.getElementById('loginBtn');
+                const errorDiv = document.getElementById('errorMessage');
+                const successDiv = document.getElementById('successMessage');
+                
+                // Hide messages
+                errorDiv.style.display = 'none';
+                successDiv.style.display = 'none';
+                
+                // Disable button
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'Signing in...';
+                
+                try {
+                    // For now, simulate authentication
+                    // In production, this would call the actual auth endpoint
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Simulated success
+                    successDiv.textContent = 'Login successful! Redirecting to dashboard...';
+                    successDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1500);
+                    
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorDiv.textContent = 'Invalid credentials. Please try again.';
+                    errorDiv.style.display = 'block';
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Sign In';
+                }
+            }
+        </script>
+    </body>
+    </html>
+    """, status_code=200)
+
+# Dashboard endpoint (placeholder for authenticated users)
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    """Dashboard for authenticated users"""
+    emergency_log("📊 Dashboard - authenticated user area")
+    
+    # In production, this would check authentication and load user data
+    # For now, redirect to the constitutional UI template
+    return HTMLResponse(content=CONSTITUTIONAL_UI_TEMPLATE, status_code=200)
 
 # Query endpoint for form submissions
 @app.post("/web/query", response_class=HTMLResponse)
