@@ -2070,10 +2070,17 @@ async def business_dashboard():
         logger.error(f"Dashboard error with trace: {traceback.format_exc()}")
         # Continue with default values
     
-    # Generate HTML with constitutional design and debug info
-    debug_html = ""
-    if metrics['total_farmers'] == '--':
-        debug_html = f'<div style="color:red;font-size:12px;padding:10px;background:#ffe6e6;margin:10px;border-radius:5px;"><strong>DEBUG INFO:</strong><br>{"<br>".join(debug_info)}</div>'
+    # Generate HTML with constitutional design and VISIBLE debug info
+    debug_html = f'''<div style="background:yellow;color:black;font-size:14px;padding:15px;margin:10px;border:2px solid orange;border-radius:5px;">
+        <h3>🔍 DEBUG INFO - v2.2.3-verification-fix</h3>
+        <p><strong>Timestamp:</strong> {datetime.now()}</p>
+        <p><strong>Database Status:</strong> {"✓ Connected" if POOL_AVAILABLE else "✗ Disconnected"}</p>
+        <p><strong>Farmers Retrieved:</strong> {metrics.get("total_farmers", "ERROR")}</p>
+        <p><strong>Hectares Retrieved:</strong> {metrics.get("total_hectares", "ERROR")}</p>
+        <p><strong>Fields Retrieved:</strong> {metrics.get("total_fields", "ERROR")}</p>
+        <p><strong>Query Details:</strong></p>
+        <ul>{"".join([f"<li>{info}</li>" for info in debug_info])}</ul>
+    </div>'''
     
     return HTMLResponse(content=f"""
 <!-- DEBUG INFO:
@@ -3324,8 +3331,8 @@ import hashlib
 from datetime import timezone
 from sqlalchemy import text
 
-# Add deployment marker
-DEPLOYMENT_MARKER = "2.2.2-data-display-fix-FULL-DEPLOYMENT"
+# Add deployment marker - v2.2.3
+DEPLOYMENT_MARKER = "2.2.3-verification-fix-VISIBLE-DEBUG"
 try:
     FILE_HASH = hashlib.md5(open(__file__, 'rb').read()).hexdigest()
 except:
@@ -3392,6 +3399,66 @@ async def debug_file_info():
         "version": get_current_service_version(),
         "file_size": os.path.getsize(__file__),
         "last_modified": datetime.fromtimestamp(os.path.getmtime(__file__)).isoformat()
+    }
+
+@app.get("/api/v1/test-data-flow")
+async def test_data_flow():
+    """Test complete data flow from DB to display - v2.2.3-verification-fix"""
+    steps = []
+    
+    # Step 1: Environment
+    steps.append({
+        "step": "Environment Check",
+        "db_host": os.getenv('DB_HOST', 'NOT_SET'),
+        "version": get_current_service_version(),
+        "pool_available": POOL_AVAILABLE
+    })
+    
+    # Step 2: Database connection test
+    try:
+        if POOL_AVAILABLE:
+            pool_metrics = get_pool_metrics()
+            steps.append({
+                "step": "Pool Connection", 
+                "status": "SUCCESS",
+                "data": pool_metrics
+            })
+        else:
+            steps.append({"step": "Pool Connection", "status": "UNAVAILABLE"})
+    except Exception as e:
+        steps.append({"step": "Pool Connection", "status": "FAILED", "error": str(e)})
+    
+    # Step 3: Direct query test
+    try:
+        with get_constitutional_db_connection() as conn:
+            if conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM farmers")
+                farmer_count = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COUNT(*) FROM fields")
+                field_count = cursor.fetchone()[0]
+                
+                cursor.execute("SELECT COALESCE(SUM(size_hectares), 0) FROM fields")
+                hectares = cursor.fetchone()[0]
+                
+                steps.append({
+                    "step": "Direct DB Query",
+                    "status": "SUCCESS", 
+                    "farmers": farmer_count,
+                    "fields": field_count,
+                    "hectares": float(hectares) if hectares else 0
+                })
+            else:
+                steps.append({"step": "Direct DB Query", "status": "NO_CONNECTION"})
+    except Exception as e:
+        steps.append({"step": "Direct DB Query", "status": "FAILED", "error": str(e)})
+    
+    return {
+        "test_timestamp": datetime.now().isoformat(),
+        "version": "v2.2.3-verification-fix",
+        "complete": True, 
+        "steps": steps
     }
 
 # Database test endpoint
