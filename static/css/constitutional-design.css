@@ -1,0 +1,322 @@
+/* 
+ * AVA OLO Constitutional Design System
+ * Ensures compliance with constitutional principles
+ * MANGO RULE compliant - works for Bulgarian mango farmers
+ */
+
+:root {
+  /* Constitutional Brown/Olive Theme */
+  --const-brown-primary: #8B6F47;
+  --const-brown-dark: #6B5637;
+  --const-brown-light: #A58B6F;
+  --const-olive-primary: #6B8E23;
+  --const-olive-dark: #556B2F;
+  --const-olive-light: #8FBC8F;
+  
+  /* Farmer-friendly Earth Tones */
+  --const-earth-brown: #964B00;
+  --const-earth-tan: #D2B48C;
+  --const-earth-green: #228B22;
+  --const-soil-dark: #3E2723;
+  
+  /* Constitutional Text Sizes (min 18px) */
+  --const-text-min: 18px;
+  --const-text-base: 20px;
+  --const-text-lg: 24px;
+  --const-text-xl: 28px;
+  --const-text-2xl: 32px;
+  
+  /* Accessible Spacing */
+  --const-spacing-sm: 12px;
+  --const-spacing-md: 20px;
+  --const-spacing-lg: 32px;
+  --const-spacing-xl: 48px;
+  
+  /* Constitutional Shadows */
+  --const-shadow-sm: 0 2px 4px rgba(139, 111, 71, 0.1);
+  --const-shadow-md: 0 4px 8px rgba(139, 111, 71, 0.15);
+  --const-shadow-lg: 0 8px 16px rgba(139, 111, 71, 0.2);
+}
+
+/* Base Constitutional Styles */
+.const-page {
+  background: linear-gradient(135deg, var(--const-earth-tan) 0%, var(--const-olive-light) 100%);
+  min-height: 100vh;
+  font-size: var(--const-text-base);
+  color: var(--const-soil-dark);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Constitutional Navigation */
+.const-nav {
+  background: var(--const-brown-primary);
+  padding: var(--const-spacing-md);
+  box-shadow: var(--const-shadow-md);
+}
+
+.const-nav-back {
+  background: var(--const-olive-primary);
+  color: white;
+  border: none;
+  padding: var(--const-spacing-sm) var(--const-spacing-md);
+  font-size: var(--const-text-min);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.const-nav-back:hover {
+  background: var(--const-olive-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--const-shadow-md);
+}
+
+.const-nav-back:focus {
+  outline: 3px solid var(--const-olive-light);
+  outline-offset: 2px;
+}
+
+/* Constitutional Container */
+.const-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--const-spacing-lg);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  box-shadow: var(--const-shadow-lg);
+  margin-top: var(--const-spacing-lg);
+}
+
+/* Constitutional Typography */
+.const-h1 {
+  color: var(--const-brown-dark);
+  font-size: var(--const-text-2xl);
+  font-weight: 700;
+  margin-bottom: var(--const-spacing-md);
+  line-height: 1.3;
+}
+
+.const-h2 {
+  color: var(--const-olive-dark);
+  font-size: var(--const-text-xl);
+  font-weight: 600;
+  margin-bottom: var(--const-spacing-md);
+  margin-top: var(--const-spacing-lg);
+}
+
+.const-h3 {
+  color: var(--const-brown-primary);
+  font-size: var(--const-text-lg);
+  font-weight: 600;
+  margin-bottom: var(--const-spacing-sm);
+}
+
+.const-text {
+  font-size: var(--const-text-base);
+  line-height: 1.6;
+  color: var(--const-soil-dark);
+}
+
+/* Constitutional Buttons */
+.const-btn {
+  font-size: var(--const-text-min);
+  padding: var(--const-spacing-sm) var(--const-spacing-md);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.const-btn-primary {
+  background: var(--const-olive-primary);
+  color: white;
+}
+
+.const-btn-primary:hover {
+  background: var(--const-olive-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--const-shadow-md);
+}
+
+.const-btn-secondary {
+  background: var(--const-brown-primary);
+  color: white;
+}
+
+.const-btn-secondary:hover {
+  background: var(--const-brown-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--const-shadow-md);
+}
+
+/* Constitutional Forms */
+.const-form-group {
+  margin-bottom: var(--const-spacing-md);
+}
+
+.const-label {
+  display: block;
+  font-size: var(--const-text-min);
+  font-weight: 600;
+  color: var(--const-brown-dark);
+  margin-bottom: 8px;
+}
+
+.const-input,
+.const-select,
+.const-textarea {
+  width: 100%;
+  font-size: var(--const-text-min);
+  padding: var(--const-spacing-sm);
+  border: 2px solid var(--const-brown-light);
+  border-radius: 8px;
+  background: white;
+  transition: border-color 0.3s ease;
+  min-height: 48px;
+}
+
+.const-input:focus,
+.const-select:focus,
+.const-textarea:focus {
+  outline: none;
+  border-color: var(--const-olive-primary);
+  box-shadow: 0 0 0 3px rgba(107, 142, 35, 0.1);
+}
+
+/* Constitutional Cards */
+.const-card {
+  background: white;
+  border-radius: 12px;
+  padding: var(--const-spacing-md);
+  box-shadow: var(--const-shadow-sm);
+  border: 1px solid var(--const-brown-light);
+  margin-bottom: var(--const-spacing-md);
+  transition: all 0.3s ease;
+}
+
+.const-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--const-shadow-md);
+}
+
+/* Constitutional Tables */
+.const-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--const-text-min);
+}
+
+.const-table th {
+  background: var(--const-brown-primary);
+  color: white;
+  padding: var(--const-spacing-sm);
+  text-align: left;
+  font-weight: 600;
+}
+
+.const-table td {
+  padding: var(--const-spacing-sm);
+  border-bottom: 1px solid var(--const-brown-light);
+}
+
+.const-table tr:hover {
+  background: rgba(139, 111, 71, 0.05);
+}
+
+/* Constitutional Pagination */
+.const-pagination {
+  display: flex;
+  gap: var(--const-spacing-sm);
+  align-items: center;
+  margin-top: var(--const-spacing-lg);
+  flex-wrap: wrap;
+}
+
+.const-pagination-info {
+  font-size: var(--const-text-min);
+  color: var(--const-brown-dark);
+  margin-right: auto;
+}
+
+.const-pagination-select {
+  font-size: var(--const-text-min);
+  padding: 8px 12px;
+  border: 2px solid var(--const-brown-light);
+  border-radius: 6px;
+  background: white;
+}
+
+/* Constitutional Status Colors */
+.const-success {
+  color: var(--const-earth-green);
+}
+
+.const-warning {
+  color: var(--const-earth-brown);
+}
+
+.const-error {
+  color: #8B0000;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .const-container {
+    padding: var(--const-spacing-md);
+    margin: var(--const-spacing-sm);
+  }
+  
+  .const-h1 {
+    font-size: var(--const-text-xl);
+  }
+  
+  .const-h2 {
+    font-size: var(--const-text-lg);
+  }
+  
+  .const-pagination {
+    justify-content: center;
+  }
+  
+  .const-pagination-info {
+    width: 100%;
+    text-align: center;
+    margin-bottom: var(--const-spacing-sm);
+  }
+}
+
+/* Accessibility */
+.const-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+  outline: 3px solid var(--const-olive-primary);
+  outline-offset: 2px;
+}
+
+/* Farmer-friendly Icons */
+.const-icon {
+  width: 24px;
+  height: 24px;
+  display: inline-block;
+  vertical-align: middle;
+}

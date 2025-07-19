@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AVA OLO - Constitutional Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="const-page">
+    <!-- Constitutional Navigation -->
+    <nav class="const-nav">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+            {% if show_back_button %}
+            <button class="const-nav-back" onclick="navigateBack()" onkeypress="if(event.key==='Enter') navigateBack()">
+                <svg class="const-icon" fill="white" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd"/>
+                </svg>
+                Back
+            </button>
+            {% endif %}
+            
+            <div style="flex: 1; text-align: center;">
+                <h1 style="color: white; font-size: var(--const-text-xl); margin: 0;">
+                    🌾 AVA OLO Agricultural Management
+                </h1>
+            </div>
+            
+            <div style="color: white; font-size: var(--const-text-min);">
+                {% if current_user %}
+                    👨‍🌾 {{ current_user }}
+                {% else %}
+                    🥭 MANGO Ready
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer style="text-align: center; padding: var(--const-spacing-lg); color: var(--const-brown-dark);">
+        <p class="const-text">Constitutional Compliance: ✅ | Bulgarian Mango Farmer Approved 🥭</p>
+    </footer>
+    
+    <script>
+        // Navigation hierarchy logic
+        function navigateBack() {
+            const currentPath = window.location.pathname;
+            
+            // Navigation hierarchy mapping
+            const navigationHierarchy = {
+                // Sub-pages -> Dashboard
+                '/database-explorer': '/ui-dashboard',
+                '/agronomic-dashboard': '/ui-dashboard',
+                '/business-dashboard': '/ui-dashboard',
+                '/health-dashboard': '/ui-dashboard',
+                '/farmer-registration': '/ui-dashboard',
+                '/field-drawing-test': '/ui-dashboard',
+                '/register-fields': '/ui-dashboard',
+                '/register-task': '/ui-dashboard',
+                '/register-machinery': '/ui-dashboard',
+                
+                // Dashboards -> Landing
+                '/ui-dashboard': '/',
+                '/database-dashboard': '/',
+                
+                // Default -> Landing
+                'default': '/'
+            };
+            
+            // Find matching navigation rule
+            let destination = navigationHierarchy[currentPath];
+            
+            // If no exact match, check if it's a sub-route
+            if (!destination) {
+                // Check if current path starts with any known sub-routes
+                for (const [path, target] of Object.entries(navigationHierarchy)) {
+                    if (currentPath.startsWith(path) && path !== 'default') {
+                        destination = target;
+                        break;
+                    }
+                }
+            }
+            
+            // Default to landing page
+            if (!destination) {
+                destination = navigationHierarchy['default'];
+            }
+            
+            window.location.href = destination;
+        }
+        
+        // Enable Enter key on all interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add Enter key support to all buttons
+            const buttons = document.querySelectorAll('button, .const-btn');
+            buttons.forEach(button => {
+                if (!button.hasAttribute('onkeypress')) {
+                    button.setAttribute('onkeypress', 'if(event.key==="Enter") this.click()');
+                }
+            });
+            
+            // Add Enter key support to all links styled as buttons
+            const linkButtons = document.querySelectorAll('a.const-btn');
+            linkButtons.forEach(link => {
+                link.setAttribute('role', 'button');
+                link.setAttribute('tabindex', '0');
+                link.setAttribute('onkeypress', 'if(event.key==="Enter") window.location.href=this.href');
+            });
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

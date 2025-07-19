@@ -1,0 +1,377 @@
+{% extends "base_constitutional.html" %}
+
+{% block title %}Register Machinery - AVA OLO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .machinery-form {
+        background: white;
+        padding: var(--const-spacing-lg);
+        border-radius: 12px;
+        margin-bottom: var(--const-spacing-lg);
+        box-shadow: var(--const-shadow-md);
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--const-spacing-md);
+    }
+    
+    .loading-message {
+        text-align: center;
+        padding: var(--const-spacing-xl);
+        color: var(--const-brown-dark);
+    }
+    
+    .schema-info {
+        background: rgba(107, 142, 35, 0.05);
+        padding: var(--const-spacing-md);
+        border-radius: 8px;
+        margin-bottom: var(--const-spacing-md);
+    }
+    
+    .required-field::after {
+        content: " *";
+        color: var(--const-danger);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="const-container">
+    <h1 class="const-h1">🚜 Register New Machinery</h1>
+    <p class="const-text">Add agricultural machinery and equipment to your inventory</p>
+    
+    <div id="loading" class="loading-message">
+        <p class="const-text">⏳ Loading machinery form...</p>
+    </div>
+    
+    <div id="schema-error" class="const-card" style="display: none; background: rgba(220, 38, 38, 0.1);">
+        <h3 class="const-h3">❌ Error Loading Form</h3>
+        <p class="const-text" id="error-message"></p>
+    </div>
+    
+    <form id="machinery-form" class="machinery-form" style="display: none;" onsubmit="saveMachinery(event)">
+        <div class="schema-info">
+            <p class="const-text">
+                <strong>ℹ️ Note:</strong> This form is dynamically generated based on your database schema.
+                Fields marked with * are required.
+            </p>
+        </div>
+        
+        <!-- Farmer Selection -->
+        <div class="const-form-group">
+            <label class="const-label required-field" for="farmer-select">Owner/Farmer</label>
+            <select id="farmer-select" class="const-select" required>
+                <option value="">-- Select farmer/owner --</option>
+            </select>
+        </div>
+        
+        <!-- Dynamic form fields will be inserted here -->
+        <div id="dynamic-fields" class="form-grid">
+            <!-- Fields generated from database schema -->
+        </div>
+        
+        <div style="margin-top: var(--const-spacing-lg);">
+            <button type="submit" class="const-btn const-btn-primary">
+                💾 Save Machinery
+            </button>
+            <button type="button" class="const-btn const-btn-secondary" onclick="clearForm()">
+                🗑️ Clear Form
+            </button>
+        </div>
+    </form>
+    
+    <!-- Success Message -->
+    <div id="success-message" class="success-message" style="display: none;">
+        <h3 class="const-h3">✅ Machinery Registered Successfully!</h3>
+        <p class="const-text" id="success-details"></p>
+        <button class="const-btn const-btn-primary" onclick="registerAnother()">
+            Register Another Machine
+        </button>
+    </div>
+</div>
+
+<script>
+// State management
+let machinerySchema = null;
+let farmers = [];
+
+// Field type mappings
+const fieldTypeMapping = {
+    'character varying': 'text',
+    'varchar': 'text',
+    'text': 'textarea',
+    'integer': 'number',
+    'bigint': 'number',
+    'numeric': 'number',
+    'decimal': 'number',
+    'boolean': 'checkbox',
+    'date': 'date',
+    'timestamp': 'datetime-local',
+    'timestamp without time zone': 'datetime-local',
+    'timestamp with time zone': 'datetime-local'
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadFarmers();
+    await loadMachinerySchema();
+});
+
+// Load farmers
+async function loadFarmers() {
+    try {
+        const response = await fetch('/api/farmers');
+        const data = await response.json();
+        
+        if (data.success && data.farmers) {
+            farmers = data.farmers;
+            const select = document.getElementById('farmer-select');
+            
+            farmers.forEach(farmer => {
+                const option = document.createElement('option');
+                option.value = farmer.id;
+                option.textContent = `${farmer.manager_name} ${farmer.manager_last_name} - ${farmer.farm_name}`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading farmers:', error);
+    }
+}
+
+// Load machinery schema
+async function loadMachinerySchema() {
+    try {
+        const response = await fetch('/api/machinery/schema');
+        const data = await response.json();
+        
+        if (data.success && data.schema) {
+            machinerySchema = data.schema;
+            generateForm(data.schema);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('machinery-form').style.display = 'block';
+        } else {
+            showError(data.error || 'Could not load machinery schema');
+        }
+    } catch (error) {
+        console.error('Error loading schema:', error);
+        showError('Failed to load machinery form. The machinery table may not exist.');
+    }
+}
+
+// Show error message
+function showError(message) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('schema-error').style.display = 'block';
+}
+
+// Generate form from schema
+function generateForm(schema) {
+    const container = document.getElementById('dynamic-fields');
+    container.innerHTML = '';
+    
+    // Skip system fields
+    const skipFields = ['id', 'created_at', 'updated_at', 'farmer_id'];
+    
+    schema.forEach(field => {
+        if (skipFields.includes(field.column_name)) return;
+        
+        const formGroup = document.createElement('div');
+        formGroup.className = 'const-form-group';
+        
+        // Create label
+        const label = document.createElement('label');
+        label.className = 'const-label';
+        if (field.is_nullable === 'NO' && !field.column_default) {
+            label.className += ' required-field';
+        }
+        label.setAttribute('for', field.column_name);
+        label.textContent = formatFieldName(field.column_name);
+        
+        // Create input based on data type
+        const input = createInput(field);
+        
+        formGroup.appendChild(label);
+        formGroup.appendChild(input);
+        
+        // Add helper text if available
+        if (field.column_comment) {
+            const helper = document.createElement('small');
+            helper.className = 'const-text';
+            helper.style.color = 'var(--const-brown-light)';
+            helper.textContent = field.column_comment;
+            formGroup.appendChild(helper);
+        }
+        
+        container.appendChild(formGroup);
+    });
+}
+
+// Format field name for display
+function formatFieldName(fieldName) {
+    return fieldName
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Create appropriate input element
+function createInput(field) {
+    const inputType = fieldTypeMapping[field.data_type] || 'text';
+    let input;
+    
+    if (inputType === 'textarea') {
+        input = document.createElement('textarea');
+        input.className = 'const-textarea';
+        input.rows = 3;
+    } else if (inputType === 'checkbox') {
+        input = document.createElement('input');
+        input.type = 'checkbox';
+        input.className = 'const-checkbox';
+    } else if (field.column_name === 'type' || field.column_name === 'category') {
+        // Create select for type/category fields
+        input = document.createElement('select');
+        input.className = 'const-select';
+        
+        // Add common machinery types
+        const types = [
+            'Tractor',
+            'Sprayer',
+            'Harvester',
+            'Planter/Seeder',
+            'Cultivator',
+            'Plow',
+            'Irrigation Equipment',
+            'Mower',
+            'Loader',
+            'Trailer',
+            'Other'
+        ];
+        
+        input.innerHTML = '<option value="">-- Select type --</option>';
+        types.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.toLowerCase().replace(/\//g, '_');
+            option.textContent = type;
+            input.appendChild(option);
+        });
+    } else {
+        input = document.createElement('input');
+        input.type = inputType;
+        input.className = 'const-input';
+        
+        // Set additional attributes based on data type
+        if (field.data_type.includes('int')) {
+            input.step = '1';
+            input.pattern = '[0-9]*';
+        } else if (field.data_type.includes('numeric') || field.data_type.includes('decimal')) {
+            input.step = '0.01';
+        }
+        
+        // Set max length for varchar fields
+        const lengthMatch = field.data_type.match(/\((\d+)\)/);
+        if (lengthMatch) {
+            input.maxLength = lengthMatch[1];
+        }
+    }
+    
+    // Set common attributes
+    input.id = field.column_name;
+    input.name = field.column_name;
+    
+    // Set required attribute
+    if (field.is_nullable === 'NO' && !field.column_default) {
+        input.required = true;
+    }
+    
+    // Set placeholder
+    if (input.tagName !== 'SELECT') {
+        input.placeholder = getPlaceholder(field);
+    }
+    
+    return input;
+}
+
+// Get placeholder text
+function getPlaceholder(field) {
+    const placeholders = {
+        'name': 'e.g., John Deere 6M Series',
+        'brand': 'e.g., John Deere',
+        'model': 'e.g., 6155M',
+        'year': 'e.g., 2023',
+        'registration_number': 'e.g., ABC-123',
+        'serial_number': 'e.g., 1234567890',
+        'engine_hours': 'e.g., 1250',
+        'purchase_price': 'e.g., 50000',
+        'notes': 'Any additional information...'
+    };
+    
+    return placeholders[field.column_name] || `Enter ${formatFieldName(field.column_name).toLowerCase()}`;
+}
+
+// Save machinery
+async function saveMachinery(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const data = {
+        farmer_id: document.getElementById('farmer-select').value
+    };
+    
+    // Collect all form data
+    for (const [key, value] of formData.entries()) {
+        if (key !== 'farmer_id') {
+            // Handle checkboxes
+            const input = document.getElementById(key);
+            if (input.type === 'checkbox') {
+                data[key] = input.checked;
+            } else if (value.trim() !== '') {
+                data[key] = value;
+            }
+        }
+    }
+    
+    try {
+        const response = await fetch('/api/machinery', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('success-details').textContent = 
+                `${data.name || 'Machinery'} has been registered successfully!`;
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('machinery-form').style.display = 'none';
+            
+            // Clear form
+            clearForm();
+        } else {
+            alert('Error saving machinery: ' + (result.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error saving machinery:', error);
+        alert('Error saving machinery. Please try again.');
+    }
+}
+
+// Clear form
+function clearForm() {
+    document.getElementById('machinery-form').reset();
+}
+
+// Register another machine
+function registerAnother() {
+    document.getElementById('success-message').style.display = 'none';
+    document.getElementById('machinery-form').style.display = 'block';
+    clearForm();
+}
+</script>
+{% endblock %}

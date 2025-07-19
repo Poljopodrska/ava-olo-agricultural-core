@@ -3296,6 +3296,66 @@ async def get_version():
         "python_version": sys.version
     }
 
+# Database Query API Endpoint
+@app.post("/api/database/query")
+async def execute_database_query(request: Request):
+    """Execute SELECT queries on the database with pagination"""
+    try:
+        data = await request.json()
+        query = data.get('query', '').strip()
+        count_query = data.get('countQuery', '').strip()
+        
+        # Security: Only allow SELECT queries
+        if not query.lower().startswith('select'):
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "Only SELECT queries are allowed"}
+            )
+        
+        # Get database connection
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            
+            # Execute main query
+            cursor.execute(query)
+            columns = [desc[0] for desc in cursor.description]
+            results = []
+            
+            for row in cursor.fetchall():
+                results.append(dict(zip(columns, row)))
+            
+            # Get total count if count query provided
+            total = len(results)
+            if count_query and count_query.lower().startswith('select'):
+                try:
+                    cursor.execute(count_query)
+                    total = cursor.fetchone()[0]
+                except:
+                    pass
+            
+            cursor.close()
+            
+            return JSONResponse(content={
+                "success": True,
+                "results": results,
+                "total": total
+            })
+            
+    except Exception as e:
+        logger.error(f"Database query error: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
 @app.get("/health/database")
 async def database_health_check():
     """Test database connectivity and return detailed status"""
@@ -6318,6 +6378,519 @@ async def add_farmer_submit(
 </html>
 """)
 
+# UI Dashboard Route
+@app.get("/ui-dashboard")
+async def ui_dashboard(request: Request):
+    return templates.TemplateResponse("ui_dashboard_enhanced.html", {
+        "request": request,
+        "show_back_button": True
+    })
+
+# Database Explorer Route
+@app.get("/database-explorer")
+async def database_explorer(request: Request):
+    return templates.TemplateResponse("database_explorer_enhanced.html", {
+        "request": request,
+        "show_back_button": True
+    })
+
+# Register Fields Route
+@app.get("/register-fields")
+async def register_fields(request: Request):
+    return templates.TemplateResponse("register_fields.html", {
+        "request": request,
+        "show_back_button": True
+    })
+
+# API: Get all farmers
+@app.get("/api/farmers")
+async def get_farmers():
+    """Get list of all farmers for selection"""
+    try:
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT f.id, f.farm_name, f.manager_name, f.manager_last_name, 
+                       f.city, f.country, f.wa_phone_number,
+                       COUNT(fi.id) as field_count
+                FROM farmers f
+                LEFT JOIN fields fi ON f.id = fi.farmer_id
+                GROUP BY f.id
+                ORDER BY f.manager_last_name, f.manager_name
+                LIMIT 100
+            """)
+            
+            farmers = []
+            for row in cursor.fetchall():
+                farmers.append({
+                    "id": row[0],
+                    "farm_name": row[1],
+                    "manager_name": row[2],
+                    "manager_last_name": row[3],
+                    "city": row[4],
+                    "country": row[5],
+                    "wa_phone_number": row[6],
+                    "field_count": row[7]
+                })
+            
+            cursor.close()
+            return JSONResponse(content={"success": True, "farmers": farmers})
+            
+    except Exception as e:
+        logger.error(f"Error fetching farmers: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# API: Get specific farmer details
+@app.get("/api/farmers/{farmer_id}")
+async def get_farmer_details(farmer_id: int):
+    """Get detailed information about a specific farmer"""
+    try:
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT f.*, COUNT(fi.id) as field_count
+                FROM farmers f
+                LEFT JOIN fields fi ON f.id = fi.farmer_id
+                WHERE f.id = %s
+                GROUP BY f.id
+            """, (farmer_id,))
+            
+            row = cursor.fetchone()
+            if not row:
+                return JSONResponse(
+                    status_code=404,
+                    content={"success": False, "error": "Farmer not found"}
+                )
+            
+            columns = [desc[0] for desc in cursor.description]
+            farmer = dict(zip(columns, row))
+            
+            cursor.close()
+            return JSONResponse(content={"success": True, "farmer": farmer})
+            
+    except Exception as e:
+        logger.error(f"Error fetching farmer details: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# API: Register new field
+@app.post("/api/fields")
+async def register_field(request: Request):
+    """Register a new field for a farmer"""
+    try:
+        data = await request.json()
+        
+        # Validate required fields
+        if not data.get('farmer_id') or not data.get('name'):
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "Farmer ID and field name are required"}
+            )
+        
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            
+            # Check which column name to use for area
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'fields' 
+                AND column_name IN ('area_hectares', 'area_ha')
+                LIMIT 1
+            """)
+            area_column = cursor.fetchone()
+            area_col_name = area_column[0] if area_column else 'area_ha'
+            
+            # Insert field
+            cursor.execute(f"""
+                INSERT INTO fields (
+                    farmer_id, field_name, {area_col_name}, location
+                ) VALUES (
+                    %s, %s, %s, %s
+                )
+                RETURNING id
+            """, (
+                data['farmer_id'],
+                data['name'],
+                data.get('size', 0),
+                data.get('location', '')
+            ))
+            
+            field_id = cursor.fetchone()[0]
+            
+            # Store polygon data if provided
+            if data.get('polygon_data'):
+                # Store in a JSON column or related table if available
+                # For now, we'll log it
+                logger.info(f"Field {field_id} polygon data: {data['polygon_data']}")
+            
+            logger.info(f"✅ Registered field '{data['name']}' with ID {field_id} for farmer {data['farmer_id']}")
+            
+            return JSONResponse(content={
+                "success": True, 
+                "field_id": field_id,
+                "message": f"Field '{data['name']}' registered successfully"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error registering field: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# Register Task Route
+@app.get("/register-task")
+async def register_task(request: Request):
+    return templates.TemplateResponse("register_task.html", {
+        "request": request,
+        "show_back_button": True,
+        "today": datetime.now().strftime("%Y-%m-%d")
+    })
+
+# API: Get fields for a farmer
+@app.get("/api/fields/{farmer_id}")
+async def get_farmer_fields(farmer_id: int):
+    """Get all fields for a specific farmer"""
+    try:
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            
+            # Check which column name exists
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'fields' 
+                AND column_name IN ('area_hectares', 'area_ha')
+                LIMIT 1
+            """)
+            area_column = cursor.fetchone()
+            area_col_name = area_column[0] if area_column else 'area_ha'
+            
+            cursor.execute(f"""
+                SELECT id, field_name, {area_col_name} as area_hectares, location
+                FROM fields
+                WHERE farmer_id = %s
+                ORDER BY field_name
+            """, (farmer_id,))
+            
+            fields = []
+            for row in cursor.fetchall():
+                fields.append({
+                    "id": row[0],
+                    "field_name": row[1],
+                    "area_hectares": float(row[2]) if row[2] else 0,
+                    "location": row[3]
+                })
+            
+            cursor.close()
+            return JSONResponse(content={"success": True, "fields": fields})
+            
+    except Exception as e:
+        logger.error(f"Error fetching fields: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# API: Register new task
+@app.post("/api/tasks")
+async def register_task_api(request: Request):
+    """Register a new task for fields"""
+    try:
+        data = await request.json()
+        
+        # Validate required fields
+        if not data.get('farmer_id') or not data.get('field_ids') or not data.get('description'):
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "Farmer ID, field IDs, and description are required"}
+            )
+        
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            
+            # Check if tasks table has required columns
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'tasks'
+            """)
+            existing_columns = [row[0] for row in cursor.fetchall()]
+            
+            # Build INSERT query based on available columns
+            base_columns = ['farmer_id', 'field_id', 'description', 'task_date']
+            base_values = []
+            
+            # Insert task for each selected field
+            task_ids = []
+            for field_id in data['field_ids']:
+                values = [
+                    data['farmer_id'],
+                    field_id,
+                    data['description'],
+                    data.get('date', datetime.now().date())
+                ]
+                
+                extra_columns = []
+                extra_values = []
+                
+                # Add optional columns if they exist
+                if 'machine' in existing_columns and data.get('machine'):
+                    extra_columns.append('machine')
+                    extra_values.append(data['machine'])
+                
+                if 'material_used' in existing_columns and data.get('material_used'):
+                    extra_columns.append('material_used')
+                    extra_values.append(data['material_used'])
+                
+                if 'doserate_value' in existing_columns and data.get('doserate_value'):
+                    extra_columns.append('doserate_value')
+                    extra_values.append(data['doserate_value'])
+                
+                if 'doserate_unit' in existing_columns and data.get('doserate_unit'):
+                    extra_columns.append('doserate_unit')
+                    extra_values.append(data['doserate_unit'])
+                
+                # Build query
+                all_columns = base_columns + extra_columns
+                all_values = values + extra_values
+                placeholders = ', '.join(['%s'] * len(all_values))
+                
+                cursor.execute(f"""
+                    INSERT INTO tasks ({', '.join(all_columns)})
+                    VALUES ({placeholders})
+                    RETURNING id
+                """, all_values)
+                
+                task_id = cursor.fetchone()[0]
+                task_ids.append(task_id)
+            
+            logger.info(f"✅ Registered {len(task_ids)} task(s) for farmer {data['farmer_id']}")
+            
+            return JSONResponse(content={
+                "success": True,
+                "task_ids": task_ids,
+                "message": f"Successfully registered {len(task_ids)} task(s)"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error registering task: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# Register Machinery Route
+@app.get("/register-machinery")
+async def register_machinery(request: Request):
+    return templates.TemplateResponse("register_machinery.html", {
+        "request": request,
+        "show_back_button": True
+    })
+
+# API: Get machinery table schema
+@app.get("/api/machinery/schema")
+async def get_machinery_schema():
+    """Get the schema of the machinery table for dynamic form generation"""
+    try:
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            
+            # Check if machinery table exists
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables 
+                    WHERE table_name = 'machinery'
+                )
+            """)
+            
+            if not cursor.fetchone()[0]:
+                # Create machinery table if it doesn't exist
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS machinery (
+                        id SERIAL PRIMARY KEY,
+                        farmer_id INTEGER REFERENCES farmers(id),
+                        name VARCHAR(255) NOT NULL,
+                        brand VARCHAR(100),
+                        model VARCHAR(100),
+                        year INTEGER,
+                        type VARCHAR(50),
+                        registration_number VARCHAR(50),
+                        serial_number VARCHAR(100),
+                        engine_hours DECIMAL(10,2),
+                        purchase_date DATE,
+                        purchase_price DECIMAL(12,2),
+                        current_value DECIMAL(12,2),
+                        status VARCHAR(50) DEFAULT 'active',
+                        notes TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                logger.info("Created machinery table")
+            
+            # Get column information
+            cursor.execute("""
+                SELECT 
+                    column_name,
+                    data_type,
+                    is_nullable,
+                    column_default,
+                    character_maximum_length,
+                    numeric_precision,
+                    numeric_scale
+                FROM information_schema.columns
+                WHERE table_name = 'machinery'
+                ORDER BY ordinal_position
+            """)
+            
+            schema = []
+            for row in cursor.fetchall():
+                schema.append({
+                    "column_name": row[0],
+                    "data_type": row[1],
+                    "is_nullable": row[2],
+                    "column_default": row[3],
+                    "max_length": row[4],
+                    "numeric_precision": row[5],
+                    "numeric_scale": row[6]
+                })
+            
+            cursor.close()
+            return JSONResponse(content={"success": True, "schema": schema})
+            
+    except Exception as e:
+        logger.error(f"Error getting machinery schema: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
+
+# API: Register new machinery
+@app.post("/api/machinery")
+async def register_machinery_api(request: Request):
+    """Register new machinery/equipment"""
+    try:
+        data = await request.json()
+        
+        # Validate required fields
+        if not data.get('farmer_id') or not data.get('name'):
+            return JSONResponse(
+                status_code=400,
+                content={"success": False, "error": "Farmer ID and machinery name are required"}
+            )
+        
+        db_ops = DatabaseOperations()
+        
+        with get_working_db_connection() as conn:
+            if not conn:
+                return JSONResponse(
+                    status_code=500,
+                    content={"success": False, "error": "Database connection failed"}
+                )
+            
+            cursor = conn.cursor()
+            
+            # Get available columns
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'machinery'
+                AND column_name NOT IN ('id', 'created_at', 'updated_at')
+            """)
+            available_columns = [row[0] for row in cursor.fetchall()]
+            
+            # Build insert query with only provided and available columns
+            columns = []
+            values = []
+            
+            for col in available_columns:
+                if col in data and data[col] is not None:
+                    columns.append(col)
+                    values.append(data[col])
+            
+            if not columns:
+                return JSONResponse(
+                    status_code=400,
+                    content={"success": False, "error": "No valid data provided"}
+                )
+            
+            placeholders = ', '.join(['%s'] * len(values))
+            
+            cursor.execute(f"""
+                INSERT INTO machinery ({', '.join(columns)})
+                VALUES ({placeholders})
+                RETURNING id
+            """, values)
+            
+            machinery_id = cursor.fetchone()[0]
+            
+            logger.info(f"✅ Registered machinery '{data['name']}' with ID {machinery_id} for farmer {data['farmer_id']}")
+            
+            return JSONResponse(content={
+                "success": True,
+                "machinery_id": machinery_id,
+                "message": f"Machinery '{data['name']}' registered successfully"
+            })
+            
+    except Exception as e:
+        logger.error(f"Error registering machinery: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)

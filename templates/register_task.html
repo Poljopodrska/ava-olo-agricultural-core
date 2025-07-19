@@ -1,0 +1,453 @@
+{% extends "base_constitutional.html" %}
+
+{% block title %}Register New Task - AVA OLO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .task-form {
+        background: white;
+        padding: var(--const-spacing-lg);
+        border-radius: 12px;
+        margin-bottom: var(--const-spacing-lg);
+        box-shadow: var(--const-shadow-md);
+    }
+    
+    .field-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: var(--const-spacing-sm);
+        margin-top: var(--const-spacing-sm);
+    }
+    
+    .field-checkbox {
+        background: rgba(107, 142, 35, 0.05);
+        padding: var(--const-spacing-sm);
+        border-radius: 8px;
+        border: 2px solid var(--const-brown-light);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .field-checkbox:hover {
+        border-color: var(--const-olive-primary);
+        transform: translateY(-2px);
+    }
+    
+    .field-checkbox input[type="checkbox"] {
+        margin-right: 8px;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+    
+    .field-checkbox label {
+        cursor: pointer;
+        font-size: var(--const-text-min);
+    }
+    
+    .doserate-group {
+        display: flex;
+        gap: var(--const-spacing-sm);
+        align-items: end;
+    }
+    
+    .doserate-group > * {
+        flex: 1;
+    }
+    
+    .unit-select {
+        max-width: 200px;
+    }
+    
+    .task-preview {
+        background: rgba(107, 142, 35, 0.1);
+        padding: var(--const-spacing-md);
+        border-radius: 8px;
+        margin-top: var(--const-spacing-md);
+    }
+    
+    .llm-suggestion {
+        background: rgba(102, 126, 234, 0.1);
+        padding: var(--const-spacing-sm);
+        border-radius: 6px;
+        margin-top: var(--const-spacing-sm);
+        font-style: italic;
+        color: var(--const-brown-dark);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="const-container">
+    <h1 class="const-h1">📋 Register New Task</h1>
+    <p class="const-text">Record agricultural tasks and activities for your fields</p>
+    
+    <!-- Step 1: Farmer Selection -->
+    <div class="task-form">
+        <h2 class="const-h2">Step 1: Select Farmer</h2>
+        <div class="const-form-group">
+            <label class="const-label" for="farmer-select">Farmer</label>
+            <select id="farmer-select" class="const-select" onchange="farmerSelected()">
+                <option value="">-- Select a farmer --</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Step 2: Field Selection -->
+    <div id="field-selection" class="task-form" style="display: none;">
+        <h2 class="const-h2">Step 2: Select Fields</h2>
+        <p class="const-text">Select one or more fields for this task</p>
+        <div id="fields-grid" class="field-grid">
+            <!-- Fields will be populated here -->
+        </div>
+    </div>
+    
+    <!-- Step 3: Task Details -->
+    <div id="task-details" class="task-form" style="display: none;">
+        <h2 class="const-h2">Step 3: Task Details</h2>
+        
+        <div class="const-form-group">
+            <label class="const-label" for="task-description">Task Description</label>
+            <textarea id="task-description" class="const-textarea" rows="4" 
+                      placeholder="Describe the task (e.g., Applied fertilizer to boost mango growth, Irrigated fields due to dry conditions)"
+                      onblur="getSuggestions()"></textarea>
+            <div id="task-suggestions" class="llm-suggestion" style="display: none;">
+                💡 Suggestion: <span id="suggestion-text"></span>
+            </div>
+        </div>
+        
+        <div class="const-form-group">
+            <label class="const-label" for="task-date">Task Date</label>
+            <input type="date" id="task-date" class="const-input" value="{{ today }}">
+        </div>
+        
+        <div class="const-form-group">
+            <label class="const-label" for="machine-select">Machine/Equipment Used (Optional)</label>
+            <select id="machine-select" class="const-select">
+                <option value="">-- No machine used --</option>
+                <option value="tractor">🚜 Tractor</option>
+                <option value="sprayer">💨 Sprayer</option>
+                <option value="harvester">🌾 Harvester</option>
+                <option value="irrigation">💧 Irrigation System</option>
+                <option value="manual">👋 Manual/Hand Tools</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+        
+        <div class="const-form-group">
+            <label class="const-label" for="material-used">Material Used (Optional)</label>
+            <input type="text" id="material-used" class="const-input" 
+                   placeholder="e.g., NPK 15-15-15, Glyphosate, Mango fertilizer special blend">
+        </div>
+        
+        <div class="const-form-group">
+            <label class="const-label">Doserate</label>
+            <div class="doserate-group">
+                <div>
+                    <input type="number" id="doserate-value" class="const-input" 
+                           step="0.01" placeholder="0.00">
+                </div>
+                <div class="unit-select">
+                    <select id="doserate-unit" class="const-select">
+                        <option value="kg/ha">kg/ha</option>
+                        <option value="L/ha">L/ha</option>
+                        <option value="g/ha">g/ha</option>
+                        <option value="seeds/ha">seeds/ha</option>
+                        <option value="plants/ha">plants/ha</option>
+                        <option value="custom">Custom unit...</option>
+                    </select>
+                </div>
+            </div>
+            <input type="text" id="custom-unit" class="const-input" 
+                   placeholder="Enter custom unit" style="display: none; margin-top: var(--const-spacing-sm);">
+        </div>
+        
+        <!-- Task Preview -->
+        <div class="task-preview">
+            <h3 class="const-h3">📋 Task Preview</h3>
+            <div id="preview-content">
+                <p class="const-text">Complete the form above to see task preview</p>
+            </div>
+        </div>
+        
+        <button class="const-btn const-btn-primary" onclick="saveTask()">
+            💾 Save Task
+        </button>
+    </div>
+    
+    <!-- Success Message -->
+    <div id="success-message" class="success-message" style="display: none;">
+        <h3 class="const-h3">✅ Task Registered Successfully!</h3>
+        <p class="const-text" id="success-details"></p>
+        <button class="const-btn const-btn-primary" onclick="registerAnother()">
+            Register Another Task
+        </button>
+    </div>
+</div>
+
+<script>
+// State management
+let selectedFarmerId = null;
+let selectedFields = [];
+let farmers = [];
+let fields = [];
+
+// Initialize
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadFarmers();
+    
+    // Set today's date
+    document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+    
+    // Handle custom unit selection
+    document.getElementById('doserate-unit').addEventListener('change', function() {
+        const customInput = document.getElementById('custom-unit');
+        if (this.value === 'custom') {
+            customInput.style.display = 'block';
+        } else {
+            customInput.style.display = 'none';
+        }
+        updatePreview();
+    });
+    
+    // Update preview on input changes
+    ['task-description', 'task-date', 'machine-select', 'material-used', 
+     'doserate-value', 'doserate-unit', 'custom-unit'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updatePreview);
+    });
+});
+
+// Load farmers
+async function loadFarmers() {
+    try {
+        const response = await fetch('/api/farmers');
+        const data = await response.json();
+        
+        if (data.success && data.farmers) {
+            farmers = data.farmers;
+            const select = document.getElementById('farmer-select');
+            
+            farmers.forEach(farmer => {
+                const option = document.createElement('option');
+                option.value = farmer.id;
+                option.textContent = `${farmer.manager_name} ${farmer.manager_last_name} - ${farmer.farm_name}`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading farmers:', error);
+        alert('Error loading farmers. Please refresh the page.');
+    }
+}
+
+// Handle farmer selection
+async function farmerSelected() {
+    const farmerId = document.getElementById('farmer-select').value;
+    selectedFarmerId = farmerId;
+    
+    if (!farmerId) {
+        document.getElementById('field-selection').style.display = 'none';
+        document.getElementById('task-details').style.display = 'none';
+        return;
+    }
+    
+    // Load fields for this farmer
+    try {
+        const response = await fetch(`/api/fields/${farmerId}`);
+        const data = await response.json();
+        
+        if (data.success && data.fields) {
+            fields = data.fields;
+            displayFields(fields);
+            document.getElementById('field-selection').style.display = 'block';
+            document.getElementById('task-details').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error loading fields:', error);
+        alert('Error loading fields. Please try again.');
+    }
+}
+
+// Display fields for selection
+function displayFields(fields) {
+    const grid = document.getElementById('fields-grid');
+    grid.innerHTML = '';
+    
+    if (fields.length === 0) {
+        grid.innerHTML = '<p class="const-text">No fields found for this farmer. Please register fields first.</p>';
+        return;
+    }
+    
+    fields.forEach(field => {
+        const div = document.createElement('div');
+        div.className = 'field-checkbox';
+        div.innerHTML = `
+            <label>
+                <input type="checkbox" value="${field.id}" onchange="fieldSelectionChanged()">
+                <strong>${field.field_name || field.name}</strong><br>
+                <small>📏 ${field.area_hectares || field.area_ha || 0} ha</small>
+            </label>
+        `;
+        grid.appendChild(div);
+    });
+}
+
+// Handle field selection change
+function fieldSelectionChanged() {
+    selectedFields = [];
+    const checkboxes = document.querySelectorAll('#fields-grid input[type="checkbox"]:checked');
+    checkboxes.forEach(cb => selectedFields.push(parseInt(cb.value)));
+    updatePreview();
+}
+
+// Get LLM suggestions for task description
+async function getSuggestions() {
+    const description = document.getElementById('task-description').value.trim();
+    if (!description) return;
+    
+    // Simulate LLM suggestions (in production, this would call an API)
+    const suggestions = {
+        'fertiliz': 'Consider recording the NPK ratio and application method',
+        'spray': 'Remember to note weather conditions and wind speed',
+        'harvest': 'Record yield estimates and quality grades',
+        'irrigat': 'Note water volume used and irrigation duration',
+        'plant': 'Include plant spacing and variety information',
+        'mango': 'For mango trees, note the growth stage (flowering, fruit development, etc.)'
+    };
+    
+    // Find matching suggestion
+    let suggestion = null;
+    for (const [key, value] of Object.entries(suggestions)) {
+        if (description.toLowerCase().includes(key)) {
+            suggestion = value;
+            break;
+        }
+    }
+    
+    if (suggestion) {
+        document.getElementById('suggestion-text').textContent = suggestion;
+        document.getElementById('task-suggestions').style.display = 'block';
+    } else {
+        document.getElementById('task-suggestions').style.display = 'none';
+    }
+}
+
+// Update task preview
+function updatePreview() {
+    const preview = document.getElementById('preview-content');
+    
+    const description = document.getElementById('task-description').value || 'No description';
+    const date = document.getElementById('task-date').value || 'No date';
+    const machine = document.getElementById('machine-select').value || 'No machine';
+    const material = document.getElementById('material-used').value || 'No material';
+    const doserateValue = document.getElementById('doserate-value').value;
+    const doserateUnit = document.getElementById('doserate-unit').value;
+    const customUnit = document.getElementById('custom-unit').value;
+    
+    const selectedFieldNames = fields
+        .filter(f => selectedFields.includes(f.id))
+        .map(f => f.field_name || f.name)
+        .join(', ') || 'No fields selected';
+    
+    let doserateText = 'Not specified';
+    if (doserateValue) {
+        const unit = doserateUnit === 'custom' ? customUnit : doserateUnit;
+        doserateText = `${doserateValue} ${unit}`;
+    }
+    
+    preview.innerHTML = `
+        <p class="const-text"><strong>📅 Date:</strong> ${date}</p>
+        <p class="const-text"><strong>🌾 Fields:</strong> ${selectedFieldNames}</p>
+        <p class="const-text"><strong>📝 Description:</strong> ${description}</p>
+        <p class="const-text"><strong>🚜 Machine:</strong> ${machine}</p>
+        <p class="const-text"><strong>🧪 Material:</strong> ${material}</p>
+        <p class="const-text"><strong>📊 Doserate:</strong> ${doserateText}</p>
+    `;
+}
+
+// Save task
+async function saveTask() {
+    // Validate
+    if (!selectedFarmerId) {
+        alert('Please select a farmer');
+        return;
+    }
+    
+    if (selectedFields.length === 0) {
+        alert('Please select at least one field');
+        return;
+    }
+    
+    const description = document.getElementById('task-description').value.trim();
+    if (!description) {
+        alert('Please enter a task description');
+        return;
+    }
+    
+    // Prepare data
+    const taskData = {
+        farmer_id: selectedFarmerId,
+        field_ids: selectedFields,
+        description: description,
+        date: document.getElementById('task-date').value,
+        machine: document.getElementById('machine-select').value,
+        material_used: document.getElementById('material-used').value,
+        doserate_value: parseFloat(document.getElementById('doserate-value').value) || null,
+        doserate_unit: document.getElementById('doserate-unit').value === 'custom' 
+            ? document.getElementById('custom-unit').value 
+            : document.getElementById('doserate-unit').value
+    };
+    
+    try {
+        const response = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('success-details').textContent = 
+                `Task recorded for ${selectedFields.length} field(s)`;
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('task-details').style.display = 'none';
+            document.getElementById('field-selection').style.display = 'none';
+            
+            // Clear form
+            clearForm();
+        } else {
+            alert('Error saving task: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error saving task:', error);
+        alert('Error saving task. Please try again.');
+    }
+}
+
+// Register another task
+function registerAnother() {
+    document.getElementById('success-message').style.display = 'none';
+    document.getElementById('farmer-select').value = '';
+    selectedFarmerId = null;
+    selectedFields = [];
+    clearForm();
+}
+
+// Clear form
+function clearForm() {
+    document.getElementById('task-description').value = '';
+    document.getElementById('task-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('machine-select').value = '';
+    document.getElementById('material-used').value = '';
+    document.getElementById('doserate-value').value = '';
+    document.getElementById('doserate-unit').value = 'kg/ha';
+    document.getElementById('custom-unit').value = '';
+    document.getElementById('custom-unit').style.display = 'none';
+    document.getElementById('task-suggestions').style.display = 'none';
+    updatePreview();
+}
+</script>
+{% endblock %}

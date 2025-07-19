@@ -1,0 +1,319 @@
+{% extends "base_constitutional.html" %}
+
+{% block title %}AVA OLO - Database Explorer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .query-section {
+        margin-bottom: var(--const-spacing-lg);
+    }
+    
+    .query-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--const-spacing-sm);
+        margin-bottom: var(--const-spacing-md);
+    }
+    
+    .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--const-spacing-md);
+        flex-wrap: wrap;
+        gap: var(--const-spacing-sm);
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+        margin-bottom: var(--const-spacing-md);
+    }
+    
+    .loading {
+        text-align: center;
+        padding: var(--const-spacing-xl);
+        color: var(--const-brown-dark);
+    }
+    
+    .no-results {
+        text-align: center;
+        padding: var(--const-spacing-lg);
+        color: var(--const-brown-light);
+        font-size: var(--const-text-lg);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="const-container">
+    <h1 class="const-h1">🗄️ Database Explorer</h1>
+    <p class="const-text">Query and manage your agricultural data</p>
+    
+    <!-- Query Section -->
+    <div class="query-section">
+        <h2 class="const-h2">Quick Queries</h2>
+        <div class="query-buttons">
+            <button class="const-btn const-btn-primary" onclick="executeQuery('farmers', 10)">
+                👨‍🌾 List Farmers
+            </button>
+            <button class="const-btn const-btn-primary" onclick="executeQuery('fields')">
+                🌾 List Fields
+            </button>
+            <button class="const-btn const-btn-primary" onclick="executeQuery('tasks')">
+                📋 List Tasks
+            </button>
+            <button class="const-btn const-btn-primary" onclick="executeQuery('machinery')">
+                🚜 List Machinery
+            </button>
+            <button class="const-btn const-btn-secondary" onclick="executeQuery('incoming_messages')">
+                💬 Messages
+            </button>
+        </div>
+        
+        <!-- Custom Query -->
+        <div class="const-form-group">
+            <label class="const-label" for="custom-query">Custom SQL Query (SELECT only)</label>
+            <textarea id="custom-query" class="const-textarea" rows="3" 
+                placeholder="Example: SELECT * FROM farmers WHERE country = 'Bulgaria'"></textarea>
+            <button class="const-btn const-btn-primary" onclick="executeCustomQuery()" style="margin-top: var(--const-spacing-sm);">
+                🔍 Execute Query
+            </button>
+        </div>
+    </div>
+    
+    <!-- Results Section -->
+    <div id="results-section" style="display: none;">
+        <div class="results-header">
+            <h2 class="const-h2" id="results-title">Query Results</h2>
+            
+            <!-- Pagination Controls -->
+            <div class="const-pagination">
+                <span class="const-pagination-info" id="pagination-info">
+                    Showing 1-10 of 50 results
+                </span>
+                
+                <label class="const-label" style="margin: 0;">
+                    Results per page:
+                    <select class="const-pagination-select" id="results-limit" onchange="changeResultsLimit()">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </label>
+                
+                <button class="const-btn const-btn-secondary" id="prev-btn" onclick="previousPage()" disabled>
+                    ← Previous
+                </button>
+                
+                <button class="const-btn const-btn-secondary" id="next-btn" onclick="nextPage()">
+                    Next →
+                </button>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading" style="display: none;">
+            <p class="const-text">⏳ Loading results...</p>
+        </div>
+        
+        <div id="results-container" class="table-responsive">
+            <!-- Results will be populated here -->
+        </div>
+        
+        <div id="no-results" class="no-results" style="display: none;">
+            <p>No results found</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// State management
+let currentQuery = '';
+let currentTable = '';
+let currentOffset = 0;
+let currentLimit = 10;
+let totalResults = 0;
+
+// Execute predefined query
+async function executeQuery(table, limit = null) {
+    currentTable = table;
+    currentQuery = `SELECT * FROM ${table}`;
+    currentOffset = 0;
+    currentLimit = limit || parseInt(document.getElementById('results-limit').value);
+    
+    await fetchResults();
+}
+
+// Execute custom query
+async function executeCustomQuery() {
+    const query = document.getElementById('custom-query').value.trim();
+    
+    if (!query) {
+        alert('Please enter a query');
+        return;
+    }
+    
+    // Basic SQL injection prevention
+    if (!query.toLowerCase().startsWith('select')) {
+        alert('Only SELECT queries are allowed');
+        return;
+    }
+    
+    currentQuery = query;
+    currentTable = 'custom';
+    currentOffset = 0;
+    currentLimit = parseInt(document.getElementById('results-limit').value);
+    
+    await fetchResults();
+}
+
+// Fetch results from server
+async function fetchResults() {
+    const resultsSection = document.getElementById('results-section');
+    const loading = document.getElementById('loading');
+    const resultsContainer = document.getElementById('results-container');
+    const noResults = document.getElementById('no-results');
+    
+    resultsSection.style.display = 'block';
+    loading.style.display = 'block';
+    resultsContainer.innerHTML = '';
+    noResults.style.display = 'none';
+    
+    try {
+        // Build query with pagination
+        let paginatedQuery = currentQuery;
+        
+        // Add LIMIT and OFFSET
+        paginatedQuery += ` LIMIT ${currentLimit} OFFSET ${currentOffset}`;
+        
+        // Also get total count
+        let countQuery = currentQuery.replace(/SELECT.*FROM/i, 'SELECT COUNT(*) as total FROM');
+        
+        // Send request to server
+        const response = await fetch('/api/database/query', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                query: paginatedQuery,
+                countQuery: countQuery
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            totalResults = data.total || data.results.length;
+            displayResults(data.results);
+            updatePagination();
+        } else {
+            alert('Query error: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error executing query:', error);
+        alert('Error executing query');
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+// Display results in table
+function displayResults(results) {
+    const container = document.getElementById('results-container');
+    const noResults = document.getElementById('no-results');
+    
+    if (!results || results.length === 0) {
+        noResults.style.display = 'block';
+        return;
+    }
+    
+    // Create table
+    let html = '<table class="const-table">';
+    
+    // Headers
+    html += '<thead><tr>';
+    const columns = Object.keys(results[0]);
+    columns.forEach(col => {
+        html += `<th>${col}</th>`;
+    });
+    html += '</tr></thead>';
+    
+    // Body
+    html += '<tbody>';
+    results.forEach(row => {
+        html += '<tr>';
+        columns.forEach(col => {
+            let value = row[col];
+            // Format null values
+            if (value === null) {
+                value = '<span style="color: #999;">NULL</span>';
+            }
+            // Format long text
+            else if (typeof value === 'string' && value.length > 50) {
+                value = value.substring(0, 50) + '...';
+            }
+            html += `<td>${value}</td>`;
+        });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    
+    container.innerHTML = html;
+}
+
+// Update pagination controls
+function updatePagination() {
+    const info = document.getElementById('pagination-info');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    
+    const start = currentOffset + 1;
+    const end = Math.min(currentOffset + currentLimit, totalResults);
+    
+    info.textContent = `Showing ${start}-${end} of ${totalResults} results`;
+    
+    // Update button states
+    prevBtn.disabled = currentOffset === 0;
+    nextBtn.disabled = currentOffset + currentLimit >= totalResults;
+    
+    // Update results title
+    const title = document.getElementById('results-title');
+    if (currentTable === 'custom') {
+        title.textContent = 'Custom Query Results';
+    } else {
+        title.textContent = `${currentTable.charAt(0).toUpperCase() + currentTable.slice(1)} Results`;
+    }
+}
+
+// Change results per page
+function changeResultsLimit() {
+    const newLimit = parseInt(document.getElementById('results-limit').value);
+    currentLimit = newLimit;
+    currentOffset = 0; // Reset to first page
+    fetchResults();
+}
+
+// Previous page
+function previousPage() {
+    if (currentOffset > 0) {
+        currentOffset -= currentLimit;
+        fetchResults();
+    }
+}
+
+// Next page
+function nextPage() {
+    if (currentOffset + currentLimit < totalResults) {
+        currentOffset += currentLimit;
+        fetchResults();
+    }
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default limit
+    document.getElementById('results-limit').value = '10';
+});
+</script>
+{% endblock %}

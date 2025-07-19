@@ -1,0 +1,243 @@
+{% extends "base_constitutional.html" %}
+
+{% block title %}AVA OLO - Management Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--const-spacing-lg);
+        margin-top: var(--const-spacing-lg);
+    }
+    
+    .dashboard-card {
+        background: white;
+        padding: var(--const-spacing-lg);
+        border-radius: 12px;
+        box-shadow: var(--const-shadow-md);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--const-shadow-lg);
+    }
+    
+    .card-icon {
+        font-size: 48px;
+        margin-bottom: var(--const-spacing-sm);
+    }
+    
+    .card-title {
+        font-size: var(--const-text-lg);
+        font-weight: 600;
+        color: var(--const-brown-dark);
+        margin-bottom: var(--const-spacing-sm);
+    }
+    
+    .card-description {
+        color: var(--const-brown-light);
+        font-size: var(--const-text-min);
+    }
+    
+    .section-title {
+        font-size: var(--const-text-xl);
+        color: var(--const-olive-dark);
+        margin-top: var(--const-spacing-xl);
+        margin-bottom: var(--const-spacing-md);
+        padding-bottom: var(--const-spacing-sm);
+        border-bottom: 2px solid var(--const-olive-light);
+    }
+    
+    .quick-stats {
+        background: rgba(107, 142, 35, 0.1);
+        padding: var(--const-spacing-lg);
+        border-radius: 12px;
+        margin-bottom: var(--const-spacing-lg);
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--const-spacing-md);
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-size: var(--const-text-2xl);
+        font-weight: 700;
+        color: var(--const-olive-primary);
+    }
+    
+    .stat-label {
+        color: var(--const-brown-dark);
+        font-size: var(--const-text-min);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="const-container">
+    <h1 class="const-h1">🌾 Agricultural Management Dashboard</h1>
+    <p class="const-text">Welcome to your AVA OLO management system</p>
+    
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+        <div class="stat-item">
+            <div class="stat-value" id="farmer-count">--</div>
+            <div class="stat-label">Total Farmers</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="field-count">--</div>
+            <div class="stat-label">Total Fields</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="task-count">--</div>
+            <div class="stat-label">Tasks This Month</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="machinery-count">--</div>
+            <div class="stat-label">Equipment Items</div>
+        </div>
+    </div>
+    
+    <!-- Registration Section -->
+    <h2 class="section-title">📝 Registration & Data Entry</h2>
+    <div class="dashboard-grid">
+        <a href="/farmer-registration" class="dashboard-card">
+            <div class="card-icon">👨‍🌾</div>
+            <h3 class="card-title">Register New Farmer</h3>
+            <p class="card-description">Add new farmers to your system (fields optional)</p>
+        </a>
+        
+        <a href="/register-fields" class="dashboard-card">
+            <div class="card-icon">🌾</div>
+            <h3 class="card-title">Register New Fields</h3>
+            <p class="card-description">Add fields to existing farmers with map drawing</p>
+        </a>
+        
+        <a href="/register-task" class="dashboard-card">
+            <div class="card-icon">📋</div>
+            <h3 class="card-title">Register New Task</h3>
+            <p class="card-description">Record agricultural activities and treatments</p>
+        </a>
+        
+        <a href="/register-machinery" class="dashboard-card">
+            <div class="card-icon">🚜</div>
+            <h3 class="card-title">Register Machinery</h3>
+            <p class="card-description">Add equipment and machinery to inventory</p>
+        </a>
+    </div>
+    
+    <!-- Data Management Section -->
+    <h2 class="section-title">📊 Data Management & Analysis</h2>
+    <div class="dashboard-grid">
+        <a href="/database-explorer" class="dashboard-card">
+            <div class="card-icon">🗄️</div>
+            <h3 class="card-title">Database Explorer</h3>
+            <p class="card-description">Query and manage your agricultural data</p>
+        </a>
+        
+        <a href="/agronomic-dashboard" class="dashboard-card">
+            <div class="card-icon">🌱</div>
+            <h3 class="card-title">Agronomic Dashboard</h3>
+            <p class="card-description">View agricultural insights and recommendations</p>
+        </a>
+        
+        <a href="/business-dashboard" class="dashboard-card">
+            <div class="card-icon">💼</div>
+            <h3 class="card-title">Business Dashboard</h3>
+            <p class="card-description">Financial and business analytics</p>
+        </a>
+        
+        <a href="/health-dashboard" class="dashboard-card">
+            <div class="card-icon">🏥</div>
+            <h3 class="card-title">System Health</h3>
+            <p class="card-description">Monitor system status and performance</p>
+        </a>
+    </div>
+    
+    <!-- Testing & Tools Section -->
+    <h2 class="section-title">🛠️ Testing & Tools</h2>
+    <div class="dashboard-grid">
+        <a href="/field-drawing-test" class="dashboard-card">
+            <div class="card-icon">🗺️</div>
+            <h3 class="card-title">Field Drawing Test</h3>
+            <p class="card-description">Test field boundary drawing functionality</p>
+        </a>
+        
+        <a href="/whatsapp-mock" class="dashboard-card">
+            <div class="card-icon">💬</div>
+            <h3 class="card-title">WhatsApp Mock</h3>
+            <p class="card-description">Test WhatsApp integration</p>
+        </a>
+    </div>
+</div>
+
+<script>
+// Load dashboard statistics
+async function loadDashboardStats() {
+    try {
+        // Fetch farmers count
+        const farmersResponse = await fetch('/api/database/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: 'SELECT COUNT(*) as total FROM farmers'})
+        });
+        const farmersData = await farmersResponse.json();
+        if (farmersData.success && farmersData.results.length > 0) {
+            document.getElementById('farmer-count').textContent = farmersData.results[0].total || '0';
+        }
+        
+        // Fetch fields count
+        const fieldsResponse = await fetch('/api/database/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: 'SELECT COUNT(*) as total FROM fields'})
+        });
+        const fieldsData = await fieldsResponse.json();
+        if (fieldsData.success && fieldsData.results.length > 0) {
+            document.getElementById('field-count').textContent = fieldsData.results[0].total || '0';
+        }
+        
+        // Fetch tasks count (this month)
+        const tasksResponse = await fetch('/api/database/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                query: "SELECT COUNT(*) as total FROM tasks WHERE task_date >= date_trunc('month', CURRENT_DATE)"
+            })
+        });
+        const tasksData = await tasksResponse.json();
+        if (tasksData.success && tasksData.results.length > 0) {
+            document.getElementById('task-count').textContent = tasksData.results[0].total || '0';
+        }
+        
+        // Fetch machinery count
+        const machineryResponse = await fetch('/api/database/query', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({query: 'SELECT COUNT(*) as total FROM machinery'})
+        });
+        const machineryData = await machineryResponse.json();
+        if (machineryData.success && machineryData.results.length > 0) {
+            document.getElementById('machinery-count').textContent = machineryData.results[0].total || '0';
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+        // Set defaults on error
+        ['farmer-count', 'field-count', 'task-count', 'machinery-count'].forEach(id => {
+            document.getElementById(id).textContent = '0';
+        });
+    }
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', loadDashboardStats);
+</script>
+{% endblock %}

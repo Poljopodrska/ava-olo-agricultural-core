@@ -1,0 +1,352 @@
+{% extends "base_constitutional.html" %}
+
+{% block title %}Register New Fields - AVA OLO{% endblock %}
+
+{% block extra_css %}
+<style>
+    .field-form {
+        background: var(--const-card-bg);
+        padding: var(--const-spacing-lg);
+        border-radius: 12px;
+        margin-bottom: var(--const-spacing-lg);
+        box-shadow: var(--const-shadow-md);
+    }
+    
+    #field-map {
+        width: 100%;
+        height: 500px;
+        border: 2px solid var(--const-brown-light);
+        border-radius: 8px;
+        margin: var(--const-spacing-md) 0;
+    }
+    
+    .field-item {
+        background: white;
+        padding: var(--const-spacing-md);
+        border-radius: 8px;
+        margin-bottom: var(--const-spacing-sm);
+        border: 2px solid var(--const-brown-light);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .field-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--const-shadow-md);
+    }
+    
+    .field-item.active {
+        border-color: var(--const-olive-primary);
+        background: rgba(107, 142, 35, 0.05);
+    }
+    
+    .drawing-controls {
+        display: flex;
+        gap: var(--const-spacing-sm);
+        margin: var(--const-spacing-md) 0;
+        flex-wrap: wrap;
+    }
+    
+    .field-calculations {
+        background: rgba(107, 142, 35, 0.1);
+        padding: var(--const-spacing-md);
+        border-radius: 8px;
+        margin: var(--const-spacing-md) 0;
+        display: none;
+    }
+    
+    .success-message {
+        background: rgba(34, 139, 34, 0.1);
+        color: var(--const-earth-green);
+        padding: var(--const-spacing-md);
+        border-radius: 8px;
+        margin: var(--const-spacing-md) 0;
+        text-align: center;
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="const-container">
+    <h1 class="const-h1">🌾 Register New Fields</h1>
+    <p class="const-text">Add fields to existing farmers in your system</p>
+    
+    <!-- Farmer Selection -->
+    <div class="field-form">
+        <div class="const-form-group">
+            <label class="const-label" for="farmer-select">Select Farmer</label>
+            <select id="farmer-select" class="const-select" onchange="farmerSelected()">
+                <option value="">-- Select a farmer --</option>
+            </select>
+        </div>
+        
+        <div id="farmer-info" style="display: none;">
+            <div class="const-card">
+                <h3 class="const-h3" id="farmer-name">Farmer Name</h3>
+                <p class="const-text" id="farmer-details"></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Field Registration Form -->
+    <div id="field-registration" style="display: none;">
+        <h2 class="const-h2">Field Information</h2>
+        
+        <div class="field-form">
+            <div class="const-form-group">
+                <label class="const-label" for="field-name">Field Name</label>
+                <input type="text" id="field-name" class="const-input" 
+                       placeholder="e.g., North Mango Field, South Vineyard">
+            </div>
+            
+            <div class="const-form-group">
+                <label class="const-label" for="field-size">Field Size (hectares)</label>
+                <input type="number" id="field-size" class="const-input" 
+                       step="0.0001" placeholder="0.0000" readonly>
+                <small class="const-text">Size will be calculated automatically from the drawn area</small>
+            </div>
+            
+            <div class="const-form-group">
+                <label class="const-label" for="field-crop">Primary Crop (optional)</label>
+                <input type="text" id="field-crop" class="const-input" 
+                       placeholder="e.g., Mango, Wheat, Corn">
+            </div>
+        </div>
+        
+        <!-- Map Section -->
+        <h2 class="const-h2">🗺️ Draw Field Boundaries</h2>
+        <p class="const-text">Click "Start Drawing" then click on the map to define your field boundaries</p>
+        
+        <div id="field-map"></div>
+        
+        <div class="drawing-controls">
+            <button id="start-drawing" class="const-btn const-btn-primary" onclick="startDrawing()">
+                🎯 Start Drawing
+            </button>
+            <button id="clear-drawing" class="const-btn const-btn-secondary" onclick="clearDrawing()">
+                🗑️ Clear Drawing
+            </button>
+            <button id="save-field" class="const-btn const-btn-primary" onclick="saveField()" disabled>
+                💾 Save Field
+            </button>
+        </div>
+        
+        <div id="drawing-instructions" class="const-card" style="display: none;">
+            📍 Click on the map to add points. Click near the first point to close the shape.
+        </div>
+        
+        <div id="field-calculations" class="field-calculations">
+            <h3 class="const-h3">📊 Field Measurements</h3>
+            <p class="const-text">📏 Area: <span id="calculated-area">0</span> hectares</p>
+            <p class="const-text">📍 Center: <span id="calculated-center">Not calculated</span></p>
+            <p class="const-text">🔢 Points: <span id="point-count">0</span></p>
+        </div>
+    </div>
+    
+    <!-- Success Message -->
+    <div id="success-message" class="success-message">
+        <h3 class="const-h3">✅ Field Registered Successfully!</h3>
+        <p class="const-text" id="success-details"></p>
+        <button class="const-btn const-btn-primary" onclick="registerAnother()">
+            Register Another Field
+        </button>
+    </div>
+</div>
+
+<script src="/static/js/field-drawing.js"></script>
+<script>
+// State management
+let selectedFarmerId = null;
+let map = null;
+let drawingManager = null;
+let currentPolygon = null;
+let isDrawing = false;
+
+// Load farmers on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadFarmers();
+    initializeMap();
+});
+
+// Load farmers from API
+async function loadFarmers() {
+    try {
+        const response = await fetch('/api/farmers');
+        const data = await response.json();
+        
+        if (data.success && data.farmers) {
+            const select = document.getElementById('farmer-select');
+            data.farmers.forEach(farmer => {
+                const option = document.createElement('option');
+                option.value = farmer.id;
+                option.textContent = `${farmer.manager_name} ${farmer.manager_last_name} - ${farmer.farm_name}`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading farmers:', error);
+        alert('Error loading farmers. Please refresh the page.');
+    }
+}
+
+// Handle farmer selection
+async function farmerSelected() {
+    const select = document.getElementById('farmer-select');
+    selectedFarmerId = select.value;
+    
+    if (!selectedFarmerId) {
+        document.getElementById('farmer-info').style.display = 'none';
+        document.getElementById('field-registration').style.display = 'none';
+        return;
+    }
+    
+    // Get farmer details
+    try {
+        const response = await fetch(`/api/farmers/${selectedFarmerId}`);
+        const data = await response.json();
+        
+        if (data.success && data.farmer) {
+            const farmer = data.farmer;
+            document.getElementById('farmer-name').textContent = 
+                `${farmer.manager_name} ${farmer.manager_last_name}`;
+            document.getElementById('farmer-details').innerHTML = `
+                🏡 Farm: ${farmer.farm_name}<br>
+                📍 Location: ${farmer.city}, ${farmer.country}<br>
+                📱 WhatsApp: ${farmer.wa_phone_number}<br>
+                🌾 Existing Fields: ${farmer.field_count || 0}
+            `;
+            
+            document.getElementById('farmer-info').style.display = 'block';
+            document.getElementById('field-registration').style.display = 'block';
+            
+            // Center map on farmer's location if available
+            if (farmer.latitude && farmer.longitude) {
+                map.setCenter({lat: farmer.latitude, lng: farmer.longitude});
+                map.setZoom(14);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading farmer details:', error);
+    }
+}
+
+// Initialize Google Maps
+function initializeMap() {
+    // Map will be initialized by field-drawing.js
+    // This is a placeholder for map initialization
+}
+
+// Drawing functions (delegated to field-drawing.js)
+function startDrawing() {
+    if (window.startFieldDrawing) {
+        window.startFieldDrawing();
+        document.getElementById('drawing-instructions').style.display = 'block';
+        document.getElementById('start-drawing').disabled = true;
+    }
+}
+
+function clearDrawing() {
+    if (window.clearFieldDrawing) {
+        window.clearFieldDrawing();
+        document.getElementById('field-size').value = '';
+        document.getElementById('field-calculations').style.display = 'none';
+        document.getElementById('save-field').disabled = true;
+        document.getElementById('start-drawing').disabled = false;
+        document.getElementById('drawing-instructions').style.display = 'none';
+    }
+}
+
+// Save field to database
+async function saveField() {
+    const fieldName = document.getElementById('field-name').value.trim();
+    const fieldSize = parseFloat(document.getElementById('field-size').value) || 0;
+    const fieldCrop = document.getElementById('field-crop').value.trim();
+    
+    if (!fieldName) {
+        alert('Please enter a field name');
+        return;
+    }
+    
+    if (!selectedFarmerId) {
+        alert('Please select a farmer');
+        return;
+    }
+    
+    if (!currentPolygon || fieldSize === 0) {
+        alert('Please draw the field boundaries');
+        return;
+    }
+    
+    // Get polygon data from drawing
+    const polygonData = window.getFieldPolygonData ? window.getFieldPolygonData() : null;
+    
+    try {
+        const response = await fetch('/api/fields', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                farmer_id: selectedFarmerId,
+                name: fieldName,
+                size: fieldSize,
+                crop: fieldCrop,
+                polygon_data: polygonData,
+                location: polygonData ? `${polygonData.centroid.lat}, ${polygonData.centroid.lng}` : ''
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success message
+            document.getElementById('success-details').textContent = 
+                `Field "${fieldName}" (${fieldSize.toFixed(4)} ha) has been registered successfully!`;
+            document.getElementById('success-message').style.display = 'block';
+            document.getElementById('field-registration').style.display = 'none';
+            
+            // Clear form
+            clearForm();
+        } else {
+            alert('Error saving field: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        console.error('Error saving field:', error);
+        alert('Error saving field. Please try again.');
+    }
+}
+
+// Register another field
+function registerAnother() {
+    document.getElementById('success-message').style.display = 'none';
+    document.getElementById('field-registration').style.display = 'block';
+    clearForm();
+}
+
+// Clear form
+function clearForm() {
+    document.getElementById('field-name').value = '';
+    document.getElementById('field-size').value = '';
+    document.getElementById('field-crop').value = '';
+    clearDrawing();
+}
+
+// Handle polygon completion (called from field-drawing.js)
+window.onFieldPolygonComplete = function(area, centroid, pointCount) {
+    document.getElementById('field-size').value = area.toFixed(4);
+    document.getElementById('calculated-area').textContent = area.toFixed(4);
+    document.getElementById('calculated-center').textContent = 
+        `${centroid.lat.toFixed(6)}, ${centroid.lng.toFixed(6)}`;
+    document.getElementById('point-count').textContent = pointCount;
+    document.getElementById('field-calculations').style.display = 'block';
+    document.getElementById('save-field').disabled = false;
+    document.getElementById('drawing-instructions').style.display = 'none';
+};
+</script>
+
+<!-- Google Maps API -->
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAU68ar5S8QwWblJXd3o0F8EH7zwfadKr0&libraries=drawing,geometry&callback=initMap&map_ids=e2a6d55c7b7beb3685a30de3">
+</script>
+{% endblock %}
