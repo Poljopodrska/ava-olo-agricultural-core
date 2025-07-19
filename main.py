@@ -137,6 +137,17 @@ app = FastAPI(title="AVA OLO Agricultural Database Dashboard")
 # Mount static files directory
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Initialize connection pool on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize resources on startup"""
+    if POOL_AVAILABLE:
+        try:
+            init_connection_pool()
+            logger.info("✅ Connection pool initialized on startup")
+        except Exception as e:
+            logger.error(f"Failed to initialize pool on startup: {e}")
+
 # Initialize Jinja2 templates
 from fastapi.templating import Jinja2Templates
 templates = Jinja2Templates(directory="templates")
