@@ -3325,9 +3325,7 @@ async def execute_database_query(request: Request):
             )
         
         # Get database connection
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6419,9 +6417,7 @@ async def register_fields(request: Request):
 async def get_farmers():
     """Get list of all farmers for selection"""
     try:
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6468,9 +6464,7 @@ async def get_farmers():
 async def get_farmer_details(farmer_id: int):
     """Get detailed information about a specific farmer"""
     try:
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6520,9 +6514,7 @@ async def register_field(request: Request):
                 content={"success": False, "error": "Farmer ID and field name are required"}
             )
         
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6593,9 +6585,7 @@ async def register_task(request: Request):
 async def get_farmer_fields(farmer_id: int):
     """Get all fields for a specific farmer"""
     try:
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6654,9 +6644,7 @@ async def register_task_api(request: Request):
                 content={"success": False, "error": "Farmer ID, field IDs, and description are required"}
             )
         
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6749,9 +6737,7 @@ async def register_machinery(request: Request):
 async def get_machinery_schema():
     """Get the schema of the machinery table for dynamic form generation"""
     try:
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
@@ -6844,9 +6830,7 @@ async def register_machinery_api(request: Request):
                 content={"success": False, "error": "Farmer ID and machinery name are required"}
             )
         
-        db_ops = DatabaseOperations()
-        
-        with get_working_db_connection() as conn:
+        with get_constitutional_db_connection() as conn:
             if not conn:
                 return JSONResponse(
                     status_code=500,
