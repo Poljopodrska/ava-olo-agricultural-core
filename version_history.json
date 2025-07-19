@@ -1,8 +1,18 @@
 {
-    "current_version": "v2.1.8-runtime-fix",
+    "current_version": "v2.1.9-apprunner-format",
     "service_name": "Monitoring Dashboards",
     "last_updated": "2025-01-19",
     "version_history": [
+        {
+            "version": "v2.1.9-apprunner-format",
+            "date": "2025-01-19",
+            "changes": [
+                "Fixed apprunner.yaml format to match working service",
+                "Removed quotes from runtime-version: 3.11",
+                "Added env: PORT under network section",
+                "Enhanced build output messages"
+            ]
+        },
         {
             "version": "v2.1.8-runtime-fix",
             "date": "2025-01-19",

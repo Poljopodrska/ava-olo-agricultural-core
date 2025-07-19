@@ -3,16 +3,20 @@ runtime: python3
 build:
   commands:
     pre-build:
-      - echo "Installing dependencies"
+      - echo "Starting build for AVA OLO Monitoring Dashboards - v2.1.9 $(date)"
+      - echo "Field registration fixes deployment"
     build:
       - pip install -r requirements.txt
+      - echo "Dependencies installed - version 2.1.9-apprunner-format"
     post-build:
-      - echo "Build completed"
+      - echo "Build completed successfully - $(date)"
+      - echo "Field registration ready - Manual entry and Google Maps enabled"
 run:
-  runtime-version: "3.11"
+  runtime-version: 3.11
   command: python main.py
   network:
     port: 8080
+    env: PORT
   env:
     - name: FORCE_REBUILD
       value: "1752922669"  # FORCE_REBUILD v2.1.7-yaml-fix
