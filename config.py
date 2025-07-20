@@ -64,7 +64,10 @@ LOCALIZATION = {
 DEV_CONFIG = {
     "debug": os.getenv("DEBUG", "False").lower() == "true",
     "auto_reload": os.getenv("AUTO_RELOAD", "False").lower() == "true",
-    "open_browser": os.getenv("OPEN_BROWSER", "True").lower() == "true"
+    "open_browser": os.getenv("OPEN_BROWSER", "True").lower() == "true",
+    "environment": os.getenv("ENVIRONMENT", "production"),
+    "dev_access_key": os.getenv("DEV_ACCESS_KEY", "temporary-dev-key-2025"),
+    "enable_dev_endpoints": os.getenv("ENVIRONMENT", "production") == "development"
 }
 
 # Security Settings

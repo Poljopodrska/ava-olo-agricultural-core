@@ -715,6 +715,226 @@ async def health_check():
             "timestamp": datetime.now().isoformat()
         }
 
+# Development Database Endpoints
+import re
+from fastapi import Request
+
+@app.post("/dev/db/query")
+async def dev_database_query(request: Request):
+    """Development endpoint for safe database queries (SELECT only)"""
+    # Check development mode
+    if os.getenv('ENVIRONMENT') != 'development':
+        raise HTTPException(status_code=403, detail="Not available in production")
+    
+    # Check secret header
+    dev_key = request.headers.get('X-Dev-Key')
+    if dev_key != os.getenv('DEV_ACCESS_KEY', 'temporary-dev-key-2025'):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        # Get query from request body
+        body = await request.json()
+        query = body.get('query', '').strip()
+        
+        if not query:
+            raise HTTPException(status_code=400, detail="Query is required")
+        
+        # Safety check - only allow SELECT
+        if not re.match(r'^SELECT\s', query, re.IGNORECASE):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'success': False,
+                    'error': "Only SELECT queries allowed"
+                }
+            )
+        
+        # Prevent dangerous operations
+        forbidden = ['DELETE', 'UPDATE', 'INSERT', 'DROP', 'CREATE', 'ALTER', 'TRUNCATE', 'GRANT', 'REVOKE']
+        if any(word in query.upper() for word in forbidden):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    'success': False,
+                    'error': "Query contains forbidden operations"
+                }
+            )
+        
+        # Execute query safely
+        with db.get_session() as session:
+            result = session.execute(text(query))
+            
+            # Format results
+            columns = list(result.keys()) if result.keys() else []
+            rows = []
+            for row in result:
+                # Convert row to dict, handling Decimal objects
+                row_dict = {}
+                for i, col in enumerate(columns):
+                    value = row[i]
+                    if isinstance(value, Decimal):
+                        value = float(value)
+                    elif isinstance(value, datetime):
+                        value = value.isoformat()
+                    row_dict[col] = value
+                rows.append(row_dict)
+            
+            # Log query for audit
+            logger.info(f"DEV QUERY EXECUTED: {query[:100]}...")
+            
+            return {
+                'success': True,
+                'query': query,
+                'columns': columns,
+                'rows': rows,
+                'count': len(rows),
+                'executed_at': datetime.now().isoformat()
+            }
+            
+    except SQLAlchemyError as e:
+        logger.error(f"Database error in dev query: {e}")
+        return JSONResponse(
+            status_code=400,
+            content={
+                'success': False,
+                'error': f"Database error: {str(e)}"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error in dev_database_query: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dev/db/schema")
+async def dev_database_schema(request: Request):
+    """Development endpoint to explore database schema"""
+    # Check development mode
+    if os.getenv('ENVIRONMENT') != 'development':
+        raise HTTPException(status_code=403, detail="Not available in production")
+        
+    # Check secret header
+    dev_key = request.headers.get('X-Dev-Key')
+    if dev_key != os.getenv('DEV_ACCESS_KEY', 'temporary-dev-key-2025'):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        with db.get_session() as session:
+            # Get all tables and columns
+            schema_query = """
+            SELECT 
+                table_name, 
+                column_name, 
+                data_type, 
+                is_nullable,
+                column_default,
+                character_maximum_length
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+            ORDER BY table_name, ordinal_position
+            """
+            
+            result = session.execute(text(schema_query))
+            
+            # Organize by table
+            schema = {}
+            for row in result:
+                table = row[0]
+                if table not in schema:
+                    schema[table] = {
+                        'columns': [],
+                        'column_count': 0
+                    }
+                
+                schema[table]['columns'].append({
+                    'name': row[1],
+                    'type': row[2],
+                    'nullable': row[3] == 'YES',
+                    'default': row[4],
+                    'max_length': row[5]
+                })
+                schema[table]['column_count'] += 1
+            
+            # Get table row counts
+            for table_name in schema.keys():
+                try:
+                    count_result = session.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+                    schema[table_name]['row_count'] = count_result.scalar()
+                except:
+                    schema[table_name]['row_count'] = 'N/A'
+            
+            # Log schema access for audit
+            logger.info("DEV SCHEMA ACCESSED")
+            
+            return {
+                'success': True,
+                'schema': schema,
+                'tables': list(schema.keys()),
+                'table_count': len(schema),
+                'accessed_at': datetime.now().isoformat()
+            }
+            
+    except Exception as e:
+        logger.error(f"Error in dev_database_schema: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/dev/db/tables")
+async def dev_list_tables(request: Request):
+    """Development endpoint to list all database tables"""
+    # Check development mode
+    if os.getenv('ENVIRONMENT') != 'development':
+        raise HTTPException(status_code=403, detail="Not available in production")
+        
+    # Check secret header
+    dev_key = request.headers.get('X-Dev-Key')
+    if dev_key != os.getenv('DEV_ACCESS_KEY', 'temporary-dev-key-2025'):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        with db.get_session() as session:
+            # Get all tables with basic info
+            tables_query = """
+            SELECT 
+                table_name,
+                (SELECT COUNT(*) FROM information_schema.columns 
+                 WHERE table_name = t.table_name AND table_schema = 'public') as column_count
+            FROM information_schema.tables t
+            WHERE table_schema = 'public' 
+            AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+            """
+            
+            result = session.execute(text(tables_query))
+            
+            tables = []
+            for row in result:
+                table_name = row[0]
+                column_count = row[1]
+                
+                # Get row count safely
+                try:
+                    count_result = session.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
+                    row_count = count_result.scalar()
+                except:
+                    row_count = 'N/A'
+                
+                tables.append({
+                    'name': table_name,
+                    'columns': column_count,
+                    'rows': row_count
+                })
+            
+            logger.info("DEV TABLES LISTED")
+            
+            return {
+                'success': True,
+                'tables': tables,
+                'count': len(tables),
+                'accessed_at': datetime.now().isoformat()
+            }
+            
+    except Exception as e:
+        logger.error(f"Error in dev_list_tables: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
