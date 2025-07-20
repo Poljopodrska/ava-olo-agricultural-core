@@ -19,6 +19,7 @@ from modules.api.deployment_routes import router as deployment_router, audit_rou
 from modules.api.database_routes import router as database_router, agricultural_router, debug_router
 from modules.api.health_routes import router as health_router
 from modules.api.business_routes import router as business_router
+from modules.api.dashboard_routes import router as dashboard_router, api_router as dashboard_api_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -38,6 +39,8 @@ app.include_router(agricultural_router)
 app.include_router(debug_router)
 app.include_router(health_router)
 app.include_router(business_router)
+app.include_router(dashboard_router)
+app.include_router(dashboard_api_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -143,17 +146,20 @@ async def root():
             </div>
             
             <div class="dashboard-links">
+                <a href="/dashboards/" class="dashboard-link">
+                    🏠 Dashboard Hub
+                </a>
                 <a href="/business-dashboard" class="dashboard-link">
-                    📊 Business Dashboard
+                    📊 Legacy Business Dashboard
                 </a>
-                <a href="/database-dashboard" class="dashboard-link">
-                    🗄️ Database Dashboard
+                <a href="/dashboards/database" class="dashboard-link">
+                    🗄️ New Database Dashboard
                 </a>
-                <a href="/health-dashboard" class="dashboard-link">
-                    💚 Health Dashboard
+                <a href="/dashboards/business" class="dashboard-link">
+                    📈 New Business Dashboard
                 </a>
-                <a href="/ui-dashboard" class="dashboard-link">
-                    🎨 UI Dashboard
+                <a href="/dashboards/health" class="dashboard-link">
+                    💚 New Health Dashboard
                 </a>
             </div>
             

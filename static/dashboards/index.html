@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO - Dashboard Hub</title>
+    <link rel="stylesheet" href="/static/dashboards/css/dashboard-common.css">
+    <style>
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            border-color: #4ade80;
+        }
+
+        .dashboard-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 1rem;
+        }
+
+        .database-icon {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+
+        .business-icon {
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: white;
+        }
+
+        .health-icon {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #1f2937;
+        }
+
+        .dashboard-description {
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-features {
+            list-style: none;
+            padding: 0;
+        }
+
+        .dashboard-features li {
+            display: flex;
+            align-items: center;
+            margin: 0.5rem 0;
+            color: #4b5563;
+            font-size: 0.9rem;
+        }
+
+        .dashboard-features li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .system-status {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 2rem 0;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-online {
+            background: #10b981;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin: 3rem 0;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.2rem;
+            color: #6b7280;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="nav-brand">
+                <h1>🥭 AVA OLO Dashboard Hub</h1>
+                <span class="version" id="version-info">Loading...</span>
+            </div>
+            <div class="nav-links">
+                <span class="status-indicator">
+                    <span class="status-dot status-online"></span>
+                    System Online
+                </span>
+            </div>
+        </header>
+
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <h1 class="welcome-title">Agricultural Intelligence Center</h1>
+            <p class="welcome-subtitle">
+                Comprehensive monitoring and analytics for the AVA OLO agricultural system. 
+                Access real-time data, farmer insights, and system health information.
+            </p>
+        </div>
+
+        <!-- System Status -->
+        <div class="system-status">
+            <h3 style="margin: 0 0 1rem 0; color: #1f2937;">System Status</h3>
+            <div class="stats-grid" id="system-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="farmer-count">--</div>
+                    <div class="stat-label">Active Farmers</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="total-hectares">--</div>
+                    <div class="stat-label">Total Hectares</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="recent-activities">--</div>
+                    <div class="stat-label">Today's Activities</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="system-uptime">--</div>
+                    <div class="stat-label">System Health</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Database Dashboard -->
+            <a href="/dashboards/database" class="dashboard-card">
+                <div class="dashboard-icon database-icon">📊</div>
+                <h3 class="dashboard-title">Database Dashboard</h3>
+                <p class="dashboard-description">
+                    Explore farmer data with natural language queries and custom analytics. 
+                    Access the complete database with intelligent search capabilities.
+                </p>
+                <ul class="dashboard-features">
+                    <li>Natural language SQL queries</li>
+                    <li>Quick query templates</li>
+                    <li>Save custom queries</li>
+                    <li>Real-time data exploration</li>
+                    <li>Export query results</li>
+                </ul>
+            </a>
+
+            <!-- Business Dashboard -->
+            <a href="/dashboards/business" class="dashboard-card">
+                <div class="dashboard-icon business-icon">📈</div>
+                <h3 class="dashboard-title">Business Dashboard</h3>
+                <p class="dashboard-description">
+                    Monitor farmer growth trends, occupation analytics, and business metrics. 
+                    Track registration patterns and system usage.
+                </p>
+                <ul class="dashboard-features">
+                    <li>Growth trend analysis</li>
+                    <li>Occupation breakdowns</li>
+                    <li>Interactive time charts</li>
+                    <li>Churn rate monitoring</li>
+                    <li>Activity stream feed</li>
+                </ul>
+            </a>
+
+            <!-- Health Dashboard -->
+            <a href="/dashboards/health" class="dashboard-card">
+                <div class="dashboard-icon health-icon">⚡</div>
+                <h3 class="dashboard-title">Health Dashboard</h3>
+                <p class="dashboard-description">
+                    Monitor system performance, database health, and service availability. 
+                    Track response times and system reliability.
+                </p>
+                <ul class="dashboard-features">
+                    <li>System performance metrics</li>
+                    <li>Database connection status</li>
+                    <li>API response monitoring</li>
+                    <li>Error rate tracking</li>
+                    <li>Service availability</li>
+                </ul>
+            </a>
+        </div>
+
+        <!-- Recent Activity Preview -->
+        <div class="system-status">
+            <h3 style="margin: 0 0 1rem 0; color: #1f2937;">Recent System Activity</h3>
+            <div id="recent-activity-preview" style="max-height: 200px; overflow-y: auto;">
+                Loading recent activities...
+            </div>
+            <div style="text-align: center; margin-top: 1rem;">
+                <a href="/dashboards/business#activity-stream" style="color: #3b82f6; text-decoration: none;">
+                    View Full Activity Stream →
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="text-align: center; padding: 2rem; color: #6b7280; border-top: 1px solid #e5e7eb; margin-top: 3rem;">
+            <p>AVA OLO Agricultural Intelligence Platform | 
+            <span id="current-time"></span> | 
+            <a href="/health" style="color: #3b82f6;">System Health</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Load system statistics
+        async function loadSystemStats() {
+            try {
+                const response = await fetch('/api/v1/dashboards/hub/stats');
+                const data = await response.json();
+                
+                document.getElementById('farmer-count').textContent = data.farmer_count || '--';
+                document.getElementById('total-hectares').textContent = data.total_hectares ? 
+                    data.total_hectares.toFixed(1) : '--';
+                document.getElementById('recent-activities').textContent = data.today_activities || '--';
+                document.getElementById('system-uptime').textContent = data.system_health || 'OK';
+            } catch (error) {
+                console.error('Failed to load system stats:', error);
+            }
+        }
+
+        // Load version information
+        async function loadVersionInfo() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                document.getElementById('version-info').textContent = 
+                    `v${data.version || 'Unknown'}`;
+            } catch (error) {
+                document.getElementById('version-info').textContent = 'v?.?.?';
+            }
+        }
+
+        // Load recent activity preview
+        async function loadRecentActivity() {
+            try {
+                const response = await fetch('/api/v1/dashboards/business/activity-stream?limit=5');
+                const data = await response.json();
+                
+                const container = document.getElementById('recent-activity-preview');
+                if (data.activities && data.activities.length > 0) {
+                    container.innerHTML = data.activities.map(activity => `
+                        <div style="padding: 0.5rem; border-bottom: 1px solid #f3f4f6; font-size: 0.9rem;">
+                            <strong>${activity.activity_type}:</strong> ${activity.activity_description}
+                            <span style="color: #6b7280; font-size: 0.8rem; float: right;">
+                                ${new Date(activity.created_at).toLocaleTimeString()}
+                            </span>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p style="color: #6b7280; text-align: center;">No recent activities</p>';
+                }
+            } catch (error) {
+                console.error('Failed to load recent activity:', error);
+                document.getElementById('recent-activity-preview').innerHTML = 
+                    '<p style="color: #ef4444; text-align: center;">Failed to load activities</p>';
+            }
+        }
+
+        // Update current time
+        function updateTime() {
+            document.getElementById('current-time').textContent = 
+                new Date().toLocaleString();
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemStats();
+            loadVersionInfo();
+            loadRecentActivity();
+            updateTime();
+            
+            // Update time every minute
+            setInterval(updateTime, 60000);
+            
+            // Refresh stats every 30 seconds
+            setInterval(loadSystemStats, 30000);
+        });
+    </script>
+</body>
+</html>

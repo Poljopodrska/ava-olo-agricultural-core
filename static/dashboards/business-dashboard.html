@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO - Business Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboards/css/dashboard-common.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@1.30.1/index.min.js"></script>
+    <style>
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            text-align: center;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .metric-card.growth {
+            border-left-color: #10b981;
+        }
+
+        .metric-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .metric-card.danger {
+            border-left-color: #ef4444;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-change {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .metric-change.positive {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .metric-change.negative {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .chart-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            margin: 2rem 0;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .time-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .time-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .time-btn:hover {
+            background: #f9fafb;
+        }
+
+        .time-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        .occupation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .occupation-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .occupation-count {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .occupation-name {
+            font-size: 0.9rem;
+            color: #6b7280;
+            text-transform: capitalize;
+            margin-top: 0.5rem;
+        }
+
+        .activity-stream {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        .activity-item {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .activity-registration {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .activity-field {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .activity-chat {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-description {
+            font-weight: 500;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-meta {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .activity-time {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            white-space: nowrap;
+        }
+
+        .growth-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .refresh-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s ease;
+        }
+
+        .refresh-button:hover {
+            background: #2563eb;
+        }
+
+        @media (max-width: 768px) {
+            .growth-comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .time-selector {
+                justify-content: center;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="nav-brand">
+                <h1>📈 Business Dashboard</h1>
+                <span class="version" id="version-info">Loading...</span>
+            </div>
+            <div class="nav-links">
+                <a href="/dashboards/" class="btn btn-secondary">← Dashboard Hub</a>
+                <a href="/dashboards/database" class="btn btn-primary">Database Dashboard</a>
+                <button class="refresh-button" onclick="refreshAllData()">🔄 Refresh</button>
+            </div>
+        </header>
+
+        <!-- Key Metrics -->
+        <div class="metrics-grid" id="key-metrics">
+            <div class="metric-card">
+                <div class="metric-value" id="total-farmers">--</div>
+                <div class="metric-label">Total Farmers</div>
+                <div class="metric-change positive" id="farmers-change">Loading...</div>
+            </div>
+            <div class="metric-card growth">
+                <div class="metric-value" id="total-hectares">--</div>
+                <div class="metric-label">Total Hectares</div>
+                <div class="metric-change positive" id="hectares-change">Loading...</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="total-cities">--</div>
+                <div class="metric-label">Active Cities</div>
+                <div class="metric-change positive" id="cities-change">Loading...</div>
+            </div>
+            <div class="metric-card warning">
+                <div class="metric-value" id="avg-farm-size">--</div>
+                <div class="metric-label">Avg Farm Size (ha)</div>
+                <div class="metric-change positive" id="avg-size-change">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Farmer Occupations -->
+        <div class="chart-section">
+            <h2 class="chart-title">Farmer Occupations Distribution</h2>
+            <div class="occupation-grid" id="occupation-breakdown">
+                <div class="loading-spinner">Loading occupation data...</div>
+            </div>
+        </div>
+
+        <!-- Growth Charts -->
+        <div class="growth-comparison">
+            <!-- Farmer Growth Chart -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3 class="chart-title">Farmer Growth</h3>
+                    <div class="time-selector">
+                        <button class="time-btn" data-period="7d" onclick="updateGrowthChart('7d')">Week</button>
+                        <button class="time-btn active" data-period="30d" onclick="updateGrowthChart('30d')">Month</button>
+                        <button class="time-btn" data-period="90d" onclick="updateGrowthChart('90d')">Quarter</button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Occupation Distribution Chart -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3 class="chart-title">Occupation Distribution</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="occupationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Stream -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <h2 class="chart-title">Live Activity Stream</h2>
+                <div class="time-selector">
+                    <button class="time-btn active" onclick="setActivityFilter('all')">All</button>
+                    <button class="time-btn" onclick="setActivityFilter('registration')">Registrations</button>
+                    <button class="time-btn" onclick="setActivityFilter('field')">Field Updates</button>
+                    <button class="time-btn" onclick="setActivityFilter('chat')">Conversations</button>
+                </div>
+            </div>
+            <div class="activity-stream" id="activity-stream">
+                <div class="loading-spinner">Loading recent activities...</div>
+            </div>
+        </div>
+
+        <!-- Database Changes -->
+        <div class="chart-section">
+            <h2 class="chart-title">Recent Database Changes</h2>
+            <div class="activity-stream" id="database-changes">
+                <div class="loading-spinner">Loading database changes...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let growthChart = null;
+        let occupationChart = null;
+        let currentGrowthPeriod = '30d';
+        let currentActivityFilter = 'all';
+        let activityUpdateInterval = null;
+
+        // Dashboard class
+        class BusinessDashboard {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                await this.loadVersionInfo();
+                await this.loadOverviewData();
+                await this.loadGrowthChart(currentGrowthPeriod);
+                await this.loadOccupationChart();
+                await this.loadActivityStream();
+                await this.loadDatabaseChanges();
+                
+                // Set up periodic updates
+                this.startPeriodicUpdates();
+            }
+
+            async loadVersionInfo() {
+                try {
+                    const response = await fetch('/health');
+                    const data = await response.json();
+                    document.getElementById('version-info').textContent = `v${data.version || 'Unknown'}`;
+                } catch (error) {
+                    console.error('Failed to load version:', error);
+                }
+            }
+
+            async loadOverviewData() {
+                try {
+                    const response = await fetch('/api/v1/dashboards/business/overview');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.updateKeyMetrics(data.totals, data.occupation_breakdown);
+                        this.updateOccupationBreakdown(data.occupation_breakdown);
+                    }
+                } catch (error) {
+                    console.error('Failed to load overview data:', error);
+                    this.showError('Failed to load business overview data');
+                }
+            }
+
+            updateKeyMetrics(totals, occupations) {
+                document.getElementById('total-farmers').textContent = totals.total_farmers || '--';
+                document.getElementById('total-hectares').textContent = 
+                    totals.total_hectares ? totals.total_hectares.toFixed(1) : '--';
+                document.getElementById('total-cities').textContent = totals.total_cities || '--';
+                
+                const avgSize = totals.total_hectares && totals.total_farmers ? 
+                    (totals.total_hectares / totals.total_farmers).toFixed(1) : '--';
+                document.getElementById('avg-farm-size').textContent = avgSize;
+
+                // Update change indicators (simplified for now)
+                document.getElementById('farmers-change').textContent = '+2.3% this week';
+                document.getElementById('hectares-change').textContent = '+5.1% this week';
+                document.getElementById('cities-change').textContent = '+1 new city';
+                document.getElementById('avg-size-change').textContent = '+0.8 ha avg';
+            }
+
+            updateOccupationBreakdown(occupations) {
+                const container = document.getElementById('occupation-breakdown');
+                
+                if (!occupations || occupations.length === 0) {
+                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #6b7280;">No occupation data available</p>';
+                    return;
+                }
+
+                container.innerHTML = occupations.map(occ => `
+                    <div class="occupation-item">
+                        <div class="occupation-count">${occ.farmer_count}</div>
+                        <div class="occupation-name">${this.formatOccupationName(occ.primary_occupation)}</div>
+                        <div style="font-size: 0.8rem; color: #9ca3af; margin-top: 0.25rem;">
+                            ${occ.total_hectares ? occ.total_hectares.toFixed(1) + ' ha' : '0 ha'}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            async loadGrowthChart(period) {
+                try {
+                    const response = await fetch(`/api/v1/dashboards/business/growth-trends?period=${period}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.renderGrowthChart(data);
+                    }
+                } catch (error) {
+                    console.error('Failed to load growth chart:', error);
+                }
+            }
+
+            renderGrowthChart(data) {
+                const ctx = document.getElementById('growthChart').getContext('2d');
+                
+                if (growthChart) {
+                    growthChart.destroy();
+                }
+
+                const labels = data.new_farmers.map(item => 
+                    new Date(item.period).toLocaleDateString()
+                );
+                const newFarmers = data.new_farmers.map(item => item.new_farmers);
+                const newHectares = data.new_farmers.map(item => item.new_hectares || 0);
+
+                growthChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'New Farmers',
+                            data: newFarmers,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        }, {
+                            label: 'New Hectares',
+                            data: newHectares,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                title: {
+                                    display: true,
+                                    text: 'New Farmers'
+                                },
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                title: {
+                                    display: true,
+                                    text: 'New Hectares'
+                                },
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                            }
+                        }
+                    }
+                });
+            }
+
+            async loadOccupationChart() {
+                try {
+                    const response = await fetch('/api/v1/dashboards/business/overview');
+                    const data = await response.json();
+                    
+                    if (data.success && data.occupation_breakdown) {
+                        this.renderOccupationChart(data.occupation_breakdown);
+                    }
+                } catch (error) {
+                    console.error('Failed to load occupation chart:', error);
+                }
+            }
+
+            renderOccupationChart(occupations) {
+                const ctx = document.getElementById('occupationChart').getContext('2d');
+                
+                if (occupationChart) {
+                    occupationChart.destroy();
+                }
+
+                const labels = occupations.map(occ => this.formatOccupationName(occ.primary_occupation));
+                const counts = occupations.map(occ => occ.farmer_count);
+                const colors = [
+                    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                    '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'
+                ];
+
+                occupationChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: counts,
+                            backgroundColor: colors.slice(0, occupations.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async loadActivityStream() {
+                try {
+                    const response = await fetch('/api/v1/dashboards/business/activity-stream?limit=30');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.renderActivityStream(data.activities);
+                    }
+                } catch (error) {
+                    console.error('Failed to load activity stream:', error);
+                    document.getElementById('activity-stream').innerHTML = 
+                        '<div class="error-message">Failed to load activity stream</div>';
+                }
+            }
+
+            renderActivityStream(activities) {
+                const container = document.getElementById('activity-stream');
+                
+                if (!activities || activities.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #6b7280;">No recent activities</div>';
+                    return;
+                }
+
+                container.innerHTML = activities
+                    .filter(activity => this.matchesActivityFilter(activity))
+                    .map(activity => `
+                        <div class="activity-item">
+                            <div class="activity-icon activity-${activity.activity_type.split('_')[0]}">
+                                ${this.getActivityIcon(activity.activity_type)}
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-description">${activity.activity_description}</div>
+                                <div class="activity-meta">
+                                    ${activity.first_name && activity.last_name ? 
+                                        `${activity.first_name} ${activity.last_name}` : 'System'} 
+                                    ${activity.city ? `• ${activity.city}` : ''}
+                                </div>
+                            </div>
+                            <div class="activity-time">
+                                ${this.formatTime(activity.created_at)}
+                            </div>
+                        </div>
+                    `).join('');
+            }
+
+            async loadDatabaseChanges() {
+                try {
+                    const response = await fetch('/api/v1/dashboards/business/database-changes');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.renderDatabaseChanges(data.changes);
+                    }
+                } catch (error) {
+                    console.error('Failed to load database changes:', error);
+                    document.getElementById('database-changes').innerHTML = 
+                        '<div class="error-message">Failed to load database changes</div>';
+                }
+            }
+
+            renderDatabaseChanges(changes) {
+                const container = document.getElementById('database-changes');
+                
+                if (!changes || changes.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #6b7280;">No recent database changes</div>';
+                    return;
+                }
+
+                container.innerHTML = changes.slice(0, 20).map(change => `
+                    <div class="activity-item">
+                        <div class="activity-icon activity-${change.change_type.split('_')[0]}">
+                            ${this.getChangeIcon(change.change_type)}
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-description">${change.description}</div>
+                            <div class="activity-meta">
+                                Type: ${change.change_type.replace('_', ' ')}
+                                ${change.metadata ? ` • Data: ${JSON.stringify(change.metadata).substring(0, 50)}...` : ''}
+                            </div>
+                        </div>
+                        <div class="activity-time">
+                            ${this.formatTime(change.change_time)}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            startPeriodicUpdates() {
+                // Update activity stream every 30 seconds
+                activityUpdateInterval = setInterval(() => {
+                    this.loadActivityStream();
+                }, 30000);
+
+                // Update key metrics every 60 seconds
+                setInterval(() => {
+                    this.loadOverviewData();
+                }, 60000);
+            }
+
+            matchesActivityFilter(activity) {
+                if (currentActivityFilter === 'all') return true;
+                return activity.activity_type.includes(currentActivityFilter);
+            }
+
+            getActivityIcon(activityType) {
+                const icons = {
+                    'registration': '👤',
+                    'field': '🌾',
+                    'chat': '💬',
+                    'farmer': '👨‍🌾',
+                    'activity': '⚡'
+                };
+                
+                for (const [key, icon] of Object.entries(icons)) {
+                    if (activityType.includes(key)) return icon;
+                }
+                return '📝';
+            }
+
+            getChangeIcon(changeType) {
+                const icons = {
+                    'farmer': '👤',
+                    'activity': '⚡',
+                    'registration': '📝',
+                    'field': '🌾'
+                };
+                
+                for (const [key, icon] of Object.entries(icons)) {
+                    if (changeType.includes(key)) return icon;
+                }
+                return '🔄';
+            }
+
+            formatOccupationName(occupation) {
+                return occupation.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+
+            formatTime(timestamp) {
+                try {
+                    const date = new Date(timestamp);
+                    const now = new Date();
+                    const diffMs = now - date;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMs / 3600000);
+                    const diffDays = Math.floor(diffMs / 86400000);
+
+                    if (diffMins < 1) return 'Just now';
+                    if (diffMins < 60) return `${diffMins}m ago`;
+                    if (diffHours < 24) return `${diffHours}h ago`;
+                    if (diffDays < 7) return `${diffDays}d ago`;
+                    return date.toLocaleDateString();
+                } catch (error) {
+                    return 'Unknown';
+                }
+            }
+
+            showError(message) {
+                // Simple error display
+                console.error(message);
+            }
+        }
+
+        // Global functions for button handlers
+        function updateGrowthChart(period) {
+            currentGrowthPeriod = period;
+            
+            // Update button states
+            document.querySelectorAll('.time-btn[data-period]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+            
+            // Load new data
+            dashboard.loadGrowthChart(period);
+        }
+
+        function setActivityFilter(filter) {
+            currentActivityFilter = filter;
+            
+            // Update button states
+            document.querySelectorAll('.time-selector button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Re-render activities with filter
+            dashboard.loadActivityStream();
+        }
+
+        function refreshAllData() {
+            dashboard.loadOverviewData();
+            dashboard.loadGrowthChart(currentGrowthPeriod);
+            dashboard.loadOccupationChart();
+            dashboard.loadActivityStream();
+            dashboard.loadDatabaseChanges();
+        }
+
+        // Initialize dashboard
+        const dashboard = new BusinessDashboard();
+    </script>
+</body>
+</html>

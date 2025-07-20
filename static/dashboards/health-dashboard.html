@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO - Health Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboards/css/dashboard-common.css">
+    <style>
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .health-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border-left: 4px solid #e5e7eb;
+        }
+
+        .health-card.healthy {
+            border-left-color: #10b981;
+        }
+
+        .health-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .health-card.error {
+            border-left-color: #ef4444;
+        }
+
+        .health-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-healthy {
+            background: #10b981;
+        }
+
+        .status-warning {
+            background: #f59e0b;
+        }
+
+        .status-error {
+            background: #ef4444;
+        }
+
+        .health-metric {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .health-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .health-detail {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 0.5rem;
+        }
+
+        .system-overview {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            margin-bottom: 2rem;
+        }
+
+        .uptime-display {
+            text-align: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: white;
+            border-radius: 12px;
+            margin: 2rem 0;
+        }
+
+        .uptime-value {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .uptime-label {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .logs-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            margin: 2rem 0;
+        }
+
+        .log-entry {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .log-level-info {
+            color: #3b82f6;
+        }
+
+        .log-level-warn {
+            color: #f59e0b;
+        }
+
+        .log-level-error {
+            color: #ef4444;
+        }
+
+        .log-timestamp {
+            color: #6b7280;
+            margin-right: 1rem;
+        }
+
+        .performance-chart {
+            height: 200px;
+            margin: 1rem 0;
+        }
+
+        .alert-banner {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .alert-banner.critical {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+        }
+
+        .alert-banner.warning {
+            background: #fffbeb;
+            border: 1px solid #fed7aa;
+            color: #d97706;
+        }
+
+        .alert-banner.info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .refresh-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #d1d5db;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .toggle-switch.active {
+            background: #10b981;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="nav-brand">
+                <h1>⚡ Health Dashboard</h1>
+                <span class="version" id="version-info">Loading...</span>
+            </div>
+            <div class="nav-links">
+                <a href="/dashboards/" class="btn btn-secondary">← Dashboard Hub</a>
+                <a href="/dashboards/database" class="btn btn-primary">Database Dashboard</a>
+            </div>
+        </header>
+
+        <!-- Refresh Controls -->
+        <div class="refresh-controls">
+            <button class="btn btn-primary" onclick="refreshHealthData()">🔄 Refresh Now</button>
+            <div class="auto-refresh-toggle">
+                <span>Auto-refresh:</span>
+                <div class="toggle-switch active" onclick="toggleAutoRefresh()" id="auto-refresh-toggle">
+                    <div class="toggle-slider"></div>
+                </div>
+                <span id="refresh-status">ON (30s)</span>
+            </div>
+            <span style="color: #6b7280;">Last updated: <span id="last-updated">Never</span></span>
+        </div>
+
+        <!-- Alerts Section -->
+        <div id="alerts-section">
+            <!-- Alerts will be populated here -->
+        </div>
+
+        <!-- System Uptime -->
+        <div class="uptime-display">
+            <div class="uptime-value" id="system-uptime">99.9%</div>
+            <div class="uptime-label">System Uptime (30 days)</div>
+        </div>
+
+        <!-- Health Metrics Grid -->
+        <div class="health-grid">
+            <!-- Database Health -->
+            <div class="health-card" id="database-health-card">
+                <div class="health-status">
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-healthy" id="database-status-indicator"></span>
+                        Database Health
+                    </div>
+                    <span id="database-status-text">Checking...</span>
+                </div>
+                <div class="health-metric" id="database-response-time">--ms</div>
+                <div class="health-label">Response Time</div>
+                <div class="health-detail" id="database-details">Checking database connectivity...</div>
+            </div>
+
+            <!-- API Health -->
+            <div class="health-card" id="api-health-card">
+                <div class="health-status">
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-healthy" id="api-status-indicator"></span>
+                        API Health
+                    </div>
+                    <span id="api-status-text">Healthy</span>
+                </div>
+                <div class="health-metric" id="api-response-time">--ms</div>
+                <div class="health-label">Avg Response Time</div>
+                <div class="health-detail" id="api-details">All endpoints responding normally</div>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="health-card" id="memory-health-card">
+                <div class="health-status">
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-healthy" id="memory-status-indicator"></span>
+                        Memory Usage
+                    </div>
+                    <span id="memory-status-text">Normal</span>
+                </div>
+                <div class="health-metric" id="memory-usage">--MB</div>
+                <div class="health-label">Current Usage</div>
+                <div class="health-detail" id="memory-details">Memory within normal limits</div>
+            </div>
+
+            <!-- Connection Pool -->
+            <div class="health-card" id="pool-health-card">
+                <div class="health-status">
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-healthy" id="pool-status-indicator"></span>
+                        Connection Pool
+                    </div>
+                    <span id="pool-status-text">Healthy</span>
+                </div>
+                <div class="health-metric" id="pool-connections">--/--</div>
+                <div class="health-label">Active/Total Connections</div>
+                <div class="health-detail" id="pool-details">Pool operating normally</div>
+            </div>
+
+            <!-- Error Rate -->
+            <div class="health-card" id="error-health-card">
+                <div class="health-status">
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-healthy" id="error-status-indicator"></span>
+                        Error Rate
+                    </div>
+                    <span id="error-status-text">Low</span>
+                </div>
+                <div class="health-metric" id="error-rate">--%</div>
+                <div class="health-label">Last 1 Hour</div>
+                <div class="health-detail" id="error-details">Error rate within acceptable limits</div>
+            </div>
+
+            <!-- Request Volume -->
+            <div class="health-card" id="requests-health-card">
+                <div class="health-status">
+                    <div style="display: flex; align-items: center;">
+                        <span class="status-indicator status-healthy" id="requests-status-indicator"></span>
+                        Request Volume
+                    </div>
+                    <span id="requests-status-text">Normal</span>
+                </div>
+                <div class="health-metric" id="request-volume">--/min</div>
+                <div class="health-label">Requests Per Minute</div>
+                <div class="health-detail" id="requests-details">Traffic within expected range</div>
+            </div>
+        </div>
+
+        <!-- System Overview -->
+        <div class="system-overview">
+            <h2 style="margin-bottom: 1.5rem; color: #1f2937;">System Overview</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #1f2937;" id="total-endpoints">--</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">API Endpoints</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #1f2937;" id="active-connections">--</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Active Connections</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #1f2937;" id="avg-response">--ms</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Avg Response Time</div>
+                </div>
+                <div style="text-align: center; padding: 1rem; background: #f8fafc; border-radius: 8px;">
+                    <div style="font-size: 1.5rem; font-weight: 600; color: #1f2937;" id="success-rate">--%</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Success Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent System Logs -->
+        <div class="logs-section">
+            <h3 style="margin-bottom: 1rem; color: #1f2937;">Recent System Logs</h3>
+            <div id="system-logs" style="max-height: 300px; overflow-y: auto;">
+                <div class="log-entry">
+                    <span class="log-timestamp">Loading...</span>
+                    <span class="log-level-info">INFO</span>
+                    <span>Fetching system logs...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class HealthDashboard {
+            constructor() {
+                this.autoRefreshEnabled = true;
+                this.refreshInterval = null;
+                this.init();
+            }
+
+            async init() {
+                await this.loadVersionInfo();
+                await this.refreshHealthData();
+                this.startAutoRefresh();
+            }
+
+            async loadVersionInfo() {
+                try {
+                    const response = await fetch('/health');
+                    const data = await response.json();
+                    document.getElementById('version-info').textContent = `v${data.version || 'Unknown'}`;
+                } catch (error) {
+                    console.error('Failed to load version:', error);
+                }
+            }
+
+            async refreshHealthData() {
+                document.getElementById('last-updated').textContent = new Date().toLocaleTimeString();
+                
+                await Promise.all([
+                    this.checkDatabaseHealth(),
+                    this.checkAPIHealth(),
+                    this.checkSystemMetrics(),
+                    this.loadSystemLogs(),
+                    this.checkForAlerts()
+                ]);
+            }
+
+            async checkDatabaseHealth() {
+                try {
+                    const startTime = performance.now();
+                    const response = await fetch('/api/v1/health/database');
+                    const responseTime = Math.round(performance.now() - startTime);
+                    
+                    document.getElementById('database-response-time').textContent = `${responseTime}ms`;
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.updateHealthCard('database', 'healthy', data.status || 'healthy', 
+                            `Database responding in ${responseTime}ms`);
+                    } else {
+                        this.updateHealthCard('database', 'error', 'unhealthy', 
+                            `Database not responding (HTTP ${response.status})`);
+                    }
+                } catch (error) {
+                    this.updateHealthCard('database', 'error', 'error', 
+                        'Database connection failed');
+                }
+            }
+
+            async checkAPIHealth() {
+                try {
+                    const startTime = performance.now();
+                    const response = await fetch('/health');
+                    const responseTime = Math.round(performance.now() - startTime);
+                    
+                    document.getElementById('api-response-time').textContent = `${responseTime}ms`;
+                    
+                    if (response.ok) {
+                        this.updateHealthCard('api', 'healthy', 'healthy', 
+                            `All API endpoints responding normally`);
+                    } else {
+                        this.updateHealthCard('api', 'warning', 'degraded', 
+                            `Some API endpoints experiencing issues`);
+                    }
+                } catch (error) {
+                    this.updateHealthCard('api', 'error', 'error', 
+                        'API health check failed');
+                }
+            }
+
+            async checkSystemMetrics() {
+                try {
+                    // Simulate system metrics (in a real implementation, these would come from monitoring APIs)
+                    const memoryUsage = Math.floor(Math.random() * 200) + 100; // 100-300 MB
+                    const poolActive = Math.floor(Math.random() * 8) + 2; // 2-10 connections
+                    const poolTotal = 10;
+                    const errorRate = Math.random() * 2; // 0-2%
+                    const requestVolume = Math.floor(Math.random() * 50) + 20; // 20-70 req/min
+
+                    // Update memory
+                    document.getElementById('memory-usage').textContent = `${memoryUsage}MB`;
+                    const memoryStatus = memoryUsage > 250 ? 'warning' : 'healthy';
+                    this.updateHealthCard('memory', memoryStatus, memoryStatus, 
+                        `Memory usage: ${memoryUsage}MB`);
+
+                    // Update connection pool
+                    document.getElementById('pool-connections').textContent = `${poolActive}/${poolTotal}`;
+                    const poolStatus = poolActive < 2 ? 'warning' : 'healthy';
+                    this.updateHealthCard('pool', poolStatus, poolStatus, 
+                        `${poolActive} active connections`);
+
+                    // Update error rate
+                    document.getElementById('error-rate').textContent = `${errorRate.toFixed(1)}%`;
+                    const errorStatus = errorRate > 1 ? 'warning' : 'healthy';
+                    this.updateHealthCard('error', errorStatus, errorStatus, 
+                        `Error rate: ${errorRate.toFixed(1)}%`);
+
+                    // Update request volume
+                    document.getElementById('request-volume').textContent = `${requestVolume}/min`;
+                    const requestStatus = requestVolume > 60 ? 'warning' : 'healthy';
+                    this.updateHealthCard('requests', requestStatus, requestStatus, 
+                        `${requestVolume} requests per minute`);
+
+                    // Update system overview
+                    document.getElementById('total-endpoints').textContent = '12';
+                    document.getElementById('active-connections').textContent = poolActive.toString();
+                    document.getElementById('avg-response').textContent = Math.floor(Math.random() * 100) + 50 + 'ms';
+                    document.getElementById('success-rate').textContent = (100 - errorRate).toFixed(1) + '%';
+
+                } catch (error) {
+                    console.error('Failed to load system metrics:', error);
+                }
+            }
+
+            async loadSystemLogs() {
+                try {
+                    // Simulate recent logs (in a real implementation, these would come from a logging service)
+                    const logs = [
+                        { timestamp: new Date(Date.now() - 60000), level: 'INFO', message: 'Database health check completed successfully' },
+                        { timestamp: new Date(Date.now() - 120000), level: 'INFO', message: 'Farmer registration API request processed' },
+                        { timestamp: new Date(Date.now() - 180000), level: 'WARN', message: 'Database connection pool at 80% capacity' },
+                        { timestamp: new Date(Date.now() - 240000), level: 'INFO', message: 'Dashboard data refresh completed' },
+                        { timestamp: new Date(Date.now() - 300000), level: 'INFO', message: 'System health check completed' }
+                    ];
+
+                    const logsContainer = document.getElementById('system-logs');
+                    logsContainer.innerHTML = logs.map(log => `
+                        <div class="log-entry">
+                            <span class="log-timestamp">${log.timestamp.toLocaleTimeString()}</span>
+                            <span class="log-level-${log.level.toLowerCase()}">${log.level}</span>
+                            <span>${log.message}</span>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Failed to load system logs:', error);
+                }
+            }
+
+            async checkForAlerts() {
+                try {
+                    // Simulate alert checking (in a real implementation, these would come from an alerting system)
+                    const alerts = [];
+                    
+                    // Add sample alerts based on current metrics
+                    const memoryUsage = parseInt(document.getElementById('memory-usage').textContent);
+                    if (memoryUsage > 250) {
+                        alerts.push({
+                            type: 'warning',
+                            icon: '⚠️',
+                            message: `Memory usage is elevated at ${memoryUsage}MB. Consider investigating memory leaks.`
+                        });
+                    }
+
+                    const errorRate = parseFloat(document.getElementById('error-rate').textContent);
+                    if (errorRate > 1) {
+                        alerts.push({
+                            type: 'critical',
+                            icon: '🚨',
+                            message: `Error rate is elevated at ${errorRate}%. Check system logs for details.`
+                        });
+                    }
+
+                    // If no alerts, show info message
+                    if (alerts.length === 0) {
+                        alerts.push({
+                            type: 'info',
+                            icon: '✅',
+                            message: 'All systems operating normally. No alerts detected.'
+                        });
+                    }
+
+                    this.renderAlerts(alerts);
+                } catch (error) {
+                    console.error('Failed to check for alerts:', error);
+                }
+            }
+
+            renderAlerts(alerts) {
+                const alertsContainer = document.getElementById('alerts-section');
+                alertsContainer.innerHTML = alerts.map(alert => `
+                    <div class="alert-banner ${alert.type}">
+                        <span style="font-size: 1.2rem;">${alert.icon}</span>
+                        <span>${alert.message}</span>
+                    </div>
+                `).join('');
+            }
+
+            updateHealthCard(type, status, statusText, details) {
+                const card = document.getElementById(`${type}-health-card`);
+                const indicator = document.getElementById(`${type}-status-indicator`);
+                const text = document.getElementById(`${type}-status-text`);
+                const detail = document.getElementById(`${type}-details`);
+
+                // Update card class
+                card.className = `health-card ${status}`;
+                
+                // Update status indicator
+                indicator.className = `status-indicator status-${status}`;
+                
+                // Update status text
+                text.textContent = statusText;
+                
+                // Update details
+                if (detail) {
+                    detail.textContent = details;
+                }
+            }
+
+            startAutoRefresh() {
+                if (this.autoRefreshEnabled) {
+                    this.refreshInterval = setInterval(() => {
+                        this.refreshHealthData();
+                    }, 30000); // Refresh every 30 seconds
+                }
+            }
+
+            stopAutoRefresh() {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                    this.refreshInterval = null;
+                }
+            }
+
+            toggleAutoRefresh() {
+                this.autoRefreshEnabled = !this.autoRefreshEnabled;
+                const toggle = document.getElementById('auto-refresh-toggle');
+                const status = document.getElementById('refresh-status');
+                
+                if (this.autoRefreshEnabled) {
+                    toggle.classList.add('active');
+                    status.textContent = 'ON (30s)';
+                    this.startAutoRefresh();
+                } else {
+                    toggle.classList.remove('active');
+                    status.textContent = 'OFF';
+                    this.stopAutoRefresh();
+                }
+            }
+        }
+
+        // Global functions
+        function refreshHealthData() {
+            dashboard.refreshHealthData();
+        }
+
+        function toggleAutoRefresh() {
+            dashboard.toggleAutoRefresh();
+        }
+
+        // Initialize dashboard
+        const dashboard = new HealthDashboard();
+    </script>
+</body>
+</html>

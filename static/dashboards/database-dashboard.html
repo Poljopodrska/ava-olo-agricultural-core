@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO - Database Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboards/css/dashboard-common.css">
+    <style>
+        .main-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            height: fit-content;
+            position: sticky;
+            top: 8rem;
+        }
+
+        .quick-queries {
+            margin-bottom: 2rem;
+        }
+
+        .quick-query-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .quick-query-btn:hover {
+            background: #e2e8f0;
+            border-color: #cbd5e0;
+        }
+
+        .quick-query-btn.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+
+        .query-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            margin-bottom: 2rem;
+        }
+
+        .natural-language-input {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .query-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .query-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .query-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .sql-display {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .results-table {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .results-table table {
+            width: 100%;
+            min-width: 600px;
+        }
+
+        .results-table th {
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 600;
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .results-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: top;
+        }
+
+        .results-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .query-history {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            margin: 0.5rem 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .history-item:hover {
+            background: #f8fafc;
+            border-color: #cbd5e0;
+        }
+
+        .history-query {
+            font-size: 0.9rem;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+
+        .history-time {
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+
+        .query-stats {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .error-message {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .success-message {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #047857;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .loading-overlay {
+            position: relative;
+        }
+
+        .loading-overlay.loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .query-examples {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .query-examples strong {
+            color: #374151;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .sidebar {
+                position: static;
+            }
+            
+            .query-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="nav-brand">
+                <h1>📊 Database Dashboard</h1>
+                <span class="version" id="version-info">Loading...</span>
+            </div>
+            <div class="nav-links">
+                <a href="/dashboards/" class="btn btn-secondary">← Dashboard Hub</a>
+                <a href="/dashboards/business" class="btn btn-primary">Business Dashboard</a>
+            </div>
+        </header>
+
+        <div class="main-grid">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Quick Queries -->
+                <div class="quick-queries">
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Quick Queries</h3>
+                    <button class="quick-query-btn" data-query="count-farmers">Count Total Farmers</button>
+                    <button class="quick-query-btn" data-query="list-farmers">List All Farmers</button>
+                    <button class="quick-query-btn" data-query="farmers-by-occupation">Farmers by Occupation</button>
+                    <button class="quick-query-btn" data-query="recent-activities">Recent Activities</button>
+                    <button class="quick-query-btn" data-query="top-cities">Top Cities</button>
+                    <button class="quick-query-btn" data-query="farmer-growth">Farmer Growth</button>
+                </div>
+
+                <!-- Saved Queries -->
+                <div class="saved-queries">
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Saved Queries</h3>
+                    <div id="saved-queries-list">
+                        Loading saved queries...
+                    </div>
+                    <button class="btn btn-secondary w-full mt-2" onclick="showSaveQueryDialog()">
+                        💾 Save Current Query
+                    </button>
+                </div>
+
+                <!-- Query History -->
+                <div class="query-history-section" style="margin-top: 2rem;">
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Query History</h3>
+                    <div class="query-history" id="query-history">
+                        <p style="color: #6b7280; text-align: center;">No queries yet</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Natural Language Query -->
+                <div class="query-section">
+                    <h2 style="margin-bottom: 1rem; color: #1f2937;">🤖 Natural Language Query</h2>
+                    <p style="color: #6b7280; margin-bottom: 1rem;">
+                        Ask questions about your farmer data in plain English. 
+                        The AI will convert your question to SQL and execute it safely.
+                    </p>
+                    
+                    <div class="natural-language-input">
+                        <textarea 
+                            id="natural-query-input" 
+                            class="query-input" 
+                            placeholder="Ask a question about your farmers, e.g.:
+• Show me all vineyard farmers from Sofia
+• How many farmers registered this month?
+• Which farmers have the most hectares?
+• List farmers who grow organic crops"
+                        ></textarea>
+                        
+                        <div class="query-examples">
+                            <strong>Example queries:</strong><br>
+                            "Show me farmers who grow grapes and have more than 10 hectares"<br>
+                            "Count how many farmers registered in the last 30 days"<br>
+                            "List the top 5 cities with most farmers"
+                        </div>
+                    </div>
+
+                    <div class="query-actions">
+                        <button class="btn btn-primary" onclick="executeNaturalQuery()">
+                            🔍 Ask Question
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearQuery()">
+                            🗑️ Clear
+                        </button>
+                        <button class="btn btn-success" onclick="exportResults()">
+                            📤 Export Results
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Generated SQL Display -->
+                <div class="query-section" id="sql-section" style="display: none;">
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Generated SQL Query</h3>
+                    <div class="sql-display" id="generated-sql"></div>
+                    <div class="query-stats" id="query-stats" style="display: none;">
+                        <div class="stat-item">
+                            <div class="stat-value" id="execution-time">--</div>
+                            <div class="stat-label">Execution Time</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="rows-returned">--</div>
+                            <div class="stat-label">Rows Returned</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="query-cost">--</div>
+                            <div class="stat-label">Query Cost</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Results -->
+                <div class="query-section loading-overlay" id="results-section" style="display: none;">
+                    <h3 style="margin-bottom: 1rem; color: #1f2937;">Query Results</h3>
+                    <div id="query-results"></div>
+                </div>
+
+                <!-- Error/Success Messages -->
+                <div id="message-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Query Dialog -->
+    <div id="save-query-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px;">
+            <h3 style="margin-bottom: 1rem;">Save Query</h3>
+            <div class="form-group">
+                <label class="form-label">Query Name</label>
+                <input type="text" id="save-query-name" class="form-input" placeholder="Enter query name">
+            </div>
+            <div class="query-actions">
+                <button class="btn btn-primary" onclick="saveQuery()">Save</button>
+                <button class="btn btn-secondary" onclick="hideSaveQueryDialog()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/dashboards/js/database-queries.js"></script>
+</body>
+</html>

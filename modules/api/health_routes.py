@@ -5,13 +5,19 @@ Handles health checks, performance metrics, and system status
 """
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse, HTMLResponse
-import psutil
 import time
 import os
 import traceback
 import logging
 from datetime import datetime
 from typing import Dict, Any
+
+# Optional psutil import for system metrics
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
 
 from ..core.config import VERSION, BUILD_ID, get_api_keys
 from ..core.database_manager import get_db_manager
@@ -93,36 +99,59 @@ async def database_health():
 async def performance_metrics():
     """Get system performance metrics"""
     try:
-        # CPU metrics
-        cpu_percent = psutil.cpu_percent(interval=0.1)
-        cpu_count = psutil.cpu_count()
-        
-        # Memory metrics
-        memory = psutil.virtual_memory()
-        memory_info = {
-            "total_mb": round(memory.total / 1024 / 1024, 2),
-            "available_mb": round(memory.available / 1024 / 1024, 2),
-            "used_mb": round(memory.used / 1024 / 1024, 2),
-            "percent": memory.percent
-        }
-        
-        # Disk metrics
-        disk = psutil.disk_usage('/')
-        disk_info = {
-            "total_gb": round(disk.total / 1024 / 1024 / 1024, 2),
-            "used_gb": round(disk.used / 1024 / 1024 / 1024, 2),
-            "free_gb": round(disk.free / 1024 / 1024 / 1024, 2),
-            "percent": disk.percent
-        }
-        
-        # Process info
-        process = psutil.Process()
-        process_info = {
-            "memory_mb": round(process.memory_info().rss / 1024 / 1024, 2),
-            "cpu_percent": process.cpu_percent(interval=0.1),
-            "threads": process.num_threads(),
-            "open_files": len(process.open_files()) if hasattr(process, 'open_files') else 0
-        }
+        if PSUTIL_AVAILABLE:
+            # CPU metrics
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            cpu_count = psutil.cpu_count()
+            
+            # Memory metrics
+            memory = psutil.virtual_memory()
+            memory_info = {
+                "total_mb": round(memory.total / 1024 / 1024, 2),
+                "available_mb": round(memory.available / 1024 / 1024, 2),
+                "used_mb": round(memory.used / 1024 / 1024, 2),
+                "percent": memory.percent
+            }
+            
+            # Disk metrics
+            disk = psutil.disk_usage('/')
+            disk_info = {
+                "total_gb": round(disk.total / 1024 / 1024 / 1024, 2),
+                "used_gb": round(disk.used / 1024 / 1024 / 1024, 2),
+                "free_gb": round(disk.free / 1024 / 1024 / 1024, 2),
+                "percent": disk.percent
+            }
+            
+            # Process info
+            process = psutil.Process()
+            process_info = {
+                "memory_mb": round(process.memory_info().rss / 1024 / 1024, 2),
+                "cpu_percent": process.cpu_percent(interval=0.1),
+                "threads": process.num_threads(),
+                "open_files": len(process.open_files()) if hasattr(process, 'open_files') else 0
+            }
+        else:
+            # Fallback metrics when psutil is not available
+            cpu_percent = 0.0
+            cpu_count = 1
+            memory_info = {
+                "total_mb": 0.0,
+                "available_mb": 0.0,
+                "used_mb": 0.0,
+                "percent": 0.0
+            }
+            disk_info = {
+                "total_gb": 0.0,
+                "used_gb": 0.0,
+                "free_gb": 0.0,
+                "percent": 0.0
+            }
+            process_info = {
+                "memory_mb": 0.0,
+                "cpu_percent": 0.0,
+                "threads": 1,
+                "open_files": 0
+            }
         
         # Database metrics
         db_manager = get_db_manager()

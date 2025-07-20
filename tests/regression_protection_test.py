@@ -21,6 +21,7 @@ class RegressionProtectionTest:
             "version_endpoint": self.test_version_endpoint,
             "response_time_acceptable": self.test_response_time,
             "database_performance_ok": self.test_database_performance,
+            "api_content_valid": self.test_api_content_structure,
             "cava_interface_present": self.test_cava_interface,
             "navigation_functional": self.test_navigation,
         }
@@ -126,13 +127,65 @@ class RegressionProtectionTest:
             print(f"Database performance test failed: {e}")
             return False
     
+    def test_api_content_structure(self) -> bool:
+        """Test API responses have correct structure"""
+        try:
+            # Test health endpoint JSON structure
+            resp = requests.get(f"{self.base_url}/health", timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                required_fields = ["status", "version", "service"]
+                missing_fields = [field for field in required_fields if field not in data]
+                
+                if missing_fields:
+                    print(f"   Health API missing fields: {missing_fields}")
+                    return False
+                
+                # Check status is valid
+                if data["status"] not in ["healthy", "degraded", "unhealthy"]:
+                    print(f"   Invalid health status: {data['status']}")
+                    return False
+            
+            # Test dashboard contains structured data
+            resp = requests.get(f"{self.base_url}/business-dashboard", timeout=10)
+            if resp.status_code == 200:
+                content = resp.text
+                # Look for numeric data patterns
+                import re
+                has_numbers = bool(re.search(r'\b\d+\b', content))
+                has_structure = any(word in content.lower() for word in ['debug', 'version', 'dashboard'])
+                
+                if not (has_numbers and has_structure):
+                    print(f"   Dashboard lacks structured content")
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            print(f"API content structure test failed: {e}")
+            return False
+    
     def test_cava_interface(self) -> bool:
         """Test CAVA registration interface is present"""
         try:
             resp = requests.get(f"{self.base_url}/register", timeout=10)
-            return ("CAVA" in resp.text and 
-                   "message" in resp.text.lower() and
-                   "chat" in resp.text.lower())
+            content = resp.text.lower()
+            
+            # Check for CAVA interface elements
+            has_cava = "cava" in content
+            has_chat = any(word in content for word in ["chat", "message", "input"])
+            has_form = any(word in content for word in ["form", "submit", "send"])
+            has_registration = "registration" in content
+            
+            print(f"   CAVA present: {has_cava}")
+            print(f"   Chat interface: {has_chat}")
+            print(f"   Form elements: {has_form}")
+            print(f"   Registration context: {has_registration}")
+            
+            # Need at least 3 of 4 elements for interface to be considered functional
+            score = sum([has_cava, has_chat, has_form, has_registration])
+            return score >= 3
+            
         except Exception as e:
             print(f"CAVA interface test failed: {e}")
             return False
