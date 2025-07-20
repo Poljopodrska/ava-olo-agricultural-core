@@ -42,6 +42,53 @@ async def health_check():
             "version": VERSION
         }, status_code=503)
 
+@router.get("/database")
+async def database_health():
+    """Check database performance and connectivity"""
+    try:
+        db_manager = get_db_manager()
+        
+        # Test query performance
+        start_time = time.time()
+        test_result = db_manager.execute_query("SELECT 1 as test", fetch_mode='one')
+        query_time = time.time() - start_time
+        
+        # Test farmer count query (more realistic)
+        start_time = time.time()
+        farmer_count = db_manager.execute_query("SELECT COUNT(*) as count FROM ava_farmers", fetch_mode='one')
+        farmer_query_time = time.time() - start_time
+        
+        # Determine health status based on performance
+        if query_time > 0.5 or farmer_query_time > 1.0:
+            status = "degraded"
+            status_code = 503
+        elif query_time > 0.2 or farmer_query_time > 0.5:
+            status = "warning"
+            status_code = 200
+        else:
+            status = "healthy"
+            status_code = 200
+        
+        return JSONResponse({
+            "status": status,
+            "test_query_time": round(query_time, 4),
+            "farmer_query_time": round(farmer_query_time, 4),
+            "farmer_count": farmer_count['count'] if farmer_count else 0,
+            "thresholds": {
+                "warning": {"test": 0.2, "farmer": 0.5},
+                "critical": {"test": 0.5, "farmer": 1.0}
+            },
+            "timestamp": datetime.now().isoformat()
+        }, status_code=status_code)
+        
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return JSONResponse({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }, status_code=503)
+
 @router.get("/performance")
 async def performance_metrics():
     """Get system performance metrics"""
