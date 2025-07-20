@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS
+.aws/
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Docker
+.dockerignore
+
+# Secrets (never commit these!)
+*secret*
+*password*
+credentials.json
+*.pem
+*.key
+
+# But allow documentation about secrets
+!*secret*.md
+
+# Local development
+local_*.py
+test_*.py
+!test_*_spec.py
+
+# Cache
+.cache/
+.pytest_cache/

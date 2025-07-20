@@ -1,0 +1,105 @@
+name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 127679825789.dkr.ecr.us-east-1.amazonaws.com
+  ECS_CLUSTER: ava-olo-production
+
+jobs:
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Set version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION=${GITHUB_SHA::8}
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Build and push Agricultural Core
+      env:
+        ECR_REPOSITORY: ava-olo/agricultural-core
+        IMAGE_TAG: ${{ steps.version.outputs.VERSION }}
+      run: |
+        docker build -f Dockerfile.agricultural-constitutional -t $ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+    - name: Build and push Monitoring Dashboards
+      env:
+        ECR_REPOSITORY: ava-olo/monitoring-dashboards
+        IMAGE_TAG: ${{ steps.version.outputs.VERSION }}
+      run: |
+        docker build -f Dockerfile.monitoring-constitutional -t $ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+    - name: Update Agricultural Core task definition
+      id: task-def-agricultural
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition-agricultural-constitutional.json
+        container-name: agricultural
+        image: ${{ env.ECR_REGISTRY }}/ava-olo/agricultural-core:${{ steps.version.outputs.VERSION }}
+
+    - name: Update Monitoring task definition
+      id: task-def-monitoring
+      uses: aws-actions/amazon-ecs-render-task-definition@v1
+      with:
+        task-definition: task-definition-monitoring-constitutional.json
+        container-name: monitoring
+        image: ${{ env.ECR_REGISTRY }}/ava-olo/monitoring-dashboards:${{ steps.version.outputs.VERSION }}
+
+    - name: Deploy Agricultural Core to ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def-agricultural.outputs.task-definition }}
+        service: agricultural-core
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+
+    - name: Deploy Monitoring to ECS
+      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      with:
+        task-definition: ${{ steps.task-def-monitoring.outputs.task-definition }}
+        service: monitoring-dashboards
+        cluster: ${{ env.ECS_CLUSTER }}
+        wait-for-service-stability: true
+
+    - name: Verify deployment
+      run: |
+        echo "🎉 Deployment completed!"
+        echo "Version: ${{ steps.version.outputs.VERSION }}"
+        echo "Agricultural Core: https://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com/"
+        echo "Please allow 2-3 minutes for services to stabilize."

@@ -1,0 +1,31 @@
+{
+  "primary": {
+    "black": "#1a1a1a",
+    "white": "#ffffff",
+    "olive": "#6B7D46",
+    "oliveDark": "#4a5632"
+  },
+  "secondary": {
+    "brown": "#8B4513",
+    "soil": "#654321",
+    "wheat": "#F5DEB3",
+    "leaf": "#7CB342"
+  },
+  "neutral": {
+    "gray100": "#f5f5f5",
+    "gray200": "#e0e0e0",
+    "gray300": "#c6c6c6",
+    "gray400": "#a8a8a8",
+    "gray500": "#8b8b8b",
+    "gray600": "#6e6e6e",
+    "gray700": "#515151",
+    "gray800": "#333333",
+    "gray900": "#1a1a1a"
+  },
+  "semantic": {
+    "success": "#7CB342",
+    "warning": "#FFA726",
+    "error": "#EF5350",
+    "info": "#42A5F5"
+  }
+}
