@@ -1,17 +1,67 @@
-__pycache__
-*.pyc
-*.pyo
-*.pyd
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .Python
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-*.log
-.git
+env/
+venv/
+ENV/
+.venv
+
+# Git
+.git/
 .gitignore
-README.md
-.vscode
-.idea
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+*.log.*
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Documentation
+*.md
+README.*
+CHANGELOG.*
+docs/
+
+# Backup files
+*.backup
+*.bak
+backup_*/
+
+# Environment files (should be mounted, not baked in)
+.env
+.env.*
+
+# Development files
+*.ipynb
+.ipynb_checkpoints/
+
+# Cache and temp files
+.cache/
+tmp/
+temp/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Other
+*.sql
+*.sh
+*.bat
+deployment_trigger.txt
+*_cache_bust.txt
+CAVA_*.md
+DEPLOYMENT_*.md

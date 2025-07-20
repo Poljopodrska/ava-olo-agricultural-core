@@ -13,7 +13,8 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
 
-# In-memory session storage (will be replaced with Redis)
+# In-memory session storage (restored from v3.3.0-cava-debug-fix)
+# This was the working version that prevented infinite loops
 registration_sessions = {}
 
 class CAVARegistrationEngine:
