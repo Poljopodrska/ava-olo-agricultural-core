@@ -1,9 +1,9 @@
-FROM python:3.11-slim
+FROM public.ecr.aws/docker/library/python:3.11-slim
 
 # Critical: Prevent bytecode generation
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV AVA_VERSION=v2.2.6-restore-ecs
+ENV AVA_VERSION=v2.3.1-blue-debug
 
 WORKDIR /app
 
