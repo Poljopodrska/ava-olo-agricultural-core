@@ -23,5 +23,13 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - echo Writing image definitions file...
       - printf '[{"name":"monitoring","imageUri":"%s"}]' $REPOSITORY_URI:latest > imagedefinitions.json
+      - echo Updating ECS service...
+      - |
+        aws ecs update-service \
+          --cluster ava-olo-production \
+          --service monitoring-dashboards \
+          --force-new-deployment \
+          --region $AWS_DEFAULT_REGION
+      - echo ECS service update initiated successfully
 artifacts:
   files: imagedefinitions.json
