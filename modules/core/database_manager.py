@@ -120,15 +120,21 @@ class DatabaseManager:
             return 0
     
     def get_total_hectares(self) -> float:
-        """Get total hectares from all fields"""
+        """Get total hectares from all fields (restored from v2.2.3-verification-fix)"""
         try:
-            result = self.execute_query("""
-                SELECT COALESCE(SUM(area_hectares), 0) 
-                FROM fields 
-                WHERE area_hectares IS NOT NULL
-            """)
-            return float(result['rows'][0][0]) if result['rows'] else 0.0
-        except Exception:
+            # Try the working column names from July 19 version
+            result = self.execute_query("SELECT COALESCE(SUM(area_ha), 0) FROM fields")
+            if result['rows'] and result['rows'][0][0] > 0:
+                return float(result['rows'][0][0])
+            
+            # Fallback to size_hectares column
+            result = self.execute_query("SELECT COALESCE(SUM(size_hectares), 0) FROM fields")
+            if result['rows']:
+                return float(result['rows'][0][0])
+            
+            return 0.0
+        except Exception as e:
+            logger.warning(f"Failed to get hectares: {e}")
             return 0.0
     
     def get_dashboard_metrics(self) -> Dict[str, Any]:
