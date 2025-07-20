@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "monitoring-dashboards"
-DEPLOYMENT_TIMESTAMP = '20250720112900'  # Updated for restore deployment
+DEPLOYMENT_TIMESTAMP = '20250720130000'  # Updated for blue debug box
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v2.2.6-restore-{BUILD_ID}"
+VERSION = f"v2.3.1-blue-debug-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

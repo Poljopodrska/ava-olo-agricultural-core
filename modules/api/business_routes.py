@@ -43,18 +43,19 @@ def get_business_dashboard_html(metrics: dict) -> str:
                 margin-bottom: 30px;
             }}
             
-            /* Yellow Debug Box - CRITICAL FOR MANGO TEST */
+            /* Blue Debug Box - CRITICAL FOR MANGO TEST */
             .debug-box {{
-                background-color: #FFD700;
-                border: 2px solid #FFA500;
+                background-color: #007BFF;
+                border: 2px solid #0056b3;
                 border-radius: 8px;
                 padding: 20px;
                 margin-bottom: 30px;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                color: white;
             }}
             .debug-box h2 {{
                 margin-top: 0;
-                color: #333;
+                color: white;
             }}
             .debug-info {{
                 display: grid;
