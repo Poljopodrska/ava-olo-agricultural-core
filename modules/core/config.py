@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722012100'  # v3.3.21 - Services verified and location-based features
+DEPLOYMENT_TIMESTAMP = '20250722013000'  # v3.3.22 - Auto-deployment pipeline fixed
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.21-services-verified"
+VERSION = f"v3.3.22-auto-deploy"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
