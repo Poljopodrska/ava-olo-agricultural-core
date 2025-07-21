@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse
 import boto3
 import json
 import subprocess
+from ..core.feature_verification import get_feature_verification_report
 
 router = APIRouter(prefix="/dashboards/deployment", tags=["deployment"])
 api_router = APIRouter(prefix="/api/deployment", tags=["deployment-api"])
@@ -200,10 +201,32 @@ async def count_failed_tasks(service: str, hours: int = 1) -> int:
         return -1  # Indicate error
 
 def generate_deployment_alerts(status: Dict[str, Any]) -> list:
-    """Generate alerts based on deployment status"""
+    """Generate alerts based on deployment status including feature failures"""
     alerts = []
     
     for service_name, service_status in status['services'].items():
+        # NEW: Feature failure alerts (HIGHEST PRIORITY)
+        feature_verification = service_status.get('feature_verification', {})
+        if not feature_verification.get('all_features_working', True):
+            # Extract failed features
+            failed_features = []
+            for feature_name, feature_data in feature_verification.get('features', {}).items():
+                if feature_data.get('status') != 'healthy':
+                    failed_features.append({
+                        'name': feature_name,
+                        'status': feature_data.get('status'),
+                        'message': feature_data.get('message', 'Unknown failure')
+                    })
+            
+            alerts.append({
+                "severity": "critical",
+                "service": service_name,
+                "message": f"FEATURE FAILURES DETECTED - Deployment succeeded but features are broken!",
+                "feature_type": "silent_failure",
+                "failed_features": failed_features,
+                "action": "Check feature verification dashboard for details"
+            })
+        
         # Version mismatch alert
         if service_status.get('ecr_version', {}).get('tag') != 'latest':
             if service_status.get('ecs_version', {}).get('version') != service_status.get('github_version', {}).get('commit'):
@@ -247,12 +270,13 @@ def generate_deployment_alerts(status: Dict[str, Any]) -> list:
 
 @api_router.get("/status")
 async def deployment_status():
-    """Get comprehensive deployment status"""
+    """Get comprehensive deployment status with feature verification"""
     status = {
         "timestamp": datetime.now().isoformat(),
         "services": {},
         "pipeline_health": {},
-        "alerts": []
+        "alerts": [],
+        "features": {}  # NEW: Feature verification results
     }
     
     # Check each service
@@ -269,31 +293,61 @@ async def deployment_status():
         service_status['failed_tasks_1h'] = await count_failed_tasks(config['ecs_service'], 1)
         service_status['failed_tasks_24h'] = await count_failed_tasks(config['ecs_service'], 24)
         
-        # Determine overall status
-        all_healthy = (
-            service_status['ecs_version'].get('status') == 'ACTIVE' and
-            service_status['ecs_version'].get('running_tasks', 0) >= service_status['ecs_version'].get('desired_tasks', 1) and
-            service_status['failed_tasks_1h'] < 5 and
-            service_status['codebuild_status'].get('status') in ['SUCCEEDED', 'IN_PROGRESS']
-        )
+        # NEW: Verify features are actually working
+        try:
+            feature_report = await get_feature_verification_report(
+                service_name.replace('-', '_'),  # Convert to module name format
+                config['alb_url']
+            )
+            service_status['feature_verification'] = feature_report
+            status['features'][service_name] = feature_report
+            
+            # Update deployment status based on BOTH mechanical success AND feature health
+            mechanical_healthy = (
+                service_status['ecs_version'].get('status') == 'ACTIVE' and
+                service_status['ecs_version'].get('running_tasks', 0) >= service_status['ecs_version'].get('desired_tasks', 1) and
+                service_status['failed_tasks_1h'] < 5 and
+                service_status['codebuild_status'].get('status') in ['SUCCEEDED', 'IN_PROGRESS']
+            )
+            
+            features_healthy = feature_report.get('all_features_working', False)
+            
+            # Only mark as healthy if BOTH deployment AND features are working
+            all_healthy = mechanical_healthy and features_healthy
+            
+            if mechanical_healthy and not features_healthy:
+                # This is the silent failure case - deployment succeeded but features broken
+                service_status['deployment_status'] = 'DEGRADED'
+                service_status['deployment_warning'] = 'Deployment successful but features not working correctly'
+            else:
+                service_status['deployment_status'] = 'HEALTHY' if all_healthy else 'UNHEALTHY'
+                
+        except Exception as e:
+            # If feature verification fails, assume features are broken
+            service_status['feature_verification'] = {
+                'error': str(e),
+                'all_features_working': False
+            }
+            service_status['deployment_status'] = 'DEGRADED'
+            service_status['deployment_warning'] = f'Could not verify features: {str(e)}'
         
-        service_status['deployment_status'] = 'HEALTHY' if all_healthy else 'UNHEALTHY'
         status['services'][service_name] = service_status
     
-    # Overall pipeline health
+    # Overall pipeline health includes feature health
     status['pipeline_health'] = {
         "all_services_healthy": all(s['deployment_status'] == 'HEALTHY' for s in status['services'].values()),
+        "all_features_working": all(f.get('all_features_working', False) for f in status['features'].values()),
         "last_check": datetime.now().isoformat()
     }
     
-    # Generate alerts
+    # Generate alerts including feature failures
     status['alerts'] = generate_deployment_alerts(status)
     
     return status
 
 @api_router.post("/verify/{service}")
 async def verify_deployment(service: str, expected_version: str):
-    """Verify a specific deployment completed successfully"""
+    """Verify a specific deployment completed successfully INCLUDING feature verification"""
     if service not in SERVICES:
         raise HTTPException(status_code=404, detail=f"Service {service} not found")
     
@@ -309,25 +363,47 @@ async def verify_deployment(service: str, expected_version: str):
     # Count recent failures
     failed_tasks = await count_failed_tasks(service, 1)
     
-    verified = (
+    # NEW: Verify features are working
+    try:
+        feature_report = await get_feature_verification_report(
+            service.replace('-', '_'),
+            config['alb_url']
+        )
+        features_working = feature_report.get('all_features_working', False)
+    except Exception as e:
+        feature_report = {'error': str(e), 'all_features_working': False}
+        features_working = False
+    
+    # Deployment is only verified if version matches, tasks are running, AND features work
+    mechanical_verified = (
         actual_version == expected_version and
         ecs_status.get('running_tasks', 0) >= ecs_status.get('desired_tasks', 0) and
         failed_tasks < 5
     )
     
+    # IMPORTANT: True verification requires BOTH mechanical success AND feature health
+    truly_verified = mechanical_verified and features_working
+    
     result = {
         "service": service,
         "expected_version": expected_version,
         "actual_version": actual_version,
-        "verified": verified,
+        "verified": truly_verified,  # This now includes feature verification
+        "mechanical_deployment_success": mechanical_verified,
+        "features_working": features_working,
+        "feature_verification": feature_report,
         "ecs_status": ecs_status,
         "failed_tasks_1h": failed_tasks,
         "timestamp": datetime.now().isoformat()
     }
     
-    # Log verification failure
-    if not verified:
-        print(f"DEPLOYMENT VERIFICATION FAILED: {json.dumps(result, indent=2)}")
+    # Log verification failure with more detail
+    if not truly_verified:
+        if mechanical_verified and not features_working:
+            print(f"SILENT DEPLOYMENT FAILURE DETECTED: {json.dumps(result, indent=2)}")
+            print("WARNING: Deployment succeeded mechanically but features are broken!")
+        else:
+            print(f"DEPLOYMENT VERIFICATION FAILED: {json.dumps(result, indent=2)}")
     
     return result
 
@@ -382,6 +458,10 @@ async def deployment_dashboard():
             }
             .status-unhealthy {
                 background: #dc3545;
+                color: white;
+            }
+            .status-degraded {
+                background: #ff9800;
                 color: white;
             }
             .metrics-grid {
@@ -468,14 +548,30 @@ async def deployment_dashboard():
                             ${alert.details ? `<br><small>${JSON.stringify(alert.details)}</small>` : ''}
                         </div>
                     `).join('');
-                    document.getElementById('alerts-container').innerHTML = alertsHtml || '<p style="color: #28a745;">✅ No deployment issues detected</p>';
+                    // Highlight feature failures prominently
+                    const featureFailures = data.alerts.filter(a => a.feature_type === 'silent_failure');
+                    if (featureFailures.length > 0) {
+                        const featureAlertsHtml = featureFailures.map(alert => `
+                            <div class="alert alert-critical" style="background: #ff1744; border: 2px solid #d50000;">
+                                <strong>⚠️ ${alert.service}:</strong> ${alert.message}
+                                <br><small>Failed features: ${alert.failed_features.map(f => f.name).join(', ')}</small>
+                                <br><a href="/dashboards/features/" style="color: white; text-decoration: underline;">View Feature Status Dashboard →</a>
+                            </div>
+                        `).join('');
+                        document.getElementById('alerts-container').innerHTML = featureAlertsHtml + alertsHtml;
+                    } else {
+                        document.getElementById('alerts-container').innerHTML = alertsHtml || '<p style="color: #28a745;">✅ No deployment issues detected</p>';
+                    }
                     
                     // Update services
                     const servicesHtml = Object.entries(data.services).map(([name, service]) => `
                         <div class="service-card">
                             <div class="service-header">
                                 <div class="service-name">${name}</div>
-                                <div class="status-badge status-${service.deployment_status.toLowerCase()}">${service.deployment_status}</div>
+                                <div class="status-badge status-${service.deployment_status.toLowerCase()}">
+                                    ${service.deployment_status}
+                                    ${service.deployment_warning ? '<br><small>' + service.deployment_warning + '</small>' : ''}
+                                </div>
                             </div>
                             
                             <div class="metrics-grid">
@@ -500,8 +596,10 @@ async def deployment_dashboard():
                                     <div class="metric-value ${service.codebuild_status.status === 'FAILED' ? 'version-mismatch' : 'version-match'}">${service.codebuild_status.status || 'Unknown'}</div>
                                 </div>
                                 <div class="metric">
-                                    <div class="metric-label">Task Definition</div>
-                                    <div class="metric-value">${service.ecs_version.task_definition || 'Unknown'}</div>
+                                    <div class="metric-label">Features</div>
+                                    <div class="metric-value ${service.feature_verification && service.feature_verification.all_features_working ? 'version-match' : 'version-mismatch'}">
+                                        ${service.feature_verification ? (service.feature_verification.all_features_working ? '✅ Working' : '❌ Failed') : '⚠️ Unknown'}
+                                    </div>
                                 </div>
                             </div>
                             

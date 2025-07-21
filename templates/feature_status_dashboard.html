@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feature Status - AVA OLO Monitoring</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <style>
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .feature-card {
+            background: var(--background-light);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card.healthy {
+            border-color: var(--success);
+            background: rgba(46, 125, 50, 0.05);
+        }
+        
+        .feature-card.degraded {
+            border-color: var(--warning);
+            background: rgba(255, 152, 0, 0.05);
+        }
+        
+        .feature-card.failed {
+            border-color: var(--danger);
+            background: rgba(211, 47, 47, 0.05);
+        }
+        
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .status-indicator.green { background: var(--success); }
+        .status-indicator.yellow { background: var(--warning); }
+        .status-indicator.red { background: var(--danger); }
+        
+        .feature-checks {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        .feature-checks li {
+            list-style: none;
+            padding: 5px 0;
+        }
+        
+        .check-pass { color: var(--success); }
+        .check-fail { color: var(--danger); }
+        
+        .alert-banner {
+            background: var(--danger);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            font-weight: bold;
+        }
+        
+        .service-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .refresh-info {
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .deployment-info {
+            background: var(--background-light);
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+        
+        .deployment-info .version {
+            font-family: monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        {% if alert_active %}
+        <div class="alert-banner">
+            ⚠️ FEATURE FAILURES DETECTED - Some deployed features are not working correctly!
+        </div>
+        {% endif %}
+        
+        <div class="header">
+            <h1>🔍 Feature Status Monitoring</h1>
+            <p>Real-time verification of deployed features - not just version numbers</p>
+        </div>
+        
+        <!-- Agricultural Core Service -->
+        <div class="service-section">
+            <h2>🌾 Agricultural Core (Farmer UI)</h2>
+            
+            <div class="deployment-info">
+                <strong>Service Status:</strong> 
+                <span class="status-indicator {{ 'green' if agricultural.all_features_working else 'red' }}"></span>
+                {{ 'All Features Working' if agricultural.all_features_working else 'Feature Failures Detected' }}
+            </div>
+            
+            <div class="feature-grid">
+                <!-- Constitutional Design Feature -->
+                {% set const_design = agricultural.features.constitutional_design %}
+                <div class="feature-card {{ const_design.status }}">
+                    <h3>
+                        <span class="status-indicator {{ 'green' if const_design.status == 'healthy' else 'red' }}"></span>
+                        Constitutional Design
+                    </h3>
+                    <p>{{ const_design.message }}</p>
+                    
+                    <ul class="feature-checks">
+                        {% for check, passed in const_design.checks.items() %}
+                        <li class="{{ 'check-pass' if passed else 'check-fail' }}">
+                            {{ '✓' if passed else '✗' }} {{ check.replace('_', ' ').title() }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- Template System Feature -->
+                {% set templates = agricultural.features.template_system %}
+                <div class="feature-card {{ templates.status }}">
+                    <h3>
+                        <span class="status-indicator {{ 'green' if templates.status == 'healthy' else 'red' }}"></span>
+                        Template System
+                    </h3>
+                    <p>{{ templates.message }}</p>
+                    
+                    {% if templates.template_dir %}
+                    <div class="feature-checks">
+                        <p>Template Directory: <code>{{ templates.template_dir }}</code></p>
+                        <p>Templates Found: {{ templates.templates_found }}</p>
+                        <p>Constitutional Template: {{ '✓' if templates.constitutional_template_exists else '✗' }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Database Feature -->
+                {% set database = agricultural.features.database_connection %}
+                <div class="feature-card {{ database.status }}">
+                    <h3>
+                        <span class="status-indicator {{ 'green' if database.status == 'healthy' else 'red' }}"></span>
+                        Database Connection
+                    </h3>
+                    <p>{{ database.message }}</p>
+                </div>
+                
+                <!-- UI Elements Feature -->
+                {% set ui = agricultural.features.ui_elements %}
+                <div class="feature-card {{ ui.status }}">
+                    <h3>
+                        <span class="status-indicator {{ 'green' if ui.status == 'healthy' else 'red' }}"></span>
+                        UI Elements
+                    </h3>
+                    <p>{{ ui.message }}</p>
+                    
+                    <ul class="feature-checks">
+                        {% for check, passed in ui.checks.items() %}
+                        <li class="{{ 'check-pass' if passed else 'check-fail' }}">
+                            {{ '✓' if passed else '✗' }} {{ check.replace('_', ' ').title() }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <!-- API Endpoints Feature -->
+                {% set api = agricultural.features.api_endpoints %}
+                <div class="feature-card {{ api.status }}">
+                    <h3>
+                        <span class="status-indicator {{ 'green' if api.status == 'healthy' else 'red' }}"></span>
+                        API Endpoints
+                    </h3>
+                    <p>{{ api.message }}</p>
+                    
+                    <ul class="feature-checks">
+                        {% for endpoint, working in api.endpoints.items() %}
+                        <li class="{{ 'check-pass' if working else 'check-fail' }}">
+                            {{ '✓' if working else '✗' }} {{ endpoint }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Monitoring Dashboards Service -->
+        <div class="service-section">
+            <h2>📊 Monitoring Dashboards (Internal UI)</h2>
+            
+            <div class="deployment-info">
+                <strong>Service Status:</strong> 
+                <span class="status-indicator {{ 'green' if monitoring.all_features_working else 'red' }}"></span>
+                {{ 'All Features Working' if monitoring.all_features_working else 'Feature Failures Detected' }}
+            </div>
+            
+            <div class="feature-grid">
+                <!-- Similar feature cards for monitoring service -->
+                {% for feature_name, feature_data in monitoring.features.items() %}
+                <div class="feature-card {{ feature_data.status }}">
+                    <h3>
+                        <span class="status-indicator {{ 'green' if feature_data.status == 'healthy' else 'red' }}"></span>
+                        {{ feature_name.replace('_', ' ').title() }}
+                    </h3>
+                    <p>{{ feature_data.message }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="refresh-info">
+            Last checked: {{ verification.timestamp }} | Auto-refresh in <span id="countdown">30</span>s
+        </div>
+    </div>
+    
+    <script>
+        // Auto-refresh countdown
+        let seconds = 30;
+        const countdown = setInterval(() => {
+            seconds--;
+            document.getElementById('countdown').textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(countdown);
+                location.reload();
+            }
+        }, 1000);
+        
+        // Manual refresh
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' && e.ctrlKey) {
+                e.preventDefault();
+                location.reload();
+            }
+        });
+    </script>
+</body>
+</html>

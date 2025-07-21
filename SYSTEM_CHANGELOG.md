@@ -1,5 +1,168 @@
 # AVA OLO System Changelog
 
+## [v3.3.6] - 2025-07-21
+
+### Fixed Language Confusion - English Text with Spanish Brown Colors
+
+**Issue**: Misunderstood "Spanish brown" as a language directive instead of a color name
+- **Root Cause**: "Spanish brown" (#964B00) is the NAME of the color (like "Navy blue")
+- **Mistake**: Interface was incorrectly translated to Spanish language
+- **Fix**: Changed all text back to English while keeping Spanish brown and olive colors
+
+**Changes Made**:
+1. **Agricultural Core** (`ui_dashboard_constitutional.html`):
+   - Changed: "Portal del Agricultor" → "Farmer Portal"
+   - Changed: "Asistente Agricola Inteligente" → "Intelligent Agricultural Assistant"
+   - Changed: "¿Cuál es tu pregunta agricola?" → "What is your agricultural question?"
+   - Changed: All Spanish UI text to English equivalents
+   - Language attribute: `lang="es"` → `lang="en"`
+
+2. **Monitoring Dashboards** (`main.py`):
+   - Changed: "Panel de Monitoreo Agricola" → "Agricultural Monitoring Panel"
+   - Changed: All dashboard names from Spanish to English
+   - Changed: Navigation links to English
+
+3. **Feature Verification** Updated:
+   - Now checks for English text instead of Spanish
+   - Smoke tests verify "Farmer Portal" instead of "Portal del Agricultor"
+   - Language verification looks for `lang="en"`
+
+4. **Color Scheme Unchanged**:
+   - Spanish Brown (#8B4513) - Still active (it's just the color name!)
+   - Olive Green (#808000) - Still active
+   - All agricultural colors remain the same
+
+**Key Learning**: Color names like "Spanish brown", "French blue", or "English green" are just descriptive names for specific color shades - they don't indicate language requirements!
+
+### Business Impact
+- Bulgarian mango farmers see English interface (or their preferred language)
+- Agricultural brown/olive color scheme maintained for consistency
+- No more confusion between color names and language settings
+
+---
+
+## [2025-07-21] Enhanced Deployment Monitoring with Feature Verification
+
+### Feature Overview
+**Feature**: Comprehensive deployment monitoring that verifies actual feature functionality, not just version numbers
+**Mango Test**: ✅ Bulgarian mango farmer's monitoring system detects when constitutional design fails even if deployment succeeds
+
+### Problem Solved
+- **Previous Issue**: v3.3.4 deployed successfully but constitutional design failed silently
+- **Root Cause**: Deployment monitoring only checked if services were running, not if features actually worked
+- **Impact**: Farmers saw fallback UI instead of constitutional design despite "successful" deployment
+
+### Implementation Details
+
+#### 1. Feature Verification System (`modules/core/feature_verification.py`)
+**Comprehensive Feature Checks**:
+- Constitutional design verification (colors, fonts, language)
+- Template system verification (Jinja2 loading correctly)
+- Database connectivity verification
+- UI elements verification (forms, buttons, version display)
+- API endpoints verification (health, core endpoints)
+
+**Key Methods**:
+```python
+verify_constitutional_design()  # Checks for brown/olive colors, Spanish text, 18px fonts
+verify_template_system()        # Ensures templates load from correct directory
+verify_ui_elements()           # Validates key UI components are present
+```
+
+#### 2. Feature Status Dashboard (`modules/dashboards/feature_status.py`)
+**Real-time Feature Monitoring**:
+- Visual dashboard at `/dashboards/features/`
+- Color-coded status cards (green=healthy, red=failed)
+- Checks both agricultural-core and monitoring services
+- Auto-refresh every 30 seconds
+- Alert banner when features are broken
+
+**API Endpoints**:
+- `/dashboards/features/api/verify-all` - Verify all services
+- `/dashboards/features/api/verify/{service}` - Verify specific service
+- `/webhook/deployment-complete` - Post-deployment verification
+
+#### 3. Enhanced Deployment Dashboard Integration
+**Deployment Status Now Includes**:
+- Feature verification results alongside mechanical status
+- New "DEGRADED" status for "deployed but broken" scenarios
+- Feature status metric in dashboard (✅ Working / ❌ Failed)
+- Prominent alerts for silent failures
+- Direct links to feature status dashboard
+
+#### 4. Deployment Smoke Tests (`modules/core/deployment_smoke_tests.py`)
+**Post-Deployment Verification**:
+- Constitutional design loads correctly
+- Spanish language elements present
+- No fallback UI showing
+- All dashboards accessible
+- No 500 errors on critical endpoints
+- Response time validation
+
+**Service-Specific Tests**:
+- Agricultural Core: UI rendering, API endpoints
+- Monitoring Dashboards: All 6 dashboards load
+
+#### 5. Webhook Integration
+**Automatic Verification on Deployment**:
+- Waits 15 seconds for service stabilization
+- Runs feature verification
+- Runs smoke tests
+- Sends alerts if features fail despite deployment success
+- Stores failure history in database
+
+### Technical Architecture
+```
+Deployment Pipeline:
+GitHub → CodeBuild → ECR → ECS → Webhook → Feature Verification
+                                          ↓
+                                    Smoke Tests
+                                          ↓
+                                 Alert if Features Broken
+```
+
+### Key Improvements
+1. **No More Silent Failures**: System detects when deployments succeed mechanically but features are broken
+2. **Removed Fallbacks**: No more try/except blocks that hide template loading failures
+3. **Deep Health Checks**: Verifies actual rendered content, not just HTTP 200 responses
+4. **Visual Monitoring**: Clear dashboard showing feature-level health
+5. **Automated Alerts**: Immediate notification when features fail
+
+### Configuration
+- Feature verification runs on both ALBs:
+  - Agricultural: http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com
+  - Monitoring: http://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com
+- Webhook endpoint: `/dashboards/features/webhook/deployment-complete`
+- Alert storage: `deployment_alerts` table in PostgreSQL
+
+### Business Impact
+- Bulgarian mango farmers always see correct constitutional design
+- Operations team immediately knows when features are broken
+- No more "successful" deployments with broken functionality
+- Reduced time to detect and fix feature failures
+- Increased confidence in deployment pipeline
+
+### Verification Commands
+```bash
+# Check feature status
+curl http://monitoring-alb/dashboards/features/api/verify-all
+
+# Trigger deployment verification
+curl -X POST http://monitoring-alb/dashboards/features/webhook/deployment-complete \
+  -H "Content-Type: application/json" \
+  -d '{"service": "agricultural-core", "version": "v3.3.5"}'
+```
+
+### Files Created/Modified
+- Created: `modules/core/feature_verification.py`
+- Created: `modules/dashboards/feature_status.py`
+- Created: `templates/feature_status_dashboard.html`
+- Created: `modules/core/deployment_smoke_tests.py`
+- Modified: `modules/dashboards/deployment.py`
+- Updated: `SYSTEM_CHANGELOG.md`
+
+---
+
 ## [2025-07-20] AWS Infrastructure Cleanup and Budget Management
 
 ### Infrastructure Cleanup

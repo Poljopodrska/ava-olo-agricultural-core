@@ -28,6 +28,7 @@ from modules.dashboards.business import router as business_dashboard_router
 from modules.dashboards.health import router as health_dashboard_router
 from modules.dashboards.database import router as database_dashboard_router
 from modules.dashboards.deployment import router as deployment_dashboard_router, api_router as deployment_api_router
+from modules.dashboards.feature_status import router as feature_status_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -55,6 +56,7 @@ app.include_router(health_dashboard_router)
 app.include_router(database_dashboard_router)
 app.include_router(deployment_dashboard_router)
 app.include_router(deployment_api_router)
+app.include_router(feature_status_router)
 app.include_router(webhook_router)
 
 @app.on_event("startup")
@@ -78,53 +80,53 @@ async def root():
     """Root endpoint - landing page"""
     html = f"""
     <!DOCTYPE html>
-    <html lang="es">
+    <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="app-version" content="{VERSION}">
-        <title>AVA OLO - Panel de Monitoreo Agricola</title>
+        <title>AVA OLO - Agricultural Monitoring Panel</title>
         <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
     </head>
     <body>
         <nav class="ava-nav">
             <a href="/" class="ava-nav-brand">🌾 AVA OLO</a>
             <div class="ava-nav-items">
-                <a href="/dashboards/deployment" class="ava-nav-link">Estado del Sistema</a>
-                <a href="/dashboards/health" class="ava-nav-link">Salud del Sistema</a>
+                <a href="/dashboards/deployment" class="ava-nav-link">System Status</a>
+                <a href="/dashboards/health" class="ava-nav-link">System Health</a>
             </div>
         </nav>
         
         <main id="main-content" class="ava-dashboard-container">
-            <h1 class="ava-text-center ava-mb-lg">Panel de Monitoreo Agricola</h1>
+            <h1 class="ava-text-center ava-mb-lg">Agricultural Monitoring Panel</h1>
             <p class="ava-text-center ava-mb-2xl" style="font-size: var(--ava-font-size-large); color: var(--ava-brown-muted);">
-                Sistema integral de monitoreo para la cooperativa de mangos bulgara
+                Comprehensive monitoring system for the Bulgarian mango cooperative
             </p>
             
             <div class="ava-dashboard-grid">
                 <a href="/dashboards/business" class="ava-dashboard-button">
                     <span class="icon">📊</span>
-                    <span class="label">Dashboard de Negocio</span>
+                    <span class="label">Business Dashboard</span>
                 </a>
                 <a href="/dashboards/database" class="ava-dashboard-button">
                     <span class="icon">🗄️</span>
-                    <span class="label">Dashboard de Base de Datos</span>
+                    <span class="label">Database Dashboard</span>
                 </a>
                 <a href="/dashboards/health" class="ava-dashboard-button">
                     <span class="icon">🏥</span>
-                    <span class="label">Dashboard de Salud</span>
+                    <span class="label">Health Dashboard</span>
                 </a>
                 <a href="/dashboards/deployment" class="ava-dashboard-button">
                     <span class="icon">🚀</span>
-                    <span class="label">Dashboard de Despliegue</span>
+                    <span class="label">Deployment Dashboard</span>
                 </a>
                 <a href="/dashboards/agronomic" class="ava-dashboard-button">
                     <span class="icon">🌾</span>
-                    <span class="label">Dashboard Agronómico</span>
+                    <span class="label">Agronomic Dashboard</span>
                 </a>
                 <a href="/dashboards/cost" class="ava-dashboard-button">
                     <span class="icon">💰</span>
-                    <span class="label">Dashboard de Costos</span>
+                    <span class="label">Cost Dashboard</span>
                 </a>
             </div>
         </main>
