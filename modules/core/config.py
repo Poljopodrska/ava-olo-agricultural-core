@@ -13,7 +13,7 @@ from datetime import datetime
 SERVICE_NAME = "monitoring-dashboards"
 DEPLOYMENT_TIMESTAMP = '20250720164000'  # Updated for multi-dashboard system
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.3-deployment-monitor-{BUILD_ID}"
+VERSION = f"v3.3.4-constitutional-design-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

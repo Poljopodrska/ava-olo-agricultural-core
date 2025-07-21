@@ -391,4 +391,128 @@ Successfully configured Git authorization for automated deployments:
 - No more 504 Gateway Timeout errors
 - Deployment pipeline fully operational
 - All monitoring dashboards accessible
+
+## [v3.3.4] - 2025-07-21
+
+### Constitutional Design System Implementation
+
+**Unified Agricultural Theme Across Both UIs**:
+- **Constitutional Amendment #16**: Complete design system implementation
+- **Color Palette**: Brown & olive agricultural colors with accessibility compliance
+- **Typography**: 18px+ minimum font size for constitutional compliance
+- **Language**: Spanish interface for Bulgarian mango farmers
+- **Responsive**: Mobile-first design with touch-friendly 48px+ button heights
+
+**Farmer UI (Agricultural-Core)**:
+- Created `ui_dashboard_constitutional.html` with agricultural theme
+- Spanish language interface: "Portal del Agricultor"
+- Constitutional color scheme: Browns (#8B4513, #654321) & Olives (#808000, #556B2F)
+- Enhanced form inputs with Enter key navigation
+- Version display in top-right corner
+- Mobile responsive design with larger fonts (20px on mobile)
+
+**Internal UI (Monitoring-Dashboards)**:
+- Updated main dashboard with constitutional design
+- Navigation bar with system status links
+- 6-dashboard grid with agricultural styling
+- Auto-refresh deployment monitoring
+- Spanish labels: "Panel de Monitoreo Agricola"
+
+**Technical Implementation**:
+- **Shared CSS**: `constitutional-design-v3.css` with complete design system
+- **JavaScript Module**: `constitutional-interactions.js` for consistent behavior
+- **Enter Key Navigation**: Works on ALL input fields across both UIs
+- **Version Display**: Automatic version display on every page
+- **Accessibility**: WCAG AA compliant with 18px+ fonts and proper contrast ratios
+
+**CSS Design Variables**:
+```css
+--ava-brown-primary: #8B4513    /* Saddle Brown */
+--ava-olive-primary: #808000    /* Olive */
+--ava-font-size-base: 18px      /* Constitutional minimum */
+--ava-button-height: 48px       /* Touch-friendly minimum */
+```
+
+**Database Connectivity**:
+- Verified RDS PostgreSQL connections in both services
+- Database configuration supports farmer-crm database
+- Connection pooling and URL encoding for special characters
+- Environment-based configuration for production/development
+
+**Mobile Responsiveness**:
+- Font size increases to 20px on mobile devices
+- Grid layout adapts: 2 columns on tablet, 1 column on phone
+- Touch targets minimum 52px on mobile
+- Accessibility features including high contrast and reduced motion support
+
+**JavaScript Features**:
+- Enter key advances through form fields and submits on last field
+- Automatic version display injection
+- Form validation with constitutional styling
+- Keyboard navigation indicators
+- Skip links for screen readers
+
+### Business Impact
+- Consistent agricultural branding across farmer and internal interfaces
+- Improved accessibility for older farmers with larger fonts
+- Spanish language support for international mango cooperative
+- Mobile-friendly design for field use
+- Professional appearance matching agricultural industry standards
+
+## [v3.3.5] - 2025-07-21
+
+### Fixed Constitutional Template Loading in Docker Container
+
+**Issue**: Jinja2 templates weren't loading in production Docker container
+- Templates existed in repository but couldn't be found at runtime
+- Auth route handler was intercepting root path before web routes
+- Fallback HTML was displaying instead of constitutional design
+
+**Root Causes Identified**:
+1. **Route Conflict**: Auth module's root route "/" took precedence over web routes
+2. **Template Path**: Multiple search paths needed for different environments
+3. **Module Loading Order**: Auth router loaded before web router in main.py
+
+**Solutions Implemented**:
+1. **Route Fix**: Moved auth landing page from "/" to "/auth"
+   - Allows web_routes to serve constitutional template at root
+   - Updated logout redirect to maintain consistency
+   
+2. **Template Path Resolution**: Added multiple search paths
+   ```python
+   Path(__file__).parent.parent.parent / "templates"  # From modules/api to root
+   Path("/app/templates")  # Docker absolute path
+   Path("./templates")  # Relative to working directory
+   ```
+
+3. **Enhanced Debugging**:
+   - Added `/debug/templates` endpoint for diagnostics
+   - Template verification in Dockerfile build
+   - Detailed logging of template loading attempts
+
+4. **Docker Configuration**:
+   - Verified template copying with explicit checks
+   - Set PYTHONPATH=/app for proper module resolution
+   - Added template existence validation during build
+
+**Verification Results**:
+- ✅ Constitutional design now displays at http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/
+- ✅ Spanish language: "Portal del Agricultor"
+- ✅ Brown (#8B4513) and olive (#808000) color scheme active
+- ✅ 18px+ typography for constitutional compliance
+- ✅ "Cooperativa de Mangos de Bulgaria" text visible
+- ✅ Template debug endpoint confirms proper configuration
+
+### Technical Details
+- **Template Loading**: Jinja2Templates now finds templates at /app/templates
+- **Route Handlers**: Auth at /auth, constitutional UI at /
+- **Version**: v3.3.5-constitutional-template-fix-9b8811dc
+- **Build Process**: Templates verified during Docker build with explicit checks
+
+### Business Impact
+- Bulgarian mango farmers now see proper brown/olive agricultural design
+- No more fallback to generic blue gradient interface
+- Spanish language interface fully functional
+- Constitutional compliance maintained with 18px+ fonts
+- Professional agricultural branding restored
 EOF < /dev/null
