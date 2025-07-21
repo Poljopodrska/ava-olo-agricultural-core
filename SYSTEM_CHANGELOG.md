@@ -1,5 +1,85 @@
 # AVA OLO System Changelog
 
+## [v3.3.18] - 2025-07-21
+
+### Fixed OpenAI Chat Temperature and Response Quality
+
+**Feature**: Enhanced OpenAI chat with higher temperature settings, better prompting, and proper error handling  
+**Mango Test**: ✅ Slovenian farmer gets varied, helpful responses instead of repetitive generic messages
+
+### Major Fixes Implemented
+
+#### 1. Temperature and Response Variety
+- **Increased Temperature**: Changed from 0.7 to 0.85 for more dynamic responses
+- **Presence Penalty**: Added 0.6 to avoid repetitive topics
+- **Frequency Penalty**: Added 0.3 to encourage diverse vocabulary
+- **Top-p Sampling**: Set to 0.9 for nucleus sampling creativity
+- **Duplicate Detection**: Automatically regenerates if response is identical to previous
+
+#### 2. Enhanced System Prompt
+- **Farmer Context**: Includes location, fields, crops, and last tasks
+- **Time Context**: Current date and time for temporal awareness
+- **Detailed Instructions**: Emphasizes conversation variety and personalization
+- **Field Information**: Shows each field with crop type and last task performed
+- **Personality**: Encourages friendly, varied, and contextual responses
+
+#### 3. Connection Status and Error Handling
+- **Connection Check**: Frontend checks API status on load
+- **Status Endpoints**: `/api/v1/chat/status` and `/api/v1/chat/debug`
+- **Error Messages**: Clear feedback when API key missing or connection fails
+- **Warning Banner**: Shows when chat AI is not connected
+- **Graceful Fallback**: Improved mock responses with variety
+
+#### 4. Frontend Improvements
+- **Typing Indicator**: Animated dots while waiting for response
+- **Error States**: Red error messages for connection issues
+- **Loading States**: Disable input and show visual feedback
+- **Connection Status**: Yellow warning banner when disconnected
+- **Better UX**: Clear indication of chat service status
+
+### Technical Implementation Details
+
+#### OpenAI Configuration
+```python
+# Enhanced GPT-4 settings
+temperature = 0.85  # Higher for variety
+presence_penalty = 0.6  # Avoid repetition
+frequency_penalty = 0.3  # Diverse vocabulary
+top_p = 0.9  # Nucleus sampling
+max_history = 20  # More context retention
+```
+
+#### Mock Response Improvements
+- Multiple response variations per topic
+- Random selection from response pools
+- Context-aware greetings
+- More natural conversation flow
+
+### API Endpoints Added
+- `/api/v1/chat/status` - Check connection status
+- `/api/v1/chat/debug` - Debug configuration details
+
+### UI/UX Enhancements
+- Typing animation with three bouncing dots
+- Error messages in red with clear explanations
+- Connection status banner with warning icon
+- Smooth message animations
+
+### Business Impact
+- Farmers receive varied, contextual responses
+- No more repetitive generic messages
+- Clear indication when service unavailable
+- Better conversation quality and engagement
+- Improved error visibility for troubleshooting
+
+### Deployment Notes
+- Verify OPENAI_API_KEY is set in environment
+- Check `/api/v1/chat/debug` endpoint for configuration
+- Monitor for duplicate responses in logs
+- Connection status visible to users
+
+---
+
 ## [v3.3.17] - 2025-07-21
 
 ### Dashboard Refinements with OpenAI Chat Integration

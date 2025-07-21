@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 import httpx
 import json
 from datetime import datetime
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -20,25 +21,52 @@ class OpenAIChat:
         self.api_url = "https://api.openai.com/v1/chat/completions"
         self.model = "gpt-4"  # Use gpt-3.5-turbo if gpt-4 not available
         self.conversations = {}  # Store conversations by session_id
-        self.max_history = 10  # Keep last 10 messages for context
+        self.max_history = 20  # Keep last 20 messages for better context
+        self.connected = self._test_connection()
+        
+    def _test_connection(self) -> bool:
+        """Test if OpenAI API is accessible"""
+        if not self.api_key:
+            logger.warning("OPENAI_API_KEY not set")
+            return False
+        return True
         
     def _get_system_prompt(self, farmer_context: Dict) -> str:
         """Generate system prompt with farmer context"""
-        prompt = """You are AVA, an intelligent agricultural assistant helping farmers with their daily operations. 
-You have expertise in:
+        # Get current time for context
+        current_time = datetime.now().strftime("%H:%M")
+        current_date = datetime.now().strftime("%B %d, %Y")
+        
+        prompt = f"""You are CAVA, an advanced agricultural AI assistant with deep expertise in farming. 
+Current date and time: {current_date} at {current_time}
+
+You're talking to a farmer with these specific details:
+- Location: {farmer_context.get('location', 'Slovenia')}
+- Fields: {len(farmer_context.get('fields', []))} fields totaling {sum(f.get('hectares', 0) for f in farmer_context.get('fields', []))} hectares
+- Active crops: {', '.join(set(f.get('crop', 'Unknown') for f in farmer_context.get('fields', [])))}
+
+Your expertise includes:
 - Crop management and cultivation techniques
-- Weather impact on farming
-- Pest and disease identification
-- Irrigation and water management
-- Harvest timing and techniques
-- Soil health and fertilization
+- Weather impact on farming operations
+- Pest and disease identification and treatment
+- Precision irrigation and water management
+- Optimal harvest timing and techniques
+- Soil health, pH balance, and fertilization
+- Sustainable farming practices
+- Agricultural technology and innovation
 
-Be helpful, practical, and provide actionable advice. Keep responses concise and farmer-friendly."""
+IMPORTANT: 
+- Be conversational, friendly, and vary your responses
+- Ask specific questions about their crops and current challenges
+- Provide practical, actionable advice tailored to their situation
+- Reference their specific fields and crops when relevant
+- Never repeat the same response twice
+- Show personality and genuine interest in their farming success"""
 
-        if farmer_context:
-            prompt += f"\n\nThe farmer you're talking to has these fields:\n"
+        if farmer_context.get('fields'):
+            prompt += "\n\nDetailed field information:\n"
             for field in farmer_context.get('fields', []):
-                prompt += f"- {field['name']}: {field['crop']} ({field['hectares']} ha)\n"
+                prompt += f"- {field['name']}: {field['crop']} ({field['hectares']} ha) - Last task: {field.get('last_task', 'Unknown')}\n"
                 
         return prompt
     
@@ -77,8 +105,11 @@ Be helpful, practical, and provide actionable advice. Keep responses concise and
                     json={
                         "model": self.model,
                         "messages": messages,
-                        "temperature": 0.7,
-                        "max_tokens": 500
+                        "temperature": 0.85,  # Higher for more varied responses
+                        "max_tokens": 300,
+                        "presence_penalty": 0.6,  # Avoid repetitive topics
+                        "frequency_penalty": 0.3,  # Encourage diverse vocabulary
+                        "top_p": 0.9  # Use nucleus sampling for creativity
                     },
                     timeout=30.0
                 )
@@ -86,6 +117,33 @@ Be helpful, practical, and provide actionable advice. Keep responses concise and
                 if response.status_code == 200:
                     data = response.json()
                     ai_response = data['choices'][0]['message']['content']
+                    
+                    # Check for duplicate response
+                    if history and len(history) >= 2 and history[-1].get("content") == ai_response:
+                        # Force a different response
+                        logger.warning("Duplicate response detected, regenerating...")
+                        messages.append({"role": "system", "content": "The previous response was identical. Please provide a completely different response with new information or perspective."})
+                        
+                        retry_response = await client.post(
+                            self.api_url,
+                            headers={
+                                "Authorization": f"Bearer {self.api_key}",
+                                "Content-Type": "application/json"
+                            },
+                            json={
+                                "model": self.model,
+                                "messages": messages,
+                                "temperature": 0.95,  # Even higher for retry
+                                "max_tokens": 300,
+                                "presence_penalty": 0.8,
+                                "frequency_penalty": 0.5
+                            },
+                            timeout=30.0
+                        )
+                        
+                        if retry_response.status_code == 200:
+                            retry_data = retry_response.json()
+                            ai_response = retry_data['choices'][0]['message']['content']
                     
                     # Update conversation history
                     history.append({"role": "user", "content": message})
@@ -97,38 +155,79 @@ Be helpful, practical, and provide actionable advice. Keep responses concise and
                     return {
                         "response": ai_response,
                         "timestamp": datetime.now().isoformat(),
-                        "model": self.model
+                        "model": self.model,
+                        "connected": True
+                    }
+                elif response.status_code == 401:
+                    logger.error("OpenAI API authentication failed - check API key")
+                    return {
+                        "response": "I'm having trouble connecting to my AI service. Please check that the OpenAI API key is configured correctly.",
+                        "timestamp": datetime.now().isoformat(),
+                        "model": "error",
+                        "connected": False,
+                        "error": "Authentication failed"
                     }
                 else:
                     logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
                     return await self._get_mock_response(message, farmer_context)
                     
+        except httpx.ConnectError as e:
+            logger.error(f"Connection error: {e}")
+            return {
+                "response": "I'm having trouble connecting to the internet. Please check your connection and try again.",
+                "timestamp": datetime.now().isoformat(),
+                "model": "error",
+                "connected": False,
+                "error": "Connection failed"
+            }
         except Exception as e:
             logger.error(f"Chat error: {e}")
-            return await self._get_mock_response(message, farmer_context)
+            return {
+                "response": f"I encountered an error: {str(e)}. Please make sure the OpenAI API key is configured correctly.",
+                "timestamp": datetime.now().isoformat(),
+                "model": "error",
+                "connected": False,
+                "error": str(e)
+            }
     
     async def _get_mock_response(self, message: str, farmer_context: Dict) -> Dict:
-        """Generate mock response when API is unavailable"""
+        """Generate varied mock responses when API is unavailable"""
         message_lower = message.lower()
         
-        # Simple keyword-based responses
+        # Multiple response options for variety
+        weather_responses = [
+            "Looking at your local weather patterns, I see we have variable conditions ahead. The hourly forecast shows some interesting changes - have you checked the wind speeds for any planned spraying?",
+            "The weather's looking quite dynamic in your area. With your fields, you might want to pay special attention to the precipitation forecast. What specific weather concerns do you have today?",
+            "I notice the forecast shows changing conditions. For your crops, timing will be crucial. Are you planning any field operations in the next 24-48 hours?"
+        ]
+        
+        harvest_responses = [
+            "Harvest timing is critical for your crops. Based on typical patterns, you'll want to monitor moisture levels closely. What stage are your fields at currently?",
+            "For successful harvesting, dry conditions are essential. Have you been tracking the maturity indicators in your fields? I can help you plan the optimal timing.",
+            "Harvest decisions depend on many factors. With your field sizes, you might need to stagger the harvest. What's your current harvest plan?"
+        ]
+        
+        general_responses = [
+            "That's an interesting question! With your farming operation, there are several angles to consider. Could you tell me more about your specific situation?",
+            "I'd be happy to help with that. Given your fields and crops, what specific challenges are you facing today?",
+            "Great question! Every farm is unique. What particular aspect would be most helpful for your operation right now?"
+        ]
+        
+        # Select appropriate response category
         if "weather" in message_lower:
-            response = "Based on the current weather forecast, conditions look favorable for the next few days. Make sure to monitor the hourly forecast for any changes in precipitation that might affect your field operations."
+            response = random.choice(weather_responses)
         elif "harvest" in message_lower:
-            response = "For optimal harvest timing, monitor your crop's maturity indicators. Consider the weather forecast - you'll want dry conditions for at least 2-3 days during harvest. Check the moisture content if possible."
-        elif "pest" in message_lower or "disease" in message_lower:
-            response = "Regular field inspection is key for pest and disease management. Look for unusual spots, discoloration, or insect damage. Early detection allows for more effective treatment. Would you like me to help identify specific symptoms?"
-        elif "irrigation" in message_lower or "water" in message_lower:
-            response = "Proper irrigation depends on your soil type, crop stage, and weather conditions. Check soil moisture at root depth. Generally, deep and infrequent watering promotes better root development than frequent shallow irrigation."
-        elif "fertiliz" in message_lower:
-            response = "Fertilization should be based on soil test results and crop requirements. Split applications often work better than single large doses. Consider the growth stage of your crop and upcoming weather when planning applications."
+            response = random.choice(harvest_responses)
+        elif "hello" in message_lower or "hi" in message_lower:
+            response = f"Hello! I'm CAVA, your agricultural assistant. I see you're managing {len(farmer_context.get('fields', []))} fields. What can I help you with today?"
         else:
-            response = "I'm here to help with your agricultural questions. You can ask me about weather conditions, crop management, pest control, irrigation, harvest timing, or any other farming concerns you have."
+            response = random.choice(general_responses)
         
         return {
             "response": response,
             "timestamp": datetime.now().isoformat(),
-            "model": "mock"
+            "model": "mock",
+            "connected": False
         }
     
     def clear_conversation(self, session_id: str):

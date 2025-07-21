@@ -6,6 +6,7 @@ Refactored for AWS ECS deployment with modules under 100KB
 """
 import uvicorn
 import sys
+import os
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -95,6 +96,12 @@ async def startup_event():
         print("✅ Database connection established")
     else:
         print("⚠️ Database connection failed - running in degraded mode")
+    
+    # Check OpenAI configuration
+    if not os.getenv("OPENAI_API_KEY"):
+        print("⚠️ WARNING: OPENAI_API_KEY not set. Chat functionality will be limited to mock responses.")
+    else:
+        print("✅ OpenAI API key configured")
     
     # Constitutional deployment completion
     constitutional_deployment_completion()

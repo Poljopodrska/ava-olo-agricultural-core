@@ -8,10 +8,13 @@ from pydantic import BaseModel
 from typing import Optional
 import uuid
 import logging
+import os
+from datetime import datetime
 
 from modules.chat.openai_chat import get_openai_chat
 from modules.auth.routes import get_current_farmer
 from modules.core.database_manager import get_db_manager
+from modules.location.location_service import LocationService
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +31,28 @@ class ChatResponse(BaseModel):
     model: str
 
 async def get_farmer_context(farmer_id: int) -> dict:
-    """Get farmer context for chat"""
+    """Get enhanced farmer context for chat"""
     try:
         db_manager = get_db_manager()
         
-        # Get farmer's fields
+        # Get farmer's location
+        location_service = LocationService()
+        location_data = await location_service.get_farmer_location(farmer_id)
+        
+        # Get farmer's fields with last task
         query = """
-        SELECT field_id, name, size_hectares, crop_type
-        FROM fields
-        WHERE farmer_id = %s
-        ORDER BY name
+        SELECT f.field_id, f.name, f.size_hectares, f.crop_type,
+               t.task_description, t.completed_at
+        FROM fields f
+        LEFT JOIN LATERAL (
+            SELECT task_description, completed_at
+            FROM field_tasks
+            WHERE field_id = f.field_id
+            ORDER BY completed_at DESC
+            LIMIT 1
+        ) t ON true
+        WHERE f.farmer_id = %s
+        ORDER BY f.name
         """
         
         result = db_manager.execute_query(query, (farmer_id,))
@@ -45,18 +60,34 @@ async def get_farmer_context(farmer_id: int) -> dict:
         fields = []
         if result and result.get('rows'):
             for row in result['rows']:
+                last_task = "No tasks yet"
+                if row[4]:  # task_description exists
+                    days_ago = (datetime.now() - row[5]).days if row[5] else 0
+                    last_task = f"{row[4]} ({days_ago} days ago)"
+                
                 fields.append({
                     "id": row[0],
                     "name": row[1] or f"Field {row[0]}",
                     "hectares": float(row[2]) if row[2] else 0,
-                    "crop": row[3] or "Not planted"
+                    "crop": row[3] or "Not planted",
+                    "last_task": last_task
                 })
         
-        return {"fields": fields}
+        return {
+            "fields": fields,
+            "location": location_data.get('display_name', 'Unknown location'),
+            "local_time": datetime.now().strftime("%H:%M"),
+            "local_date": datetime.now().strftime("%B %d, %Y")
+        }
         
     except Exception as e:
         logger.error(f"Error getting farmer context: {e}")
-        return {"fields": []}
+        return {
+            "fields": [],
+            "location": "Unknown",
+            "local_time": datetime.now().strftime("%H:%M"),
+            "local_date": datetime.now().strftime("%B %d, %Y")
+        }
 
 @router.post("/message", response_model=ChatResponse)
 async def send_chat_message(request: Request, message: ChatMessage):
@@ -137,4 +168,57 @@ async def chat_health():
             "status": "unhealthy",
             "service": "chat",
             "error": str(e)
+        }
+
+@router.get("/status")
+async def chat_status():
+    """Get chat service connection status"""
+    try:
+        chat_service = get_openai_chat()
+        
+        return {
+            "connected": chat_service.connected,
+            "has_api_key": bool(os.getenv("OPENAI_API_KEY")),
+            "api_key_prefix": os.getenv("OPENAI_API_KEY", "")[:7] + "..." if os.getenv("OPENAI_API_KEY") else None,
+            "model": chat_service.model,
+            "temperature": 0.85,
+            "max_history": chat_service.max_history
+        }
+        
+    except Exception as e:
+        logger.error(f"Status check error: {e}")
+        return {
+            "connected": False,
+            "has_api_key": False,
+            "error": str(e)
+        }
+
+@router.get("/debug")
+async def chat_debug():
+    """Debug endpoint to check chat configuration"""
+    try:
+        chat_service = get_openai_chat()
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        
+        return {
+            "api_key_configured": bool(api_key),
+            "api_key_length": len(api_key) if api_key else 0,
+            "api_key_prefix": api_key[:7] + "..." if api_key else None,
+            "api_key_suffix": "..." + api_key[-4:] if api_key else None,
+            "temperature": 0.85,
+            "presence_penalty": 0.6,
+            "frequency_penalty": 0.3,
+            "model": chat_service.model,
+            "connected": chat_service.connected,
+            "conversation_count": len(chat_service.conversations),
+            "max_history": chat_service.max_history,
+            "environment": "production" if os.getenv("ENVIRONMENT") == "production" else "development"
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug error: {e}")
+        return {
+            "error": str(e),
+            "api_key_configured": False,
+            "connected": False
         }
