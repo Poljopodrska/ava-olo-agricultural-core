@@ -78,127 +78,61 @@ async def root():
     """Root endpoint - landing page"""
     html = f"""
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="es">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO Monitoring Dashboards</title>
-        <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
-        <style>
-            body {{
-                font-family: var(--font-primary);
-                margin: 0;
-                padding: 40px 20px;
-                background-color: var(--color-bg-primary);
-                min-height: 100vh;
-                position: relative;
-            }}
-            .container {{
-                background: var(--color-bg-white);
-                border-radius: 12px;
-                padding: 40px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                max-width: 800px;
-                margin: 0 auto;
-            }}
-            h1 {{
-                color: var(--color-agri-green);
-                margin-bottom: 30px;
-                text-align: center;
-                font-size: var(--font-title);
-            }}
-            .dashboard-grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
-                margin-top: 30px;
-            }}
-            .dashboard-button {{
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 24px 20px;
-                background: var(--primary-olive);
-                color: white;
-                text-decoration: none;
-                border-radius: 8px;
-                text-align: center;
-                transition: all 0.3s ease;
-                min-height: 100px;
-                font-size: var(--font-size-base);
-            }}
-            .dashboard-button:hover {{
-                background: var(--dark-olive);
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }}
-            .dashboard-button .icon {{
-                font-size: 2.5em;
-                margin-bottom: 10px;
-            }}
-            .dashboard-button .label {{
-                font-weight: 500;
-                font-size: var(--font-size-base);
-            }}
-            .version-display {{
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                font-size: 14px;
-                color: var(--medium-gray);
-                background: rgba(255, 255, 255, 0.9);
-                padding: 8px 16px;
-                border-radius: 4px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }}
-            @media (max-width: 768px) {{
-                .dashboard-grid {{
-                    grid-template-columns: 1fr 1fr;
-                }}
-                .container {{
-                    padding: 20px;
-                }}
-                h1 {{
-                    font-size: 24px;
-                }}
-            }}
-        </style>
+        <meta name="app-version" content="{VERSION}">
+        <title>AVA OLO - Panel de Monitoreo Agricola</title>
+        <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
     </head>
     <body>
-        <div class="container">
-            <h1>🌾 AVA OLO Monitoring Dashboards</h1>
+        <nav class="ava-nav">
+            <a href="/" class="ava-nav-brand">🌾 AVA OLO</a>
+            <div class="ava-nav-items">
+                <a href="/dashboards/deployment" class="ava-nav-link">Estado del Sistema</a>
+                <a href="/dashboards/health" class="ava-nav-link">Salud del Sistema</a>
+            </div>
+        </nav>
+        
+        <main id="main-content" class="ava-dashboard-container">
+            <h1 class="ava-text-center ava-mb-lg">Panel de Monitoreo Agricola</h1>
+            <p class="ava-text-center ava-mb-2xl" style="font-size: var(--ava-font-size-large); color: var(--ava-brown-muted);">
+                Sistema integral de monitoreo para la cooperativa de mangos bulgara
+            </p>
             
-            <div class="dashboard-grid">
-                <a href="/dashboards/business" class="dashboard-button">
+            <div class="ava-dashboard-grid">
+                <a href="/dashboards/business" class="ava-dashboard-button">
                     <span class="icon">📊</span>
-                    <span class="label">Business Dashboard</span>
+                    <span class="label">Dashboard de Negocio</span>
                 </a>
-                <a href="/dashboards/database" class="dashboard-button">
+                <a href="/dashboards/database" class="ava-dashboard-button">
                     <span class="icon">🗄️</span>
-                    <span class="label">Database Dashboard</span>
+                    <span class="label">Dashboard de Base de Datos</span>
                 </a>
-                <a href="/dashboards/health" class="dashboard-button">
+                <a href="/dashboards/health" class="ava-dashboard-button">
                     <span class="icon">🏥</span>
-                    <span class="label">Health Dashboard</span>
+                    <span class="label">Dashboard de Salud</span>
                 </a>
-                <a href="/dashboards/deployment" class="dashboard-button">
+                <a href="/dashboards/deployment" class="ava-dashboard-button">
                     <span class="icon">🚀</span>
-                    <span class="label">Deployment Dashboard</span>
+                    <span class="label">Dashboard de Despliegue</span>
                 </a>
-                <a href="/dashboards/agronomic" class="dashboard-button">
+                <a href="/dashboards/agronomic" class="ava-dashboard-button">
                     <span class="icon">🌾</span>
-                    <span class="label">Agronomic Dashboard</span>
+                    <span class="label">Dashboard Agronómico</span>
                 </a>
-                <a href="/dashboards/cost" class="dashboard-button">
+                <a href="/dashboards/cost" class="ava-dashboard-button">
                     <span class="icon">💰</span>
-                    <span class="label">Cost Dashboard</span>
+                    <span class="label">Dashboard de Costos</span>
                 </a>
             </div>
-        </div>
+        </main>
         
-        <div class="version-display">
-            v{VERSION.split('-')[0]}
-        </div>
+        <script src="/static/js/constitutional-interactions.js"></script>
+        <script>
+            window.AVA_VERSION = '{VERSION}';
+        </script>
     </body>
     </html>
     """
