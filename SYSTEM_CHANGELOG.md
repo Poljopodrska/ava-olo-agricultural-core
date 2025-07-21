@@ -299,3 +299,39 @@ templates/
 - Health monitoring ensures system reliability
 - Natural language database queries make data accessible to non-technical users
 - Complete constitutional design compliance ensures accessibility for older farmers
+## [v3.3.2-git-auth-test] - 2025-01-21
+
+### Git Authorization Setup
+
+Successfully configured Git authorization for automated deployments:
+
+1. **Git Configuration**:
+   - Confirmed user identity: Poljopodrska / noreply@avaolo.com
+   - Updated remote URL with new PAT
+   - Configured credential helper for secure storage
+
+2. **Deployment Pipeline**:
+   - Successfully pushed commit 2a7488c to GitHub
+   - GitHub Actions workflow `.github/workflows/deploy-ecs.yml` configured
+   - Automated pipeline: GitHub → AWS CodeBuild → ECR → ECS
+
+3. **Version Bump**:
+   - Updated version to v3.3.2-git-auth-test
+   - All monitoring dashboard features included in deployment
+
+### Benefits
+- No more manual Docker builds required
+- Automatic deployments on push to main branch
+- AWS CodeBuild handles Docker image creation in cloud
+- Resolves WSL Docker access limitations
+
+### Security
+- PAT stored securely in Git credential system
+- Credentials file permissions set to 600
+- Token will be rotated by user as needed
+
+### Verification
+- Git push succeeded without password prompt ✅
+- GitHub Actions workflow triggered automatically ✅
+- Deployment pipeline: GitHub → CodeBuild → ECR → ECS activated ✅
+EOF < /dev/null
