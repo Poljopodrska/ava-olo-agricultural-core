@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-version" content="{{ version }}">
+    <title>Dashboard - AVA OLO Farmer Portal</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+            background: #f0f0f0;
+        }
+        
+        /* WhatsApp-style three-panel layout */
+        .panel {
+            background: white;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel:last-child {
+            border-right: none;
+        }
+        
+        /* Weather Panel (Left) */
+        .weather-panel {
+            width: 350px;
+            min-width: 300px;
+        }
+        
+        /* Chat Panel (Center) */
+        .chat-panel {
+            flex: 1;
+            min-width: 400px;
+        }
+        
+        /* Farm Panel (Right) */
+        .farm-panel {
+            width: 400px;
+            min-width: 350px;
+        }
+        
+        /* Panel Headers */
+        .panel-header {
+            background: var(--ava-brown-primary);
+            color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 60px;
+        }
+        
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        /* Panel Content */
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        /* Weather Panel Styles */
+        .weather-current {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: center;
+            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
+            color: white;
+        }
+        
+        .weather-icon {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+        
+        .weather-temp {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .weather-desc {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .weather-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px;
+            border-radius: 5px;
+        }
+        
+        .weather-forecast {
+            padding: 20px;
+        }
+        
+        .forecast-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+            margin-bottom: 15px;
+        }
+        
+        .forecast-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .forecast-day {
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+        }
+        
+        .forecast-weather {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .forecast-temps {
+            font-weight: bold;
+            color: var(--ava-brown-muted);
+        }
+        
+        /* Chat Panel Styles */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .chat-welcome {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--ava-brown-muted);
+        }
+        
+        .chat-welcome-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .chat-welcome-title {
+            font-size: 1.5rem;
+            color: var(--ava-brown-primary);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .chat-welcome-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .chat-input-area {
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+        }
+        
+        .chat-input:focus {
+            border-color: var(--ava-olive-primary);
+        }
+        
+        .chat-send-btn {
+            background: var(--ava-olive-primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .chat-send-btn:hover {
+            background: var(--ava-olive-secondary);
+            transform: scale(1.1);
+        }
+        
+        /* Farm Panel Styles */
+        .farm-overview {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .farm-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .farm-stat {
+            background: var(--ava-olive-light);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid var(--ava-olive-primary);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--ava-brown-muted);
+        }
+        
+        .farm-sections {
+            padding: 20px;
+        }
+        
+        .farm-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-content {
+            background: #f8f8f8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--ava-olive-primary);
+        }
+        
+        .field-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .field-name {
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+        }
+        
+        .field-status {
+            font-size: 0.9rem;
+            color: var(--ava-brown-muted);
+        }
+        
+        /* User Header */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .version-display {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: var(--ava-brown-primary);
+            font-weight: bold;
+            z-index: 1000;
+        }
+        
+        /* Loading States */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--ava-brown-muted);
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--ava-olive-primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 1024px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            
+            .panel {
+                width: 100% !important;
+                min-width: auto !important;
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .weather-panel, .farm-panel {
+                max-height: 300px;
+            }
+            
+            .chat-panel {
+                flex: 1;
+                min-height: 400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .farm-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .weather-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .panel-header {
+                padding: 12px 15px;
+            }
+            
+            .panel-content {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Weather Panel (Left) -->
+        <div class="panel weather-panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">🌤️ Weather</div>
+                    <div class="panel-subtitle">Sofia, Bulgaria</div>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="weather-current" id="current-weather">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading weather...
+                    </div>
+                </div>
+                <div class="weather-forecast" id="weather-forecast">
+                    <div class="forecast-title">5-Day Forecast</div>
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading forecast...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Panel (Center) -->
+        <div class="panel chat-panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">🤖 CAVA Assistant</div>
+                    <div class="panel-subtitle">Agricultural AI Helper</div>
+                </div>
+                <div class="user-info">
+                    <span>{{ farmer_name }}</span>
+                    <button class="logout-btn" onclick="window.location.href='/auth/logout'">Sign Out</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="chat-messages">
+                    <div class="chat-welcome">
+                        <div class="chat-welcome-icon">🌾</div>
+                        <div class="chat-welcome-title">Welcome to CAVA!</div>
+                        <div class="chat-welcome-text">
+                            Your intelligent agricultural assistant is here to help.<br>
+                            Ask questions about your crops, weather, or farming techniques.
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <div class="chat-input-container">
+                        <input 
+                            type="text" 
+                            class="chat-input" 
+                            placeholder="Ask CAVA about your farm..."
+                            id="chat-input"
+                        >
+                        <button class="chat-send-btn" id="send-btn">→</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Farm Panel (Right) -->
+        <div class="panel farm-panel">
+            <div class="panel-header">
+                <div>
+                    <div class="panel-title">🌾 My Farm</div>
+                    <div class="panel-subtitle">Dashboard</div>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="farm-overview">
+                    <div class="farm-stats">
+                        <div class="farm-stat">
+                            <div class="stat-value">5</div>
+                            <div class="stat-label">Fields</div>
+                        </div>
+                        <div class="farm-stat">
+                            <div class="stat-value">12</div>
+                            <div class="stat-label">Hectares</div>
+                        </div>
+                        <div class="farm-stat">
+                            <div class="stat-value">3</div>
+                            <div class="stat-label">Crops</div>
+                        </div>
+                        <div class="farm-stat">
+                            <div class="stat-value">7</div>
+                            <div class="stat-label">Tasks</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="farm-sections">
+                    <div class="farm-section">
+                        <div class="section-title">📍 Active Fields</div>
+                        <div class="section-content">
+                            <div class="field-item">
+                                <div class="field-name">North Mango Grove</div>
+                                <div class="field-status">Healthy</div>
+                            </div>
+                            <div class="field-item">
+                                <div class="field-name">South Orchard</div>
+                                <div class="field-status">Watering Due</div>
+                            </div>
+                            <div class="field-item">
+                                <div class="field-name">East Field</div>
+                                <div class="field-status">Pruning Needed</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="farm-section">
+                        <div class="section-title">🌱 Recent Tasks</div>
+                        <div class="section-content">
+                            <div class="field-item">
+                                <div class="field-name">Fertilize Mangoes</div>
+                                <div class="field-status">2 days ago</div>
+                            </div>
+                            <div class="field-item">
+                                <div class="field-name">Pest Inspection</div>
+                                <div class="field-status">5 days ago</div>
+                            </div>
+                            <div class="field-item">
+                                <div class="field-name">Irrigation Check</div>
+                                <div class="field-status">1 week ago</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="farm-section">
+                        <div class="section-title">⚠️ Alerts</div>
+                        <div class="section-content" id="weather-alerts">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                Loading alerts...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="version-display">{{ version }}</div>
+    
+    <script src="/static/js/constitutional-interactions.js"></script>
+    <script>
+        window.AVA_VERSION = '{{ version }}';
+        
+        // Load weather data
+        async function loadWeatherData() {
+            try {
+                // Load current weather
+                const currentResponse = await fetch('/api/weather/current');
+                if (currentResponse.ok) {
+                    const currentData = await currentResponse.json();
+                    displayCurrentWeather(currentData.data);
+                }
+                
+                // Load forecast
+                const forecastResponse = await fetch('/api/weather/forecast');
+                if (forecastResponse.ok) {
+                    const forecastData = await forecastResponse.json();
+                    displayWeatherForecast(forecastData.data);
+                }
+                
+                // Load alerts
+                const alertsResponse = await fetch('/api/weather/alerts');
+                if (alertsResponse.ok) {
+                    const alertsData = await alertsResponse.json();
+                    displayWeatherAlerts(alertsData.data.alerts);
+                }
+                
+            } catch (error) {
+                console.error('Weather data error:', error);
+            }
+        }
+        
+        function displayCurrentWeather(weather) {
+            const currentWeatherDiv = document.getElementById('current-weather');
+            currentWeatherDiv.innerHTML = `
+                <div class="weather-icon">${weather.icon}</div>
+                <div class="weather-temp">${weather.temperature}</div>
+                <div class="weather-desc">${weather.description}</div>
+                <div class="weather-details">
+                    <div class="weather-item">
+                        <div>Feels like</div>
+                        <div>${weather.feels_like}</div>
+                    </div>
+                    <div class="weather-item">
+                        <div>Humidity</div>
+                        <div>${weather.humidity}</div>
+                    </div>
+                    <div class="weather-item">
+                        <div>Wind</div>
+                        <div>${weather.wind_speed}</div>
+                    </div>
+                    <div class="weather-item">
+                        <div>Updated</div>
+                        <div>${weather.timestamp}</div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayWeatherForecast(forecast) {
+            const forecastDiv = document.getElementById('weather-forecast');
+            let forecastHtml = '<div class="forecast-title">5-Day Forecast</div>';
+            
+            forecast.forecasts.forEach(day => {
+                forecastHtml += `
+                    <div class="forecast-item">
+                        <div class="forecast-day">${day.day_name}</div>
+                        <div class="forecast-weather">
+                            <span>${day.icon}</span>
+                            <span>${day.description}</span>
+                        </div>
+                        <div class="forecast-temps">${day.temp_min} / ${day.temp_max}</div>
+                    </div>
+                `;
+            });
+            
+            forecastDiv.innerHTML = forecastHtml;
+        }
+        
+        function displayWeatherAlerts(alerts) {
+            const alertsDiv = document.getElementById('weather-alerts');
+            
+            if (alerts.length === 0) {
+                alertsDiv.innerHTML = '<div style="color: var(--ava-brown-muted); font-style: italic;">No weather alerts</div>';
+                return;
+            }
+            
+            let alertsHtml = '';
+            alerts.forEach(alert => {
+                alertsHtml += `
+                    <div class="field-item">
+                        <div class="field-name">${alert.title}</div>
+                        <div class="field-status">${alert.severity}</div>
+                    </div>
+                `;
+            });
+            
+            alertsDiv.innerHTML = alertsHtml;
+        }
+        
+        // Chat functionality placeholder
+        document.getElementById('chat-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                // Placeholder for chat functionality
+                console.log('Sending message:', message);
+                input.value = '';
+                
+                // TODO: Implement CAVA chat functionality
+            }
+        }
+        
+        // Load data on page load
+        window.addEventListener('load', loadWeatherData);
+        
+        // Refresh weather every 10 minutes
+        setInterval(loadWeatherData, 600000);
+    </script>
+</body>
+</html>

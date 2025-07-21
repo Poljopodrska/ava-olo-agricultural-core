@@ -6,9 +6,10 @@ Refactored for AWS ECS deployment with modules under 100KB
 """
 import uvicorn
 import sys
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 
 # Import configuration
 from modules.core.config import VERSION, BUILD_ID, constitutional_deployment_completion, config
@@ -30,15 +31,24 @@ from modules.dashboards.database import router as database_dashboard_router
 from modules.dashboards.deployment import router as deployment_dashboard_router, api_router as deployment_api_router
 from modules.dashboards.feature_status import router as feature_status_router
 
+# Import auth module
+from modules.auth.routes import router as auth_router
+
+# Import weather module
+from modules.weather.routes import router as weather_router
+
 # Initialize FastAPI app
 app = FastAPI(
-    title="AVA OLO Agricultural Monitoring Dashboards",
+    title="AVA OLO Farmer Portal",
     version=VERSION,
-    description="Monitoring dashboards for AVA OLO agricultural system"
+    description="WhatsApp-style farmer portal with weather, chat, and farm management"
 )
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Initialize templates
+templates = Jinja2Templates(directory="templates")
 
 # Include routers
 app.include_router(deployment_router)
@@ -58,6 +68,8 @@ app.include_router(deployment_dashboard_router)
 app.include_router(deployment_api_router)
 app.include_router(feature_status_router)
 app.include_router(webhook_router)
+app.include_router(auth_router)
+app.include_router(weather_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -75,88 +87,28 @@ async def startup_event():
     # Constitutional deployment completion
     constitutional_deployment_completion()
 
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    """Root endpoint - landing page"""
-    html = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="app-version" content="{VERSION}">
-        <title>AVA OLO - Agricultural Monitoring Panel</title>
-        <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
-    </head>
-    <body>
-        <nav class="ava-nav">
-            <a href="/" class="ava-nav-brand">🌾 AVA OLO</a>
-            <div class="ava-nav-items">
-                <a href="/dashboards/deployment" class="ava-nav-link">System Status</a>
-                <a href="/dashboards/health" class="ava-nav-link">System Health</a>
-            </div>
-        </nav>
-        
-        <main id="main-content" class="ava-dashboard-container">
-            <h1 class="ava-text-center ava-mb-lg">Agricultural Monitoring Panel</h1>
-            
-            <!-- STRANGE PICTURE ELEMENT -->
-            <div style="text-align: center; margin: 20px auto; padding: 20px; background: radial-gradient(circle, #e74c3c, #8e44ad, #3498db); border-radius: 20px; max-width: 600px; animation: spin 5s linear infinite;">
-                <div style="font-size: 2.5rem; margin-bottom: 10px;">🛸👽🤖</div>
-                <div style="color: white; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
-                    🚨 ALIEN MONITORING SYSTEM DETECTED 🚨
-                </div>
-                <div style="color: yellow; font-size: 0.9rem; margin-top: 5px;">
-                    [ EXTRATERRESTRIAL AGRICULTURAL ANALYSIS IN PROGRESS ]
-                </div>
-            </div>
-            
-            <p class="ava-text-center ava-mb-2xl" style="font-size: var(--ava-font-size-large); color: var(--ava-brown-muted);">
-                Comprehensive monitoring system for the Bulgarian mango cooperative
-            </p>
-            
-            <div class="ava-dashboard-grid">
-                <a href="/dashboards/business" class="ava-dashboard-button">
-                    <span class="icon">📊</span>
-                    <span class="label">Business Dashboard</span>
-                </a>
-                <a href="/dashboards/database" class="ava-dashboard-button">
-                    <span class="icon">🗄️</span>
-                    <span class="label">Database Dashboard</span>
-                </a>
-                <a href="/dashboards/health" class="ava-dashboard-button">
-                    <span class="icon">🏥</span>
-                    <span class="label">Health Dashboard</span>
-                </a>
-                <a href="/dashboards/deployment" class="ava-dashboard-button">
-                    <span class="icon">🚀</span>
-                    <span class="label">Deployment Dashboard</span>
-                </a>
-                <a href="/dashboards/agronomic" class="ava-dashboard-button">
-                    <span class="icon">🌾</span>
-                    <span class="label">Agronomic Dashboard</span>
-                </a>
-                <a href="/dashboards/cost" class="ava-dashboard-button">
-                    <span class="icon">💰</span>
-                    <span class="label">Cost Dashboard</span>
-                </a>
-            </div>
-        </main>
-        
-        <script src="/static/js/constitutional-interactions.js"></script>
-        <style>
-            @keyframes spin {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-        </style>
-        <script>
-            window.AVA_VERSION = '{VERSION}';
-        </script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html)
+@app.get("/")
+async def landing_page(request: Request):
+    """Landing page with Sign In and New with AVA OLO buttons"""
+    return templates.TemplateResponse("landing.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@app.get("/dashboard")
+async def dashboard(request: Request):
+    """Basic dashboard - placeholder for three-panel layout"""
+    farmer_name = request.cookies.get("farmer_name", "Farmer")
+    farmer_id = request.cookies.get("farmer_id")
+    
+    if not farmer_id:
+        return RedirectResponse(url="/auth/signin", status_code=303)
+    
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "version": VERSION,
+        "farmer_name": farmer_name
+    })
 
 @app.get("/health")
 async def health_check():

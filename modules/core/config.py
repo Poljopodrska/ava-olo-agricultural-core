@@ -10,10 +10,10 @@ import logging
 from datetime import datetime
 
 # Service-specific deployment tracking
-SERVICE_NAME = "monitoring-dashboards"
-DEPLOYMENT_TIMESTAMP = '20250721140800'  # v3.3.9 - Added strange alien visual element
+SERVICE_NAME = "agricultural-core"
+DEPLOYMENT_TIMESTAMP = '20250721160000'  # v3.3.14 - WhatsApp-style farmer portal with authentication
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.9-alien-visual-{BUILD_ID}"
+VERSION = f"v3.3.14-farmer-portal-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

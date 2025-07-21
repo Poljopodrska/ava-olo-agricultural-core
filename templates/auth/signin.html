@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-version" content="{{ version }}">
+    <title>Sign In - AVA OLO Farmer Portal</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--ava-olive-primary) 0%, var(--ava-brown-primary) 100%);
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--ava-brown-secondary);
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-logo {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: var(--ava-brown-primary);
+        }
+        
+        .auth-title {
+            font-size: 2rem;
+            color: var(--ava-brown-primary);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .auth-subtitle {
+            font-size: 1.1rem;
+            color: var(--ava-brown-muted);
+            margin-bottom: 0;
+        }
+        
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            padding: 15px;
+            border: 2px solid var(--ava-brown-light);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            transition: border-color 0.3s ease;
+            min-height: 48px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--ava-olive-primary);
+            box-shadow: 0 0 0 3px rgba(107, 125, 70, 0.1);
+        }
+        
+        .whatsapp-input {
+            position: relative;
+        }
+        
+        .whatsapp-prefix {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--ava-brown-muted);
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+        
+        .whatsapp-input .form-input {
+            padding-left: 50px;
+        }
+        
+        .auth-button {
+            background: var(--ava-olive-primary);
+            color: white;
+            padding: 18px 32px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 56px;
+            margin-top: 10px;
+        }
+        
+        .auth-button:hover {
+            background: var(--ava-olive-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .auth-button:active {
+            transform: translateY(0);
+        }
+        
+        .whatsapp-style {
+            background: #25D366;
+        }
+        
+        .whatsapp-style:hover {
+            background: #128C7E;
+        }
+        
+        .error-message {
+            background: #FEE2E2;
+            color: #DC2626;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-left: 4px solid #DC2626;
+        }
+        
+        .auth-links {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid var(--ava-brown-light);
+        }
+        
+        .auth-link {
+            color: var(--ava-olive-primary);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .auth-link:hover {
+            text-decoration: underline;
+        }
+        
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--ava-brown-primary);
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .version-display {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: var(--ava-brown-primary);
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .auth-title {
+                font-size: 1.7rem;
+            }
+            
+            .form-input, .auth-button {
+                font-size: 1rem;
+            }
+            
+            .back-link {
+                position: static;
+                display: inline-block;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Back to Home</a>
+    
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">📱</div>
+                <h1 class="auth-title">Sign In</h1>
+                <p class="auth-subtitle">Access your AVA OLO dashboard</p>
+            </div>
+            
+            {% if error %}
+            <div class="error-message">
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <form method="post" class="auth-form">
+                <div class="form-group">
+                    <label for="whatsapp_number" class="form-label">WhatsApp Number</label>
+                    <div class="whatsapp-input">
+                        <div class="whatsapp-prefix">+</div>
+                        <input 
+                            type="tel" 
+                            id="whatsapp_number" 
+                            name="whatsapp_number" 
+                            class="form-input"
+                            placeholder="359123456789"
+                            required
+                            autocomplete="tel"
+                        >
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                        autocomplete="current-password"
+                    >
+                </div>
+                
+                <button type="submit" class="auth-button whatsapp-style">
+                    🔐 Sign In to Dashboard
+                </button>
+            </form>
+            
+            <div class="auth-links">
+                <p>Don't have an account? <a href="/auth/register" class="auth-link">Create New Account</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="version-display">{{ version }}</div>
+    
+    <script src="/static/js/constitutional-interactions.js"></script>
+    <script>
+        window.AVA_VERSION = '{{ version }}';
+        
+        // Format WhatsApp number input
+        document.getElementById('whatsapp_number').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            e.target.value = value;
+        });
+        
+        // Focus management for better UX
+        document.getElementById('whatsapp_number').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('password').focus();
+            }
+        });
+        
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.target.closest('form').submit();
+            }
+        });
+    </script>
+</body>
+</html>
