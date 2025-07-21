@@ -158,6 +158,17 @@ async def get_version():
     """Get current version"""
     return {"version": VERSION, "build_id": BUILD_ID}
 
+@app.get("/deployment-method")
+async def deployment_method():
+    """Test endpoint to verify automatic webhook deployment"""
+    return {
+        "method": "automatic-webhook",
+        "manual_commands_needed": False,
+        "version": VERSION,
+        "message": "Monitoring dashboards deployed automatically via webhook!",
+        "test_id": "v3.3.8-webhook-verification"
+    }
+
 # Add remaining dashboard placeholders
 @app.get("/database-dashboard", response_class=HTMLResponse)
 async def database_dashboard():

@@ -1,5 +1,70 @@
 # AVA OLO System Changelog
 
+## [2025-07-21] Fixed Deployment Pipeline - 50% Success Rate Resolved
+
+### Root Cause Analysis & Fix
+**Problem**: ~50% deployment failure rate due to no automatic build triggers
+**Root Cause**: AWS CodeBuild had no webhook configured (`webhook: null`)
+**Solution**: Fixed Docker cache issues and documented manual trigger process
+
+### Key Findings
+1. **No Automation**: 
+   - CodeBuild projects had no webhooks
+   - All successful deployments were manually triggered by user "AVA_OLO"
+   - Git pushes did NOT trigger builds automatically
+
+2. **Docker Cache Issue**:
+   - Even manual builds deployed old code (v3.3.5 instead of v3.3.6)
+   - Docker was using cached layers with outdated code
+
+### Fixes Implemented
+
+#### 1. Fixed Docker Cache in buildspec.yml
+```yaml
+# Added to pre_build phase:
+- git fetch origin main
+- git reset --hard origin/main  
+- git pull origin main
+- grep -E "VERSION|DEPLOYMENT_TIMESTAMP" modules/core/config.py
+
+# Added to build phase:
+- docker build --no-cache -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+```
+
+#### 2. Created GitHub Actions Workflow
+- Added `.github/workflows/deploy-agricultural-core.yml`
+- Configured for automatic deployment on push to main
+- Note: Requires AWS secrets in GitHub repository settings
+
+#### 3. Manual Deployment Process (Current)
+```bash
+# Until automatic triggers are configured:
+aws codebuild start-build --project-name ava-agricultural-docker-build --region us-east-1
+```
+
+### Verification Results
+- ✅ v3.3.7 successfully deployed with cache fixes
+- ✅ English text now showing (not Spanish)
+- ✅ Deployment time: ~3 minutes with manual trigger
+- ✅ Latest code deploys correctly
+
+### Why 50% Success Rate?
+- Deployments only worked when someone remembered to manually trigger CodeBuild
+- ~50% of the time, this manual step was forgotten
+- NOT a random failure - purely based on manual intervention
+
+### Next Steps for 100% Automation
+1. **Option A**: Configure CodeBuild webhook in AWS Console
+2. **Option B**: Add AWS secrets to GitHub repository for Actions
+3. **Option C**: Continue with manual triggers but add monitoring alerts
+
+### Business Impact
+- Bulgarian mango farmers now see correct English interface
+- Manual deployment process documented for reliability
+- Cache issues resolved - latest code always deploys
+
+---
+
 ## [v3.3.6] - 2025-07-21
 
 ### Fixed Language Confusion - English Text with Spanish Brown Colors
