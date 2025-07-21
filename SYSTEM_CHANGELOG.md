@@ -173,3 +173,129 @@
 - Implement WebSocket for real-time updates
 - Add more chart types and analytics
 - Optimize natural language query processing
+
+---
+
+## [2025-07-20] Complete Monitoring Dashboards Redesign - 5 Dashboard System
+
+### Feature Overview
+**Feature**: Complete redesign of monitoring dashboards implementing 5-dashboard system with constitutional design compliance
+**Mango Test**: ✅ Bulgarian mango farmer's agronomist can monitor conversations, business metrics show proper data, and all system health checks are visible
+
+### Major Changes Implemented
+
+#### 1. Landing Page Redesign
+- **Removed**: API Endpoints section completely
+- **Added**: Exactly 5 dashboard buttons in responsive grid layout
+- **Button Layout**: Smaller buttons, 2-3 per row (not full width)
+- **Version Display**: Fixed position bottom right, format "v{major}.{minor}.{patch}" (no Build ID)
+- **Color Scheme**: AVA Olive (#6B7D46) buttons with proper hover states
+
+#### 2. Agronomic Dashboard (NEW)
+**Features**:
+- Two-panel layout (conversation list + selected conversation)
+- Color-coded approval system:
+  - 🔴 Red/Orange: Needs approval
+  - 🟢 Green: Approved
+- Conversation sorting: Unapproved first, then by timestamp
+- Individual message approval with "Approve" and "Answer" buttons
+- General message box for sending messages without context
+- Filter tabs: All, Unapproved, Approved
+- Real-time updates on approval actions
+
+#### 3. Business Dashboard (REDESIGNED)
+**Layout Matches Requirements**:
+- Database Overview (top left): Total farmers, hectares, breakdown by crop type
+- Growth Trends (top middle): 24 Hours, 7 Days, 30 Days tabs
+- Cumulative Farmer Growth (top right): Dual-axis chart with Chart.js
+- Churn Rate (far right): 7-day rolling average
+- Today's Activity Bar: New fields, crops planted, spraying operations, etc.
+- Activity Stream (bottom left): Live feed with timestamps
+- Recent Database Changes (bottom right): INSERT/UPDATE operations
+
+#### 4. Health Dashboard (NEW)
+**Comprehensive Service Checks**:
+- PostgreSQL Database ✅
+- Pinecone Vector Database ✅
+- Perplexity API ✅
+- OpenAI API ✅
+- WhatsApp API ✅
+- Redis Cache ✅
+- AWS Services (ECS, RDS) ✅
+- Weather API ✅
+- Agricultural Core Service ✅
+- CAVA Service ✅
+- System Metrics: CPU, Memory, Disk, Network usage
+- Auto-refresh every 30 seconds
+
+#### 5. Database Dashboard (NEW)
+**Two-Level Structure**:
+- Level 1: Choose between Data Retrieval or Database Population
+- Level 2 - Data Retrieval:
+  - Quick Queries: Total farmers, list all, fields by farmer ID, tasks by field IDs
+  - Natural Language Query: LLM-powered SQL generation
+  - Results display with SQL query shown
+  - Execution time tracking
+- Level 2 - Database Population: Placeholder for future implementation
+
+#### 6. Cost Dashboard
+- Basic structure created with "Coming Soon" message
+- Placeholder for AWS cost tracking and analysis
+
+### Constitutional Design Compliance
+✅ **Font Sizes**: Minimum 18px enforced across all dashboards
+✅ **Color Scheme**: AVA agricultural colors (Olive, Brown, Green) implemented
+✅ **Button Sizes**: Minimum 48px height for touch targets
+✅ **Mobile Responsive**: All dashboards work on mobile devices
+✅ **Version Display**: Fixed bottom-right, proper contrast
+✅ **Accessibility**: WCAG AA compliant contrast ratios
+
+### Technical Implementation Details
+- Modular architecture: Each dashboard as separate module
+- FastAPI routers for clean separation
+- Jinja2 templates with constitutional CSS
+- Async database operations
+- LLM integration for natural language queries
+- Real-time health checks with httpx
+- Chart.js for data visualizations
+
+### File Structure Created
+```
+modules/dashboards/
+├── __init__.py
+├── agronomic.py
+├── business.py
+├── health.py
+└── database.py
+
+templates/
+├── agronomic_dashboard.html
+├── business_dashboard_constitutional.html
+├── health_dashboard_constitutional.html
+├── database_dashboard_landing.html
+├── database_retrieval.html
+└── database_population.html
+```
+
+### API Endpoints Added
+- `/dashboards/agronomic/*` - Agronomic approval system
+- `/dashboards/business/api/*` - Business metrics and charts
+- `/dashboards/health/api/*` - Health checks and system metrics
+- `/dashboards/database/api/*` - Database queries and natural language
+
+### Verification Completed
+✅ Landing page shows exactly 5 dashboards
+✅ Version in bottom right corner (no Build ID)
+✅ All dashboards follow constitutional design
+✅ Agronomic approval system fully functional
+✅ Business dashboard matches screenshot requirements
+✅ Health dashboard shows all service connections
+✅ Database dashboard has two-level navigation
+✅ Cost dashboard placeholder ready
+
+### Business Impact
+- Agricultural experts can now approve/reject AI responses before they reach farmers
+- Business metrics provide real-time insights into platform growth
+- Health monitoring ensures system reliability
+- Natural language database queries make data accessible to non-technical users
+- Complete constitutional design compliance ensures accessibility for older farmers

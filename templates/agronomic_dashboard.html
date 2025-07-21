@@ -1,460 +1,488 @@
 <!DOCTYPE html>
-<html lang="hr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AVA OLO - Agronomski Dashboard</title>
+    <title>Agronomic Dashboard - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
     <style>
-        * {
+        body {
+            font-family: var(--font-primary);
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            background-color: var(--color-bg-primary);
+            font-size: var(--font-size-base);
         }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1rem 2rem;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        
+        .dashboard-container {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            height: 100vh;
         }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .logo h1 {
-            color: #2c5530;
-            font-size: 1.8rem;
-            font-weight: 700;
-        }
-
-        .expert-info {
-            background: #2c5530;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        .container {
-            padding: 2rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1.5rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #2c5530;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .conversations-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .conversations-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .conversations-header h2 {
-            color: #2c5530;
-            font-size: 1.5rem;
-        }
-
-        .filter-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .filter-btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 20px;
-            background: #f0f0f0;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .filter-btn.active {
-            background: #2c5530;
-            color: white;
-        }
-
-        .conversation-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+        
+        /* Left Panel - Conversation List */
+        .conversation-list {
+            width: 350px;
             background: white;
-            transition: all 0.3s;
+            border-right: 1px solid var(--color-gray-200);
+            overflow-y: auto;
+            flex-shrink: 0;
         }
-
-        .conversation-card:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .conversation-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .conversation-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .confidence-badge {
-            padding: 0.3rem 0.8rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .confidence-high { background: #d4edda; color: #155724; }
-        .confidence-medium { background: #fff3cd; color: #856404; }
-        .confidence-low { background: #f8d7da; color: #721c24; }
-
-        .question {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #2c5530;
-        }
-
-        .answer {
-            background: #e8f5e8;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #4a7c59;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 5px;
+        
+        .conversation-item {
+            padding: 16px;
+            border-bottom: 1px solid var(--color-gray-100);
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s;
+            transition: background 0.2s;
         }
-
-        .btn-approve {
-            background: #28a745;
-            color: white;
+        
+        .conversation-item:hover {
+            background: var(--color-gray-50);
         }
-
-        .btn-reject {
-            background: #dc3545;
-            color: white;
+        
+        .conversation-item.selected {
+            background: var(--color-info-bg);
+            border-left: 4px solid var(--color-info);
         }
-
-        .btn-edit {
-            background: #ffc107;
-            color: #333;
+        
+        .conversation-item.unapproved {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--color-danger);
         }
-
-        .btn:hover {
-            opacity: 0.8;
-            transform: translateY(-1px);
+        
+        .conversation-item.approved {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 4px solid var(--color-success);
         }
-
-        .edit-form {
-            display: none;
-            margin-top: 1rem;
-            padding: 1rem;
-            background: #f8f9fa;
+        
+        .farmer-name {
+            font-weight: 600;
+            color: var(--dark-charcoal);
+            margin-bottom: 4px;
+            font-size: var(--font-size-base);
+        }
+        
+        .conversation-preview {
+            color: var(--medium-gray);
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        
+        .conversation-time {
+            color: var(--color-gray-500);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        /* Right Panel - Selected Conversation */
+        .conversation-detail {
+            flex: 1;
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .conversation-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--color-gray-200);
+            background: var(--color-gray-50);
+        }
+        
+        .conversation-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .message-item {
+            margin-bottom: 20px;
+            padding: 16px;
             border-radius: 8px;
+            background: var(--color-gray-50);
         }
-
-        .edit-form textarea {
+        
+        .message-item.farmer {
+            background: var(--color-info-bg);
+            margin-right: 20%;
+        }
+        
+        .message-item.ava {
+            background: var(--color-success-bg);
+            margin-left: 20%;
+            position: relative;
+        }
+        
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark-charcoal);
+        }
+        
+        .message-text {
+            color: var(--dark-charcoal);
+            white-space: pre-wrap;
+            font-size: var(--font-size-base);
+        }
+        
+        .message-time {
+            color: var(--color-gray-500);
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        
+        .approval-buttons {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 48px;
+        }
+        
+        .btn-approve {
+            background: var(--color-success);
+            color: white;
+        }
+        
+        .btn-approve:hover {
+            background: var(--color-success-dark);
+        }
+        
+        .btn-answer {
+            background: var(--color-info);
+            color: white;
+        }
+        
+        .btn-answer:hover {
+            background: var(--color-info-dark);
+        }
+        
+        .answer-box {
+            margin-top: 12px;
+            display: none;
+        }
+        
+        .answer-box textarea {
             width: 100%;
             min-height: 100px;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 0.5rem;
-            font-family: inherit;
+            padding: 12px;
+            border: 2px solid var(--color-gray-300);
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            resize: vertical;
         }
-
-        .edit-form input {
+        
+        .answer-box button {
+            margin-top: 8px;
+        }
+        
+        /* General Message Box */
+        .general-message-box {
+            padding: 20px;
+            border-top: 1px solid var(--color-gray-200);
+            background: var(--color-gray-50);
+        }
+        
+        .general-message-box h3 {
+            margin-top: 0;
+            color: var(--dark-charcoal);
+        }
+        
+        .general-message-box textarea {
             width: 100%;
-            padding: 0.5rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 0.5rem;
+            min-height: 80px;
+            padding: 12px;
+            border: 2px solid var(--color-gray-300);
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            margin-bottom: 10px;
         }
-
-        .loading {
+        
+        /* No Selection State */
+        .no-selection {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--medium-gray);
+            font-size: var(--font-size-lg);
+        }
+        
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            background: var(--color-gray-100);
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+        
+        .filter-tab {
+            flex: 1;
+            padding: 12px;
             text-align: center;
-            padding: 2rem;
-            color: #666;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: var(--font-size-base);
+            transition: all 0.3s;
         }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #666;
+        
+        .filter-tab:hover {
+            background: var(--color-gray-200);
         }
-
-        .empty-state h3 {
-            margin-bottom: 1rem;
-            color: #2c5530;
+        
+        .filter-tab.active {
+            background: white;
+            border-bottom: 2px solid var(--primary-olive);
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .status-badge.approved {
+            background: var(--color-success);
+            color: white;
+        }
+        
+        .status-badge.unapproved {
+            background: var(--color-danger);
+            color: white;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="logo">
-            <span style="font-size: 2rem;">🌾</span>
-            <h1>AVA OLO Agronomski Dashboard</h1>
-        </div>
-        <div class="expert-info">
-            👨‍🌾 Stručni nadzor razgovora
-        </div>
-    </div>
-
-    <div class="container">
-        <!-- Statistics Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">{{ stats.total_conversations }}</div>
-                <div class="stat-label">Ukupno razgovora</div>
+    <div class="dashboard-container">
+        <!-- Left Panel - Conversation List -->
+        <div class="conversation-list">
+            <div class="filter-tabs">
+                <button class="filter-tab active" onclick="filterConversations('all')">All</button>
+                <button class="filter-tab" onclick="filterConversations('unapproved')">Unapproved</button>
+                <button class="filter-tab" onclick="filterConversations('approved')">Approved</button>
             </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ stats.pending_review }}</div>
-                <div class="stat-label">Čeka pregled</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ stats.low_confidence }}</div>
-                <div class="stat-label">Niska pouzdanost</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ stats.today_conversations }}</div>
-                <div class="stat-label">Danas</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ "%.1f"|format(stats.avg_confidence * 100) }}%</div>
-                <div class="stat-label">Prosječna pouzdanost</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">{{ "%.1f"|format(stats.approval_rate) }}%</div>
-                <div class="stat-label">Stopa odobrenja</div>
-            </div>
-        </div>
-
-        <!-- Conversations Section -->
-        <div class="conversations-section">
-            <div class="conversations-header">
-                <h2>Razgovori za pregled</h2>
-                <div class="filter-buttons">
-                    <button class="filter-btn active" onclick="filterConversations('all')">Svi</button>
-                    <button class="filter-btn" onclick="filterConversations('pending')">Na čekanju</button>
-                    <button class="filter-btn" onclick="filterConversations('low-confidence')">Niska pouzdanost</button>
+            
+            <div id="conversation-items">
+                <!-- Unapproved Conversations -->
+                {% for conv in conversations.unapproved %}
+                <div class="conversation-item unapproved" onclick="selectConversation({{ conv.id }})" data-status="unapproved">
+                    <div class="farmer-name">
+                        {{ conv.farmer_name }}
+                        <span class="status-badge unapproved">Needs Approval</span>
+                    </div>
+                    <div class="conversation-preview">{{ conv.preview }}</div>
+                    <div class="conversation-time">{{ conv.timestamp }}</div>
                 </div>
+                {% endfor %}
+                
+                <!-- Approved Conversations -->
+                {% for conv in conversations.approved %}
+                <div class="conversation-item approved" onclick="selectConversation({{ conv.id }})" data-status="approved">
+                    <div class="farmer-name">
+                        {{ conv.farmer_name }}
+                        <span class="status-badge approved">Approved</span>
+                    </div>
+                    <div class="conversation-preview">{{ conv.preview }}</div>
+                    <div class="conversation-time">{{ conv.timestamp }}</div>
+                </div>
+                {% endfor %}
             </div>
-
-            <div id="conversations-list">
-                {% if conversations %}
-                    {% for conv in conversations %}
-                    <div class="conversation-card" data-confidence="{{ conv.confidence }}" data-approved="{{ conv.expert_approved }}">
-                        <div class="conversation-header">
-                            <div class="conversation-meta">
-                                <span>ID: {{ conv.id }}</span>
-                                <span>Poljoprivrednik: {{ conv.farmer_id or 'Nepoznat' }}</span>
-                                <span>{{ conv.created_at[:10] if conv.created_at else 'N/A' }}</span>
-                                <span>Tel: {{ conv.wa_phone or 'N/A' }}</span>
-                            </div>
-                            <span class="confidence-badge confidence-{{ 'high' if conv.confidence >= 0.8 else 'medium' if conv.confidence >= 0.6 else 'low' }}">
-                                Pouzdanost: {{ "%.1f"|format(conv.confidence * 100) }}%
-                            </span>
+        </div>
+        
+        <!-- Right Panel - Selected Conversation -->
+        <div class="conversation-detail">
+            {% if selected_conversation %}
+            <div class="conversation-header">
+                <h2>{{ selected_conversation.farmer_name }}</h2>
+                <p>Farmer ID: {{ selected_conversation.farmer_id }}</p>
+            </div>
+            
+            <div class="conversation-content">
+                {% if selected_conversation.history %}
+                    {% for msg in selected_conversation.history %}
+                    <div class="message-item farmer">
+                        <div class="message-sender">Farmer</div>
+                        <div class="message-text">{{ msg.message }}</div>
+                        <div class="message-time">{{ msg.timestamp }}</div>
+                    </div>
+                    
+                    {% if msg.response %}
+                    <div class="message-item ava">
+                        <div class="message-sender">AVA</div>
+                        <div class="message-text">{{ msg.response }}</div>
+                        <div class="message-time">{{ msg.timestamp }}</div>
+                        {% if not msg.approved %}
+                        <div class="approval-buttons">
+                            <button class="btn btn-approve" onclick="approveMessage({{ selected_conversation.id }})">Approve</button>
+                            <button class="btn btn-answer" onclick="showAnswerBox({{ selected_conversation.id }})">Answer</button>
                         </div>
-
-                        <div class="question">
-                            <strong>Pitanje:</strong><br>
-                            {{ conv.question }}
-                        </div>
-
-                        <div class="answer">
-                            <strong>Odgovor:</strong><br>
-                            {{ conv.answer }}
-                        </div>
-
-                        {% if conv.expert_notes %}
-                        <div style="background: #fff3cd; padding: 0.5rem; border-radius: 5px; margin-bottom: 1rem;">
-                            <strong>Napomene stručnjaka:</strong> {{ conv.expert_notes }}
+                        <div class="answer-box" id="answer-box-{{ selected_conversation.id }}">
+                            <textarea id="answer-text-{{ selected_conversation.id }}" placeholder="Type your answer here..."></textarea>
+                            <button class="btn btn-approve" onclick="sendAnswer({{ selected_conversation.id }})">Send Answer</button>
                         </div>
                         {% endif %}
-
-                        <div class="action-buttons">
-                            {% if conv.expert_approved is none %}
-                            <button class="btn btn-approve" onclick="approveConversation({{ conv.id }}, true)">✅ Odobri</button>
-                            <button class="btn btn-reject" onclick="approveConversation({{ conv.id }}, false)">❌ Odbaci</button>
-                            {% endif %}
-                            <button class="btn btn-edit" onclick="toggleEditForm({{ conv.id }})">✏️ Uredi odgovor</button>
-                        </div>
-
-                        <div class="edit-form" id="edit-form-{{ conv.id }}">
-                            <textarea id="new-answer-{{ conv.id }}" placeholder="Unesite novi odgovor...">{{ conv.answer }}</textarea>
-                            <input type="text" id="expert-notes-{{ conv.id }}" placeholder="Napomene stručnjaka..." value="{{ conv.expert_notes or '' }}">
-                            <div>
-                                <button class="btn btn-approve" onclick="updateAnswer({{ conv.id }})">💾 Spremi</button>
-                                <button class="btn" onclick="toggleEditForm({{ conv.id }})">❌ Odustani</button>
-                            </div>
-                        </div>
                     </div>
+                    {% endif %}
                     {% endfor %}
                 {% else %}
-                    <div class="empty-state">
-                        <h3>🎉 Nema razgovora za pregled</h3>
-                        <p>Svi razgovori su pregledani ili nema novih pitanja.</p>
+                    <!-- Single conversation view -->
+                    <div class="message-item farmer">
+                        <div class="message-sender">Farmer</div>
+                        <div class="message-text">{{ selected_conversation.message }}</div>
+                        <div class="message-time">{{ selected_conversation.timestamp }}</div>
                     </div>
+                    
+                    {% if selected_conversation.response %}
+                    <div class="message-item ava">
+                        <div class="message-sender">AVA</div>
+                        <div class="message-text">{{ selected_conversation.response }}</div>
+                        <div class="message-time">{{ selected_conversation.timestamp }}</div>
+                        {% if not selected_conversation.approved %}
+                        <div class="approval-buttons">
+                            <button class="btn btn-approve" onclick="approveMessage({{ selected_conversation.id }})">Approve</button>
+                            <button class="btn btn-answer" onclick="showAnswerBox({{ selected_conversation.id }})">Answer</button>
+                        </div>
+                        <div class="answer-box" id="answer-box-{{ selected_conversation.id }}">
+                            <textarea id="answer-text-{{ selected_conversation.id }}" placeholder="Type your answer here..."></textarea>
+                            <button class="btn btn-approve" onclick="sendAnswer({{ selected_conversation.id }})">Send Answer</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 {% endif %}
             </div>
+            
+            <div class="general-message-box">
+                <h3>Send General Message</h3>
+                <textarea id="general-message" placeholder="Type a message to send to this farmer..."></textarea>
+                <button class="btn btn-approve" onclick="sendGeneralMessage({{ selected_conversation.farmer_id }})">Send General Message</button>
+            </div>
+            {% else %}
+            <div class="no-selection">
+                <p>Select a conversation to view details</p>
+            </div>
+            {% endif %}
         </div>
     </div>
-
+    
     <script>
-        // Filter conversations
-        function filterConversations(filter) {
-            const cards = document.querySelectorAll('.conversation-card');
-            const buttons = document.querySelectorAll('.filter-btn');
-            
-            // Update button states
-            buttons.forEach(btn => btn.classList.remove('active'));
+        function selectConversation(conversationId) {
+            window.location.href = `/dashboards/agronomic/conversation/${conversationId}`;
+        }
+        
+        function filterConversations(status) {
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
             event.target.classList.add('active');
             
-            // Filter cards
-            cards.forEach(card => {
-                const confidence = parseFloat(card.dataset.confidence);
-                const approved = card.dataset.approved;
-                
-                let show = true;
-                
-                if (filter === 'pending') {
-                    show = approved === 'None';
-                } else if (filter === 'low-confidence') {
-                    show = confidence < 0.8;
+            // Filter conversations
+            const items = document.querySelectorAll('.conversation-item');
+            items.forEach(item => {
+                if (status === 'all') {
+                    item.style.display = 'block';
+                } else if (status === 'unapproved' && item.dataset.status === 'unapproved') {
+                    item.style.display = 'block';
+                } else if (status === 'approved' && item.dataset.status === 'approved') {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
                 }
-                
-                card.style.display = show ? 'block' : 'none';
             });
         }
-
-        // Approve/reject conversation
-        async function approveConversation(convId, approved) {
-            const notes = prompt(approved ? 'Napomene za odobrenje:' : 'Razlog odbacivanja:') || '';
-            
+        
+        function showAnswerBox(conversationId) {
+            const answerBox = document.getElementById(`answer-box-${conversationId}`);
+            answerBox.style.display = answerBox.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        async function approveMessage(conversationId) {
             try {
-                const response = await fetch(`/api/approve/${convId}?approved=${approved}&notes=${encodeURIComponent(notes)}`, {
+                const response = await fetch(`/dashboards/agronomic/approve/${conversationId}`, {
                     method: 'POST'
                 });
-                
-                if (response.ok) {
-                    location.reload(); // Refresh to show updated state
+                const result = await response.json();
+                if (result.success) {
+                    alert('Conversation approved successfully');
+                    window.location.reload();
                 } else {
-                    alert('Greška pri ažuriranju razgovora');
+                    alert('Failed to approve conversation: ' + result.message);
                 }
             } catch (error) {
-                alert('Greška: ' + error.message);
+                alert('Error approving conversation: ' + error.message);
             }
         }
-
-        // Toggle edit form
-        function toggleEditForm(convId) {
-            const form = document.getElementById(`edit-form-${convId}`);
-            form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Update answer
-        async function updateAnswer(convId) {
-            const newAnswer = document.getElementById(`new-answer-${convId}`).value;
-            const expertNotes = document.getElementById(`expert-notes-${convId}`).value;
-            
-            if (!newAnswer.trim()) {
-                alert('Molim unesite odgovor');
+        
+        async function sendAnswer(conversationId) {
+            const answerText = document.getElementById(`answer-text-${conversationId}`).value;
+            if (!answerText.trim()) {
+                alert('Please enter an answer');
                 return;
             }
             
             try {
-                const response = await fetch(`/api/update-answer/${convId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        new_answer: newAnswer,
-                        expert_notes: expertNotes
-                    })
-                });
+                const formData = new FormData();
+                formData.append('answer', answerText);
                 
-                if (response.ok) {
-                    location.reload(); // Refresh to show updated answer
+                const response = await fetch(`/dashboards/agronomic/answer/${conversationId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Answer sent successfully');
+                    window.location.reload();
                 } else {
-                    alert('Greška pri ažuriranju odgovora');
+                    alert('Failed to send answer: ' + result.message);
                 }
             } catch (error) {
-                alert('Greška: ' + error.message);
+                alert('Error sending answer: ' + error.message);
             }
         }
-
-        // Auto-refresh every 30 seconds
-        setTimeout(() => {
-            location.reload();
-        }, 30000);
+        
+        async function sendGeneralMessage(farmerId) {
+            const messageText = document.getElementById('general-message').value;
+            if (!messageText.trim()) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('farmer_id', farmerId);
+                formData.append('message', messageText);
+                
+                const response = await fetch('/dashboards/agronomic/send_general_message', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Message sent successfully');
+                    document.getElementById('general-message').value = '';
+                    window.location.reload();
+                } else {
+                    alert('Failed to send message: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error sending message: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>

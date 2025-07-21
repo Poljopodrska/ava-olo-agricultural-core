@@ -71,6 +71,61 @@ async def health_dashboard():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Health dashboard not found</h1>", status_code=404)
 
+@router.get("/cost", response_class=HTMLResponse)
+async def cost_dashboard():
+    """Cost dashboard placeholder"""
+    return HTMLResponse(content="""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cost Dashboard - AVA OLO</title>
+        <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+        <style>
+            body {
+                font-family: var(--font-primary);
+                margin: 0;
+                padding: 20px;
+                background-color: var(--color-bg-primary);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+            }
+            .container {
+                background: white;
+                border-radius: 8px;
+                padding: 40px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                max-width: 600px;
+                text-align: center;
+            }
+            h1 {
+                color: var(--color-agri-green);
+                margin-bottom: 20px;
+            }
+            .back-link {
+                display: inline-block;
+                margin-top: 20px;
+                padding: 10px 20px;
+                background: var(--primary-olive);
+                color: white;
+                text-decoration: none;
+                border-radius: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>💰 Cost Dashboard</h1>
+            <p>Cost tracking and analysis functionality coming soon!</p>
+            <a href="/" class="back-link">Back to Dashboard</a>
+        </div>
+    </body>
+    </html>
+    """)
+
 # API endpoints for dashboard functionality
 
 @api_router.get("/hub/stats")

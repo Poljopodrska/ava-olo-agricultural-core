@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Retrieval - Database Dashboard - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <style>
+        body {
+            font-family: var(--font-primary);
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-bg-primary);
+            font-size: var(--font-size-base);
+        }
+        
+        .dashboard-header {
+            background: var(--dark-charcoal);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: var(--font-heading);
+        }
+        
+        .back-button {
+            background: var(--primary-olive);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            transition: background 0.3s;
+        }
+        
+        .back-button:hover {
+            background: var(--dark-olive);
+        }
+        
+        .main-content {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* Quick Queries Section */
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            margin: 0 0 20px 0;
+            color: var(--dark-charcoal);
+            font-size: var(--font-size-xl);
+        }
+        
+        .quick-queries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .query-button {
+            background: var(--color-gray-50);
+            border: 2px solid transparent;
+            padding: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: var(--font-size-base);
+        }
+        
+        .query-button:hover {
+            background: white;
+            border-color: var(--primary-olive);
+        }
+        
+        .query-button.with-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .query-button input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 4px;
+            font-size: var(--font-size-base);
+        }
+        
+        /* Natural Language Query */
+        .natural-query-box {
+            margin-top: 20px;
+        }
+        
+        .query-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid var(--color-gray-300);
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            font-family: var(--font-primary);
+            resize: vertical;
+        }
+        
+        .query-textarea:focus {
+            outline: none;
+            border-color: var(--primary-olive);
+        }
+        
+        .generate-button {
+            margin-top: 12px;
+            padding: 12px 24px;
+            background: var(--primary-olive);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .generate-button:hover {
+            background: var(--dark-olive);
+        }
+        
+        .generate-button:disabled {
+            background: var(--color-gray-400);
+            cursor: not-allowed;
+        }
+        
+        /* Results Section */
+        .results-section {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .results-section.active {
+            display: block;
+        }
+        
+        .sql-display {
+            background: var(--color-gray-900);
+            color: var(--color-gray-100);
+            padding: 16px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        
+        .result-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            color: var(--medium-gray);
+        }
+        
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--font-size-base);
+        }
+        
+        .result-table th {
+            background: var(--color-gray-100);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark-charcoal);
+            border-bottom: 2px solid var(--color-gray-300);
+        }
+        
+        .result-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        
+        .result-table tr:hover {
+            background: var(--color-gray-50);
+        }
+        
+        .error-message {
+            background: var(--color-danger-bg);
+            color: var(--color-danger);
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--medium-gray);
+        }
+        
+        @media (max-width: 768px) {
+            .quick-queries {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-table {
+                font-size: 14px;
+            }
+            
+            .result-table td, .result-table th {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1>📊 Data Retrieval</h1>
+        <a href="/dashboards/database" class="back-button">Back to Database Dashboard</a>
+    </div>
+    
+    <div class="main-content">
+        <!-- Quick Queries Section -->
+        <div class="section">
+            <h2>Quick Queries</h2>
+            <div class="quick-queries">
+                <button class="query-button" onclick="executeQuickQuery('total-farmers')">
+                    Total # of farmers
+                </button>
+                
+                <button class="query-button" onclick="executeQuickQuery('all-farmers')">
+                    List all farmers
+                </button>
+                
+                <div class="query-button with-input">
+                    <span>List fields for Farmer ID:</span>
+                    <input type="number" id="farmer-id-input" placeholder="Enter ID">
+                    <button onclick="executeFieldsQuery()">Go</button>
+                </div>
+                
+                <div class="query-button with-input">
+                    <span>List tasks for Field ID(s):</span>
+                    <input type="text" id="field-ids-input" placeholder="e.g., 1,2,3">
+                    <button onclick="executeTasksQuery()">Go</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Natural Language Query Section -->
+        <div class="section">
+            <h2>Natural Language Query</h2>
+            <div class="natural-query-box">
+                <textarea class="query-textarea" id="natural-query" 
+                    placeholder="Describe what data you want to retrieve...&#10;Examples:&#10;- Show me all farmers with more than 50 hectares&#10;- List farmers who grow vineyards&#10;- Which cities have the most farmers?"></textarea>
+                <button class="generate-button" onclick="executeNaturalQuery()">
+                    Generate Query & Execute
+                </button>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="section results-section" id="results-section">
+            <h2>Query Results</h2>
+            <div id="results-container">
+                <!-- Results will be displayed here -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function executeQuickQuery(queryType) {
+            showLoading();
+            
+            try {
+                const response = await fetch(`/dashboards/database/api/quick-queries/${queryType}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (queryType === 'total-farmers') {
+                        displayTotalFarmers(result);
+                    } else if (queryType === 'all-farmers') {
+                        displayFarmersList(result);
+                    }
+                } else {
+                    showError(result.error || 'Query failed');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        async function executeFieldsQuery() {
+            const farmerId = document.getElementById('farmer-id-input').value;
+            if (!farmerId) {
+                alert('Please enter a farmer ID');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`/dashboards/database/api/quick-queries/farmer-fields?farmer_id=${farmerId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayFieldsList(result);
+                } else {
+                    showError(result.error || 'Query failed');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        async function executeTasksQuery() {
+            const fieldIds = document.getElementById('field-ids-input').value;
+            if (!fieldIds) {
+                alert('Please enter field ID(s)');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`/dashboards/database/api/quick-queries/field-tasks?field_ids=${encodeURIComponent(fieldIds)}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayTasksList(result);
+                } else {
+                    showError(result.error || 'Query failed');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+        
+        async function executeNaturalQuery() {
+            const question = document.getElementById('natural-query').value.trim();
+            if (!question) {
+                alert('Please describe what data you want to retrieve');
+                return;
+            }
+            
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Generating query...';
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/dashboards/database/api/natural-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayQueryResults(result);
+                } else {
+                    showError(result.error || 'Query generation failed');
+                }
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Generate Query & Execute';
+            }
+        }
+        
+        function showLoading() {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            container.innerHTML = '<div class="loading">Executing query...</div>';
+        }
+        
+        function showError(error) {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            container.innerHTML = `<div class="error-message">Error: ${error}</div>`;
+        }
+        
+        function displayTotalFarmers(result) {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            container.innerHTML = `
+                <div class="sql-display">${result.query}</div>
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 4em; font-weight: 700; color: var(--primary-olive);">
+                        ${result.data.total_farmers}
+                    </div>
+                    <div style="font-size: 1.5em; color: var(--medium-gray); margin-top: 10px;">
+                        Total Active Farmers
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayFarmersList(result) {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            
+            let html = `
+                <div class="sql-display">${result.query}</div>
+                <div class="result-info">
+                    <span>${result.data.length} farmers found</span>
+                </div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone</th>
+                            <th>City</th>
+                            <th>Occupation</th>
+                            <th>Hectares</th>
+                            <th>Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            result.data.forEach(farmer => {
+                html += `
+                    <tr>
+                        <td>${farmer.id}</td>
+                        <td>${farmer.name || 'N/A'}</td>
+                        <td>${farmer.phone_number || 'N/A'}</td>
+                        <td>${farmer.city || 'N/A'}</td>
+                        <td>${farmer.primary_occupation || 'N/A'}</td>
+                        <td>${farmer.size_hectares}</td>
+                        <td>${farmer.created_at}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function displayFieldsList(result) {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            
+            if (result.data.length === 0) {
+                container.innerHTML = `
+                    <div class="sql-display">${result.query}</div>
+                    <p style="text-align: center; color: var(--medium-gray); padding: 40px;">
+                        No fields found for this farmer
+                    </p>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="sql-display">${result.query}</div>
+                <div class="result-info">
+                    <span>${result.data.length} fields found</span>
+                </div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Field ID</th>
+                            <th>Field Name</th>
+                            <th>Size (ha)</th>
+                            <th>Crop Type</th>
+                            <th>Planting Date</th>
+                            <th>Harvest Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            result.data.forEach(field => {
+                html += `
+                    <tr>
+                        <td>${field.id}</td>
+                        <td>${field.field_name || 'N/A'}</td>
+                        <td>${field.size_hectares}</td>
+                        <td>${field.crop_type || 'N/A'}</td>
+                        <td>${field.planting_date || 'N/A'}</td>
+                        <td>${field.harvest_date || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function displayTasksList(result) {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            
+            if (result.data.length === 0) {
+                container.innerHTML = `
+                    <div class="sql-display">${result.query}</div>
+                    <p style="text-align: center; color: var(--medium-gray); padding: 40px;">
+                        No tasks found for these fields
+                    </p>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="sql-display">${result.query}</div>
+                <div class="result-info">
+                    <span>${result.data.length} tasks found</span>
+                </div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            result.data.forEach(task => {
+                html += `
+                    <tr>
+                        <td>${task.id}</td>
+                        <td>${task.field_name} (ID: ${task.field_id})</td>
+                        <td>${task.task_type || 'N/A'}</td>
+                        <td>${task.task_description || 'N/A'}</td>
+                        <td>${task.due_date || 'N/A'}</td>
+                        <td>${task.status || 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function displayQueryResults(result) {
+            const resultsSection = document.getElementById('results-section');
+            const container = document.getElementById('results-container');
+            
+            resultsSection.classList.add('active');
+            
+            if (!result.data || result.data.length === 0) {
+                container.innerHTML = `
+                    <div class="sql-display">${result.query}</div>
+                    <p style="text-align: center; color: var(--medium-gray); padding: 40px;">
+                        No results found
+                    </p>
+                `;
+                return;
+            }
+            
+            // Build table dynamically based on columns
+            let html = `
+                <div class="sql-display">${result.query}</div>
+                <div class="result-info">
+                    <span>${result.row_count} rows returned</span>
+                    <span>Execution time: ${result.execution_time}ms</span>
+                </div>
+                <table class="result-table">
+                    <thead>
+                        <tr>
+            `;
+            
+            // Add column headers
+            const columns = result.columns || Object.keys(result.data[0]);
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            // Add data rows
+            result.data.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col];
+                    html += `<td>${value !== null && value !== undefined ? value : 'NULL'}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

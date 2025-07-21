@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Dashboard - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-system-v2.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: var(--font-primary);
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-bg-primary);
+            font-size: var(--font-size-base);
+        }
+        
+        .dashboard-header {
+            background: var(--dark-charcoal);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: var(--font-heading);
+        }
+        
+        .back-button {
+            background: var(--primary-olive);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: var(--font-size-base);
+            transition: background 0.3s;
+        }
+        
+        .back-button:hover {
+            background: var(--dark-olive);
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card h3 {
+            margin: 0 0 16px 0;
+            color: var(--dark-charcoal);
+            font-size: var(--font-size-lg);
+        }
+        
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: var(--primary-olive);
+            margin: 8px 0;
+        }
+        
+        .metric-label {
+            color: var(--medium-gray);
+            font-size: var(--font-size-base);
+        }
+        
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-gray-100);
+        }
+        
+        .breakdown-item:last-child {
+            border-bottom: none;
+        }
+        
+        .breakdown-label {
+            color: var(--dark-charcoal);
+            font-weight: 500;
+        }
+        
+        .breakdown-value {
+            color: var(--primary-olive);
+            font-weight: 600;
+        }
+        
+        /* Tabs for Growth Trends */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: var(--color-gray-100);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: var(--font-size-base);
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: var(--primary-olive);
+            color: white;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        /* Today's Activity Bar */
+        .activity-bar {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .activity-item {
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .activity-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--primary-olive);
+        }
+        
+        .activity-label {
+            color: var(--medium-gray);
+            font-size: var(--font-size-sm);
+            margin-top: 4px;
+        }
+        
+        /* Activity Stream */
+        .activity-stream {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .stream-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-gray-100);
+            font-size: var(--font-size-base);
+        }
+        
+        .stream-time {
+            color: var(--medium-gray);
+            font-weight: 600;
+        }
+        
+        /* Database Changes */
+        .change-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--color-gray-100);
+            font-size: var(--font-size-base);
+        }
+        
+        .change-operation {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .change-operation.insert {
+            background: var(--color-success-bg);
+            color: var(--color-success-dark);
+        }
+        
+        .change-operation.update {
+            background: var(--color-info-bg);
+            color: var(--color-info-dark);
+        }
+        
+        /* Time selector */
+        .time-selector {
+            padding: 6px 12px;
+            border: 1px solid var(--color-gray-300);
+            border-radius: 4px;
+            font-size: var(--font-size-base);
+            background: white;
+            cursor: pointer;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--medium-gray);
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .activity-bar {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <h1>📊 Business Dashboard</h1>
+        <a href="/" class="back-button">Back to Dashboard</a>
+    </div>
+    
+    <!-- Top Row Metrics -->
+    <div class="dashboard-grid">
+        <!-- Database Overview -->
+        <div class="metric-card">
+            <h3>Database Overview</h3>
+            <div id="database-overview" class="loading">Loading...</div>
+        </div>
+        
+        <!-- Growth Trends -->
+        <div class="metric-card">
+            <h3>Growth Trends</h3>
+            <div class="tabs">
+                <button class="tab active" onclick="loadGrowthTrends('24hours')">24 Hours</button>
+                <button class="tab" onclick="loadGrowthTrends('7days')">7 Days</button>
+                <button class="tab" onclick="loadGrowthTrends('30days')">30 Days</button>
+            </div>
+            <div id="growth-trends" class="loading">Loading...</div>
+        </div>
+        
+        <!-- Cumulative Farmer Growth -->
+        <div class="metric-card">
+            <h3>Cumulative Farmer Growth</h3>
+            <select class="time-selector" onchange="loadCumulativeGrowth(this.value)">
+                <option value="30">Last 30 Days</option>
+                <option value="7">Last 7 Days</option>
+                <option value="90">Last 90 Days</option>
+            </select>
+            <div class="chart-container">
+                <canvas id="cumulativeChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Churn Rate -->
+        <div class="metric-card">
+            <h3>Churn Rate</h3>
+            <select class="time-selector" onchange="loadChurnRate(this.value)">
+                <option value="30">Last 30 Days</option>
+                <option value="7">Last 7 Days</option>
+                <option value="90">Last 90 Days</option>
+            </select>
+            <div class="chart-container">
+                <canvas id="churnChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Today's Activity Bar -->
+    <div class="activity-bar" id="todays-activity">
+        <div class="activity-item">
+            <div class="activity-value">-</div>
+            <div class="activity-label">New Fields</div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-value">-</div>
+            <div class="activity-label">Crops Planted</div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-value">-</div>
+            <div class="activity-label">Spraying Operations</div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-value">-</div>
+            <div class="activity-label">Questions Asked</div>
+        </div>
+        <div class="activity-item">
+            <div class="activity-value">-</div>
+            <div class="activity-label">Farmers Active</div>
+        </div>
+    </div>
+    
+    <!-- Bottom Row -->
+    <div class="dashboard-grid">
+        <!-- Activity Stream -->
+        <div class="metric-card">
+            <h3>Activity Stream</h3>
+            <div id="activity-stream" class="activity-stream loading">Loading...</div>
+        </div>
+        
+        <!-- Recent Database Changes -->
+        <div class="metric-card">
+            <h3>Recent Database Changes</h3>
+            <div id="database-changes" class="loading">Loading...</div>
+        </div>
+    </div>
+    
+    <script>
+        let cumulativeChart = null;
+        let churnChart = null;
+        
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDatabaseOverview();
+            loadGrowthTrends('24hours');
+            loadCumulativeGrowth(30);
+            loadChurnRate(30);
+            loadTodaysActivity();
+            loadActivityStream();
+            loadDatabaseChanges();
+            
+            // Refresh data every 30 seconds
+            setInterval(() => {
+                loadTodaysActivity();
+                loadActivityStream();
+                loadDatabaseChanges();
+            }, 30000);
+        });
+        
+        async function loadDatabaseOverview() {
+            try {
+                const response = await fetch('/dashboards/business/api/overview');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const overviewHtml = `
+                        <div class="metric-value">${data.total_farmers}</div>
+                        <div class="metric-label">Total Farmers</div>
+                        <div class="metric-value" style="margin-top: 20px;">${data.total_hectares}</div>
+                        <div class="metric-label">Total Hectares</div>
+                        
+                        <h4 style="margin-top: 30px; margin-bottom: 16px;">Hectare Breakdown</h4>
+                        ${Object.entries(data.hectare_breakdown).map(([crop, info]) => `
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">${crop}</span>
+                                <span class="breakdown-value">${info.hectares} ha (${info.percentage}%)</span>
+                            </div>
+                        `).join('')}
+                    `;
+                    document.getElementById('database-overview').innerHTML = overviewHtml;
+                }
+            } catch (error) {
+                console.error('Error loading database overview:', error);
+                document.getElementById('database-overview').innerHTML = 'Error loading data';
+            }
+        }
+        
+        async function loadGrowthTrends(period) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            try {
+                const response = await fetch(`/dashboards/business/api/growth-trends/${period}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const trendsHtml = `
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">New Farmers</span>
+                            <span class="breakdown-value">${data.new_farmers}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">Unsubscribed</span>
+                            <span class="breakdown-value" style="color: var(--color-danger);">${data.unsubscribed}</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <span class="breakdown-label">New Hectares</span>
+                            <span class="breakdown-value">${data.new_hectares} ha</span>
+                        </div>
+                    `;
+                    document.getElementById('growth-trends').innerHTML = trendsHtml;
+                }
+            } catch (error) {
+                console.error('Error loading growth trends:', error);
+                document.getElementById('growth-trends').innerHTML = 'Error loading data';
+            }
+        }
+        
+        async function loadCumulativeGrowth(days) {
+            try {
+                const response = await fetch(`/dashboards/business/api/cumulative-growth?days=${days}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('cumulativeChart').getContext('2d');
+                    
+                    if (cumulativeChart) {
+                        cumulativeChart.destroy();
+                    }
+                    
+                    cumulativeChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates,
+                            datasets: [{
+                                label: 'Total Farmers',
+                                data: data.cumulative_totals,
+                                borderColor: '#6B7D46',
+                                backgroundColor: 'rgba(107, 125, 70, 0.1)',
+                                yAxisID: 'y',
+                                tension: 0.1
+                            }, {
+                                label: 'Daily Net Growth',
+                                data: data.daily_net_growth,
+                                type: 'bar',
+                                backgroundColor: 'rgba(139, 140, 90, 0.5)',
+                                yAxisID: 'y1'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false
+                            },
+                            scales: {
+                                y: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'left'
+                                },
+                                y1: {
+                                    type: 'linear',
+                                    display: true,
+                                    position: 'right',
+                                    grid: {
+                                        drawOnChartArea: false
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading cumulative growth:', error);
+            }
+        }
+        
+        async function loadChurnRate(days) {
+            try {
+                const response = await fetch(`/dashboards/business/api/churn-rate?days=${days}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = document.getElementById('churnChart').getContext('2d');
+                    
+                    if (churnChart) {
+                        churnChart.destroy();
+                    }
+                    
+                    churnChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.dates,
+                            datasets: [{
+                                label: '7-Day Rolling Average',
+                                data: data.rolling_average,
+                                borderColor: '#dc2626',
+                                backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading churn rate:', error);
+            }
+        }
+        
+        async function loadTodaysActivity() {
+            try {
+                const response = await fetch('/dashboards/business/api/todays-activity');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('todays-activity');
+                    container.innerHTML = `
+                        <div class="activity-item">
+                            <div class="activity-value">${data.metrics.new_fields}</div>
+                            <div class="activity-label">New Fields</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-value">${data.metrics.crops_planted}</div>
+                            <div class="activity-label">Crops Planted</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-value">${data.metrics.spraying_operations}</div>
+                            <div class="activity-label">Spraying Operations</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-value">${data.metrics.questions_asked}</div>
+                            <div class="activity-label">Questions Asked</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-value">${data.metrics.farmers_active}</div>
+                            <div class="activity-label">Farmers Active</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading today\'s activity:', error);
+            }
+        }
+        
+        async function loadActivityStream() {
+            try {
+                const response = await fetch('/dashboards/business/api/activity-stream');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const streamHtml = data.activities.map(activity => `
+                        <div class="stream-item">
+                            <span class="stream-time">${activity.time}</span> • 
+                            Farmer #${activity.farmer_id}: ${activity.activity}
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('activity-stream').innerHTML = streamHtml || '<p>No recent activity</p>';
+                }
+            } catch (error) {
+                console.error('Error loading activity stream:', error);
+                document.getElementById('activity-stream').innerHTML = 'Error loading data';
+            }
+        }
+        
+        async function loadDatabaseChanges() {
+            try {
+                const response = await fetch('/dashboards/business/api/database-changes');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const changesHtml = data.changes.map(change => `
+                        <div class="change-item">
+                            <div>
+                                <span class="change-operation ${change.operation.toLowerCase()}">${change.operation}</span>
+                                ${change.table} #${change.record_id}
+                            </div>
+                            <div style="color: var(--medium-gray); font-size: 14px;">
+                                ${change.timestamp}
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('database-changes').innerHTML = changesHtml || '<p>No recent changes</p>';
+                }
+            } catch (error) {
+                console.error('Error loading database changes:', error);
+                document.getElementById('database-changes').innerHTML = 'Error loading data';
+            }
+        }
+    </script>
+</body>
+</html>
