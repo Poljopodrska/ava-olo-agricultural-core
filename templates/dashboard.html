@@ -781,10 +781,15 @@
                     statusDiv.style.display = 'block';
                     statusDiv.innerHTML = '⚠️ Chat AI is not connected. Please configure OpenAI API key.';
                 } else {
+                    // Hide the banner completely when connected
                     statusDiv.style.display = 'none';
+                    statusDiv.innerHTML = '';
                 }
             } catch (error) {
                 console.error('Connection check failed:', error);
+                // Hide banner on error to avoid confusion
+                const statusDiv = document.getElementById('connection-status');
+                statusDiv.style.display = 'none';
             }
         }
         

@@ -1,0 +1,123 @@
+{
+  "family": "ava-agricultural-task",
+  "containerDefinitions": [
+    {
+      "name": "agricultural",
+      "image": "127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/agricultural-core:latest",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 8080,
+          "hostPort": 8080,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "PORT",
+          "value": "8080"
+        },
+        {
+          "name": "DB_USER",
+          "value": "postgres"
+        },
+        {
+          "name": "ENVIRONMENT",
+          "value": "production"
+        },
+        {
+          "name": "VERSION",
+          "value": "v2.6.0-security"
+        },
+        {
+          "name": "DB_NAME",
+          "value": "farmer_crm"
+        },
+        {
+          "name": "DB_HOST",
+          "value": "farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com"
+        },
+        {
+          "name": "USE_SECRETS_MANAGER",
+          "value": "true"
+        },
+        {
+          "name": "DB_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "OPENAI_API_KEY",
+          "value": "REPLACE_WITH_ACTUAL_API_KEY"
+        },
+        {
+          "name": "OPENWEATHER_API_KEY",
+          "value": "53efe5a8c7ac5cad63b7b0419f5d3069"
+        },
+        {
+          "name": "SECRET_KEY",
+          "value": "8tsHicCkKBHvwk51zNp80RY2uUZGTLAb"
+        },
+        {
+          "name": "JWT_SECRET_KEY",
+          "value": "pJnruaBvL9ZLvWqr7QLtvXv9F0xw1kO6"
+        },
+        {
+          "name": "AWS_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "AWS_DEFAULT_REGION",
+          "value": "us-east-1"
+        },
+        {
+          "name": "DEBUG",
+          "value": "false"
+        },
+        {
+          "name": "LOG_LEVEL",
+          "value": "INFO"
+        }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "secrets": [
+        {
+          "name": "DB_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:127679825789:secret:ava-olo/database:DB_PASSWORD::"
+        },
+        {
+          "name": "ADMIN_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:127679825789:secret:ava-olo/admin:ADMIN_PASSWORD::"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/ava-agricultural",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      },
+      "systemControls": []
+    }
+  ],
+  "requiresCompatibilities": [
+    "EC2"
+  ],
+  "taskRoleArn": "arn:aws:iam::127679825789:role/ava-olo-ecs-task-role",
+  "executionRoleArn": "arn:aws:iam::127679825789:role/ava-olo-ecs-task-execution-role",
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024"
+}

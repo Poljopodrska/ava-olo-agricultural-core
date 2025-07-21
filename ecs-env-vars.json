@@ -17,19 +17,19 @@
   },
   {
     "name": "DB_PASSWORD",
-    "value": "eXW8uyzi%iydHAa1!"
+    "value": "j2D8J4LH:~eFrUz>$:kkNT(P$Rq_"
   },
   {
     "name": "DATABASE_URL",
-    "value": "postgresql://postgres:eXW8uyzi%iydHAa1!@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
+    "value": "postgresql://postgres:j2D8J4LH:~eFrUz>$:kkNT(P$Rq_@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
   },
   {
     "name": "OPENAI_API_KEY",
-    "value": "sk-proj-REPLACE_WITH_YOUR_KEY"
+    "value": "REPLACE_WITH_ACTUAL_API_KEY"
   },
   {
     "name": "OPENWEATHER_API_KEY",
-    "value": "REPLACE_WITH_YOUR_KEY"
+    "value": "53efe5a8c7ac5cad63b7b0419f5d3069"
   },
   {
     "name": "SECRET_KEY",

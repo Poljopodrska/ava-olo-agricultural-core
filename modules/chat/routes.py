@@ -73,9 +73,19 @@ async def get_farmer_context(farmer_id: int) -> dict:
                     "last_task": last_task
                 })
         
+        # Format location from location data
+        location_display = "Unknown location"
+        if location_data:
+            city = location_data.get('city', '')
+            country = location_data.get('country', '')
+            if city and country:
+                location_display = f"{city}, {country}"
+            elif city:
+                location_display = city
+        
         return {
             "fields": fields,
-            "location": location_data.get('display_name', 'Unknown location'),
+            "location": location_display,
             "local_time": datetime.now().strftime("%H:%M"),
             "local_date": datetime.now().strftime("%B %d, %Y")
         }

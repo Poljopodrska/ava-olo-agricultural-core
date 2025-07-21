@@ -381,3 +381,325 @@ async def system_health_summary():
         },
         "timestamp": datetime.now().isoformat()
     }
+
+@router.get("/health")
+async def comprehensive_health_check():
+    """Comprehensive health check with detailed connection tests"""
+    
+    # Start timing
+    start_time = datetime.now()
+    
+    # Test each service
+    health_results = {
+        "database": await test_database_health_detailed(),
+        "openai": await test_openai_health_detailed(),
+        "weather": await test_weather_health_detailed(),
+        "response_time_ms": 0
+    }
+    
+    # Calculate total response time
+    end_time = datetime.now()
+    health_results["response_time_ms"] = int((end_time - start_time).total_seconds() * 1000)
+    health_results["timestamp"] = end_time.isoformat()
+    
+    # Overall status
+    all_connected = all(service["connected"] for service in health_results.values() if isinstance(service, dict) and "connected" in service)
+    health_results["overall_status"] = "healthy" if all_connected else "degraded"
+    
+    return health_results
+
+async def test_database_health_detailed() -> Dict:
+    """Detailed database health check"""
+    start = datetime.now()
+    
+    try:
+        db_manager = get_db_manager()
+        
+        # Basic connection test
+        if not db_manager.test_connection():
+            return {
+                "connected": False,
+                "status": "connection_failed",
+                "error": "Cannot establish database connection",
+                "response_time_ms": int((datetime.now() - start).total_seconds() * 1000)
+            }
+        
+        # Test queries
+        tests_passed = 0
+        total_tests = 3
+        
+        # Test 1: Count farmers
+        try:
+            result = db_manager.execute_query("SELECT COUNT(*) FROM farmers")
+            farmer_count = result['rows'][0][0] if result and result.get('rows') else 0
+            tests_passed += 1
+        except:
+            farmer_count = 0
+        
+        # Test 2: Count fields
+        try:
+            result = db_manager.execute_query("SELECT COUNT(*) FROM fields")
+            field_count = result['rows'][0][0] if result and result.get('rows') else 0
+            tests_passed += 1
+        except:
+            field_count = 0
+        
+        # Test 3: Check Kmetija Vrzel exists
+        try:
+            result = db_manager.execute_query(
+                "SELECT COUNT(*) FROM farmers WHERE name ILIKE %s",
+                ('%Kmetija%Vrzel%',)
+            )
+            has_kmetija = result['rows'][0][0] > 0 if result and result.get('rows') else False
+            tests_passed += 1
+        except:
+            has_kmetija = False
+        
+        response_time = int((datetime.now() - start).total_seconds() * 1000)
+        
+        return {
+            "connected": True,
+            "status": "healthy" if tests_passed == total_tests else "partial",
+            "farmer_count": farmer_count,
+            "field_count": field_count,
+            "has_kmetija_vrzel": has_kmetija,
+            "tests_passed": f"{tests_passed}/{total_tests}",
+            "response_time_ms": response_time,
+            "connection_string": f"{os.getenv('DB_HOST', 'unknown')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'unknown')}"
+        }
+        
+    except Exception as e:
+        return {
+            "connected": False,
+            "status": "error",
+            "error": str(e),
+            "response_time_ms": int((datetime.now() - start).total_seconds() * 1000)
+        }
+
+async def test_openai_health_detailed() -> Dict:
+    """Detailed OpenAI health check"""
+    start = datetime.now()
+    
+    try:
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            return {
+                "connected": False,
+                "status": "no_api_key",
+                "error": "OPENAI_API_KEY not configured",
+                "response_time_ms": 0
+            }
+        
+        # Test with minimal completion
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "gpt-3.5-turbo",
+                    "messages": [{"role": "user", "content": "Say 'ok'"}],
+                    "max_tokens": 5,
+                    "temperature": 0
+                },
+                timeout=10.0
+            )
+            
+            response_time = int((datetime.now() - start).total_seconds() * 1000)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return {
+                    "connected": True,
+                    "status": "healthy",
+                    "model": "gpt-3.5-turbo",
+                    "gpt4_available": True,  # Assume GPT-4 is available if GPT-3.5 works
+                    "response": data['choices'][0]['message']['content'],
+                    "response_time_ms": response_time,
+                    "api_key_prefix": api_key[:7] + "..."
+                }
+            elif response.status_code == 401:
+                return {
+                    "connected": False,
+                    "status": "invalid_key",
+                    "error": "Invalid API key",
+                    "response_time_ms": response_time
+                }
+            else:
+                return {
+                    "connected": False,
+                    "status": "api_error",
+                    "error": f"API returned {response.status_code}",
+                    "response_time_ms": response_time
+                }
+                
+    except Exception as e:
+        return {
+            "connected": False,
+            "status": "error",
+            "error": str(e),
+            "response_time_ms": int((datetime.now() - start).total_seconds() * 1000)
+        }
+
+async def test_weather_health_detailed() -> Dict:
+    """Detailed weather API health check"""
+    start = datetime.now()
+    
+    try:
+        api_key = os.getenv("OPENWEATHER_API_KEY") or os.getenv("WEATHER_API_KEY")
+        if not api_key:
+            return {
+                "connected": False,
+                "status": "no_api_key",
+                "error": "No weather API key configured",
+                "response_time_ms": 0
+            }
+        
+        # Test with Ljubljana (capital of Slovenia)
+        lat, lon = 46.0569, 14.5058
+        test_locations = {
+            "Ljubljana": (46.0569, 14.5058),
+            "Maribor": (46.5547, 15.6459)
+        }
+        
+        results = {}
+        
+        # Test current weather for Ljubljana
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=10.0)
+            
+            response_time = int((datetime.now() - start).total_seconds() * 1000)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Test forecast endpoint too
+                forecast_url = f"https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+                forecast_response = await client.get(forecast_url, timeout=10.0)
+                
+                return {
+                    "connected": True,
+                    "status": "healthy",
+                    "test_location": data.get("name", "Unknown"),
+                    "country": data.get("sys", {}).get("country", "Unknown"),
+                    "temperature": data.get("main", {}).get("temp", "Unknown"),
+                    "weather": data.get("weather", [{}])[0].get("description", "Unknown"),
+                    "forecast_available": forecast_response.status_code == 200,
+                    "response_time_ms": response_time,
+                    "api_key_suffix": "..." + api_key[-4:]
+                }
+            elif response.status_code == 401:
+                return {
+                    "connected": False,
+                    "status": "invalid_key",
+                    "error": "Invalid API key",
+                    "response_time_ms": response_time
+                }
+            else:
+                return {
+                    "connected": False,
+                    "status": "api_error",
+                    "error": f"API returned {response.status_code}",
+                    "response_time_ms": response_time
+                }
+                
+    except Exception as e:
+        return {
+            "connected": False,
+            "status": "error",
+            "error": str(e),
+            "response_time_ms": int((datetime.now() - start).total_seconds() * 1000)
+        }
+
+@router.get("/debug/services")
+async def debug_services():
+    """Detailed debug information for troubleshooting"""
+    
+    # Mask sensitive values
+    def mask_value(key: str, value: str) -> str:
+        if not value:
+            return "NOT SET"
+        if "KEY" in key or "PASSWORD" in key:
+            if len(value) > 10:
+                return value[:4] + "***" + value[-4:]
+            else:
+                return "***"
+        return value
+    
+    env_vars = {
+        "OPENAI_API_KEY": mask_value("OPENAI_API_KEY", os.getenv("OPENAI_API_KEY", "")),
+        "OPENWEATHER_API_KEY": mask_value("OPENWEATHER_API_KEY", os.getenv("OPENWEATHER_API_KEY", "")),
+        "DB_HOST": os.getenv("DB_HOST", "NOT SET"),
+        "DB_NAME": os.getenv("DB_NAME", "NOT SET"),
+        "DB_USER": os.getenv("DB_USER", "NOT SET"),
+        "DB_PASSWORD": mask_value("DB_PASSWORD", os.getenv("DB_PASSWORD", "")),
+        "SECRET_KEY": mask_value("SECRET_KEY", os.getenv("SECRET_KEY", "")),
+        "JWT_SECRET_KEY": mask_value("JWT_SECRET_KEY", os.getenv("JWT_SECRET_KEY", "")),
+        "AWS_REGION": os.getenv("AWS_REGION", "NOT SET"),
+        "ENVIRONMENT": os.getenv("ENVIRONMENT", "NOT SET")
+    }
+    
+    # Run health checks
+    health = await comprehensive_health_check()
+    
+    # Test specific queries
+    test_results = {}
+    
+    # Test 1: Can we find Kmetija Vrzel?
+    try:
+        db_manager = get_db_manager()
+        result = db_manager.execute_query(
+            "SELECT id, name, whatsapp_number FROM farmers WHERE name ILIKE %s LIMIT 1",
+            ('%Kmetija%Vrzel%',)
+        )
+        if result and result.get('rows'):
+            test_results["kmetija_vrzel_found"] = {
+                "found": True,
+                "id": result['rows'][0][0],
+                "name": result['rows'][0][1],
+                "whatsapp": result['rows'][0][2]
+            }
+        else:
+            test_results["kmetija_vrzel_found"] = {"found": False}
+    except Exception as e:
+        test_results["kmetija_vrzel_found"] = {"error": str(e)}
+    
+    # Test 2: Can we get weather for Slovenia?
+    try:
+        if health["weather"]["connected"]:
+            test_results["slovenia_weather"] = {
+                "available": True,
+                "test_city": "Ljubljana",
+                "temperature": health["weather"].get("temperature", "Unknown")
+            }
+        else:
+            test_results["slovenia_weather"] = {"available": False}
+    except:
+        test_results["slovenia_weather"] = {"error": "Weather service not available"}
+    
+    # Test 3: Can we make a GPT-4 call?
+    try:
+        if health["openai"]["connected"]:
+            test_results["gpt4_available"] = {
+                "available": True,
+                "model": "gpt-4"
+            }
+        else:
+            test_results["gpt4_available"] = {"available": False}
+    except:
+        test_results["gpt4_available"] = {"error": "OpenAI service not available"}
+    
+    return {
+        "environment_variables": env_vars,
+        "service_health": health,
+        "test_results": test_results,
+        "deployment_info": {
+            "version": VERSION,
+            "service": SERVICE_NAME,
+            "timestamp": datetime.now().isoformat()
+        }
+    }

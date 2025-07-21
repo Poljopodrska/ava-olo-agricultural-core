@@ -17,11 +17,11 @@ class WeatherService:
         self.base_url = "http://api.openweathermap.org/data/2.5"
         self.onecall_url = "https://api.openweathermap.org/data/3.0/onecall"
         
-        # Default location for Bulgarian mango farms (approximate)
+        # Default location for Slovenian farms (Ljubljana)
         self.default_location = {
-            'lat': 42.7339,  # Bulgaria latitude
-            'lon': 25.4858,  # Bulgaria longitude
-            'name': 'Bulgaria'
+            'lat': 46.0569,  # Ljubljana latitude
+            'lon': 14.5058,  # Ljubljana longitude
+            'name': 'Ljubljana, Slovenia'
         }
     
     def _get_weather_emoji(self, weather_code: str, is_day: bool = True) -> str:
@@ -306,18 +306,18 @@ class WeatherService:
     def _get_mock_weather_data(self) -> Dict:
         """Mock weather data for testing/fallback"""
         return {
-            'location': 'Sofia, Bulgaria',
-            'temperature': '24°C',
-            'feels_like': '26°C',
-            'humidity': '65%',
+            'location': 'Ljubljana, Slovenia',
+            'temperature': '18°C',
+            'feels_like': '17°C',
+            'humidity': '72%',
             'description': 'Partly Cloudy',
             'icon': '⛅',
-            'wind_speed': '12 km/h',
+            'wind_speed': '8 km/h',
             'pressure': '1015 hPa',
             'visibility': '10 km',
             'timestamp': datetime.now().strftime('%H:%M'),
-            'raw_temp': 24.0,
-            'raw_humidity': 65,
+            'raw_temp': 18.0,
+            'raw_humidity': 72,
             'weather_code': '02d'
         }
     
@@ -328,7 +328,7 @@ class WeatherService:
         
         for i in range(5):
             date = base_date + timedelta(days=i)
-            temp_base = 22 + (i * 2)  # Varying temperatures
+            temp_base = 16 + (i * 2)  # Varying temperatures suitable for Slovenia
             
             forecasts.append({
                 'date': date.strftime('%Y-%m-%d'),
@@ -337,13 +337,14 @@ class WeatherService:
                 'temp_max': f"{temp_base + 5}°C",
                 'description': ['Sunny', 'Partly Cloudy', 'Cloudy', 'Light Rain', 'Sunny'][i],
                 'icon': ['☀️', '⛅', '☁️', '🌧️', '☀️'][i],
-                'humidity': f"{60 + i * 5}%",
-                'wind_speed': f"{10 + i * 2} km/h",
-                'precipitation': ['No rain', 'No rain', 'No rain', '2.5 mm', 'No rain'][i]
+                'humidity': f"{65 + i * 5}%",
+                'wind_speed': f"{8 + i * 2} km/h",
+                'wind_direction': ['N', 'NE', 'E', 'SE', 'S'][i],
+                'precipitation': '0 mm' if i != 3 else '2.5 mm'
             })
         
         return {
-            'location': 'Sofia, Bulgaria',
+            'location': 'Ljubljana, Slovenia',
             'forecasts': forecasts
         }
     

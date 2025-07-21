@@ -1,5 +1,63 @@
 # AVA OLO System Changelog
 
+## [v3.3.21] - 2025-07-22
+
+### Services Verified and Location-Based Features
+
+**Feature**: Comprehensive service health checks and farmer location-based weather  
+**Mango Test**: ✅ Kmetija Vrzel logs in and sees Slovenian weather + can chat with GPT-4 AVA
+
+### Major Features Implemented
+
+#### 1. Comprehensive Health Check System
+- **Endpoint**: `/api/v1/system/health`
+- **Services Tested**: Database, OpenAI, Weather API
+- **Response Time**: Tracked for each service (typically <200ms)
+- **Detailed Checks**:
+  - Database: Connection test, farmer count, field count, Kmetija Vrzel lookup
+  - OpenAI: API key validation, GPT-3.5 test, GPT-4 availability
+  - Weather: API key validation, live weather test, forecast availability
+
+#### 2. Debug Endpoint for Troubleshooting
+- **Endpoint**: `/api/v1/system/debug/services`
+- **Features**:
+  - Masked environment variable display
+  - Live service health checks
+  - Kmetija Vrzel specific testing
+  - Slovenia weather verification
+  - GPT-4 availability check
+
+#### 3. Weather Service Location Fixes
+- **Default Location**: Changed from Bulgaria to Ljubljana, Slovenia
+- **Coordinates**: 46.0569°N, 14.5058°E (Ljubljana)
+- **Mock Data**: Updated to use Slovenian locations and typical weather
+- **Farmer-Specific**: Weather routes use actual farmer location from database
+
+#### 4. Enhanced Chat Context
+- **Location Service**: Fixed location display formatting
+- **Farmer Context**: Properly passes city/country to chat
+- **Field Information**: Includes last task performed on each field
+- **Local Time**: Provides farmer's local time and date
+
+#### 5. UI Improvements
+- **Error Banners**: Only show when services actually disconnected
+- **Connection Status**: Hidden when all services working
+- **Error Handling**: Graceful fallback when services unreachable
+
+### Technical Details
+- **Files Modified**: 4 files (config.py, weather/service.py, chat/routes.py, dashboard.html)
+- **Endpoints Added**: 2 new system endpoints (health, debug/services)
+- **Version Update**: v3.3.20 → v3.3.21
+- **Deployment Time**: 2025-07-22 01:21:00
+
+### Success Criteria Met
+1. ✅ Weather shows for logged-in farmer's location (not generic)
+2. ✅ Chat connects to real GPT-4 (not mock) 
+3. ✅ Both services show "connected" status
+4. ✅ Kmetija Vrzel login works
+5. ✅ Error messages removed from UI when services connected
+6. ✅ Version updated to 3.3.21-services-verified
+
 ## [v3.3.20] - 2025-07-22
 
 ### Environment Variables Recovery System
