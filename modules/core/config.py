@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "monitoring-dashboards"
-DEPLOYMENT_TIMESTAMP = '20250721135500'  # v3.3.8 - Test webhook automatic deployment
+DEPLOYMENT_TIMESTAMP = '20250721140800'  # v3.3.9 - Added strange alien visual element
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.8-webhook-test-{BUILD_ID}"
+VERSION = f"v3.3.9-alien-visual-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

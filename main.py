@@ -99,6 +99,18 @@ async def root():
         
         <main id="main-content" class="ava-dashboard-container">
             <h1 class="ava-text-center ava-mb-lg">Agricultural Monitoring Panel</h1>
+            
+            <!-- STRANGE PICTURE ELEMENT -->
+            <div style="text-align: center; margin: 20px auto; padding: 20px; background: radial-gradient(circle, #e74c3c, #8e44ad, #3498db); border-radius: 20px; max-width: 600px; animation: spin 5s linear infinite;">
+                <div style="font-size: 2.5rem; margin-bottom: 10px;">🛸👽🤖</div>
+                <div style="color: white; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);">
+                    🚨 ALIEN MONITORING SYSTEM DETECTED 🚨
+                </div>
+                <div style="color: yellow; font-size: 0.9rem; margin-top: 5px;">
+                    [ EXTRATERRESTRIAL AGRICULTURAL ANALYSIS IN PROGRESS ]
+                </div>
+            </div>
+            
             <p class="ava-text-center ava-mb-2xl" style="font-size: var(--ava-font-size-large); color: var(--ava-brown-muted);">
                 Comprehensive monitoring system for the Bulgarian mango cooperative
             </p>
@@ -132,6 +144,12 @@ async def root():
         </main>
         
         <script src="/static/js/constitutional-interactions.js"></script>
+        <style>
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        </style>
         <script>
             window.AVA_VERSION = '{VERSION}';
         </script>
