@@ -380,7 +380,7 @@ select:focus {
 /* Mobile First - Critical for farmers in fields */
 @media (max-width: 768px) {
   :root {
-    --font-size-base: 1rem; /* Slightly smaller on mobile but still readable */
+    --font-size-base: 1.125rem; /* Maintain 18px minimum for constitutional compliance */
     --spacing-md: 12px;
     --spacing-lg: 18px;
   }
