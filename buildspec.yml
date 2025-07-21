@@ -8,11 +8,22 @@ phases:
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
+      
+      # CRITICAL: Ensure we have latest code
+      - echo "Pulling latest code from main branch..."
+      - git fetch origin main
+      - git reset --hard origin/main
+      - git pull origin main
+      
+      # Verify we have the correct version
+      - echo "Current version in code:"
+      - grep -E "VERSION|DEPLOYMENT_TIMESTAMP" modules/core/config.py | head -5
   build:
     commands:
       - echo Build started on `date`
-      - echo Building the Docker image...
-      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - echo Building the Docker image with NO CACHE...
+      # FORCE NO CACHE to ensure latest code is included
+      - docker build --no-cache -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
   post_build:
