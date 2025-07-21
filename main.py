@@ -20,12 +20,14 @@ from modules.api.database_routes import router as database_router, agricultural_
 from modules.api.health_routes import router as health_router
 from modules.api.business_routes import router as business_router
 from modules.api.dashboard_routes import router as dashboard_router, api_router as dashboard_api_router
+from modules.api.deployment_webhook import router as webhook_router
 
 # Import dashboard modules
 from modules.dashboards.agronomic import router as agronomic_router
 from modules.dashboards.business import router as business_dashboard_router
 from modules.dashboards.health import router as health_dashboard_router
 from modules.dashboards.database import router as database_dashboard_router
+from modules.dashboards.deployment import router as deployment_dashboard_router, api_router as deployment_api_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -51,6 +53,9 @@ app.include_router(agronomic_router)
 app.include_router(business_dashboard_router)
 app.include_router(health_dashboard_router)
 app.include_router(database_dashboard_router)
+app.include_router(deployment_dashboard_router)
+app.include_router(deployment_api_router)
+app.include_router(webhook_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -176,13 +181,17 @@ async def root():
                     <span class="icon">🏥</span>
                     <span class="label">Health Dashboard</span>
                 </a>
-                <a href="/dashboards/cost" class="dashboard-button">
-                    <span class="icon">💰</span>
-                    <span class="label">Cost Dashboard</span>
+                <a href="/dashboards/deployment" class="dashboard-button">
+                    <span class="icon">🚀</span>
+                    <span class="label">Deployment Dashboard</span>
                 </a>
                 <a href="/dashboards/agronomic" class="dashboard-button">
                     <span class="icon">🌾</span>
                     <span class="label">Agronomic Dashboard</span>
+                </a>
+                <a href="/dashboards/cost" class="dashboard-button">
+                    <span class="icon">💰</span>
+                    <span class="label">Cost Dashboard</span>
                 </a>
             </div>
         </div>

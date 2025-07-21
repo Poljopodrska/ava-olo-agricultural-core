@@ -334,4 +334,61 @@ Successfully configured Git authorization for automated deployments:
 - Git push succeeded without password prompt ✅
 - GitHub Actions workflow triggered automatically ✅
 - Deployment pipeline: GitHub → CodeBuild → ECR → ECS activated ✅
+
+## [Critical Fix] - 2025-01-21
+
+### Deployment Pipeline Investigation & Fix
+- **Issue**: Git pushes succeeding but not deploying to production
+- **Root Cause**: GitHub Actions workflow was removed in commit ed56dfb
+- **Impact**: No automatic deployments since 2025-07-20 17:38:35
+- **Resolution**: 
+  - Workflow already restored in commit 6635a43
+  - Manual CodeBuild triggered for immediate deployment
+  - Build ID: be9277f5-f6e7-4b6b-aaf2-355833b5fca6
+- **Report**: Created /essentials/reports/2025-07-21/report_001_deployment_pipeline_failure.md
+
+### ECS Deployment Crisis & Secret Manager Fix
+- **Issue**: ECS tasks failing with 53+ failures, deployments stuck IN_PROGRESS
+- **Root Cause**: AWS Secrets Manager had malformed escape sequence `\!` in admin password
+- **Error**: `ResourceInitializationError: invalid character '!' in string escape code`
+- **Resolution**:
+  - Fixed admin secret by removing invalid escape: `SecureAdminP@ssw0rd2024!`
+  - Rolled back agricultural-core to task definition 5 (without secrets)
+  - Monitoring-dashboards running but showing old version v2.4.0
+- **Remaining Issue**: CodeBuild failing due to outdated Dockerfile
+- **Report**: Created /essentials/reports/2025-07-21/report_002_ecs_deployment_visibility_crisis.md
+
+## [v3.3.2] - 2025-07-21
+
+### Successful v3.3.2 Deployment
+
+**Fixed Dockerfiles and Completed Deployment**:
+- **Issue**: Dockerfiles referenced non-existent files causing build failures
+- **Root Causes**:
+  1. Dockerfiles pointed to `agricultural_core_constitutional.py` instead of `main.py`
+  2. Missing gcc/python3-dev for psutil compilation
+  3. Hardcoded version "v3.3.1" in config.py
+- **Resolution**:
+  - Updated both Dockerfiles to use `main.py` as entry point
+  - Added gcc and python3-dev for psutil build requirements
+  - Added health check configuration in Dockerfiles
+  - Updated version to v3.3.2 in agricultural-core config
+  - Successfully built and deployed both services
+
+**Deployment Status**:
+- **Agricultural-Core**: ✅ Running v3.3.2-7d13ca06 on farmers ALB
+- **Monitoring-Dashboards**: ✅ Running v3.3.2-git-auth-test on internal ALB
+- **504 Timeouts**: Resolved - services responding normally
+- **Build Status**: Both CodeBuild projects succeeding
+- **ECS Status**: Services running with proper health checks
+
+**Verified Endpoints**:
+- http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/health - v3.3.2
+- http://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/version - v3.3.2
+
+### Business Impact
+- Bulgarian mango farmer can now access v3.3.2 features
+- No more 504 Gateway Timeout errors
+- Deployment pipeline fully operational
+- All monitoring dashboards accessible
 EOF < /dev/null
