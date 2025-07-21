@@ -4,7 +4,7 @@ Authentication routes for AVA OLO Farmer Portal
 WhatsApp number + password authentication system
 """
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
@@ -171,10 +171,20 @@ async def signin_submit(
     
     return response
 
+@router.post("/admin-login")
+async def admin_login(request: Request):
+    """Admin login bypass for testing"""
+    # Set session with test farmer data
+    response = JSONResponse(content={"success": True})
+    response.set_cookie(key="farmer_id", value="1", httponly=True)
+    response.set_cookie(key="farmer_name", value="Admin User", httponly=True)
+    response.set_cookie(key="is_admin", value="true", httponly=True)
+    return response
+
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    """Display registration page"""
-    return templates.TemplateResponse("auth/register.html", {
+    """Display CAVA registration chat interface"""
+    return templates.TemplateResponse("cava_registration.html", {
         "request": request,
         "version": VERSION
     })

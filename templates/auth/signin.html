@@ -193,6 +193,31 @@
             font-weight: bold;
         }
         
+        .admin-bypass {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--ava-brown-light);
+            text-align: center;
+        }
+        
+        .admin-btn {
+            background: var(--ava-brown-muted);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.8;
+        }
+        
+        .admin-btn:hover {
+            background: var(--ava-brown-secondary);
+            opacity: 1;
+            transform: translateY(-2px);
+        }
+        
         @media (max-width: 768px) {
             .auth-card {
                 padding: 30px 20px;
@@ -267,6 +292,12 @@
                 </button>
             </form>
             
+            <div class="admin-bypass">
+                <button type="button" onclick="adminLogin()" class="admin-btn">
+                    🔑 Admin Login (Skip Authentication)
+                </button>
+            </div>
+            
             <div class="auth-links">
                 <p>Don't have an account? <a href="/auth/register" class="auth-link">Create New Account</a></p>
             </div>
@@ -298,6 +329,28 @@
                 e.target.closest('form').submit();
             }
         });
+        
+        // Admin login function
+        function adminLogin() {
+            fetch('/auth/admin-login', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    alert('Admin login failed: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Admin login error:', error);
+                alert('Admin login failed');
+            });
+        }
     </script>
 </body>
 </html>

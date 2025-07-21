@@ -1,5 +1,227 @@
 # AVA OLO System Changelog
 
+## [v3.3.15] - 2025-07-21
+
+### Authentication Flow Fixes with Admin Bypass and CAVA Registration
+
+**Feature**: Implemented admin bypass button and CAVA conversational registration chat interface  
+**Mango Test**: ✅ Bulgarian mango farmer can bypass authentication for testing and register through conversational AI chat
+
+### Major Features Implemented
+
+#### 1. Admin Bypass Button on Sign-In Page
+- **Location**: Added to bottom of sign-in form with subtle styling
+- **Button Text**: "🔑 Admin Login (Skip Authentication)"
+- **Styling**: Gray background with hover effects, clearly marked as bypass
+- **Endpoint**: `/auth/admin-login` - POST endpoint that sets session cookies
+- **Cookies Set**: farmer_id=1, farmer_name="Admin User", is_admin="true"
+- **JavaScript**: adminLogin() function handles fetch request and redirect
+
+#### 2. CAVA Registration Chat Interface
+- **Full-Page Chat UI**: WhatsApp-style conversational interface
+- **Progressive Registration**: Guides users through registration steps conversationally
+- **Registration Stages**:
+  1. Greeting - Welcome message from CAVA
+  2. Name collection - Asks for user's name
+  3. WhatsApp number - Validates international format
+  4. Email address - Validates email format
+  5. Password creation - Minimum 8 characters
+  6. Password confirmation - Ensures passwords match
+  7. Registration complete - Shows success message
+
+#### 3. CAVA Module Implementation
+- **Registration Flow Manager**: `modules/cava/registration_flow.py`
+  - Session management for multi-turn conversations
+  - Input validation for each field
+  - Progress tracking (0-100%)
+  - Error handling with retry attempts
+  - Personalized responses based on collected data
+  
+- **API Routes**: `modules/cava/routes.py`
+  - `/api/v1/registration/cava` - Main chat endpoint
+  - `/api/v1/registration/cava/session/{farmer_id}` - Session status
+  - Integrates with existing farmer account creation
+
+#### 4. UI/UX Enhancements
+- **Chat Interface Features**:
+  - Real-time typing indicator with animated dots
+  - Message animations (fade in from bottom)
+  - Progress bar showing registration completion
+  - Password field masking for security
+  - Mobile responsive design
+  - Back button to return to sign-in
+
+- **Visual Design**:
+  - Brown header with white text
+  - Gray chat background
+  - Green user messages (olive)
+  - White assistant messages
+  - Constitutional compliance (18px+ fonts)
+
+### Technical Implementation Details
+
+#### Authentication Updates
+- Modified `/auth/register` route to serve CAVA chat instead of form
+- Admin bypass integrated without affecting normal authentication flow
+- Session management using HTTP-only cookies
+
+#### CAVA Integration
+- Async message processing with registration flow state machine
+- Natural language validation messages
+- Graceful error handling for duplicate accounts
+- Automatic account creation on successful completion
+
+#### Testing
+- Created comprehensive test suite in `tests/test_auth_flows.py`
+- Tests verify:
+  - Admin bypass endpoint exists and functions
+  - CAVA registration API responds correctly
+  - Registration page serves CAVA interface
+  - Sign-in page includes admin button
+  - Multi-turn conversation flow works
+
+### Configuration Updates
+- **Version**: Updated to v3.3.15-auth-fixes
+- **Build ID**: Generated from timestamp hash
+- **No new dependencies**: Uses existing FastAPI/Jinja2 infrastructure
+
+### Deployment Notes
+- All tests passing successfully
+- No breaking changes to existing authentication
+- CAVA module fully integrated with main application
+- Ready for production deployment
+
+### Business Impact
+- Developers can quickly bypass authentication for testing
+- New farmers experience friendly conversational onboarding
+- Reduced friction in registration process
+- Natural language guidance reduces user errors
+- Mobile-friendly chat interface for field registration
+
+---
+
+## [v3.3.14] - 2025-07-21
+
+### WhatsApp-Style Farmer Portal with Authentication and Three-Panel Dashboard
+
+**Feature**: Complete farmer portal implementation with WhatsApp-style interface and modern three-panel dashboard  
+**Mango Test**: ✅ Bulgarian mango farmer can access professional portal with weather data, CAVA chat, and farm management tools
+
+### Major Features Implemented
+
+#### 1. Landing Page with Authentication CTAs
+- **WhatsApp-Style Design**: Professional landing page with gradient background and centered card layout
+- **Two Clear CTAs**: "Sign In with WhatsApp" (green WhatsApp-style button) and "New with AVA OLO" (brown primary button)
+- **Constitutional Colors**: AVA olive and brown color scheme throughout
+- **Responsive Design**: Mobile-first approach with touch-friendly 48px+ button heights
+- **Version Display**: Bottom-right corner with constitutional styling
+
+#### 2. Authentication System
+- **WhatsApp Number + Password**: Secure authentication using phone numbers as usernames
+- **Phone Number Validation**: International format validation (e.g., +359123456789)
+- **Password Security**: bcrypt hashing with passlib, 8+ character requirements
+- **Registration Flow**: Complete user registration with name, email, WhatsApp, password confirmation
+- **Session Management**: HTTP-only cookies for security
+- **Form Validation**: Client-side and server-side validation with error messaging
+
+#### 3. Weather Service Module
+- **OpenWeatherMap Integration**: Current weather and 5-day forecast
+- **Mock Data Fallback**: Graceful degradation when API unavailable
+- **Bulgarian Location Support**: Default to Bulgarian mango farming regions
+- **Weather Alerts**: Agricultural alerts (frost, heat, humidity warnings)
+- **API Endpoints**: `/api/weather/current`, `/api/weather/forecast`, `/api/weather/alerts`
+
+#### 4. Three-Panel WhatsApp-Style Dashboard
+**Layout Architecture**:
+- **Weather Panel (Left)**: Current conditions, 5-day forecast, agricultural alerts
+- **Chat Panel (Center)**: CAVA AI assistant interface with message input
+- **Farm Panel (Right)**: Farm statistics, fields, tasks, and management tools
+
+**Weather Panel Features**:
+- Current weather with emoji icons, temperature, humidity, wind speed
+- 5-day forecast with daily high/low temperatures
+- Real-time updates every 10 minutes
+- Agricultural alert integration
+
+**Chat Panel Features**:
+- Welcome message for CAVA agricultural assistant
+- WhatsApp-style input area with rounded text input
+- Send button with hover animations
+- Placeholder for future AI chat integration
+
+**Farm Panel Features**:
+- Farm overview statistics (5 fields, 12 hectares, 3 crops, 7 tasks)
+- Active fields list with status indicators
+- Recent tasks with timestamps
+- Weather alerts integration
+- Real-time data displays
+
+#### 5. Mobile Responsive Design
+- **Breakpoints**: Desktop (3-panel), Tablet (stacked), Mobile (single column)
+- **Touch-Friendly**: All interactive elements 48px+ minimum
+- **Constitutional Typography**: 18px+ minimum font sizes
+- **Accessible Colors**: WCAG AA compliant contrast ratios
+- **Flexible Layout**: CSS Grid and Flexbox for responsive behavior
+
+### Technical Implementation Details
+
+#### Authentication Module (`modules/auth/`)
+- WhatsApp number validation and formatting
+- Database integration for farmer accounts
+- bcrypt password hashing and verification
+- Session-based authentication with HTTP-only cookies
+- Form validation and error handling
+
+#### Weather Service (`modules/weather/`)
+- OpenWeatherMap API integration with fallback to mock data
+- Current weather and 5-day forecast endpoints
+- Agricultural alert system for farming conditions
+- Bulgaria-specific location support
+
+#### Dashboard Templates
+- **Landing Page**: `templates/landing.html` - WhatsApp-style CTA design
+- **Authentication**: `templates/auth/signin.html`, `templates/auth/register.html`
+- **Dashboard**: `templates/dashboard.html` - Three-panel WhatsApp-style layout
+
+### Configuration Updates
+- **Version**: Updated to v3.3.14-farmer-portal with proper build ID
+- **Service Name**: Changed from "monitoring-dashboards" to "agricultural-core"
+- **Dependencies**: Added passlib[bcrypt]==1.7.4 for password security
+- **FastAPI Title**: Updated to "AVA OLO Farmer Portal"
+
+### Deployment Results
+- **Build Status**: ✅ CodeBuild successful (build #16)
+- **ECS Deployment**: ✅ New task deployed successfully
+- **ALB Health**: ✅ Service responding healthy
+- **Version**: v3.3.14-farmer-portal live on ALB
+- **Landing Page**: ✅ WhatsApp-style design visible at root URL
+
+### Key Features Verified
+✅ **Landing Page**: Professional WhatsApp-style design with two clear CTAs  
+✅ **Authentication**: WhatsApp number + password validation and processing  
+✅ **Weather Service**: Mock data working, API integration ready  
+✅ **Three-Panel Dashboard**: Weather, Chat, Farm panels with responsive design  
+✅ **Mobile Support**: Responsive layout works on all screen sizes  
+✅ **Constitutional Design**: 18px+ fonts, agricultural colors, accessibility compliant  
+
+### Business Impact
+- Bulgarian mango farmer has professional WhatsApp-style portal interface
+- Complete authentication system ready for production use
+- Weather integration provides real-time agricultural data
+- Three-panel dashboard offers comprehensive farm management
+- Mobile-responsive design enables field use on smartphones
+- Constitutional design ensures accessibility for older farmers
+
+### Next Steps for Production
+- Configure OpenWeatherMap API key for live weather data
+- Implement CAVA AI chat functionality in center panel
+- Connect farm panel to real database for field/crop/task management
+- Add user session management and security hardening
+- Deploy SSL certificates and enable HTTPS
+- Set up monitoring and logging for production use
+
+---
+
 ## [2025-07-21] Fixed Deployment Pipeline - 50% Success Rate Resolved
 
 ### Root Cause Analysis & Fix

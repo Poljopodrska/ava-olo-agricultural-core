@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250721160000'  # v3.3.14 - WhatsApp-style farmer portal with authentication
+DEPLOYMENT_TIMESTAMP = '20250721180000'  # v3.3.15 - Authentication flow fixes with admin bypass and CAVA registration
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.14-farmer-portal-{BUILD_ID}"
+VERSION = f"v3.3.15-auth-fixes-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

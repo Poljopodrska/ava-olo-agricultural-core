@@ -37,6 +37,9 @@ from modules.auth.routes import router as auth_router
 # Import weather module
 from modules.weather.routes import router as weather_router
 
+# Import CAVA module
+from modules.cava.routes import router as cava_router
+
 # Initialize FastAPI app
 app = FastAPI(
     title="AVA OLO Farmer Portal",
@@ -70,6 +73,7 @@ app.include_router(feature_status_router)
 app.include_router(webhook_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
+app.include_router(cava_router)
 
 @app.on_event("startup")
 async def startup_event():

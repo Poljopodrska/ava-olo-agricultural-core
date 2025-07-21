@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-version" content="{{ version }}">
+    <title>Register with CAVA - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--ava-olive-primary) 0%, var(--ava-brown-primary) 100%);
+            min-height: 100vh;
+        }
+        
+        .cava-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .cava-header {
+            background: var(--ava-brown-primary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .cava-title {
+            flex: 1;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .cava-progress {
+            background: rgba(255, 255, 255, 0.2);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 200px;
+        }
+        
+        .progress-bar {
+            background: var(--ava-olive-primary);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #F5F5F5;
+        }
+        
+        .message {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.assistant {
+            background: white;
+            color: var(--ava-brown-primary);
+            align-self: flex-start;
+            border: 1px solid #E0E0E0;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message.user {
+            background: var(--ava-olive-primary);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        
+        .message.error {
+            background: #FEE2E2;
+            color: #DC2626;
+            border: 1px solid #FECACA;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #E0E0E0;
+        }
+        
+        .typing-indicator.show {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ava-brown-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #E0E0E0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid var(--ava-brown-light);
+            border-radius: 30px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+            min-height: 48px;
+        }
+        
+        .message-input:focus {
+            border-color: var(--ava-olive-primary);
+            box-shadow: 0 0 0 3px rgba(107, 125, 70, 0.1);
+        }
+        
+        .message-input.password-mode {
+            -webkit-text-security: disc;
+            font-family: caption;
+        }
+        
+        .send-button {
+            background: var(--ava-olive-primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+        }
+        
+        .send-button:hover {
+            background: var(--ava-olive-secondary);
+            transform: scale(1.1);
+        }
+        
+        .send-button:active {
+            transform: scale(0.95);
+        }
+        
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .complete-button {
+            display: none;
+            background: var(--ava-olive-primary);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px auto;
+            transition: all 0.3s ease;
+        }
+        
+        .complete-button.show {
+            display: block;
+        }
+        
+        .complete-button:hover {
+            background: var(--ava-olive-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .version-display {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: var(--ava-brown-primary);
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .cava-container {
+                max-width: 100%;
+                height: 100vh;
+            }
+            
+            .cava-header {
+                padding: 15px;
+            }
+            
+            .cava-title {
+                font-size: 1.2rem;
+            }
+            
+            .message {
+                max-width: 85%;
+                font-size: 1rem;
+            }
+            
+            .input-container {
+                padding: 15px;
+            }
+            
+            .message-input {
+                font-size: 1rem;
+                padding: 12px 18px;
+            }
+            
+            .send-button {
+                width: 48px;
+                height: 48px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cava-container">
+        <div class="cava-header">
+            <a href="/auth/signin" class="back-button">← Back</a>
+            <div class="cava-title">Register with CAVA</div>
+            <div class="cava-progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+        
+        <div class="chat-container" id="chatContainer">
+            <!-- Messages will be added here dynamically -->
+        </div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+        
+        <button class="complete-button" id="completeButton" onclick="completeRegistration()">
+            🎉 Complete Registration
+        </button>
+        
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="messageInput" 
+                class="message-input" 
+                placeholder="Type your message..."
+                autocomplete="off"
+            >
+            <button id="sendButton" class="send-button" onclick="sendMessage()">
+                ➤
+            </button>
+        </div>
+    </div>
+    
+    <div class="version-display">{{ version }}</div>
+    
+    <script>
+        // Generate unique session ID
+        const sessionId = 'reg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        let currentStage = 'greeting';
+        let isProcessing = false;
+        let registrationData = null;
+        
+        // Initialize chat
+        window.addEventListener('load', function() {
+            // Start conversation
+            sendMessage('', true);
+            
+            // Setup enter key handler
+            document.getElementById('messageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        });
+        
+        function updateProgress(progress) {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = progress + '%';
+        }
+        
+        function addMessage(content, isAssistant = true, isError = false) {
+            const chatContainer = document.getElementById('chatContainer');
+            const message = document.createElement('div');
+            message.className = 'message ' + (isAssistant ? 'assistant' : 'user');
+            if (isError) {
+                message.className += ' error';
+            }
+            message.textContent = content;
+            chatContainer.appendChild(message);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function showTyping() {
+            document.getElementById('typingIndicator').classList.add('show');
+        }
+        
+        function hideTyping() {
+            document.getElementById('typingIndicator').classList.remove('show');
+        }
+        
+        async function sendMessage(customMessage = '', isInitial = false) {
+            if (isProcessing) return;
+            
+            const input = document.getElementById('messageInput');
+            const message = customMessage || input.value.trim();
+            
+            if (!isInitial && !message) return;
+            
+            isProcessing = true;
+            document.getElementById('sendButton').disabled = true;
+            
+            // Add user message to chat (unless it's initial)
+            if (!isInitial) {
+                addMessage(message, false);
+            }
+            
+            // Clear input
+            input.value = '';
+            
+            // Show typing indicator
+            showTyping();
+            
+            try {
+                const response = await fetch('/api/v1/registration/cava', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        farmer_id: sessionId,
+                        language: 'en'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Hide typing indicator
+                hideTyping();
+                
+                // Add CAVA response
+                addMessage(data.response, true, data.error);
+                
+                // Update progress
+                if (data.progress !== undefined) {
+                    updateProgress(data.progress);
+                }
+                
+                // Update current stage
+                currentStage = data.stage || currentStage;
+                
+                // Handle password fields
+                if (currentStage === 'password' || currentStage === 'confirm_password') {
+                    input.type = 'password';
+                    input.classList.add('password-mode');
+                } else {
+                    input.type = 'text';
+                    input.classList.remove('password-mode');
+                }
+                
+                // Check if registration is complete
+                if (data.registration_complete && data.account_created) {
+                    registrationData = data;
+                    document.getElementById('completeButton').classList.add('show');
+                    input.disabled = true;
+                    document.getElementById('sendButton').disabled = true;
+                }
+                
+            } catch (error) {
+                hideTyping();
+                addMessage('Sorry, I encountered an error. Please try again.', true, true);
+                console.error('CAVA error:', error);
+            } finally {
+                isProcessing = false;
+                if (!input.disabled) {
+                    document.getElementById('sendButton').disabled = false;
+                    input.focus();
+                }
+            }
+        }
+        
+        function completeRegistration() {
+            if (registrationData && registrationData.farmer_id) {
+                // Redirect to dashboard
+                window.location.href = '/dashboard';
+            } else {
+                // Fallback to sign in
+                window.location.href = '/auth/signin';
+            }
+        }
+    </script>
+</body>
+</html>
