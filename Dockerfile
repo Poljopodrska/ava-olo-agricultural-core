@@ -1,32 +1,35 @@
-# AVA OLO Monitoring API with Constitutional Design
-FROM python:3.11-slim
+# AVA OLO Monitoring Dashboards with Constitutional Design
+FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including gcc for psutil
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    gcc \
+    python3-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
-COPY monitoring_api_constitutional.py .
-COPY config.py .
-
-# Copy design system
-COPY shared/ ./shared/
+# Copy all application code
+COPY . .
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
-ENV ENVIRONMENT=development
+ENV ENVIRONMENT=production
 ENV PORT=8080
-ENV DEV_ACCESS_KEY=ava-dev-2025-secure-key
+ENV VERSION=v3.3.2
 
 # Expose port
 EXPOSE 8080
 
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
 # Run the application
-CMD ["python", "-m", "uvicorn", "monitoring_api_constitutional:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
