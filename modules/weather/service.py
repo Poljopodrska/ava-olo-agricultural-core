@@ -95,6 +95,98 @@ class WeatherService:
             print(f"Weather service error: {e}")
             return self._get_mock_weather_data()
     
+    async def get_hourly_forecast(self, lat: Optional[float] = None, lon: Optional[float] = None) -> Optional[List[Dict]]:
+        """Get hourly forecast for next 24 hours"""
+        if not self.api_key:
+            return self._get_mock_hourly_data()
+        
+        # Use default location if not specified
+        if lat is None or lon is None:
+            lat = self.default_location['lat']
+            lon = self.default_location['lon']
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/forecast",
+                    params={
+                        'lat': lat,
+                        'lon': lon,
+                        'appid': self.api_key,
+                        'units': 'metric',
+                        'cnt': 8  # Next 24 hours (3-hour intervals)
+                    },
+                    timeout=10.0
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    return self._format_hourly_data(data)
+                else:
+                    print(f"Hourly forecast API error: {response.status_code}")
+                    return self._get_mock_hourly_data()
+                    
+        except Exception as e:
+            print(f"Hourly forecast service error: {e}")
+            return self._get_mock_hourly_data()
+    
+    def _format_hourly_data(self, data: Dict) -> List[Dict]:
+        """Format hourly forecast data"""
+        hourly_data = []
+        
+        for item in data['list']:
+            dt = datetime.fromtimestamp(item['dt'])
+            weather = item['weather'][0]
+            main = item['main']
+            wind = item.get('wind', {})
+            
+            hourly_data.append({
+                'time': dt.strftime('%H:%M'),
+                'hour': dt.hour,
+                'temp': int(round(main['temp'])),
+                'icon': self._get_weather_emoji(weather['icon']),
+                'description': weather['description'].title(),
+                'wind': {
+                    'speed': int(round(wind.get('speed', 0) * 3.6)),  # Convert to km/h
+                    'direction': self._get_wind_direction(wind.get('deg', 0))
+                },
+                'precipitation': item.get('rain', {}).get('3h', 0),
+                'humidity': main['humidity']
+            })
+        
+        return hourly_data
+    
+    def _get_wind_direction(self, degrees: int) -> str:
+        """Convert wind degrees to cardinal direction"""
+        directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+        index = int((degrees + 22.5) / 45) % 8
+        return directions[index]
+    
+    def _get_mock_hourly_data(self) -> List[Dict]:
+        """Mock hourly data for testing"""
+        hourly_data = []
+        current_hour = datetime.now().hour
+        
+        for i in range(8):  # 8 3-hour intervals = 24 hours
+            hour = (current_hour + i * 3) % 24
+            temp = 20 + (5 * (1 if hour < 12 else -1))  # Temperature curve
+            
+            hourly_data.append({
+                'time': f"{hour:02d}:00",
+                'hour': hour,
+                'temp': temp + i,
+                'icon': '☀️' if 6 <= hour <= 18 else '🌙',
+                'description': 'Clear' if i % 3 == 0 else 'Partly Cloudy',
+                'wind': {
+                    'speed': 10 + i * 2,
+                    'direction': ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][i]
+                },
+                'precipitation': 0 if i < 5 else 2.5,
+                'humidity': 60 + i * 2
+            })
+        
+        return hourly_data
+    
     async def get_weather_forecast(self, lat: Optional[float] = None, lon: Optional[float] = None, days: int = 5) -> Optional[Dict]:
         """Get weather forecast for specified location"""
         if not self.api_key:

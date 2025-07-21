@@ -3,9 +3,11 @@
 Weather API routes for AVA OLO Farmer Portal
 Provides weather endpoints for the dashboard
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Optional
 from modules.weather.service import weather_service
+from modules.location.location_service import get_location_service
+from modules.auth.routes import get_current_farmer
 
 router = APIRouter(prefix="/api/weather", tags=["weather"])
 
@@ -95,6 +97,106 @@ async def get_bulgaria_weather():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Bulgaria weather error: {str(e)}")
+
+@router.get("/current-farmer")
+async def get_current_farmer_weather(request: Request):
+    """Get current weather for logged-in farmer's location"""
+    try:
+        # Get farmer info from session/cookies
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get farmer's location
+        location_service = get_location_service()
+        location = await location_service.get_farmer_location(farmer['farmer_id'])
+        
+        # Get weather for farmer's location
+        weather_data = await weather_service.get_current_weather(location['lat'], location['lon'])
+        
+        if not weather_data:
+            raise HTTPException(status_code=503, detail="Weather service unavailable")
+        
+        # Add location info to response
+        weather_data['farmer_location'] = location_service.get_location_display(location)
+        weather_data['coordinates'] = {
+            'lat': location['lat'],
+            'lon': location['lon']
+        }
+        
+        return {
+            "status": "success",
+            "data": weather_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Weather service error: {str(e)}")
+
+@router.get("/forecast-farmer")
+async def get_farmer_weather_forecast(request: Request, days: int = 5):
+    """Get weather forecast for logged-in farmer's location"""
+    try:
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get farmer's location
+        location_service = get_location_service()
+        location = await location_service.get_farmer_location(farmer['farmer_id'])
+        
+        # Get forecast for farmer's location
+        forecast_data = await weather_service.get_weather_forecast(location['lat'], location['lon'], days)
+        
+        if not forecast_data:
+            raise HTTPException(status_code=503, detail="Weather forecast service unavailable")
+        
+        # Add location info
+        forecast_data['farmer_location'] = location_service.get_location_display(location)
+        
+        return {
+            "status": "success",
+            "data": forecast_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Weather forecast error: {str(e)}")
+
+@router.get("/hourly-farmer")
+async def get_farmer_hourly_forecast(request: Request):
+    """Get hourly forecast for logged-in farmer's location"""
+    try:
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get farmer's location
+        location_service = get_location_service()
+        location = await location_service.get_farmer_location(farmer['farmer_id'])
+        
+        # Get hourly forecast
+        hourly_data = await weather_service.get_hourly_forecast(location['lat'], location['lon'])
+        
+        if not hourly_data:
+            raise HTTPException(status_code=503, detail="Hourly forecast service unavailable")
+        
+        return {
+            "status": "success",
+            "data": {
+                "hourly": hourly_data,
+                "location": location_service.get_location_display(location)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Hourly forecast error: {str(e)}")
 
 @router.get("/health")
 async def weather_service_health():

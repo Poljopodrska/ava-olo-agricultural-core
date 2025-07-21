@@ -26,12 +26,14 @@
             background: #f0f0f0;
         }
         
-        /* WhatsApp-style three-panel layout */
+        /* WhatsApp-style three-panel layout - Equal thirds */
         .panel {
             background: white;
             border-right: 1px solid #e0e0e0;
             display: flex;
             flex-direction: column;
+            width: 33.333%;
+            min-width: 320px;
         }
         
         .panel:last-child {
@@ -40,20 +42,17 @@
         
         /* Weather Panel (Left) */
         .weather-panel {
-            width: 350px;
-            min-width: 300px;
+            /* Equal width - 33.3% */
         }
         
         /* Chat Panel (Center) */
         .chat-panel {
-            flex: 1;
-            min-width: 400px;
+            /* Equal width - 33.3% */
         }
         
         /* Farm Panel (Right) */
         .farm-panel {
-            width: 400px;
-            min-width: 350px;
+            /* Equal width - 33.3% */
         }
         
         /* Panel Headers */
@@ -126,6 +125,54 @@
             border-radius: 5px;
         }
         
+        /* Hourly forecast scroll */
+        .hourly-forecast {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #fafafa;
+        }
+        
+        .hourly-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+            margin-bottom: 10px;
+        }
+        
+        .hourly-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .hourly-item {
+            flex-shrink: 0;
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            min-width: 70px;
+        }
+        
+        .hourly-time {
+            font-size: 0.9rem;
+            color: var(--ava-brown-muted);
+            margin-bottom: 5px;
+        }
+        
+        .hourly-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .hourly-temp {
+            font-weight: bold;
+            color: var(--ava-brown-primary);
+        }
+        
         .weather-forecast {
             padding: 20px;
         }
@@ -143,6 +190,16 @@
             justify-content: space-between;
             padding: 12px;
             border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .forecast-item:hover {
+            background: #f8f8f8;
+        }
+        
+        .forecast-item.selected {
+            background: #e8f4e8;
         }
         
         .forecast-day {
@@ -414,7 +471,7 @@
             <div class="panel-header">
                 <div>
                     <div class="panel-title">🌤️ Weather</div>
-                    <div class="panel-subtitle">Sofia, Bulgaria</div>
+                    <div class="panel-subtitle" id="weather-location">Loading location...</div>
                 </div>
             </div>
             <div class="panel-content">
@@ -422,6 +479,13 @@
                     <div class="loading">
                         <div class="spinner"></div>
                         Loading weather...
+                    </div>
+                </div>
+                <div class="hourly-forecast" id="hourly-forecast">
+                    <div class="hourly-title">Today's Hourly Forecast</div>
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading hourly...
                     </div>
                 </div>
                 <div class="weather-forecast" id="weather-forecast">
@@ -483,19 +547,19 @@
                 <div class="farm-overview">
                     <div class="farm-stats">
                         <div class="farm-stat">
-                            <div class="stat-value">5</div>
+                            <div class="stat-value" id="field-count">0</div>
                             <div class="stat-label">Fields</div>
                         </div>
                         <div class="farm-stat">
-                            <div class="stat-value">12</div>
+                            <div class="stat-value" id="hectare-count">0</div>
                             <div class="stat-label">Hectares</div>
                         </div>
                         <div class="farm-stat">
-                            <div class="stat-value">3</div>
+                            <div class="stat-value" id="crop-count">0</div>
                             <div class="stat-label">Crops</div>
                         </div>
                         <div class="farm-stat">
-                            <div class="stat-value">7</div>
+                            <div class="stat-value" id="task-count">0</div>
                             <div class="stat-label">Tasks</div>
                         </div>
                     </div>
@@ -503,19 +567,11 @@
                 
                 <div class="farm-sections">
                     <div class="farm-section">
-                        <div class="section-title">📍 Active Fields</div>
-                        <div class="section-content">
-                            <div class="field-item">
-                                <div class="field-name">North Mango Grove</div>
-                                <div class="field-status">Healthy</div>
-                            </div>
-                            <div class="field-item">
-                                <div class="field-name">South Orchard</div>
-                                <div class="field-status">Watering Due</div>
-                            </div>
-                            <div class="field-item">
-                                <div class="field-name">East Field</div>
-                                <div class="field-status">Pruning Needed</div>
+                        <div class="section-title">📍 My Fields</div>
+                        <div class="section-content" id="field-list">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                                Loading fields...
                             </div>
                         </div>
                     </div>
@@ -558,18 +614,27 @@
     <script>
         window.AVA_VERSION = '{{ version }}';
         
-        // Load weather data
+        // Load weather data using farmer location
         async function loadWeatherData() {
             try {
-                // Load current weather
-                const currentResponse = await fetch('/api/weather/current');
+                // Load current weather for farmer location
+                const currentResponse = await fetch('/api/weather/current-farmer');
                 if (currentResponse.ok) {
                     const currentData = await currentResponse.json();
                     displayCurrentWeather(currentData.data);
+                    // Update location subtitle
+                    document.getElementById('weather-location').textContent = currentData.data.farmer_location || 'Unknown Location';
+                }
+                
+                // Load hourly forecast
+                const hourlyResponse = await fetch('/api/weather/hourly-farmer');
+                if (hourlyResponse.ok) {
+                    const hourlyData = await hourlyResponse.json();
+                    displayHourlyForecast(hourlyData.data.hourly);
                 }
                 
                 // Load forecast
-                const forecastResponse = await fetch('/api/weather/forecast');
+                const forecastResponse = await fetch('/api/weather/forecast-farmer');
                 if (forecastResponse.ok) {
                     const forecastData = await forecastResponse.json();
                     displayWeatherForecast(forecastData.data);
@@ -584,6 +649,21 @@
                 
             } catch (error) {
                 console.error('Weather data error:', error);
+                // Fallback to default weather
+                loadDefaultWeather();
+            }
+        }
+        
+        // Fallback for unauthenticated users
+        async function loadDefaultWeather() {
+            try {
+                const currentResponse = await fetch('/api/weather/current');
+                if (currentResponse.ok) {
+                    const currentData = await currentResponse.json();
+                    displayCurrentWeather(currentData.data);
+                }
+            } catch (error) {
+                console.error('Default weather error:', error);
             }
         }
         
@@ -614,14 +694,56 @@
             `;
         }
         
+        function displayHourlyForecast(hourly) {
+            const hourlyDiv = document.getElementById('hourly-forecast');
+            let hourlyHtml = '<div class="hourly-title">Today\'s Hourly Forecast</div>';
+            hourlyHtml += '<div class="hourly-scroll">';
+            
+            hourly.forEach(hour => {
+                hourlyHtml += `
+                    <div class="hourly-item">
+                        <div class="hourly-time">${hour.time}</div>
+                        <div class="hourly-icon">${hour.icon}</div>
+                        <div class="hourly-temp">${hour.temp}°</div>
+                    </div>
+                `;
+            });
+            
+            hourlyHtml += '</div>';
+            hourlyDiv.innerHTML = hourlyHtml;
+        }
+        
+        function getDayLabel(dateStr, index) {
+            const date = new Date(dateStr);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            // Reset time parts for comparison
+            today.setHours(0, 0, 0, 0);
+            tomorrow.setHours(0, 0, 0, 0);
+            date.setHours(0, 0, 0, 0);
+            
+            if (date.getTime() === today.getTime()) {
+                return 'Today';
+            } else if (date.getTime() === tomorrow.getTime()) {
+                return 'Tomorrow';
+            } else {
+                // Format as "Thursday, Nov 21"
+                const options = { weekday: 'long', month: 'short', day: 'numeric' };
+                return date.toLocaleDateString('en-US', options);
+            }
+        }
+        
         function displayWeatherForecast(forecast) {
             const forecastDiv = document.getElementById('weather-forecast');
             let forecastHtml = '<div class="forecast-title">5-Day Forecast</div>';
             
-            forecast.forecasts.forEach(day => {
+            forecast.forecasts.forEach((day, index) => {
+                const dayLabel = getDayLabel(day.date, index);
                 forecastHtml += `
-                    <div class="forecast-item">
-                        <div class="forecast-day">${day.day_name}</div>
+                    <div class="forecast-item" data-date="${day.date}" onclick="showDayDetails('${day.date}')">
+                        <div class="forecast-day">${dayLabel}</div>
                         <div class="forecast-weather">
                             <span>${day.icon}</span>
                             <span>${day.description}</span>
@@ -632,6 +754,18 @@
             });
             
             forecastDiv.innerHTML = forecastHtml;
+        }
+        
+        function showDayDetails(date) {
+            // Placeholder for showing 24h forecast for selected day
+            console.log('Show details for:', date);
+            // Mark selected
+            document.querySelectorAll('.forecast-item').forEach(item => {
+                item.classList.remove('selected');
+                if (item.getAttribute('data-date') === date) {
+                    item.classList.add('selected');
+                }
+            });
         }
         
         function displayWeatherAlerts(alerts) {
@@ -677,11 +811,72 @@
             }
         }
         
-        // Load data on page load
-        window.addEventListener('load', loadWeatherData);
+        // Load fields data
+        async function loadFieldsData() {
+            try {
+                const response = await fetch('/api/fields/farmer-fields');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayFieldsData(data.data);
+                }
+            } catch (error) {
+                console.error('Fields data error:', error);
+                // Show mock data
+                displayFieldsData({
+                    fields: [],
+                    summary: {
+                        total_fields: 0,
+                        total_hectares: 0,
+                        total_crops: 0,
+                        pending_tasks: 0
+                    }
+                });
+            }
+        }
+        
+        function displayFieldsData(data) {
+            // Update summary stats
+            document.getElementById('field-count').textContent = data.summary.total_fields;
+            document.getElementById('hectare-count').textContent = data.summary.total_hectares;
+            document.getElementById('crop-count').textContent = data.summary.total_crops;
+            document.getElementById('task-count').textContent = data.summary.pending_tasks;
+            
+            // Update fields list
+            const fieldsList = document.getElementById('field-list');
+            if (data.fields.length === 0) {
+                fieldsList.innerHTML = '<div style="color: var(--ava-brown-muted); font-style: italic;">No fields configured</div>';
+                return;
+            }
+            
+            let fieldsHtml = '';
+            data.fields.forEach(field => {
+                fieldsHtml += `
+                    <div class="field-item">
+                        <div>
+                            <div class="field-name">${field.name}</div>
+                            <div class="field-status" style="font-size: 0.85rem; color: var(--ava-brown-muted);">
+                                ${field.crop} • ${field.hectares} ha
+                            </div>
+                        </div>
+                        <div class="field-status">${field.last_task}</div>
+                    </div>
+                `;
+            });
+            
+            fieldsList.innerHTML = fieldsHtml;
+        }
+        
+        // Load all data on page load
+        window.addEventListener('load', function() {
+            loadWeatherData();
+            loadFieldsData();
+        });
         
         // Refresh weather every 10 minutes
         setInterval(loadWeatherData, 600000);
+        
+        // Refresh fields every 5 minutes
+        setInterval(loadFieldsData, 300000);
     </script>
 </body>
 </html>

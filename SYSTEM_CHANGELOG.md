@@ -1,5 +1,98 @@
 # AVA OLO System Changelog
 
+## [v3.3.16] - 2025-07-21
+
+### Enhanced Weather Display with User Location and Dashboard Updates
+
+**Feature**: Dynamic weather based on farmer location, hourly forecast, improved dashboard layout  
+**Mango Test**: ✅ Slovenian farmer Kmetija Vrzel logs in with WhatsApp/Happycow to see their location-based weather and field tasks
+
+### Major Features Implemented
+
+#### 1. Location Service Module
+- **Farmer Location Retrieval**: Gets farmer's city/address from database
+- **Geocoding Support**: Converts addresses to coordinates using OpenStreetMap Nominatim
+- **Default Locations**: Slovenia (Ljubljana) default, specific location for Kmetija Vrzel
+- **Coordinate Caching**: Updates database with geocoded coordinates for performance
+
+#### 2. Enhanced Weather Service
+- **Location-Based Weather**: Uses logged-in farmer's location for all weather data
+- **Hourly Forecast**: Next 24 hours with 3-hour intervals
+- **Enhanced Data**: Temperature, wind speed/direction, precipitation, humidity
+- **New Endpoints**:
+  - `/api/weather/current-farmer` - Weather for farmer's location
+  - `/api/weather/forecast-farmer` - 5-day forecast for farmer
+  - `/api/weather/hourly-farmer` - Hourly forecast for farmer
+
+#### 3. Dashboard UI Improvements
+- **Equal-Width Panels**: All three panels now 33.3% width each
+- **Hourly Forecast Scroll**: Horizontal scrollable hourly weather
+- **Day Labels**: "Today", "Tomorrow", then "Thursday, Nov 21" format
+- **Click Handler**: Click any day to show 24h forecast (selected state)
+- **Dynamic Location**: Shows farmer's actual location in weather header
+
+#### 4. Fields Panel with Last Task
+- **New Fields Module**: API endpoints for farmer field management
+- **Field Display**: Shows field name, crop type, hectares, and last task
+- **Last Task Format**: "Task description - X days ago" or date
+- **Summary Stats**: Dynamic field count, total hectares, crop types, pending tasks
+- **API Endpoint**: `/api/fields/farmer-fields` returns fields with task info
+
+#### 5. Password Update Script
+- **Kmetija Vrzel Support**: Script to find and update farmer password
+- **Mock Hash Function**: For testing without passlib dependency
+- **Multiple Table Support**: Checks farmers, farm_users, ava_farmers tables
+
+### Technical Implementation Details
+
+#### Location Service (`modules/location/location_service.py`)
+```python
+async def get_farmer_location(farmer_id: int) -> Dict:
+    # Query database for farmer location
+    # Geocode if coordinates not available
+    # Return lat/lon with location display name
+```
+
+#### Weather Integration
+- Weather service accepts lat/lon parameters
+- Fallback to default location if farmer location unavailable
+- Mock data for development/testing
+- Slovenian locations supported
+
+#### Fields Query
+```sql
+SELECT fields WITH LATERAL JOIN (
+    SELECT last task ORDER BY completed_at DESC LIMIT 1
+) FOR farmer_id
+```
+
+### Configuration Updates
+- **Version**: v3.3.16-weather-location (unified across all pages)
+- **No Build ID**: Simplified version format per requirements
+- **Dependencies**: Added httpx for geocoding API calls
+
+### UI/UX Enhancements
+- **Responsive Grid**: Equal thirds layout with CSS Grid
+- **Hourly Scroll**: Touch-friendly horizontal scroll for mobile
+- **Loading States**: Spinners while data loads
+- **Error Handling**: Graceful fallbacks for API failures
+- **Auto-Refresh**: Weather (10 min), Fields (5 min)
+
+### Business Impact
+- Kmetija Vrzel sees weather for their actual farm location in Slovenia
+- Farmers get location-specific weather without manual input
+- Hourly forecast helps with daily planning
+- Field tasks visible at a glance for better management
+- Equal panel widths improve visual balance
+
+### Deployment Notes
+- Password update script requires database access
+- OpenWeatherMap API key needed for production weather
+- Geocoding uses free OpenStreetMap Nominatim API
+- All features work with mock data if APIs unavailable
+
+---
+
 ## [v3.3.15] - 2025-07-21
 
 ### Authentication Flow Fixes with Admin Bypass and CAVA Registration
