@@ -1,5 +1,104 @@
 # AVA OLO System Changelog
 
+## [v3.3.19] - 2025-07-21
+
+### ECS Environment Variables Audit and Recovery
+
+**Feature**: Environment variables audit system to identify missing configuration in ECS deployment  
+**Mango Test**: ✅ Check which environment variables exist in ECS so Bulgarian mango farmer can use all features
+
+### Major Features Implemented
+
+#### 1. Environment Check Endpoint
+- **Endpoint**: `/api/v1/system/env-check`
+- **Masked Values**: Sensitive data partially shown (API keys show first 7 chars)
+- **Categories**: Database, OpenAI, Weather, Security, AWS, App Config
+- **Real-time Status**: Shows which variables are set with masked values
+- **Connection Tests**: Actually tests database, OpenAI, and weather connections
+
+#### 2. Connection Test Functions
+- **Database Test**: Connects and counts farmers table
+- **OpenAI Test**: Makes minimal API call to verify key
+- **Weather Test**: Fetches Ljubljana weather to verify API
+- **Status Codes**: healthy, invalid_key, no_api_key, error
+
+#### 3. Recovery Plan Generator
+- **Endpoint**: `/api/v1/system/env-recovery-plan`
+- **Missing Variables**: Lists all unset required variables
+- **Examples Provided**: Shows example values for each variable
+- **Health Score**: Percentage of configured variables
+- **Step-by-Step**: Instructions for updating ECS task definition
+
+#### 4. ECS Task Definition Guide
+- **Endpoint**: `/api/v1/system/ecs-env-vars`
+- **Instructions**: Detailed steps to check AWS console
+- **Task Definitions**: Lists both agricultural and monitoring tasks
+- **Common Issues**: Documents typical configuration problems
+
+#### 5. Health Summary
+- **Endpoint**: `/api/v1/system/health-summary`
+- **Quick Status**: Overall system health at a glance
+- **Service Status**: Database, OpenAI, Weather API status
+- **Quick Fixes**: Specific variables needed for each service
+
+### Required Environment Variables
+
+#### Database Configuration
+- `DB_HOST` - RDS endpoint
+- `DB_NAME` - Database name (farmer_crm)
+- `DB_USER` - Database username  
+- `DB_PASSWORD` - Database password
+- `DB_PORT` - Database port (5432)
+- `DATABASE_URL` - Full connection string
+
+#### API Keys
+- `OPENAI_API_KEY` - OpenAI GPT-4 access
+- `OPENWEATHER_API_KEY` - Weather data access
+
+#### Security
+- `SECRET_KEY` - Session encryption
+- `JWT_SECRET_KEY` - Token signing
+
+#### AWS Configuration
+- `AWS_REGION` - AWS region (us-east-1)
+- `ENVIRONMENT` - production/development
+
+### API Endpoints Summary
+```
+GET /api/v1/system/env-check          # Check current environment
+GET /api/v1/system/env-recovery-plan  # Get missing variables list
+GET /api/v1/system/ecs-env-vars       # ECS configuration guide
+GET /api/v1/system/health-summary     # Quick health check
+```
+
+### Security Features
+- Sensitive values masked in responses
+- API keys show only first 7 characters
+- Passwords shown as ***SET***
+- Database URLs show only scheme
+
+### Recovery Instructions
+1. Access `/api/v1/system/env-recovery-plan`
+2. Copy missing variables list
+3. Go to AWS ECS Console
+4. Update task definition with variables
+5. Deploy new task revision
+
+### Business Impact
+- Quickly identify missing configuration
+- Restore full functionality systematically
+- Understand which features are broken
+- Get exact variables needed for recovery
+- Reduce debugging time significantly
+
+### Deployment Notes
+- No new dependencies required
+- Works with existing infrastructure
+- Safe to run in production
+- Provides actionable recovery steps
+
+---
+
 ## [v3.3.18] - 2025-07-21
 
 ### Fixed OpenAI Chat Temperature and Response Quality

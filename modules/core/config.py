@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250721205500'  # v3.3.18 - Fixed OpenAI chat temperature and responses
+DEPLOYMENT_TIMESTAMP = '20250721210000'  # v3.3.19 - Environment variables audit system
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.18-chat-fix"
+VERSION = f"v3.3.19-env-audit"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
