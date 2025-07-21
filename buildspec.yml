@@ -38,7 +38,7 @@ phases:
       - |
         aws ecs update-service \
           --cluster ava-olo-production \
-          --service monitoring-dashboards \
+          --service agricultural-core \
           --force-new-deployment \
           --region $AWS_DEFAULT_REGION
       - echo ECS service update initiated successfully
