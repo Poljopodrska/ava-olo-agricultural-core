@@ -1,0 +1,66 @@
+[
+  {
+    "name": "DB_HOST",
+    "value": "farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com"
+  },
+  {
+    "name": "DB_NAME",
+    "value": "farmer_crm"
+  },
+  {
+    "name": "DB_USER",
+    "value": "postgres"
+  },
+  {
+    "name": "DB_PORT",
+    "value": "5432"
+  },
+  {
+    "name": "DB_PASSWORD",
+    "value": "eXW8uyzi%iydHAa1!"
+  },
+  {
+    "name": "DATABASE_URL",
+    "value": "postgresql://postgres:eXW8uyzi%iydHAa1!@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
+  },
+  {
+    "name": "OPENAI_API_KEY",
+    "value": "sk-proj-REPLACE_WITH_YOUR_KEY"
+  },
+  {
+    "name": "OPENWEATHER_API_KEY",
+    "value": "REPLACE_WITH_YOUR_KEY"
+  },
+  {
+    "name": "SECRET_KEY",
+    "value": "8tsHicCkKBHvwk51zNp80RY2uUZGTLAb"
+  },
+  {
+    "name": "JWT_SECRET_KEY",
+    "value": "pJnruaBvL9ZLvWqr7QLtvXv9F0xw1kO6"
+  },
+  {
+    "name": "AWS_REGION",
+    "value": "us-east-1"
+  },
+  {
+    "name": "AWS_DEFAULT_REGION",
+    "value": "us-east-1"
+  },
+  {
+    "name": "AWS_EXECUTION_ENV",
+    "value": "AWS_ECS_EC2"
+  },
+  {
+    "name": "ENVIRONMENT",
+    "value": "production"
+  },
+  {
+    "name": "DEBUG",
+    "value": "false"
+  },
+  {
+    "name": "LOG_LEVEL",
+    "value": "INFO"
+  }
+]

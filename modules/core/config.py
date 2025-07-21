@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250721210000'  # v3.3.19 - Environment variables audit system
+DEPLOYMENT_TIMESTAMP = '20250722002500'  # v3.3.20 - Environment variables recovery system
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.19-env-audit"
+VERSION = f"v3.3.20-env-recovery"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
