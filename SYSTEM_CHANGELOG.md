@@ -1,5 +1,93 @@
 # AVA OLO System Changelog
 
+## [v3.3.17] - 2025-07-21
+
+### Dashboard Refinements with OpenAI Chat Integration
+
+**Feature**: Refined dashboard with hourly weather display, simplified fields panel, and OpenAI GPT-4 chat integration  
+**Mango Test**: ✅ Slovenian farmer sees hourly weather replacing blue section, clean fields list, and can chat with GPT-4
+
+### Major Features Implemented
+
+#### 1. Weather Panel Refinements
+- **Removed Blue Weather Section**: Replaced with hourly forecast as main display
+- **24-Hour Forecast**: Horizontal scrollable hourly weather with temperature and wind
+- **Enhanced 5-Day Forecast**: Added wind speed/direction and precipitation data
+- **Unified Location Display**: Single location header instead of duplicate sections
+
+#### 2. Fields Panel Simplification
+- **Removed Green Stat Boxes**: Eliminated summary statistics boxes
+- **Removed Alerts Section**: Simplified to show only field list
+- **Clean Field Display**: Name, crop type, size, and last task only
+- **Consistent Styling**: Matches overall dashboard aesthetic
+
+#### 3. OpenAI GPT-4 Chat Integration
+- **Direct OpenAI API**: Integrated GPT-4 for agricultural assistance
+- **Conversation History**: Maintains context across messages (last 10)
+- **Agricultural System Prompt**: Specialized for farming questions
+- **Farmer Context**: Includes farmer's fields in conversation context
+- **Mock Responses**: Fallback when API key not configured
+
+#### 4. Chat Module Implementation
+- **Chat Service**: `modules/chat/openai_chat.py`
+  - Direct OpenAI API integration
+  - Session-based conversation management
+  - Agricultural domain expertise
+  - Farmer field context injection
+  
+- **API Routes**: `modules/chat/routes.py`
+  - `/api/v1/chat/message` - Send message and get response
+  - `/api/v1/chat/clear` - Clear conversation history
+  - `/api/v1/chat/health` - Check chat service status
+
+### Technical Implementation Details
+
+#### OpenAI Integration
+```python
+# GPT-4 configuration with agricultural context
+model = "gpt-4"  # Falls back to gpt-3.5-turbo if needed
+temperature = 0.7
+max_tokens = 500
+```
+
+#### Chat Context Management
+- Session cookies track conversation ID
+- Conversation history stored in memory
+- Maximum 10 messages retained for context
+- Automatic session cleanup
+
+#### Frontend Integration
+- Real-time message sending
+- Loading states during API calls
+- Error handling with user feedback
+- Auto-scroll to latest messages
+
+### Configuration Updates
+- **Version**: v3.3.17-dashboard-refine
+- **Dependencies**: httpx for async OpenAI API calls
+- **Environment**: OPENAI_API_KEY for production use
+
+### UI/UX Improvements
+- **Cleaner Layout**: Removed visual clutter
+- **Better Focus**: Weather and chat as primary features
+- **Simplified Fields**: Essential information only
+- **Responsive Design**: Works on all screen sizes
+
+### Business Impact
+- Farmers get AI-powered agricultural assistance
+- Cleaner interface reduces cognitive load
+- Hourly weather helps with immediate planning
+- Wind/rain data supports spray decisions
+- Chat provides 24/7 farming guidance
+
+### Deployment Notes
+- Set OPENAI_API_KEY environment variable for production
+- Mock responses work without API key
+- All dashboard refinements backward compatible
+- No database schema changes required
+
+---
+
 ## [v3.3.16] - 2025-07-21
 
 ### Enhanced Weather Display with User Location and Dashboard Updates

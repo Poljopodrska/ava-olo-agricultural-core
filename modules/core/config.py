@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250721195500'  # v3.3.16 - Enhanced weather with user location and dashboard updates
+DEPLOYMENT_TIMESTAMP = '20250721203000'  # v3.3.17 - Dashboard refinements with OpenAI chat
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.16-weather-location"
+VERSION = f"v3.3.17-dashboard-refine"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

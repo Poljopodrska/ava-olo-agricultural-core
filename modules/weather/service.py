@@ -270,7 +270,8 @@ class WeatherService:
                     'icon': self._get_weather_emoji(item['weather'][0]['icon']),
                     'humidity': item['main']['humidity'],
                     'wind_speed': item['wind'].get('speed', 0),
-                    'precipitation': item.get('rain', {}).get('3h', 0)
+                    'wind_direction': self._get_wind_direction(item['wind'].get('deg', 0)),
+                    'precipitation': item.get('rain', {}).get('3h', 0) + item.get('snow', {}).get('3h', 0)
                 }
             else:
                 # Update min/max temps for the day
@@ -293,7 +294,8 @@ class WeatherService:
                 'icon': forecast['icon'],
                 'humidity': self._format_humidity(forecast['humidity']),
                 'wind_speed': self._format_wind_speed(forecast['wind_speed']),
-                'precipitation': f"{forecast['precipitation']:.1f} mm" if forecast['precipitation'] > 0 else "No rain"
+                'wind_direction': forecast.get('wind_direction', ''),
+                'precipitation': f"{forecast['precipitation']:.1f} mm" if forecast['precipitation'] > 0 else "0 mm"
             })
         
         return {

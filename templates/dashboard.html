@@ -87,56 +87,26 @@
             padding: 0;
         }
         
-        /* Weather Panel Styles */
-        .weather-current {
-            padding: 20px;
+        /* Weather Panel Styles - Simplified */
+        .weather-location-header {
+            padding: 15px 20px;
             border-bottom: 1px solid #e0e0e0;
-            text-align: center;
-            background: linear-gradient(135deg, #87ceeb 0%, #4682b4 100%);
-            color: white;
-        }
-        
-        .weather-icon {
-            font-size: 4rem;
-            margin-bottom: 10px;
-        }
-        
-        .weather-temp {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .weather-desc {
             font-size: 1.1rem;
-            margin-bottom: 15px;
+            color: var(--ava-brown-primary);
+            font-weight: bold;
         }
         
-        .weather-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 0.9rem;
-        }
-        
-        .weather-item {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px;
-            border-radius: 5px;
-        }
-        
-        /* Hourly forecast scroll */
-        .hourly-forecast {
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
-            background: #fafafa;
+        /* Hourly forecast as main display */
+        .hourly-forecast-main {
+            padding: 20px;
+            background: white;
         }
         
         .hourly-title {
-            font-size: 1rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: var(--ava-brown-primary);
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
         
         .hourly-scroll {
@@ -150,11 +120,18 @@
         .hourly-item {
             flex-shrink: 0;
             text-align: center;
-            padding: 10px;
-            background: white;
-            border-radius: 8px;
+            padding: 12px;
+            background: #f8f8f8;
+            border-radius: 10px;
             border: 1px solid #e0e0e0;
-            min-width: 70px;
+            min-width: 80px;
+            transition: all 0.2s ease;
+        }
+        
+        .hourly-item:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
         .hourly-time {
@@ -218,11 +195,56 @@
             color: var(--ava-brown-muted);
         }
         
+        .forecast-details {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: var(--ava-brown-muted);
+            margin-top: 5px;
+        }
+        
+        .forecast-wind {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .forecast-rain {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
         /* Chat Panel Styles */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .chat-message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 1rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .chat-message.user {
+            background: var(--ava-olive-primary);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        
+        .chat-message.assistant {
+            background: #f0f0f0;
+            color: var(--ava-brown-primary);
+            align-self: flex-start;
         }
         
         .chat-welcome {
@@ -289,80 +311,43 @@
             transform: scale(1.1);
         }
         
-        /* Farm Panel Styles */
-        .farm-overview {
+        /* Farm Panel Styles - Simplified */
+        .fields-list {
             padding: 20px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .farm-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .farm-stat {
-            background: var(--ava-olive-light);
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            border: 2px solid var(--ava-olive-primary);
-        }
-        
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: bold;
-            color: var(--ava-brown-primary);
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--ava-brown-muted);
-        }
-        
-        .farm-sections {
-            padding: 20px;
-        }
-        
-        .farm-section {
-            margin-bottom: 25px;
-        }
-        
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--ava-brown-primary);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .section-content {
-            background: #f8f8f8;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--ava-olive-primary);
         }
         
         .field-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
+            padding: 15px;
             border-bottom: 1px solid #e0e0e0;
+            background: white;
+        }
+        
+        .field-item:hover {
+            background: #f8f8f8;
         }
         
         .field-name {
+            font-size: 1.1rem;
             font-weight: bold;
             color: var(--ava-brown-primary);
+            margin-bottom: 8px;
         }
         
-        .field-status {
-            font-size: 0.9rem;
+        .field-info {
+            display: grid;
+            gap: 5px;
+            font-size: 0.95rem;
             color: var(--ava-brown-muted);
+        }
+        
+        .field-info-item {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .field-info-label {
+            font-weight: 600;
+            min-width: 80px;
         }
         
         /* User Header */
@@ -475,17 +460,14 @@
                 </div>
             </div>
             <div class="panel-content">
-                <div class="weather-current" id="current-weather">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading weather...
-                    </div>
+                <div class="weather-location-header" id="weather-location-header">
+                    <span id="weather-location-text">Loading location...</span>
                 </div>
-                <div class="hourly-forecast" id="hourly-forecast">
-                    <div class="hourly-title">Today's Hourly Forecast</div>
+                <div class="hourly-forecast-main" id="hourly-forecast">
+                    <div class="hourly-title">24-Hour Forecast</div>
                     <div class="loading">
                         <div class="spinner"></div>
-                        Loading hourly...
+                        Loading hourly forecast...
                     </div>
                 </div>
                 <div class="weather-forecast" id="weather-forecast">
@@ -511,8 +493,8 @@
                 </div>
             </div>
             <div class="panel-content">
-                <div class="chat-messages">
-                    <div class="chat-welcome">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-welcome" id="chat-welcome">
                         <div class="chat-welcome-icon">🌾</div>
                         <div class="chat-welcome-title">Welcome to CAVA!</div>
                         <div class="chat-welcome-text">
@@ -544,66 +526,13 @@
                 </div>
             </div>
             <div class="panel-content">
-                <div class="farm-overview">
-                    <div class="farm-stats">
-                        <div class="farm-stat">
-                            <div class="stat-value" id="field-count">0</div>
-                            <div class="stat-label">Fields</div>
-                        </div>
-                        <div class="farm-stat">
-                            <div class="stat-value" id="hectare-count">0</div>
-                            <div class="stat-label">Hectares</div>
-                        </div>
-                        <div class="farm-stat">
-                            <div class="stat-value" id="crop-count">0</div>
-                            <div class="stat-label">Crops</div>
-                        </div>
-                        <div class="farm-stat">
-                            <div class="stat-value" id="task-count">0</div>
-                            <div class="stat-label">Tasks</div>
-                        </div>
+                <div class="fields-list" id="field-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Loading fields...
                     </div>
                 </div>
-                
-                <div class="farm-sections">
-                    <div class="farm-section">
-                        <div class="section-title">📍 My Fields</div>
-                        <div class="section-content" id="field-list">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                Loading fields...
-                            </div>
-                        </div>
-                    </div>
                     
-                    <div class="farm-section">
-                        <div class="section-title">🌱 Recent Tasks</div>
-                        <div class="section-content">
-                            <div class="field-item">
-                                <div class="field-name">Fertilize Mangoes</div>
-                                <div class="field-status">2 days ago</div>
-                            </div>
-                            <div class="field-item">
-                                <div class="field-name">Pest Inspection</div>
-                                <div class="field-status">5 days ago</div>
-                            </div>
-                            <div class="field-item">
-                                <div class="field-name">Irrigation Check</div>
-                                <div class="field-status">1 week ago</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="farm-section">
-                        <div class="section-title">⚠️ Alerts</div>
-                        <div class="section-content" id="weather-alerts">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                Loading alerts...
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -668,35 +597,14 @@
         }
         
         function displayCurrentWeather(weather) {
-            const currentWeatherDiv = document.getElementById('current-weather');
-            currentWeatherDiv.innerHTML = `
-                <div class="weather-icon">${weather.icon}</div>
-                <div class="weather-temp">${weather.temperature}</div>
-                <div class="weather-desc">${weather.description}</div>
-                <div class="weather-details">
-                    <div class="weather-item">
-                        <div>Feels like</div>
-                        <div>${weather.feels_like}</div>
-                    </div>
-                    <div class="weather-item">
-                        <div>Humidity</div>
-                        <div>${weather.humidity}</div>
-                    </div>
-                    <div class="weather-item">
-                        <div>Wind</div>
-                        <div>${weather.wind_speed}</div>
-                    </div>
-                    <div class="weather-item">
-                        <div>Updated</div>
-                        <div>${weather.timestamp}</div>
-                    </div>
-                </div>
-            `;
+            // Update location in header only
+            const locationText = weather.farmer_location || weather.location || 'Unknown Location';
+            document.getElementById('weather-location-text').textContent = `📍 ${locationText}`;
         }
         
         function displayHourlyForecast(hourly) {
             const hourlyDiv = document.getElementById('hourly-forecast');
-            let hourlyHtml = '<div class="hourly-title">Today\'s Hourly Forecast</div>';
+            let hourlyHtml = '<div class="hourly-title">24-Hour Forecast</div>';
             hourlyHtml += '<div class="hourly-scroll">';
             
             hourly.forEach(hour => {
@@ -704,7 +612,10 @@
                     <div class="hourly-item">
                         <div class="hourly-time">${hour.time}</div>
                         <div class="hourly-icon">${hour.icon}</div>
-                        <div class="hourly-temp">${hour.temp}°</div>
+                        <div class="hourly-temp">${hour.temp}°C</div>
+                        <div style="font-size: 0.8rem; color: var(--ava-brown-muted);">
+                            ${hour.wind.speed} km/h ${hour.wind.direction}
+                        </div>
                     </div>
                 `;
             });
@@ -749,6 +660,14 @@
                             <span>${day.description}</span>
                         </div>
                         <div class="forecast-temps">${day.temp_min} / ${day.temp_max}</div>
+                        <div class="forecast-details">
+                            <div class="forecast-wind">
+                                💨 ${day.wind_speed} ${day.wind_direction || ''}
+                            </div>
+                            <div class="forecast-rain">
+                                💧 ${day.precipitation}
+                            </div>
+                        </div>
                     </div>
                 `;
             });
@@ -789,25 +708,73 @@
             alertsDiv.innerHTML = alertsHtml;
         }
         
-        // Chat functionality placeholder
+        // Chat functionality with OpenAI
         document.getElementById('chat-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         });
         
         document.getElementById('send-btn').addEventListener('click', sendMessage);
         
-        function sendMessage() {
+        function addMessageToChat(role, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            const welcomeDiv = document.getElementById('chat-welcome');
+            
+            // Hide welcome message on first interaction
+            if (welcomeDiv) {
+                welcomeDiv.style.display = 'none';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+            messageDiv.textContent = content;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             
-            if (message) {
-                // Placeholder for chat functionality
-                console.log('Sending message:', message);
-                input.value = '';
+            if (!message) return;
+            
+            // Clear input and disable while sending
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('send-btn').disabled = true;
+            
+            // Add user message to chat
+            addMessageToChat('user', message);
+            
+            try {
+                // Send to backend
+                const response = await fetch('/api/v1/chat/message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ content: message })
+                });
                 
-                // TODO: Implement CAVA chat functionality
+                if (response.ok) {
+                    const data = await response.json();
+                    // Add AI response to chat
+                    addMessageToChat('assistant', data.response);
+                } else {
+                    addMessageToChat('assistant', 'Sorry, I encountered an error. Please try again.');
+                }
+                
+            } catch (error) {
+                console.error('Chat error:', error);
+                addMessageToChat('assistant', 'Sorry, I\'m having trouble connecting. Please try again later.');
+            } finally {
+                // Re-enable input
+                input.disabled = false;
+                document.getElementById('send-btn').disabled = false;
+                input.focus();
             }
         }
         
@@ -835,16 +802,10 @@
         }
         
         function displayFieldsData(data) {
-            // Update summary stats
-            document.getElementById('field-count').textContent = data.summary.total_fields;
-            document.getElementById('hectare-count').textContent = data.summary.total_hectares;
-            document.getElementById('crop-count').textContent = data.summary.total_crops;
-            document.getElementById('task-count').textContent = data.summary.pending_tasks;
-            
-            // Update fields list
+            // Update fields list with simplified display
             const fieldsList = document.getElementById('field-list');
             if (data.fields.length === 0) {
-                fieldsList.innerHTML = '<div style="color: var(--ava-brown-muted); font-style: italic;">No fields configured</div>';
+                fieldsList.innerHTML = '<div style="color: var(--ava-brown-muted); font-style: italic; padding: 20px;">No fields configured</div>';
                 return;
             }
             
@@ -852,13 +813,21 @@
             data.fields.forEach(field => {
                 fieldsHtml += `
                     <div class="field-item">
-                        <div>
-                            <div class="field-name">${field.name}</div>
-                            <div class="field-status" style="font-size: 0.85rem; color: var(--ava-brown-muted);">
-                                ${field.crop} • ${field.hectares} ha
+                        <div class="field-name">${field.name}</div>
+                        <div class="field-info">
+                            <div class="field-info-item">
+                                <span class="field-info-label">Crop:</span>
+                                <span>${field.crop}</span>
+                            </div>
+                            <div class="field-info-item">
+                                <span class="field-info-label">Size:</span>
+                                <span>${field.hectares} ha</span>
+                            </div>
+                            <div class="field-info-item">
+                                <span class="field-info-label">Last task:</span>
+                                <span>${field.last_task}</span>
                             </div>
                         </div>
-                        <div class="field-status">${field.last_task}</div>
                     </div>
                 `;
             });
