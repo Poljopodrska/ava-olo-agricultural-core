@@ -1,5 +1,41 @@
 # AVA OLO System Changelog
 
+## [v3.3.32] - 2025-07-22 12:30 CET - Live Code Indicator
+
+### Deployment Verification Display
+
+**Feature**: Live code indicator shows actual running features
+**Mango Test**: Bulgarian mango farmer sees exactly which code version is running
+
+### Changes:
+
+#### 1. Code Status API
+- `/api/v1/code-status` endpoint
+- Detects actual code features present
+- Shows validation ON/OFF status
+- Indicates LLM chat availability
+
+#### 2. Visual Indicator
+- Bottom-right corner display
+- Shows version, build, deployment time
+- Feature checkmarks:
+  - ✅ Pure LLM Chat
+  - ✅ Validation: OFF
+  - ✅ Natural Responses
+- Professional dark theme design
+
+#### 3. Added To Pages
+- `/auth/register/pure` - Pure chat
+- `/auth/register/chat` - Step 1 chat
+- Updates automatically on load
+- Refreshes every 30 seconds
+
+### Benefits:
+- Instantly see deployed version
+- Verify feature flags visually
+- Debug deployment issues
+- No more cache confusion
+
 ## [v3.3.31] - 2025-07-22 11:30 CET - CAVA Step 1 Pure: NO Validation
 
 ### Step 1 Pure - DELETE All Hardcoding
