@@ -1,5 +1,56 @@
 # AVA OLO System Changelog
 
+## [v3.3.26] - 2025-07-22 05:35 CET (Deployment In Progress)
+
+### Nuclear ECS Deployment Fix
+
+**Feature**: Comprehensive ECS deployment fix to force v3.3.26 deployment  
+**Mango Test**: 🚀 Kmetija Vrzel will see v3.3.26 with Ljubljana weather and working AI (once build completes)
+
+### Deployment Issues Resolved:
+
+#### 1. Task Definition Problems
+- **Issue**: Task definition 7 had secret dependencies that didn't exist
+- **Issue**: Task definition 8 had container startup issues
+- **Solution**: Created clean task definition 9 without secrets
+- **Fallback**: Used working task definition 5 with forced image update
+
+#### 2. Nuclear Deployment Strategy
+```python
+# scripts/create_clean_task_definition.py
+def nuclear_deployment(task_revision):
+    # 1. Stop ALL running tasks
+    # 2. Scale service to 0
+    # 3. Update with new task definition
+    # 4. Scale back up with force deployment
+```
+
+#### 3. ECR Image Verification
+- Verified ECR image pushed at 3:34 AM matches v3.3.26 commit (5a562ab)
+- Triggered fresh CodeBuild to ensure clean build with latest code
+- Created fallback deployment scripts for future use
+
+#### 4. Scripts Created for Deployment
+- `verify_ecr_image_version.sh` - Check ECR image contents
+- `create_clean_task_definition.py` - Nuclear deployment approach
+- `fallback_deployment.py` - Safe fallback strategy
+
+### Current Status:
+- ✅ v3.3.26 code committed and pushed
+- ✅ Clean task definitions created (revision 9)
+- ✅ Nuclear deployment scripts executed
+- 🔄 Fresh CodeBuild in progress (build #35)
+- ⏳ Waiting for stable deployment
+
+### Expected Result After Build:
+- Ljubljana weather with coordinates: "Ljubljana, Slovenia (46.06°N, 14.51°E)"
+- No AI warning if OpenAI connected
+- Debug endpoint: `/api/v1/debug/services`
+- Working chat with GPT-4
+- Version shows: v3.3.26-verify-services
+
+---
+
 ## [v3.3.26] - 2025-07-22 03:45 CET
 
 ### Verify AI Connection and Ljubljana Weather

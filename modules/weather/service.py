@@ -86,6 +86,17 @@ class WeatherService:
                 
                 if response.status_code == 200:
                     data = response.json()
+                    # Add proof of location
+                    data['proof'] = {
+                        'requested_lat': lat,
+                        'requested_lon': lon,
+                        'api_returned_lat': data.get('coord', {}).get('lat'),
+                        'api_returned_lon': data.get('coord', {}).get('lon'),
+                        'api_returned_city': data.get('name', 'Unknown'),
+                        'api_returned_country': data.get('sys', {}).get('country'),
+                        'api_call_time': datetime.now().isoformat(),
+                        'api_key_used': self.api_key[:8] + "..." if self.api_key else "NO KEY"
+                    }
                     return self._format_current_weather(data)
                 else:
                     print(f"Weather API error: {response.status_code}")
@@ -241,7 +252,8 @@ class WeatherService:
             'timestamp': datetime.now().strftime('%H:%M'),
             'raw_temp': main['temp'],
             'raw_humidity': main['humidity'],
-            'weather_code': weather['icon']
+            'weather_code': weather['icon'],
+            'proof': data.get('proof', {})
         }
     
     def _format_forecast_data(self, data: Dict) -> Dict:

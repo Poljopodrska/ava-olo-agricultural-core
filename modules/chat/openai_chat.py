@@ -74,6 +74,9 @@ Current date and time: {current_date} at {current_time}
 
 You're talking to a farmer with these specific details:
 - Location: {farmer_context.get('location', 'Slovenia')}
+- Current Weather: {farmer_context.get('weather', 'Unknown')}
+- Temperature: {farmer_context.get('temperature', 'Unknown')}°C
+- Humidity: {farmer_context.get('humidity', 'Unknown')}%
 - Fields: {len(farmer_context.get('fields', []))} fields totaling {sum(f.get('hectares', 0) for f in farmer_context.get('fields', []))} hectares
 - Active crops: {', '.join(set(f.get('crop', 'Unknown') for f in farmer_context.get('fields', [])))}
 

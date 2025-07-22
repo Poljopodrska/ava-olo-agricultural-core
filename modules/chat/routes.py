@@ -15,6 +15,7 @@ from modules.chat.openai_chat import get_openai_chat
 from modules.auth.routes import get_current_farmer
 from modules.core.database_manager import get_db_manager
 from modules.location.location_service import LocationService
+from modules.weather.service import weather_service
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ async def get_farmer_context(farmer_id: int) -> dict:
         
         # Format location from location data
         location_display = "Unknown location"
+        lat, lon = None, None
         if location_data:
             city = location_data.get('city', '')
             country = location_data.get('country', '')
@@ -82,13 +84,33 @@ async def get_farmer_context(farmer_id: int) -> dict:
                 location_display = f"{city}, {country}"
             elif city:
                 location_display = city
+            # Get coordinates for weather
+            lat = location_data.get('lat')
+            lon = location_data.get('lon')
         
-        return {
+        # Get current weather
+        weather_data = None
+        if lat and lon:
+            weather_data = await weather_service.get_current_weather(lat, lon)
+        else:
+            # Use Ljubljana as default
+            weather_data = await weather_service.get_current_weather()
+        
+        context = {
             "fields": fields,
             "location": location_display,
             "local_time": datetime.now().strftime("%H:%M"),
             "local_date": datetime.now().strftime("%B %d, %Y")
         }
+        
+        # Add weather data to context
+        if weather_data:
+            context["weather"] = weather_data.get('description', 'Unknown')
+            context["temperature"] = weather_data.get('raw_temp', 'Unknown')
+            context["humidity"] = weather_data.get('raw_humidity', 'Unknown')
+            context["weather_proof"] = weather_data.get('proof', {})
+        
+        return context
         
     except Exception as e:
         logger.error(f"Error getting farmer context: {e}")

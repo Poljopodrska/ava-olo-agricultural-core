@@ -12,6 +12,7 @@ import logging
 from modules.core.database_manager import get_db_manager
 from modules.chat.openai_chat import get_openai_chat
 from modules.location.location_service import get_location_service
+from modules.weather.service import weather_service
 # from modules.auth.security import get_current_farmer  # TODO: Module missing
 
 logger = logging.getLogger(__name__)
@@ -21,12 +22,8 @@ router = APIRouter()
 async def debug_services(request: Request):
     """Comprehensive service connection status"""
     
-    # Get current farmer
-    try:
-        farmer = await get_current_farmer(request)
-        farmer_id = farmer.get('farmer_id') if farmer else None
-    except:
-        farmer_id = None
+    # Get current farmer from session
+    farmer_id = request.session.get('farmer_id', 1)  # Default to farmer 1 for testing
     
     # Test OpenAI
     openai_status = await test_openai_connection()
@@ -228,4 +225,93 @@ async def test_chat_farming():
         "test_results": results,
         "all_successful": all(r["success"] for r in results),
         "chat_connected": chat_service.connected
+    }
+
+@router.get("/api/v1/debug/services/detailed")
+async def debug_services_detailed(request: Request):
+    """Detailed service status with proof"""
+    
+    farmer_id = request.session.get("farmer_id", 1)  # Default to farmer 1
+    
+    # Test OpenAI with actual question
+    openai_test = {}
+    try:
+        chat_service = get_openai_chat()
+        test_result = await chat_service.send_message(
+            "test_debug_session",
+            "What's the best time to plant tomatoes in Ljubljana?",
+            {"location": "Ljubljana, Slovenia", "weather": "Partly Cloudy", "temperature": 18}
+        )
+        openai_test = {
+            "status": "connected" if chat_service.connected else "disconnected",
+            "api_key_set": bool(os.getenv("OPENAI_API_KEY")),
+            "api_key_preview": os.getenv("OPENAI_API_KEY", "")[:8] + "..." if os.getenv("OPENAI_API_KEY") else None,
+            "test_response": test_result.get('response', '')[:100] + "...",
+            "model": test_result.get('model', 'unknown'),
+            "connected": test_result.get('connected', False),
+            "timestamp": test_result.get('timestamp')
+        }
+    except Exception as e:
+        openai_test = {"status": "error", "error": str(e)}
+    
+    # Test Weather with proof
+    weather_test = {}
+    try:
+        # Get weather for Ljubljana
+        weather_data = await weather_service.get_current_weather()
+        weather_test = {
+            "status": "connected" if weather_service.api_key else "no_api_key",
+            "api_key_set": bool(weather_service.api_key),
+            "api_key_preview": weather_service.api_key[:8] + "..." if weather_service.api_key else None,
+            "current_weather": {
+                "temperature": weather_data.get('temperature'),
+                "description": weather_data.get('description'),
+                "humidity": weather_data.get('humidity'),
+                "location": weather_data.get('location')
+            },
+            "proof": weather_data.get('proof', {}),
+            "timestamp": weather_data.get('timestamp')
+        }
+    except Exception as e:
+        weather_test = {"status": "error", "error": str(e)}
+    
+    # Get farmer location
+    location_test = {}
+    try:
+        db_manager = get_db_manager()
+        query = """
+        SELECT f.id, f.name, f.city, f.country,
+               COUNT(DISTINCT fi.id) as field_count,
+               COALESCE(SUM(fi.size_hectares), 0) as total_hectares
+        FROM ava_farmers f
+        LEFT JOIN ava_fields fi ON f.id = fi.farmer_id
+        WHERE f.id = %s
+        GROUP BY f.id, f.name, f.city, f.country
+        """
+        
+        result = db_manager.execute_query(query, (farmer_id,))
+        
+        if result and result.get('rows'):
+            row = result['rows'][0]
+            location_test = {
+                "farmer_id": row[0],
+                "farmer_name": row[1],
+                "city": row[2] or "Ljubljana",
+                "country": row[3] or "Slovenia",
+                "field_count": row[4],
+                "total_hectares": float(row[5]) if row[5] else 0
+            }
+    except Exception as e:
+        location_test = {"status": "error", "error": str(e)}
+    
+    return {
+        "timestamp": datetime.now().isoformat(),
+        "openai": openai_test,
+        "weather": weather_test,
+        "farmer": location_test,
+        "environment": {
+            "OPENAI_API_KEY": "SET" if os.getenv("OPENAI_API_KEY") else "NOT SET",
+            "OPENWEATHER_API_KEY": "SET" if os.getenv("OPENWEATHER_API_KEY") else "NOT SET",
+            "ENVIRONMENT": os.getenv("ENVIRONMENT", "development")
+        }
     }
