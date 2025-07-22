@@ -205,6 +205,14 @@ async def chat_register_page(request: Request):
         "version": VERSION
     })
 
+@router.get("/register/pure", response_class=HTMLResponse)
+async def pure_chat_page(request: Request):
+    """Display PURE chat - NO validation or hardcoding"""
+    return templates.TemplateResponse("pure_chat.html", {
+        "request": request,
+        "version": VERSION
+    })
+
 @router.post("/register")
 async def register_submit(
     request: Request,

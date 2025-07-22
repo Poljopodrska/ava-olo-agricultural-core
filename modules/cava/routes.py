@@ -12,6 +12,7 @@ from modules.cava.registration_flow import RegistrationFlow
 from modules.cava.natural_registration import NaturalRegistrationFlow
 from modules.cava.true_cava_registration import TrueCAVARegistration
 from modules.cava.simple_chat import SimpleRegistrationChat
+from modules.cava.pure_chat import PureChat
 from modules.auth.routes import create_farmer_account, get_password_hash
 
 # Initialize router
@@ -22,6 +23,7 @@ registration_flow = RegistrationFlow()  # Keep old flow for compatibility
 natural_registration = NaturalRegistrationFlow()  # New natural flow
 true_cava = TrueCAVARegistration()  # True CAVA - no hardcoding
 simple_chat = SimpleRegistrationChat()  # Step 1 - Simple chat only
+pure_chat = PureChat()  # Pure chat - NO validation or hardcoding
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -250,8 +252,8 @@ async def registration_chat(request: Request) -> JSONResponse:
         if not session_id:
             raise HTTPException(status_code=400, detail="session_id is required")
         
-        # Just chat - no extraction or validation
-        result = await simple_chat.chat(session_id, message)
+        # Pure chat - NO validation or hardcoding
+        result = await pure_chat.chat(session_id, message)
         
         return JSONResponse(content=result)
         
