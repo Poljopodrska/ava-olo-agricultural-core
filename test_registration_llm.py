@@ -11,8 +11,8 @@ from typing import Dict, List, Tuple
 import uuid
 
 # Test configuration
-BASE_URL = "http://localhost:8080"  # Local testing first
-# BASE_URL = "http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com"  # Production
+# BASE_URL = "http://localhost:8080"  # Local testing first
+BASE_URL = "http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com"  # Production
 
 class RegistrationLLMTester:
     def __init__(self):
