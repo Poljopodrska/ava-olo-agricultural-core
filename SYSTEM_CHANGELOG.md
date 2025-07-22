@@ -1,5 +1,58 @@
 # AVA OLO System Changelog
 
+## [v3.3.24] - 2025-07-22 03:15 CET
+
+### Critical Fix: Version Stuck at v20 Despite v23 Deployment
+
+**Feature**: Fixed version mismatch where v3.3.20 was showing despite v3.3.23 being deployed  
+**Mango Test**: ✅ Bulgarian mango farmer now sees UNICORN TEST v3.3.24 with pink background!
+
+### Problem Identified:
+1. **Task Definition Issue**: Task definition 7 was failing due to missing AWS Secrets Manager secret
+2. **Stuck Deployment**: ECS couldn't start new tasks, kept falling back to old version
+3. **Version Mismatch**: Code showed v3.3.23 but production showed v3.3.20
+
+### Solution Applied:
+1. **Reverted to Working Task Definition**: Used task definition 5 which doesn't require secrets
+2. **Unicorn Test Implementation**: Added unmistakable visual verification:
+   - Pink background on landing page
+   - Giant unicorn image and text
+   - Version endpoint returns unicorn emojis
+   - Deployment timestamp in response
+
+### Code Changes:
+```python
+# modules/core/config.py
+VERSION = f"v3.3.24-unicorn-test-🦄"
+
+# main.py - Enhanced version endpoint
+return {
+    "version": VERSION,
+    "unicorn_test": "🦄 YES - DEPLOYMENT WORKED! 🦄",
+    "deployment_timestamp": datetime.now().isoformat(),
+    "big_unicorn": "🦄" * 50
+}
+```
+
+### Scripts Created:
+- **check_version_issue.py**: Diagnosed version mismatch
+- **force_ecs_update_v23.py**: Nuclear option to force ECS update
+- **fix_ecs_secret_issue.py**: Fixed task definition problem
+- **monitor_unicorn_deployment.py**: Real-time unicorn monitoring
+
+### Result:
+- ✅ Service now showing v3.3.24-unicorn-test-🦄
+- ✅ Pink page with unicorn visible at http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com
+- ✅ Deployment verification is now unmistakable
+- ✅ Bulgarian mango farmer can see the unicorn!
+
+### Next Steps:
+1. Create new task definition without secret dependencies
+2. Remove unicorn test once stable deployment confirmed
+3. Implement automated deployment verification
+
+---
+
 ## [v3.3.23] - 2025-07-22
 
 ### Deployment Pipeline Permanently Fixed
