@@ -9,13 +9,15 @@ from typing import Dict, Optional
 import logging
 
 from modules.cava.registration_flow import RegistrationFlow
+from modules.cava.natural_registration import NaturalRegistrationFlow
 from modules.auth.routes import create_farmer_account, get_password_hash
 
 # Initialize router
 router = APIRouter(prefix="/api/v1", tags=["cava"])
 
-# Initialize registration flow manager
-registration_flow = RegistrationFlow()
+# Initialize registration flow managers
+registration_flow = RegistrationFlow()  # Keep old flow for compatibility
+natural_registration = NaturalRegistrationFlow()  # New natural flow
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -109,4 +111,79 @@ async def clear_registration_session(farmer_id: str) -> JSONResponse:
     return JSONResponse(content={
         "success": True,
         "message": "Registration session cleared"
+    })
+
+@router.post("/registration/cava/natural")
+async def natural_registration_chat(request: Request) -> JSONResponse:
+    """Handle natural CAVA registration chat messages"""
+    try:
+        data = await request.json()
+        
+        # Extract required fields
+        message = data.get("message", "").strip()
+        session_id = data.get("session_id", "")
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        
+        # Process message through natural registration flow
+        result = await natural_registration.process_message(session_id, message)
+        
+        # If registration is complete, prepare account creation data
+        if result.get("registration_complete") and "collected_data" in result:
+            collected = result["collected_data"]
+            
+            # Map collected fields to database fields
+            registration_data = {
+                "manager_name": collected.get("first_name", ""),
+                "manager_last_name": collected.get("last_name", ""),
+                "wa_phone_number": collected.get("whatsapp", "")
+            }
+            
+            result["registration_data"] = registration_data
+            # Note: Actual account creation should be done by the frontend
+            # after user confirms and adds any additional required fields
+        
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        logger.error(f"Natural CAVA registration error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "response": "I'm having trouble understanding. Could you please try again?",
+                "registration_complete": False,
+                "error": True,
+                "error_message": str(e)
+            }
+        )
+
+@router.get("/registration/cava/natural/session/{session_id}")
+async def get_natural_registration_session(session_id: str) -> JSONResponse:
+    """Get current natural registration session status"""
+    session_data = natural_registration.get_session_data(session_id)
+    
+    if not session_data:
+        return JSONResponse(content={
+            "exists": False,
+            "message": "No active registration session"
+        })
+    
+    missing_fields = natural_registration.get_missing_fields(session_data)
+    
+    return JSONResponse(content={
+        "exists": True,
+        "collected_data": session_data,
+        "missing_fields": missing_fields,
+        "registration_complete": len(missing_fields) == 0
+    })
+
+@router.delete("/registration/cava/natural/session/{session_id}")
+async def clear_natural_registration_session(session_id: str) -> JSONResponse:
+    """Clear a natural registration session"""
+    natural_registration.clear_session(session_id)
+    
+    return JSONResponse(content={
+        "success": True,
+        "message": "Natural registration session cleared"
     })

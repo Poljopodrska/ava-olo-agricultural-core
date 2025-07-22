@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722043000'  # v3.3.27 - GPT-4 and Weather services connected
+DEPLOYMENT_TIMESTAMP = '20250722063000'  # v3.3.28 - Natural registration flow
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.27-services-connected"
+VERSION = f"v3.3.28-natural-registration"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
