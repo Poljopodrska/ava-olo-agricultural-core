@@ -10,6 +10,7 @@ import logging
 
 from modules.cava.registration_flow import RegistrationFlow
 from modules.cava.natural_registration import NaturalRegistrationFlow
+from modules.cava.true_cava_registration import TrueCAVARegistration
 from modules.auth.routes import create_farmer_account, get_password_hash
 
 # Initialize router
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/api/v1", tags=["cava"])
 # Initialize registration flow managers
 registration_flow = RegistrationFlow()  # Keep old flow for compatibility
 natural_registration = NaturalRegistrationFlow()  # New natural flow
+true_cava = TrueCAVARegistration()  # True CAVA - no hardcoding
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -186,4 +188,50 @@ async def clear_natural_registration_session(session_id: str) -> JSONResponse:
     return JSONResponse(content={
         "success": True,
         "message": "Natural registration session cleared"
+    })
+
+@router.post("/registration/cava/true")
+async def true_cava_registration(request: Request) -> JSONResponse:
+    """Handle TRUE CAVA registration - pure LLM conversation"""
+    try:
+        data = await request.json()
+        
+        # Extract required fields
+        message = data.get("message", "").strip()
+        session_id = data.get("session_id", "")
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        
+        # Process message through true CAVA
+        result = await true_cava.process_message(session_id, message)
+        
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        logger.error(f"True CAVA registration error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "response": "I'm having trouble understanding. Could you please try again?",
+                "registration_complete": False,
+                "error": True
+            }
+        )
+
+@router.get("/registration/cava/true/session/{session_id}")
+async def get_true_cava_session(session_id: str) -> JSONResponse:
+    """Get true CAVA session status"""
+    session_data = true_cava.get_session_data(session_id)
+    
+    if not session_data:
+        return JSONResponse(content={
+            "exists": False,
+            "message": "No active session"
+        })
+    
+    return JSONResponse(content={
+        "exists": True,
+        "collected_data": session_data,
+        "registration_complete": all(session_data.values())
     })

@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722063000'  # v3.3.28 - Natural registration flow
+DEPLOYMENT_TIMESTAMP = '20250722073000'  # v3.3.29 - True CAVA registration
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.28-natural-registration"
+VERSION = f"v3.3.29-true-cava"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

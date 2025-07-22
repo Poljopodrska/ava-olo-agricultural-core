@@ -189,6 +189,14 @@ async def register_page(request: Request):
         "version": VERSION
     })
 
+@router.get("/register/true", response_class=HTMLResponse)
+async def true_register_page(request: Request):
+    """Display TRUE CAVA registration - pure conversation"""
+    return templates.TemplateResponse("true_cava_registration.html", {
+        "request": request,
+        "version": VERSION
+    })
+
 @router.post("/register")
 async def register_submit(
     request: Request,
