@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722164000'  # v3.3.34 - Phase 2: Memory & State Tracking
+DEPLOYMENT_TIMESTAMP = '20250722181500'  # v3.3.35 - Fix data extraction
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.34-memory-state"
+VERSION = f"v3.3.35-extract-fix"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

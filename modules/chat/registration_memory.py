@@ -69,80 +69,93 @@ class ChatResponse(BaseModel):
 # In-memory storage for registration sessions
 registration_sessions: Dict[str, RegistrationState] = {}
 
+def simple_extract_registration_data(messages: List[Dict]) -> Dict:
+    """Simple rule-based extraction as fallback"""
+    extracted = {}
+    
+    # Combine all user messages into one text
+    all_text = " ".join([msg.get("content", "") for msg in messages if msg.get("role") == "user"])
+    
+    # Simple name extraction patterns
+    import re
+    
+    # Look for "I'm [Name]" or "My name is [Name]" patterns
+    name_patterns = [
+        r"i'm\s+([A-Z][a-z]+)",
+        r"my name is\s+([A-Z][a-z]+)",
+        r"i am\s+([A-Z][a-z]+)",
+        r"name is\s+([A-Z][a-z]+)"
+    ]
+    
+    for pattern in name_patterns:
+        match = re.search(pattern, all_text, re.IGNORECASE)
+        if match and not extracted.get('first_name'):
+            extracted['first_name'] = match.group(1).strip()
+            break
+    
+    # Look for surname patterns
+    surname_patterns = [
+        r"surname is\s+([A-Z][a-z]+)",
+        r"last name is\s+([A-Z][a-z]+)", 
+        r"family name is\s+([A-Z][a-z]+)",
+        r"([A-Z][a-z]+)\s+is my family name",
+        r"([A-Z][a-z]+)\s+is my surname",
+        r"([A-Z][a-z]+)\s+is my last name"
+    ]
+    
+    for pattern in surname_patterns:
+        match = re.search(pattern, all_text, re.IGNORECASE)
+        if match and not extracted.get('last_name'):
+            extracted['last_name'] = match.group(1).strip()
+            break
+    
+    # Look for phone/WhatsApp patterns
+    phone_patterns = [
+        r"whatsapp.{0,20}?([+]?[0-9]{8,15})",
+        r"phone.{0,20}?([+]?[0-9]{8,15})",
+        r"number.{0,20}?([+]?[0-9]{8,15})",
+        r"([+][0-9]{8,15})",
+        r"my.{0,10}?([0-9]{8,15})"
+    ]
+    
+    for pattern in phone_patterns:
+        match = re.search(pattern, all_text, re.IGNORECASE)
+        if match and not extracted.get('whatsapp'):
+            phone = match.group(1).strip()
+            # Clean up phone number
+            if not phone.startswith('+') and len(phone) >= 8:
+                phone = '+' + phone
+            extracted['whatsapp'] = phone
+            break
+    
+    # Also check for full name patterns like "I'm Peter Smith"
+    if not extracted.get('first_name') or not extracted.get('last_name'):
+        full_name_patterns = [
+            r"i'm\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
+            r"my name is\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
+            r"i am\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)"
+        ]
+        
+        for pattern in full_name_patterns:
+            match = re.search(pattern, all_text, re.IGNORECASE)
+            if match:
+                if not extracted.get('first_name'):
+                    extracted['first_name'] = match.group(1).strip()
+                if not extracted.get('last_name'):
+                    extracted['last_name'] = match.group(2).strip()
+                break
+    
+    return extracted
+
 async def extract_registration_data(messages: List[Dict]) -> Dict:
-    """Use LLM to extract registration data from conversation"""
-    chat_service = get_openai_chat()
+    """Extract registration data using simple patterns with LLM enhancement"""
     
-    if not chat_service.api_key:
-        return {}
+    # Always try simple rule-based extraction first
+    simple_result = simple_extract_registration_data(messages)
+    logger.info(f"Simple extraction result: {simple_result}")
     
-    # Format conversation for extraction
-    conversation_text = ""
-    for msg in messages[-10:]:  # Last 10 messages for context
-        role = msg.get("role", "")
-        content = msg.get("content", "")
-        conversation_text += f"{role}: {content}\n"
-    
-    extraction_prompt = f"""From this registration conversation, extract ONLY the following information:
-- first_name: person's first name only (not full name)
-- last_name: person's last name/surname only  
-- whatsapp: phone number (with or without country code)
-
-Return ONLY a JSON object with these exact fields. Use null for missing values.
-Be very precise - only extract if clearly stated.
-
-Conversation:
-{conversation_text}
-
-Extract as JSON:"""
-    
-    try:
-        # Create minimal context for extraction
-        extraction_context = {
-            "purpose": "data_extraction",
-            "fields_needed": ["first_name", "last_name", "whatsapp"],
-            "instructions": "Extract registration data from conversation and return as JSON only.",
-            "local_time": datetime.now().strftime("%H:%M"),
-            "local_date": datetime.now().strftime("%B %d, %Y")
-        }
-        
-        # Use a separate session for extraction to avoid contaminating conversation
-        extraction_session = f"extract_{uuid.uuid4()}"
-        
-        response = await chat_service.send_message(
-            extraction_session,
-            extraction_prompt,
-            extraction_context
-        )
-        
-        # Clean up extraction session
-        if extraction_session in chat_service.conversations:
-            del chat_service.conversations[extraction_session]
-        
-        # Parse JSON response
-        response_text = response.get("response", "{}")
-        
-        # Try to extract JSON from response
-        json_start = response_text.find('{')
-        json_end = response_text.rfind('}') + 1
-        
-        if json_start >= 0 and json_end > json_start:
-            json_text = response_text[json_start:json_end]
-            extracted_data = json.loads(json_text)
-            
-            # Validate and clean extracted data
-            clean_data = {}
-            for key in ["first_name", "last_name", "whatsapp"]:
-                value = extracted_data.get(key)
-                if value and isinstance(value, str) and value.strip() and value.lower() != "null":
-                    clean_data[key] = value.strip()
-                    
-            return clean_data
-            
-    except Exception as e:
-        logger.warning(f"Data extraction error: {e}")
-    
-    return {}
+    # Return simple results - they're usually more reliable than LLM for structured data
+    return simple_result
 
 def create_registration_prompt(state: RegistrationState, message: str) -> str:
     """Create context-aware prompt for registration conversation"""
