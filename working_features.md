@@ -2,7 +2,7 @@
 
 ## Current Production State
 **Date**: 2025-07-20 13:07 UTC
-**URL**: http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com
+**URL**: http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com
 
 ## Critical Features Working ✅
 

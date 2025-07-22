@@ -13,7 +13,7 @@ from datetime import datetime
 SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250722020000'  # v3.3.23 - Deployment pipeline permanently fixed
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.23-deployment-fixed"
+VERSION = f"v3.3.24-unicorn-test-🦄"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

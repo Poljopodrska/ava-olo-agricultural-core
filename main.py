@@ -110,11 +110,31 @@ async def startup_event():
 
 @app.get("/")
 async def landing_page(request: Request):
-    """Landing page with Sign In and New with AVA OLO buttons"""
-    return templates.TemplateResponse("landing.html", {
-        "request": request,
-        "version": VERSION
-    })
+    """Landing page with UNICORN TEST"""
+    # Return HTML with unicorn for unmistakable verification
+    from datetime import datetime
+    return HTMLResponse(f"""
+    <html>
+    <body style="background: pink;">
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                    z-index: 9999; background: white; padding: 20px; border: 5px solid red;">
+            <h1 style="color: red; font-size: 48px;">🦄 UNICORN TEST v3.3.24 🦄</h1>
+            <p style="font-size: 24px; color: green;">If you see this unicorn, deployment worked!</p>
+            <p style="font-size: 32px; color: blue;">VERSION: {VERSION}</p>
+            <p style="font-size: 20px;">Deployed at: {datetime.now()}</p>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Unicorn-logo.svg/512px-Unicorn-logo.svg.png" 
+                 style="width: 300px; height: 300px;">
+        </div>
+        <div style="text-align: center; margin-top: 100px;">
+            <h1 style="font-size: 72px;">🦄 UNICORN TEST 🦄</h1>
+            <h2>Version: {VERSION}</h2>
+            <h3>If you see this pink page with unicorn, deployment worked!</h3>
+            <p>Time: {datetime.now()}</p>
+            <p><a href="/dashboard">Go to Dashboard</a></p>
+        </div>
+    </body>
+    </html>
+    """)
 
 @app.get("/dashboard")
 async def dashboard(request: Request):
@@ -146,8 +166,17 @@ async def health_check():
 
 @app.get("/version")
 async def get_version():
-    """Get current version"""
-    return {"version": VERSION, "build_id": BUILD_ID}
+    """Get current version with UNICORN TEST"""
+    from datetime import datetime
+    return {
+        "version": VERSION,
+        "build_id": BUILD_ID,
+        "unicorn_test": "🦄 YES - DEPLOYMENT WORKED! 🦄",
+        "actual_version": "3.3.24-unicorn-test",
+        "deployment_timestamp": datetime.now().isoformat(),
+        "big_unicorn": "🦄" * 50,
+        "message": "IF YOU SEE THIS, IT'S NOT A CACHING ISSUE"
+    }
 
 @app.get("/deployment-method")
 async def deployment_method():
