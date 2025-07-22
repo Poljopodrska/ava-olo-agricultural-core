@@ -10,13 +10,18 @@ from modules.core.database_manager import get_db_manager
 
 logger = logging.getLogger(__name__)
 
-async def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
+def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
     """
     Search farmers using multiple strategies
     Returns ranked list of potential matches
     """
     db_manager = get_db_manager()
     all_matches = []
+    
+    # Check if database is connected
+    if not db_manager.test_connection():
+        logger.warning("Database not connected, returning empty results")
+        return []
     
     try:
         # Name-based search
@@ -36,7 +41,8 @@ async def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
                 AND is_active = true
                 """
                 name_pattern = f"%{name}%"
-                results = await db_manager.execute_query(
+                # Fix: use sync method, not async
+                results = db_manager.execute_query(
                     query, 
                     (name_pattern, name_pattern, name_pattern)
                 )
@@ -73,7 +79,7 @@ async def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
                 AND f.is_active = true
                 """
                 location_pattern = f"%{location}%"
-                results = await db_manager.execute_query(
+                results = db_manager.execute_query(
                     query,
                     (location_pattern, location_pattern, location_pattern, location_pattern)
                 )
@@ -108,7 +114,7 @@ async def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
                          f.whatsapp_number, f.city, f.country, f.email, f.created_at
                 """
                 crop_pattern = f"%{crop}%"
-                results = await db_manager.execute_query(query, (crop_pattern,))
+                results = db_manager.execute_query(query, (crop_pattern,))
                 if results:
                     all_matches.extend([{
                         'farmer_id': r[0],
@@ -141,7 +147,7 @@ async def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
                 AND is_active = true
                 """
                 phone_pattern = f"%{phone_digits}%"
-                results = await db_manager.execute_query(query, (phone_pattern,))
+                results = db_manager.execute_query(query, (phone_pattern,))
                 if results:
                     all_matches.extend([{
                         'farmer_id': r[0],
@@ -177,7 +183,7 @@ async def search_farmers_flexibly(criteria: Dict[str, Any]) -> List[Dict]:
         logger.error(f"Error searching farmers: {e}")
         return []
 
-async def extract_search_criteria_from_message(message: str, collected_data: Dict) -> Dict:
+def extract_search_criteria_from_message(message: str, collected_data: Dict) -> Dict:
     """
     Extract identifying information from user message
     Uses simple pattern matching instead of LLM
@@ -264,7 +270,7 @@ async def extract_search_criteria_from_message(message: str, collected_data: Dic
     logger.info(f"Extracted search criteria: {criteria}")
     return criteria
 
-async def get_farmer_details(farmer_id: int) -> Optional[Dict]:
+def get_farmer_details(farmer_id: int) -> Optional[Dict]:
     """Get detailed information about a specific farmer"""
     db_manager = get_db_manager()
     
@@ -277,7 +283,7 @@ async def get_farmer_details(farmer_id: int) -> Optional[Dict]:
         FROM farmers
         WHERE farmer_id = %s AND is_active = true
         """
-        farmer_result = await db_manager.execute_query(farmer_query, (farmer_id,))
+        farmer_result = db_manager.execute_query(farmer_query, (farmer_id,))
         
         if not farmer_result:
             return None
@@ -304,7 +310,7 @@ async def get_farmer_details(farmer_id: int) -> Optional[Dict]:
         WHERE farmer_id = %s
         ORDER BY created_at DESC
         """
-        fields_results = await db_manager.execute_query(fields_query, (farmer_id,))
+        fields_results = db_manager.execute_query(fields_query, (farmer_id,))
         
         for field in fields_results:
             farmer_data['fields'].append({

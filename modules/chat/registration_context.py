@@ -128,7 +128,7 @@ context_registration_sessions: Dict[str, EnhancedRegistrationState] = {}
 # Store incomplete registrations (in production, use database)
 incomplete_registrations: Dict[str, Dict] = {}
 
-async def check_incomplete_registration(partial_data: Dict) -> Optional[Dict]:
+def check_incomplete_registration(partial_data: Dict) -> Optional[Dict]:
     """Check for recent incomplete registrations"""
     # In production, this would query the database
     # For now, check in-memory storage
@@ -367,13 +367,13 @@ async def send_context_aware_registration_message(request: Request, message: Cha
         state.update_collected_data(all_extracted_data)
         
         # Search for existing farmer context
-        search_criteria = await extract_search_criteria_from_message(
+        search_criteria = extract_search_criteria_from_message(
             message.content, 
             state.collected_data
         )
         
         if search_criteria and not state.recognized_farmer_id:
-            potential_matches = await search_farmers_flexibly(search_criteria)
+            potential_matches = search_farmers_flexibly(search_criteria)
             state.potential_matches = potential_matches
             
             # If high confidence match, pre-fill data
@@ -389,7 +389,7 @@ async def send_context_aware_registration_message(request: Request, message: Cha
         
         # Check for incomplete registration
         if not state.incomplete_registration_id:
-            incomplete = await check_incomplete_registration(state.collected_data)
+            incomplete = check_incomplete_registration(state.collected_data)
             if incomplete:
                 state.incomplete_registration_id = incomplete.get('id')
                 state.is_returning = True
