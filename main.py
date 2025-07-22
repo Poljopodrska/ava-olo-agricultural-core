@@ -52,6 +52,7 @@ from modules.fields.routes import router as fields_router
 from modules.chat.routes import router as chat_router
 from modules.chat.registration_chat import router as registration_chat_router
 from modules.chat.registration_memory import router as registration_memory_router
+from modules.chat.registration_context import router as registration_context_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -91,6 +92,7 @@ app.include_router(fields_router)
 app.include_router(chat_router)
 app.include_router(registration_chat_router)
 app.include_router(registration_memory_router)
+app.include_router(registration_context_router)
 app.include_router(system_router)
 app.include_router(debug_services_router)
 app.include_router(debug_deployment_router)

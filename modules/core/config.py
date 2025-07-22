@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722182000'  # v3.3.36 - Fix endpoint routing
+DEPLOYMENT_TIMESTAMP = '20250722183000'  # v3.3.37 - Phase 4: Context-Aware Registration
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.36-routing-fix"
+VERSION = f"v3.3.37-context-aware"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

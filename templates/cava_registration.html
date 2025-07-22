@@ -92,6 +92,27 @@
             color: #4ade80;
         }
         
+        /* NEW: Recognition info styles */
+        .recognition-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .recognition-info.confirmed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .recognition-info.potential {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
         .cava-progress {
             background: rgba(255, 255, 255, 0.2);
             height: 8px;
@@ -459,8 +480,8 @@
             showTyping();
             
             try {
-                // NEW: Use memory-enabled endpoint
-                const response = await fetch('/api/v1/chat/registration/message', {
+                // PHASE 4: Use context-aware endpoint
+                const response = await fetch('/api/v1/chat/registration/context', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -491,6 +512,11 @@
                 // Check if registration is complete
                 if (data.completed) {
                     showCompletionButton();
+                }
+                
+                // NEW: Show farmer recognition if found
+                if (data.is_returning || data.potential_matches?.length > 0) {
+                    showRecognitionInfo(data);
                 }
                 
                 // Store registration data for completion
@@ -541,11 +567,36 @@
             addMessage('🎉 Great! I have all the information I need. You can now complete your registration.', true);
         }
         
+        // NEW: Show farmer recognition info
+        function showRecognitionInfo(data) {
+            if (data.recognized_farmer_id) {
+                // Show confirmed recognition
+                const recognitionDiv = document.createElement('div');
+                recognitionDiv.className = 'recognition-info confirmed';
+                recognitionDiv.innerHTML = '🎉 Welcome back! We found your existing account.';
+                document.getElementById('registrationProgress').appendChild(recognitionDiv);
+            } else if (data.potential_matches && data.potential_matches.length > 0) {
+                // Show potential matches
+                const match = data.potential_matches[0];
+                if (match.confidence > 0.7) {
+                    const recognitionDiv = document.createElement('div');
+                    recognitionDiv.className = 'recognition-info potential';
+                    recognitionDiv.innerHTML = `🔍 Possible match: ${match.name} from ${match.location || 'your area'}`;
+                    document.getElementById('registrationProgress').appendChild(recognitionDiv);
+                }
+            }
+        }
+        
         function completeRegistration() {
             if (registrationData && registrationData.completed) {
-                // TODO: Create account with collected data
-                // For now, redirect to dashboard
-                window.location.href = '/dashboard';
+                // If recognized farmer, different flow
+                if (registrationData.recognized_farmer_id) {
+                    // Link to existing account
+                    window.location.href = '/dashboard';
+                } else {
+                    // Create new account
+                    window.location.href = '/dashboard';
+                }
             } else {
                 // Fallback to sign in
                 window.location.href = '/auth/signin';
