@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722193000'  # v3.3.39 - Fix async/await issues
+DEPLOYMENT_TIMESTAMP = '20250722195200'  # v3.3.40 - Better error logging
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.39-async-fix"
+VERSION = f"v3.3.40-error-logging"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

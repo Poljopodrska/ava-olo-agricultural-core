@@ -474,15 +474,20 @@ async def send_context_aware_registration_message(request: Request, message: Cha
         return response
         
     except Exception as e:
-        logger.error(f"Context registration chat error: {e}")
+        logger.error(f"Context registration chat error: {e}", exc_info=True)
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Full traceback: {error_details}")
+        
         return {
-            "response": "I'm having trouble connecting. Please try again.",
+            "response": f"Error occurred: {str(e)}. Please try again.",
             "timestamp": datetime.now().isoformat(),
             "model": "error",
             "connected": False,
             "collected_data": {},
             "completed": False,
-            "progress_percentage": 0
+            "progress_percentage": 0,
+            "error": str(e)
         }
 
 @router.get("/registration/context/status")
