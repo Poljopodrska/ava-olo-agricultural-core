@@ -1,5 +1,51 @@
 # AVA OLO System Changelog
 
+## [v3.3.29] - 2025-07-22 09:30 CET - True CAVA Registration
+
+### True CAVA - Remove ALL Hardcoding
+
+**Feature**: Pure LLM-driven registration with NO hardcoded logic
+**Mango Test**: Bulgarian mango farmer chats naturally, system extracts name/lastname/whatsapp intelligently
+
+### Changes:
+
+#### 1. Created True CAVA Module
+- `modules/cava/true_cava_registration.py`
+- NO hardcoded validation messages
+- NO fixed sequence of questions
+- NO additional fields (removed email, password)
+- Only collects: first_name, last_name, whatsapp
+
+#### 2. Pure Conversation Flow
+- LLM decides what to ask based on what's missing
+- Handles "Why do you need this?" intelligently
+- Works with any input order or format
+- Accepts all phone number formats
+- Responds in user's language
+
+#### 3. Simple State Management
+```python
+collected = {
+    "first_name": None,
+    "last_name": None,
+    "whatsapp": None
+}
+```
+
+#### 4. New Endpoints
+- GET `/auth/register/true` - Pure CAVA interface
+- POST `/api/v1/registration/cava/true` - Chat endpoint
+- GET `/api/v1/registration/cava/true/session/{id}` - Session status
+
+### Example:
+```
+User: "Hi I'm Peter Horvat +38641348050"
+AVA: "Welcome Peter Horvat! I see you've provided all the information needed. Your registration is complete!"
+
+User: "Why do you need my information?"  
+AVA: "We use this to personalize your farming advice and send weather alerts."
+```
+
 ## [v3.3.28] - 2025-07-22 08:30 CET - Natural Registration Flow
 
 ### CAVA Natural Registration Implementation
