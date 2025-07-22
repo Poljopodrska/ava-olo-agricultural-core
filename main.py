@@ -25,6 +25,7 @@ from modules.api.dashboard_routes import router as dashboard_router, api_router 
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 from modules.api.debug_services import router as debug_services_router
+from modules.api.debug_deployment import router as debug_deployment_router
 
 # Import dashboard modules
 from modules.dashboards.agronomic import router as agronomic_router
@@ -87,6 +88,7 @@ app.include_router(fields_router)
 app.include_router(chat_router)
 app.include_router(system_router)
 app.include_router(debug_services_router)
+app.include_router(debug_deployment_router)
 
 @app.on_event("startup")
 async def startup_event():
