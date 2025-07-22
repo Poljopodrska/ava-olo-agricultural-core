@@ -213,6 +213,14 @@ async def pure_chat_page(request: Request):
         "version": VERSION
     })
 
+@router.get("/register/llm", response_class=HTMLResponse)
+async def llm_register_page(request: Request):
+    """Display LLM registration - EXACT same as dashboard chat"""
+    return templates.TemplateResponse("register_llm.html", {
+        "request": request,
+        "version": VERSION
+    })
+
 @router.post("/register")
 async def register_submit(
     request: Request,

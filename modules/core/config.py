@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722103000'  # v3.3.32 - Live code indicator
+DEPLOYMENT_TIMESTAMP = '20250722113000'  # v3.3.33 - LLM registration like dashboard
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.32-code-indicator"
+VERSION = f"v3.3.33-llm-registration"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

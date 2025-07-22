@@ -50,6 +50,7 @@ from modules.fields.routes import router as fields_router
 
 # Import chat module
 from modules.chat.routes import router as chat_router
+from modules.chat.registration_chat import router as registration_chat_router
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -87,6 +88,7 @@ app.include_router(weather_router)
 app.include_router(cava_router)
 app.include_router(fields_router)
 app.include_router(chat_router)
+app.include_router(registration_chat_router)
 app.include_router(system_router)
 app.include_router(debug_services_router)
 app.include_router(debug_deployment_router)
