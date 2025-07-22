@@ -12,7 +12,7 @@ import logging
 from modules.core.database_manager import get_db_manager
 from modules.chat.openai_chat import get_openai_chat
 from modules.location.location_service import get_location_service
-from modules.auth.security import get_current_farmer
+# from modules.auth.security import get_current_farmer  # TODO: Module missing
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
