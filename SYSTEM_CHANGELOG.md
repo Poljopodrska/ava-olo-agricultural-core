@@ -1,5 +1,53 @@
 # AVA OLO System Changelog
 
+## [v3.3.30] - 2025-07-22 10:30 CET - CAVA Step 1: Pure Chat
+
+### Step 1 - Pure LLM Chat for Registration
+
+**Feature**: Simple WhatsApp-style chat interface with NO extraction
+**Mango Test**: Bulgarian mango farmer can chat naturally about registration
+
+### Changes:
+
+#### 1. Simple Chat UI
+- WhatsApp-style interface in `register_chat.html`
+- Clean message bubbles with timestamps
+- Typing indicator animation
+- No forms, no fields, just chat
+
+#### 2. Pure Chat Backend
+- `modules/cava/simple_chat.py` - Just passes to LLM
+- NO data extraction
+- NO validation logic
+- NO completion tracking
+- Just conversation with context
+
+#### 3. LLM Context
+```python
+"Your goal is to naturally collect these 3 pieces of information through conversation:
+- First name
+- Last name
+- WhatsApp number"
+```
+
+#### 4. Endpoints
+- GET `/auth/register/chat` - Chat UI
+- POST `/api/v1/registration/chat` - Send message
+
+### What This Does:
+- User types message
+- Message goes to LLM with registration context
+- LLM responds naturally
+- That's it - no extraction yet
+
+### What This Doesn't Do:
+- No data extraction
+- No validation
+- No registration completion
+- No database updates
+
+This is Step 1 only - pure natural conversation.
+
 ## [v3.3.29] - 2025-07-22 09:30 CET - True CAVA Registration
 
 ### True CAVA - Remove ALL Hardcoding
