@@ -149,77 +149,97 @@ async def check_incomplete_registration(partial_data: Dict) -> Optional[Dict]:
     
     return None
 
+def extract_from_single_message(message: str) -> Dict:
+    """Extract data from a single message IMMEDIATELY"""
+    extracted = {}
+    import re
+    
+    # Phone number patterns - VERY flexible
+    phone_patterns = [
+        r"([+]?[0-9]{8,15})",  # Any sequence of 8-15 digits with optional +
+        r"whatsapp.{0,20}?([+]?[0-9]{8,15})",
+        r"phone.{0,20}?([+]?[0-9]{8,15})",
+        r"number.{0,20}?([+]?[0-9]{8,15})",
+        r"contact.{0,20}?([+]?[0-9]{8,15})"
+    ]
+    
+    for pattern in phone_patterns:
+        match = re.search(pattern, message, re.IGNORECASE)
+        if match:
+            phone = match.group(1).strip()
+            # Clean and format phone number
+            phone = re.sub(r'[^0-9+]', '', phone)  # Remove non-numeric chars
+            if len(phone) >= 8:  # Valid phone length
+                if not phone.startswith('+') and len(phone) >= 10:
+                    phone = '+' + phone
+                extracted['whatsapp'] = phone
+                logger.info(f"Extracted phone from '{message}': {phone}")
+                break
+    
+    # Full name patterns (First Last)
+    full_name_patterns = [
+        r"i'm\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
+        r"my name is\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
+        r"i am\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
+        r"^([A-Z][a-z]+)\s+([A-Z][a-z]+)$",  # Just "Peter Knaflic"
+        r"it's\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)"
+    ]
+    
+    for pattern in full_name_patterns:
+        match = re.search(pattern, message.strip(), re.IGNORECASE)
+        if match:
+            extracted['first_name'] = match.group(1).strip().title()
+            extracted['last_name'] = match.group(2).strip().title()
+            logger.info(f"Extracted full name from '{message}': {extracted['first_name']} {extracted['last_name']}")
+            break
+    
+    # Single first name patterns (if no full name found)
+    if not extracted.get('first_name'):
+        first_name_patterns = [
+            r"i'm\s+([A-Z][a-z]+)(?:\s|$)",
+            r"my name is\s+([A-Z][a-z]+)(?:\s|$)",
+            r"i am\s+([A-Z][a-z]+)(?:\s|$)",
+            r"call me\s+([A-Z][a-z]+)(?:\s|$)",
+            r"this is\s+([A-Z][a-z]+)(?:\s|$)"
+        ]
+        
+        for pattern in first_name_patterns:
+            match = re.search(pattern, message, re.IGNORECASE)
+            if match:
+                extracted['first_name'] = match.group(1).strip().title()
+                logger.info(f"Extracted first name from '{message}': {extracted['first_name']}")
+                break
+    
+    # Last name patterns (standalone)
+    if not extracted.get('last_name'):
+        surname_patterns = [
+            r"surname is\s+([A-Z][a-z]+)",
+            r"last name is\s+([A-Z][a-z]+)",
+            r"family name is\s+([A-Z][a-z]+)",
+            r"([A-Z][a-z]+)\s+is my (?:family name|surname|last name)"
+        ]
+        
+        for pattern in surname_patterns:
+            match = re.search(pattern, message, re.IGNORECASE)
+            if match:
+                extracted['last_name'] = match.group(1).strip().title()
+                logger.info(f"Extracted last name from '{message}': {extracted['last_name']}")
+                break
+    
+    return extracted
+
 def simple_extract_registration_data(messages: List[Dict]) -> Dict:
     """Simple rule-based extraction (from Phase 2)"""
     extracted = {}
     
-    # Combine all user messages
-    all_text = " ".join([msg.get("content", "") for msg in messages if msg.get("role") == "user"])
-    
-    # Extract patterns (reusing from Phase 2)
-    import re
-    
-    # Names
-    name_patterns = [
-        r"i'm\s+([A-Z][a-z]+)",
-        r"my name is\s+([A-Z][a-z]+)",
-        r"i am\s+([A-Z][a-z]+)",
-        r"it's\s+([A-Z][a-z]+)\s+here",
-        r"this is\s+([A-Z][a-z]+)"
-    ]
-    
-    for pattern in name_patterns:
-        match = re.search(pattern, all_text, re.IGNORECASE)
-        if match and not extracted.get('first_name'):
-            extracted['first_name'] = match.group(1).strip()
-            break
-    
-    # Surnames
-    surname_patterns = [
-        r"surname is\s+([A-Z][a-z]+)",
-        r"last name is\s+([A-Z][a-z]+)",
-        r"family name is\s+([A-Z][a-z]+)",
-        r"([A-Z][a-z]+)\s+is my (?:family name|surname|last name)"
-    ]
-    
-    for pattern in surname_patterns:
-        match = re.search(pattern, all_text, re.IGNORECASE)
-        if match and not extracted.get('last_name'):
-            extracted['last_name'] = match.group(1).strip()
-            break
-    
-    # Phone
-    phone_patterns = [
-        r"whatsapp.{0,20}?([+]?[0-9]{8,15})",
-        r"phone.{0,20}?([+]?[0-9]{8,15})",
-        r"number.{0,20}?([+]?[0-9]{8,15})"
-    ]
-    
-    for pattern in phone_patterns:
-        match = re.search(pattern, all_text, re.IGNORECASE)
-        if match and not extracted.get('whatsapp'):
-            phone = match.group(1).strip()
-            if not phone.startswith('+') and len(phone) >= 8:
-                phone = '+' + phone
-            extracted['whatsapp'] = phone
-            break
-    
-    # Full names
-    if not extracted.get('first_name') or not extracted.get('last_name'):
-        full_name_patterns = [
-            r"i'm\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
-            r"my name is\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)",
-            r"i am\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)"
-        ]
-        
-        for pattern in full_name_patterns:
-            match = re.search(pattern, all_text, re.IGNORECASE)
-            if match:
-                if not extracted.get('first_name'):
-                    extracted['first_name'] = match.group(1).strip()
-                if not extracted.get('last_name'):
-                    extracted['last_name'] = match.group(2).strip()
-                break
+    # Process each message individually for better accuracy
+    for msg in messages:
+        if msg.get("role") == "user":
+            msg_data = extract_from_single_message(msg.get("content", ""))
+            # Update only if we don't have the data yet
+            for key, value in msg_data.items():
+                if value and not extracted.get(key):
+                    extracted[key] = value
     
     return extracted
 
@@ -283,18 +303,28 @@ CONVERSATION HISTORY:
 
 USER'S LATEST MESSAGE: "{message}"
 
-IMPORTANT RULES:
-- Keep responses SHORT and natural (1-2 sentences max)
+CRITICAL RULES - NEVER BREAK THESE:
+1. NEVER ask for information that's already collected (marked with ✅)
+2. ONLY ask for fields marked with ❌
+3. If user just provided phone number, NEVER ask for phone again
+4. If user just provided their name, NEVER ask for name again
+5. Keep responses SHORT and natural (1-2 sentences max)
+
+Additional rules:
 - If you recognize them as an existing farmer, acknowledge it naturally
-- Don't force matches - only confirm if confident
 - Use their farming context when relevant (e.g., "Still growing mangoes?")
-- Focus on collecting missing registration data
 - Be conversational, not robotic
 
-Examples of good responses:
-- "Peter! Good to see you again. Still managing those corn fields?"
-- "Welcome back! I remember you mentioned Ljubljana yesterday."
-- "Nice to meet you, Maria! What's your last name?"
+Good responses when data is provided:
+- After phone: "Thanks! What's your name?"
+- After first name only: "Nice to meet you {name}! What's your last name?"
+- After full name: "Great! What's your WhatsApp number?"
+- When complete: "Perfect! Welcome to AVA OLO, {name}! 🎉"
+
+BAD responses (NEVER DO THIS):
+- Asking for phone after they just gave it
+- Asking for name after they just gave it
+- Repeating requests for collected data
 
 RESPOND BRIEFLY AND NATURALLY:"""
 
@@ -315,15 +345,26 @@ async def send_context_aware_registration_message(request: Request, message: Cha
         
         state = context_registration_sessions[session_id]
         
+        # CRITICAL FIX: Extract from current message FIRST, before anything else
+        current_msg_data = extract_from_single_message(message.content)
+        logger.info(f"Current message: '{message.content}'")
+        logger.info(f"Extracted from current: {current_msg_data}")
+        
+        # Update state with current message data IMMEDIATELY
+        for key, value in current_msg_data.items():
+            if value and not state.collected_data.get(key):
+                state.collected_data[key] = value
+                logger.info(f"Updated {key} to: {value}")
+        
         # Add user message to state
         state.add_message("user", message.content)
         
         # Update farming context
         state.update_farming_context(message.content)
         
-        # Extract data from current conversation
-        extracted_data = simple_extract_registration_data(state.messages)
-        state.update_collected_data(extracted_data)
+        # Extract data from all messages (for any missed data)
+        all_extracted_data = simple_extract_registration_data(state.messages)
+        state.update_collected_data(all_extracted_data)
         
         # Search for existing farmer context
         search_criteria = await extract_search_criteria_from_message(
