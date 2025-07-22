@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250722181500'  # v3.3.35 - Fix data extraction
+DEPLOYMENT_TIMESTAMP = '20250722182000'  # v3.3.36 - Fix endpoint routing
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.35-extract-fix"
+VERSION = f"v3.3.36-routing-fix"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

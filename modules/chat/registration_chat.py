@@ -24,7 +24,7 @@ class ChatResponse(BaseModel):
     model: str
     connected: bool = True
 
-@router.post("/registration/message")
+@router.post("/registration/message/legacy")
 async def send_registration_message(request: Request, message: ChatMessage):
     """Send message for registration - same pattern as dashboard"""
     try:
@@ -74,7 +74,7 @@ async def send_registration_message(request: Request, message: ChatMessage):
             "connected": False
         }
 
-@router.get("/registration/status")
+@router.get("/registration/status/legacy")
 async def registration_chat_status():
     """Check registration chat service status - same as dashboard"""
     try:
