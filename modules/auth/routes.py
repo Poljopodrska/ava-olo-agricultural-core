@@ -197,6 +197,14 @@ async def true_register_page(request: Request):
         "version": VERSION
     })
 
+@router.get("/register/chat", response_class=HTMLResponse)
+async def chat_register_page(request: Request):
+    """Display simple chat registration - Step 1"""
+    return templates.TemplateResponse("register_chat.html", {
+        "request": request,
+        "version": VERSION
+    })
+
 @router.post("/register")
 async def register_submit(
     request: Request,
