@@ -1,5 +1,62 @@
 # AVA OLO System Changelog
 
+## [v3.3.28] - 2025-07-22 08:30 CET - Natural Registration Flow
+
+### CAVA Natural Registration Implementation
+
+**Feature**: Natural conversational registration flow using LLM
+**Mango Test**: Bulgarian mango farmer can register by chatting naturally in any language, even mentioning their pet crocodile
+
+### Changes:
+
+#### 1. Natural Registration Module
+- Created `modules/cava/natural_registration.py`
+- LLM-powered conversation handling
+- Multi-language support (Bulgarian, English, etc.)
+- Flexible data extraction without strict validation
+
+#### 2. Conversation Features
+- Handles digressions gracefully (pet stories, weather questions)
+- Tracks patience with digression counter
+- Extracts data from natural language:
+  - First names (Петър, John, Maria)
+  - Last names (Иванов, Smith, Petrova)
+  - WhatsApp numbers in any format
+- Responds in user's language
+
+#### 3. Registration Flow
+- Collects: first_name, last_name, whatsapp
+- No hardcoded validation patterns
+- Accepts phone numbers in various formats
+- Graceful fallback when LLM unavailable
+
+#### 4. API Endpoints
+- POST `/api/v1/registration/cava/natural` - Chat endpoint
+- GET `/api/v1/registration/cava/natural/session/{id}` - Session status
+- DELETE `/api/v1/registration/cava/natural/session/{id}` - Clear session
+
+### Example Conversations:
+```
+User: "Здравейте! Аз съм Петър Иванов от София"
+AVA: "Здравейте, Петър! Радвам се да се запознаем. Какво е вашето фамилно име?"
+
+User: "I have a pet crocodile named George"  
+AVA: "That's interesting about your crocodile George! While we're here, could you share your WhatsApp number?"
+```
+
+## [v3.3.27] - 2025-07-22 07:00 CET - GPT-4 Connected
+
+### GPT-4 and Weather Integration
+
+**Feature**: Connected GPT-4 to farmer chat with weather context
+**Mango Test**: Kmetija Vrzel sees Ljubljana weather and can chat with GPT-4 about farming
+
+### Changes:
+- Added OpenAI API key to ECS task definition
+- Weather service includes location proof
+- Chat includes weather context in prompts
+- Debug endpoints show service status
+
 ## [v3.3.26] - 2025-07-22 05:35 CET (Deployment In Progress)
 
 ### Nuclear ECS Deployment Fix
