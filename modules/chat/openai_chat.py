@@ -29,7 +29,39 @@ class OpenAIChat:
         if not self.api_key:
             logger.warning("OPENAI_API_KEY not set")
             return False
-        return True
+        
+        # Actually test the connection
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            test_payload = {
+                "model": "gpt-3.5-turbo",
+                "messages": [{"role": "user", "content": "test"}],
+                "max_tokens": 5
+            }
+            
+            # Synchronous test for initialization
+            import requests
+            response = requests.post(
+                self.api_url,
+                headers=headers,
+                json=test_payload,
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                logger.info("✅ OpenAI API connection successful")
+                return True
+            else:
+                logger.error(f"❌ OpenAI API connection failed: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ OpenAI API connection error: {str(e)}")
+            return False
         
     def _get_system_prompt(self, farmer_context: Dict) -> str:
         """Generate system prompt with farmer context"""

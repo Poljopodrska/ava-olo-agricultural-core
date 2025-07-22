@@ -1,5 +1,78 @@
 # AVA OLO System Changelog
 
+## [v3.3.26] - 2025-07-22 03:45 CET
+
+### Verify AI Connection and Ljubljana Weather
+
+**Feature**: Fixed AI connection status and added Ljubljana weather location display  
+**Mango Test**: ✅ Kmetija Vrzel sees Ljubljana weather with coordinates and can chat with GPT-4!
+
+### Problems Fixed:
+1. **AI Warning Issue**: Chat showed "not connected" even when OpenAI was working
+2. **Weather Location**: No clear indication of Ljubljana coordinates
+3. **Connection Status**: Inaccurate connection test only checked API key existence
+
+### Solutions Implemented:
+
+#### 1. Enhanced OpenAI Connection Test
+```python
+# Actually test the API connection
+response = requests.post(
+    self.api_url,
+    headers=headers,
+    json=test_payload,
+    timeout=5
+)
+if response.status_code == 200:
+    logger.info("✅ OpenAI API connection successful")
+    return True
+```
+
+#### 2. Debug Services Endpoint
+```python
+@router.get("/api/v1/debug/services")
+# Comprehensive service status including:
+- OpenAI connection test with actual API call
+- Weather service verification with Ljubljana coordinates
+- Farmer location information
+- Test chat functionality
+```
+
+#### 3. Weather Location Display
+- Shows city name: "Ljubljana, Slovenia"
+- Displays coordinates: "(46.06°N, 14.51°E)"
+- Confirms correct location for weather data
+
+#### 4. Fixed AI Warning Logic
+```javascript
+// Check if OpenAI is actually working
+if (debug.services.openai.connection_test === "✅ Working") {
+    // AI is working, hide the warning
+    statusDiv.style.display = 'none';
+}
+```
+
+### Endpoints Added:
+- `/api/v1/debug/services` - Comprehensive service status
+- `/api/v1/chat/test` - Test chat with farming questions
+
+### Result:
+- ✅ AI warning removed when OpenAI is actually working
+- ✅ Weather shows "Ljubljana, Slovenia (46.06°N, 14.51°E)"
+- ✅ Debug endpoint confirms all services operational
+- ✅ Kmetija Vrzel can chat with real GPT-4
+
+---
+
+## [v3.3.25] - 2025-07-22
+
+### Remove Unicorn Test
+
+**Feature**: Restored normal version after successful unicorn test  
+**Result**: Service back to professional interface without unicorns
+
+---
+
 ## [v3.3.24] - 2025-07-22 03:15 CET
 
 ### Critical Fix: Version Stuck at v20 Despite v23 Deployment

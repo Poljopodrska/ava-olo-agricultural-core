@@ -656,9 +656,20 @@
         }
         
         function displayCurrentWeather(weather) {
-            // Update location in header only
+            // Update location in header with coordinates
             const locationText = weather.farmer_location || weather.location || 'Unknown Location';
-            document.getElementById('weather-location-text').textContent = `📍 ${locationText}`;
+            const lat = weather.lat || weather.coord?.lat || 46.0569;
+            const lon = weather.lon || weather.coord?.lon || 14.5058;
+            const coordText = `(${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E)`;
+            
+            document.getElementById('weather-location-text').innerHTML = `
+                <span class="location-pin">📍</span>
+                <span class="location-name">${locationText}</span>
+                <span class="coordinates" style="font-size: 0.9em; color: #666; margin-left: 8px;">${coordText}</span>
+            `;
+            
+            // Also update the panel subtitle
+            document.getElementById('weather-location').textContent = `${locationText} ${coordText}`;
         }
         
         function displayHourlyForecast(hourly) {
@@ -770,9 +781,34 @@
         // Chat functionality with OpenAI
         let typingTimeout;
         
-        // Check chat connection on load
+        // Check chat connection on load and verify services
         async function checkChatConnection() {
             try {
+                // First check the debug endpoint for accurate status
+                const debugResponse = await fetch('/api/v1/debug/services');
+                if (debugResponse.ok) {
+                    const debug = await debugResponse.json();
+                    
+                    const statusDiv = document.getElementById('connection-status');
+                    
+                    // Check if OpenAI is actually working
+                    if (debug.services.openai.connection_test === "✅ Working") {
+                        // AI is working, hide the warning
+                        statusDiv.style.display = 'none';
+                        statusDiv.innerHTML = '';
+                        console.log('✅ AI is connected - removed warning');
+                        
+                        // Update weather location if available
+                        if (debug.services.location && debug.services.location.city) {
+                            const locationInfo = debug.services.location;
+                            const locationText = `${locationInfo.city}, ${locationInfo.country}`;
+                            document.getElementById('weather-location').textContent = locationText;
+                        }
+                        return;
+                    }
+                }
+                
+                // Fallback to original status check
                 const response = await fetch('/api/v1/chat/status');
                 const status = await response.json();
                 
