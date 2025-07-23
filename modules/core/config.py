@@ -11,9 +11,9 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250723070000'  # v3.3.42 - Complete registration with password
+DEPLOYMENT_TIMESTAMP = '20250723083000'  # v3.3.43 - Fix double-asking bug
 BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.3.42-complete-registration"
+VERSION = f"v3.3.43-no-double-ask"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

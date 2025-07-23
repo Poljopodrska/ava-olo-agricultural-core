@@ -26,6 +26,51 @@ class ChatRequest(BaseModel):
 # Simple in-memory session storage
 registration_sessions: Dict[str, Dict] = {}
 
+def format_collected_fields(data: Dict) -> str:
+    """Format what we already have - NEVER ask for these!"""
+    collected = []
+    fields = {
+        'first_name': 'First Name',
+        'last_name': 'Last Name', 
+        'whatsapp': 'WhatsApp',
+        'password': 'Password'
+    }
+    
+    for key, label in fields.items():
+        if data.get(key):
+            collected.append(f"✅ {label}: {data[key]}")
+    
+    return "\n".join(collected) if collected else "Nothing collected yet"
+
+def format_missing_fields(data: Dict) -> str:
+    """Format what we still need - ONLY ask for these!"""
+    missing = []
+    fields = {
+        'first_name': 'First Name',
+        'last_name': 'Last Name',
+        'whatsapp': 'WhatsApp Number',
+        'password': 'Password'
+    }
+    
+    for key, label in fields.items():
+        if not data.get(key):
+            missing.append(f"⏳ {label}")
+    
+    return "\n".join(missing) if missing else "Nothing - all complete!"
+
+def get_next_missing_field_prompt(data: Dict) -> str:
+    """Get prompt for next missing field only"""
+    if not data.get('first_name'):
+        return "What's your first name?"
+    elif not data.get('last_name'):
+        return "Thanks! What's your last name?"
+    elif not data.get('whatsapp'):
+        return "Great! What's your WhatsApp number?"
+    elif not data.get('password'):
+        return "Almost done! Please create a password."
+    else:
+        return "Perfect! Registration complete! 🎉"
+
 def hash_password(password: str) -> str:
     """Simple password hashing"""
     return hashlib.sha256(password.encode()).hexdigest()
@@ -93,30 +138,36 @@ async def simple_registration_chat(request: ChatRequest):
             "content": request.message
         })
         
-        # Create simple prompt for LLM
-        prompt = f"""You are helping with farmer registration. 
+        # Create CRYSTAL CLEAR prompt for LLM
+        collected_info = format_collected_fields(session["data"])
+        missing_info = format_missing_fields(session["data"])
+        
+        prompt = f"""You are helping with farmer registration.
 
-Your task is to:
-1. Collect these 4 pieces of information:
-   - first_name
-   - last_name  
-   - whatsapp (phone number)
-   - password (ask them to create a secure password)
+✅ ALREADY HAVE (DO NOT ASK FOR THESE):
+{collected_info}
 
-2. Extract any data from the conversation
-3. Respond naturally and briefly
-4. Never ask for information you already have
-5. If all 4 pieces collected, say "Perfect! Registration complete!"
+⏳ STILL NEED (ONLY ASK FOR THESE):
+{missing_info}
 
-Current conversation:
-{json.dumps(session["messages"][-10:], indent=2)}
+User just said: "{request.message}"
 
-Data collected so far:
-{json.dumps(session["data"], indent=2)}
+CRITICAL RULES:
+1. NEVER ask for anything marked with ✅ above
+2. ONLY ask for things marked with ⏳ above
+3. If user provides data, acknowledge it and move to next ⏳ item
+4. Be very brief (under 30 words)
+5. If all complete, say "Perfect! Registration complete!"
+
+Examples:
+- If First Name ✅, NEVER say "what's your first name"
+- If Last Name ⏳, you CAN ask "What's your last name?"
+- If user says just "Peter", that's the first name
+- If user says just "Knaflič", that's probably the last name
 
 IMPORTANT: Respond with this exact JSON format:
 {{
-    "response": "your brief message to the user",
+    "response": "your brief message (ONLY ask for ⏳ items)",
     "extracted_data": {{
         "first_name": "value if found",
         "last_name": "value if found", 
@@ -126,13 +177,7 @@ IMPORTANT: Respond with this exact JSON format:
     "is_complete": true/false
 }}
 
-Notes:
-- Only include fields in extracted_data if you found new values
-- Set is_complete to true when all 4 fields are collected
-- Keep responses short and friendly
-- If they provide a phone number, that's the whatsapp field
-- For passwords, accept what they provide (don't enforce complexity)
-- NEVER ask for anything after all 4 are collected
+Remember: NEVER ask for ✅ items, ONLY ask for ⏳ items!
 """
         
         # Get LLM response
@@ -159,10 +204,31 @@ Notes:
                 if value and key in ["first_name", "last_name", "whatsapp", "password"]:
                     session["data"][key] = value
             
+            # Safety check - override if LLM asks for collected data
+            response_text = result.get("response", "")
+            
+            # Debug logging
+            logger.info(f"Session {session_id}: Collected={collected_info}")
+            logger.info(f"Session {session_id}: Missing={missing_info}")
+            logger.info(f"Session {session_id}: LLM Response={response_text}")
+            
+            # Check if LLM is asking for something we already have
+            if session["data"].get("first_name") and "first name" in response_text.lower():
+                logger.warning(f"LLM asking for first name but we have: {session['data']['first_name']}")
+                response_text = get_next_missing_field_prompt(session["data"])
+                
+            if session["data"].get("last_name") and "last name" in response_text.lower():
+                logger.warning(f"LLM asking for last name but we have: {session['data']['last_name']}")
+                response_text = get_next_missing_field_prompt(session["data"])
+                
+            if session["data"].get("whatsapp") and any(word in response_text.lower() for word in ["whatsapp", "phone", "number"]):
+                logger.warning(f"LLM asking for phone but we have: {session['data']['whatsapp']}")
+                response_text = get_next_missing_field_prompt(session["data"])
+            
             # Add assistant response to history
             session["messages"].append({
                 "role": "assistant",
-                "content": result.get("response", "I'm here to help with registration.")
+                "content": response_text
             })
             
             # Check if complete
@@ -206,7 +272,7 @@ You can now sign in to AVA OLO using your WhatsApp number as username."""
             response_text = completion_message
             show_app_button = True
         else:
-            response_text = result.get("response", "Hello! I'll help you register.")
+            # Use the safety-checked response text (already set above)
             show_app_button = False
         
         # Save session
