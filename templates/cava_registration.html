@@ -480,14 +480,15 @@
             showTyping();
             
             try {
-                // PHASE 4: Use context-aware endpoint
-                const response = await fetch('/api/v1/chat/registration/context', {
+                // Use simple registration endpoint
+                const response = await fetch('/api/v1/chat/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        content: message
+                        message: message,
+                        session_id: sessionId
                     })
                 });
                 
