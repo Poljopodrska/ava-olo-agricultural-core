@@ -11,7 +11,7 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 127679825789.dkr.ecr.us-east-1.amazonaws.com
-  ECR_REPOSITORY: ava-olo/agricultural-core
+  ECR_REPOSITORY: ava-olo-agricultural-core
   ECS_CLUSTER: ava-olo-production
   ECS_SERVICE: agricultural-core
   CONTAINER_NAME: agricultural-core
