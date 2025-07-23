@@ -1,4 +1,4 @@
-name: Deploy Monitoring Dashboards to ECS
+name: Deploy Agricultural Core to ECS
 
   on:
     push:
@@ -11,10 +11,10 @@ name: Deploy Monitoring Dashboards to ECS
   env:
     AWS_REGION: us-east-1
     ECR_REGISTRY: 127679825789.dkr.ecr.us-east-1.amazonaws.com
-    ECR_REPOSITORY: ava-olo/monitoring-dashboards
+    ECR_REPOSITORY: ava-olo/agricultural-core
     ECS_CLUSTER: ava-olo-production
-    ECS_SERVICE: monitoring-dashboards
-    CONTAINER_NAME: monitoring
+    ECS_SERVICE: agricultural-core
+    CONTAINER_NAME: agricultural-core
 
   jobs:
     deploy:
@@ -84,8 +84,6 @@ name: Deploy Monitoring Dashboards to ECS
 
       - name: Verify deployment
         run: |
-          echo "🎉 Monitoring Dashboards deployed
-  successfully!"
+          echo "🎉 Agricultural Core deployed successfully!"
           echo "Version: ${{ steps.version.outputs.VERSION }}"
-          echo "Service:
-  https://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com/"
+          echo "Service: https://ava-olo-65365776.us-east-1.elb.amazonaws.com/"

@@ -1,4 +1,4 @@
-# AVA OLO Monitoring Dashboards with Constitutional Design
+# AVA OLO Agricultural Core Service
 FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /app

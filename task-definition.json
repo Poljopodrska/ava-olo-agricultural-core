@@ -1,5 +1,5 @@
 {
-    "family": "ava-monitoring-task",
+    "family": "ava-agricultural-task",
     "taskRoleArn": "arn:aws:iam::127679825789:role/ava-olo-ecs-task-role",
     "executionRoleArn": "arn:aws:iam::127679825789:role/ava-olo-ecs-task-execution-role",
     "networkMode": "awsvpc",
@@ -8,8 +8,8 @@
     "memory": "1024",
     "containerDefinitions": [
         {
-            "name": "monitoring",
-            "image": "127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/monitoring-dashboards:latest",
+            "name": "agricultural-core",
+            "image": "127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/agricultural-core:latest",
             "cpu": 0,
             "portMappings": [
                 {
@@ -58,7 +58,7 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/ava-monitoring",
+                    "awslogs-group": "/ecs/ava-agricultural",
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "ecs"
                 }
