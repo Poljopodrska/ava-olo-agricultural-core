@@ -14,7 +14,7 @@ env:
   ECR_REPOSITORY: ava-olo-agricultural-core
   ECS_CLUSTER: ava-olo-production
   ECS_SERVICE: agricultural-core
-  CONTAINER_NAME: agricultural-core
+  CONTAINER_NAME: agricultural
 
 jobs:
   deploy:
