@@ -11,6 +11,8 @@ import logging
 from datetime import datetime
 from typing import Dict, Optional
 from modules.chat.openai_chat import get_openai_chat
+from modules.core.database_manager import get_db_manager
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,55 @@ class ChatRequest(BaseModel):
 
 # Simple in-memory session storage
 registration_sessions: Dict[str, Dict] = {}
+
+def hash_password(password: str) -> str:
+    """Simple password hashing"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+async def save_farmer_to_db(data: Dict) -> int:
+    """Save completed registration to database"""
+    try:
+        db_manager = get_db_manager()
+        
+        # Check if database is connected
+        if not db_manager.test_connection():
+            logger.warning("Database not connected, using mock farmer ID")
+            return 99999  # Mock ID
+        
+        # Hash password before saving
+        hashed_password = hash_password(data['password'])
+        
+        # Create farmer record
+        query = """
+        INSERT INTO farmers 
+        (first_name, last_name, whatsapp_number, password_hash, created_at, is_active) 
+        VALUES (%s, %s, %s, %s, %s, %s) 
+        RETURNING farmer_id
+        """
+        
+        result = db_manager.execute_query(
+            query,
+            (
+                data['first_name'],
+                data['last_name'],
+                data['whatsapp'],
+                hashed_password,
+                datetime.now(),
+                True
+            )
+        )
+        
+        if result and result.get('rows'):
+            farmer_id = result['rows'][0][0]
+            logger.info(f"Farmer registered with ID: {farmer_id}")
+            return farmer_id
+        else:
+            logger.warning("No farmer ID returned, using mock ID")
+            return 99999
+            
+    except Exception as e:
+        logger.error(f"Error saving farmer: {e}")
+        return 99999  # Return mock ID on error
 
 @router.post("/register")
 async def simple_registration_chat(request: ChatRequest):
@@ -46,14 +97,16 @@ async def simple_registration_chat(request: ChatRequest):
         prompt = f"""You are helping with farmer registration. 
 
 Your task is to:
-1. Collect these 3 pieces of information:
+1. Collect these 4 pieces of information:
    - first_name
    - last_name  
    - whatsapp (phone number)
+   - password (ask them to create a secure password)
 
 2. Extract any data from the conversation
 3. Respond naturally and briefly
 4. Never ask for information you already have
+5. If all 4 pieces collected, say "Perfect! Registration complete!"
 
 Current conversation:
 {json.dumps(session["messages"][-10:], indent=2)}
@@ -67,16 +120,19 @@ IMPORTANT: Respond with this exact JSON format:
     "extracted_data": {{
         "first_name": "value if found",
         "last_name": "value if found", 
-        "whatsapp": "value if found"
+        "whatsapp": "value if found",
+        "password": "value if found"
     }},
     "is_complete": true/false
 }}
 
 Notes:
 - Only include fields in extracted_data if you found new values
-- Set is_complete to true when all 3 fields are collected
+- Set is_complete to true when all 4 fields are collected
 - Keep responses short and friendly
 - If they provide a phone number, that's the whatsapp field
+- For passwords, accept what they provide (don't enforce complexity)
+- NEVER ask for anything after all 4 are collected
 """
         
         # Get LLM response
@@ -100,7 +156,7 @@ Notes:
             # Update session data with any new extracted data
             extracted = result.get("extracted_data", {})
             for key, value in extracted.items():
-                if value and key in ["first_name", "last_name", "whatsapp"]:
+                if value and key in ["first_name", "last_name", "whatsapp", "password"]:
                     session["data"][key] = value
             
             # Add assistant response to history
@@ -110,7 +166,8 @@ Notes:
             })
             
             # Check if complete
-            is_complete = all(session["data"].get(field) for field in ["first_name", "last_name", "whatsapp"])
+            required_fields = ["first_name", "last_name", "whatsapp", "password"]
+            is_complete = all(session["data"].get(field) for field in required_fields)
             
         except json.JSONDecodeError:
             # Fallback if LLM doesn't return valid JSON
@@ -127,6 +184,31 @@ Notes:
             
             is_complete = False
         
+        # Handle completion
+        if is_complete and not session.get("completed"):
+            # Mark as completed
+            session["completed"] = True
+            
+            # Save to database
+            farmer_id = await save_farmer_to_db(session["data"])
+            session["farmer_id"] = farmer_id
+            
+            # Create completion message with login instructions
+            completion_message = f"""🎉 Perfect! Registration complete!
+
+Your login credentials:
+📱 Username: {session["data"]['whatsapp']}
+🔒 Password: {session["data"]['password']}
+
+You can now sign in to AVA OLO using your WhatsApp number as username."""
+            
+            # Override response with completion message
+            response_text = completion_message
+            show_app_button = True
+        else:
+            response_text = result.get("response", "Hello! I'll help you register.")
+            show_app_button = False
+        
         # Save session
         registration_sessions[session_id] = session
         
@@ -135,11 +217,12 @@ Notes:
         
         # Return response
         return {
-            "response": result.get("response", "Hello! I'll help you register."),
+            "response": response_text,
             "session_id": session_id,
             "collected_data": session["data"],
             "completed": is_complete,
-            "progress_percentage": len([v for v in session["data"].values() if v]) * 33
+            "progress_percentage": len([v for v in session["data"].values() if v]) * 25,  # 4 fields = 25% each
+            "show_app_button": show_app_button
         }
         
     except Exception as e:

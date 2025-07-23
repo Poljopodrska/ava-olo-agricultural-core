@@ -316,6 +316,51 @@
             font-weight: bold;
         }
         
+        /* Completion UI styles */
+        .registration-complete {
+            text-align: center;
+            padding: 30px;
+            background: #f0f8f0;
+            border-radius: 15px;
+            margin: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .completion-message {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            white-space: pre-line;
+            color: var(--ava-brown-primary);
+        }
+        
+        .go-to-app-btn {
+            background: var(--ava-olive-primary);
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(107, 125, 70, 0.3);
+        }
+        
+        .go-to-app-btn:hover {
+            background: var(--ava-olive-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(107, 125, 70, 0.4);
+        }
+        
+        .go-to-app-btn:active {
+            transform: translateY(0);
+        }
+        
+        .input-container.hidden {
+            display: none;
+        }
+        
         @media (max-width: 768px) {
             .cava-container {
                 max-width: 100%;
@@ -374,6 +419,11 @@
                     <span class="label">WhatsApp</span>
                     <span class="status">⏳</span>
                 </div>
+                <div class="progress-item" id="password-progress">
+                    <span class="icon">🔒</span>
+                    <span class="label">Password</span>
+                    <span class="status">⏳</span>
+                </div>
             </div>
             
             <div class="cava-progress">
@@ -391,9 +441,6 @@
             <div class="typing-dot"></div>
         </div>
         
-        <button class="complete-button" id="completeButton" onclick="completeRegistration()">
-            🎉 Complete Registration
-        </button>
         
         <div class="input-container">
             <input 
@@ -512,7 +559,7 @@
                 
                 // Check if registration is complete
                 if (data.completed) {
-                    showCompletionButton();
+                    showCompletionUI(data);
                 }
                 
                 // NEW: Show farmer recognition if found
@@ -538,7 +585,7 @@
             }
         }
         
-        // NEW: Progress indicator update function
+        // Progress indicator update function
         function updateProgressIndicators(collectedData) {
             // Update visual indicators
             if (collectedData.first_name) {
@@ -556,16 +603,37 @@
                 whatsappItem.classList.add('collected');
                 whatsappItem.querySelector('.status').textContent = '✅';
             }
+            if (collectedData.password) {
+                const passwordItem = document.getElementById('password-progress');
+                passwordItem.classList.add('collected');
+                passwordItem.querySelector('.status').textContent = '✅';
+            }
         }
         
-        function showCompletionButton() {
-            document.getElementById('completeButton').classList.add('show');
-            const input = document.getElementById('messageInput');
-            input.disabled = true;
-            document.getElementById('sendButton').disabled = true;
+        function showCompletionUI(data) {
+            // Hide input container
+            document.querySelector('.input-container').classList.add('hidden');
             
-            // Add completion message
-            addMessage('🎉 Great! I have all the information I need. You can now complete your registration.', true);
+            // Create completion UI
+            const completionDiv = document.createElement('div');
+            completionDiv.className = 'registration-complete';
+            completionDiv.innerHTML = `
+                <div class="completion-message">${data.response.replace(/\n/g, '<br>')}</div>
+                <button class="go-to-app-btn" onclick="goToApp()">
+                    Go to AVA OLO App →
+                </button>
+            `;
+            
+            // Add to chat container
+            document.querySelector('.chat-container').appendChild(completionDiv);
+            
+            // Scroll to show completion
+            completionDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        function goToApp() {
+            // Navigate to sign in page to login
+            window.location.href = '/auth/signin';
         }
         
         // NEW: Show farmer recognition info
@@ -588,21 +656,6 @@
             }
         }
         
-        function completeRegistration() {
-            if (registrationData && registrationData.completed) {
-                // If recognized farmer, different flow
-                if (registrationData.recognized_farmer_id) {
-                    // Link to existing account
-                    window.location.href = '/dashboard';
-                } else {
-                    // Create new account
-                    window.location.href = '/dashboard';
-                }
-            } else {
-                // Fallback to sign in
-                window.location.href = '/auth/signin';
-            }
-        }
     </script>
 </body>
 </html>
