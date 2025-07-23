@@ -28,3 +28,4 @@ This ensures consistent governance across the entire AVA OLO ecosystem.
 ## Deployment
 AWS App Runner service for production monitoring infrastructure.
 # Deployment trigger: Wed Jul 23 20:37:02 CEST 2025
+# ECR deployment verification: Wed Jul 23 21:32:55 CEST 2025
