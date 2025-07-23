@@ -1,27 +1,27 @@
 name: Deploy Agricultural Core to ECS
 
-  on:
-    push:
-      branches:
-        - main
-        - master
-      tags:
-        - 'v*'
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
 
-  env:
-    AWS_REGION: us-east-1
-    ECR_REGISTRY: 127679825789.dkr.ecr.us-east-1.amazonaws.com
-    ECR_REPOSITORY: ava-olo/agricultural-core
-    ECS_CLUSTER: ava-olo-production
-    ECS_SERVICE: agricultural-core
-    CONTAINER_NAME: agricultural-core
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 127679825789.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: ava-olo/agricultural-core
+  ECS_CLUSTER: ava-olo-production
+  ECS_SERVICE: agricultural-core
+  CONTAINER_NAME: agricultural-core
 
-  jobs:
-    deploy:
-      name: Deploy to ECS
-      runs-on: ubuntu-latest
+jobs:
+  deploy:
+    name: Deploy to ECS
+    runs-on: ubuntu-latest
 
-      steps:
+    steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
