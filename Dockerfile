@@ -1,11 +1,20 @@
-# AVA OLO Agricultural Core Service
-FROM public.ecr.aws/docker/library/python:3.11-slim
+# AVA OLO Agricultural Core Service - NUCLEAR CACHE BUSTING
+ARG CACHEBUST=1
+RUN echo "Cache bust: ${CACHEBUST}"
+
+# Force fresh base image pull
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.11-slim AS builder
 
 # Build arguments for Git verification
 ARG GITHUB_SHA
 ARG GITHUB_REF
 ARG BUILD_TIME
 ARG CACHEBUST
+ARG BUILDKIT_INLINE_CACHE=0
+
+# Environment variables to prevent caching
+ENV PIP_NO_CACHE_DIR=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Enforce Git-based builds only
 RUN if [ -z "$GITHUB_SHA" ]; then \
@@ -31,6 +40,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy all application code
 COPY . .
+
+# VERIFY NEW CODE IS PRESENT - BUILD-TIME VERIFICATION
+RUN test -f main.py || (echo "ERROR: main.py not found!" && exit 1)
+RUN test -f templates/base_constitutional.html || (echo "ERROR: Base template not found!" && exit 1)
+RUN grep -q "deployment-badge" templates/base_constitutional.html || (echo "ERROR: Badge code not found in base template!" && exit 1)
+RUN grep -q "deployment-badge" templates/dashboard.html || (echo "ERROR: Badge code not found in dashboard!" && exit 1)
+RUN grep -q "deployment-badge" templates/landing.html || (echo "ERROR: Badge code not found in landing!" && exit 1)
+
+# Print build info for verification
+RUN echo "Build completed at: $(date)" > /build-info.txt
+RUN echo "Git SHA: ${GITHUB_SHA}" >> /build-info.txt
+RUN echo "Cachebust: ${CACHEBUST}" >> /build-info.txt
+RUN echo "✅ NEW CODE VERIFIED - Deployment reality badges present" >> /build-info.txt
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
