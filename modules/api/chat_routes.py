@@ -6,6 +6,7 @@ Implements persistent message storage and context-aware conversations
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 import logging
+import json
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -150,26 +151,78 @@ async def chat_endpoint(request: ChatRequest):
         facts = await fact_extractor.extract_facts(message, context['context_summary'])
         print(f"✅ Facts extracted: {facts}")
         
-        # 4. Build conversation for GPT-3.5
+        # 4. Build conversation for GPT-3.5 with ENHANCED context
+        # CRITICAL FIX: Ensure all context is included in LLM messages
+        
+        # Build comprehensive system message
+        system_content = f"""You are AVA, an expert agricultural assistant for farmers.
+
+IMPORTANT CONTEXT about this farmer: {context['context_summary']}
+
+Remember ALL information from our previous conversations. When the farmer asks follow-up questions, 
+refer back to what they told you earlier about their crops, fields, and farming practices. 
+Be specific and personal in your responses.
+
+Provide actionable agricultural advice in their language. If they previously mentioned specific crops 
+(like mangoes, tomatoes, wheat, etc.), remember and reference them in relevant responses."""
+        
         messages = [
-            {
-                "role": "system", 
-                "content": f"""You are AVA, an agricultural assistant for farmers.
-Context about this farmer: {context['context_summary']}
-Provide specific, actionable agricultural advice in their language.
-Be concise but helpful. If they mention specific crops, chemicals, or farming practices, acknowledge them."""
-            }
+            {"role": "system", "content": system_content}
         ]
         
-        # Add recent conversation history (last 5 messages)
+        # Add recent conversation history (CRITICAL for memory!)
         print(f"📚 Getting recent messages for LLM context...")
-        recent_messages = await cava_memory.get_conversation_messages_for_llm(wa_phone_number, limit=5)
+        recent_messages = await cava_memory.get_conversation_messages_for_llm(wa_phone_number, limit=8)
         messages.extend(recent_messages)
         print(f"✅ Added {len(recent_messages)} recent messages to context")
+        
+        # Debug logging - Log what we're sending to LLM
+        try:
+            debug_data = {
+                "context_summary": context['context_summary'],
+                "stored_facts_count": len(context.get('stored_facts', [])),
+                "recent_messages_count": len(recent_messages),
+                "total_messages_to_llm": len(messages) + 1,  # +1 for current message
+                "mentions_crops": any(crop in context['context_summary'].lower() 
+                                    for crop in ['mango', 'tomato', 'wheat', 'corn', 'rice'])
+            }
+            
+            # Store debug info in database
+            db_manager = DatabaseManager()
+            async with db_manager.get_connection_async() as debug_conn:
+                await debug_conn.execute("""
+                    CREATE TABLE IF NOT EXISTS llm_debug_log (
+                        id SERIAL PRIMARY KEY,
+                        farmer_phone VARCHAR(20),
+                        message_preview TEXT,
+                        context_summary TEXT,
+                        llm_messages_json TEXT,
+                        debug_data JSONB,
+                        timestamp TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                
+                await debug_conn.execute("""
+                    INSERT INTO llm_debug_log 
+                    (farmer_phone, message_preview, context_summary, llm_messages_json, debug_data)
+                    VALUES ($1, $2, $3, $4, $5)
+                """, wa_phone_number, message[:100], context['context_summary'], 
+                     json.dumps(messages)[:2000], json.dumps(debug_data))
+                
+            print(f"🔍 Debug logged: {debug_data}")
+            
+        except Exception as debug_error:
+            print(f"⚠️ Debug logging failed: {debug_error}")
         
         # Add current message
         messages.append({"role": "user", "content": message})
         print(f"🤖 Sending {len(messages)} messages to GPT-3.5...")
+        
+        # CRITICAL: Log exactly what we're sending to LLM for debugging
+        print(f"📋 LLM System Message: {system_content[:200]}...")
+        print(f"📋 Context Summary: {context['context_summary']}")
+        if recent_messages:
+            print(f"📋 Last conversation message: {recent_messages[-1].get('content', '')[:100]}...")
         
         # 5. Get GPT-3.5 response
         client = get_openai_client()
@@ -204,6 +257,18 @@ Be concise but helpful. If they mention specific crops, chemicals, or farming pr
         cost = calculate_gpt35_cost(usage)
         await store_llm_usage(wa_phone_number, 'gpt-3.5-turbo', usage, cost)
         print(f"✅ Usage logged: {usage.get('total_tokens', 0)} tokens, ${cost}")
+        
+        # 9. MEMORY TEST: Check if response references context
+        response_lower = assistant_message.lower()
+        context_lower = context['context_summary'].lower()
+        
+        memory_indicators = {
+            'mentions_crops': any(crop in response_lower for crop in ['mango', 'tomato', 'wheat', 'corn', 'rice']),
+            'references_context': any(word in response_lower for word in ['your', 'previously', 'mentioned', 'told']),
+            'context_has_crops': any(crop in context_lower for crop in ['mango', 'tomato', 'wheat', 'corn', 'rice'])
+        }
+        
+        print(f"🧠 Memory Check: {memory_indicators}")
         
         logger.info(f"Chat completed for {wa_phone_number}. Tokens: {usage.get('total_tokens', 0)}, Cost: ${cost}")
         print(f"🎉 CHAT COMPLETION SUCCESS for {wa_phone_number}")
