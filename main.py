@@ -49,8 +49,8 @@ from modules.cava.routes import router as cava_router
 # Import fields module
 from modules.fields.routes import router as fields_router
 
-# Import chat module
-from modules.chat.routes import router as chat_router
+# Import chat module - CAVA-powered only
+# from modules.chat.routes import router as chat_router  # DISABLED - conflicts with CAVA
 from modules.chat.simple_registration import router as simple_registration_router
 from modules.api.chat_routes import router as cava_chat_router
 from modules.api.cava_audit_routes import router as cava_audit_router
@@ -97,7 +97,7 @@ app.include_router(auth_router)
 app.include_router(weather_router)
 app.include_router(cava_router)
 app.include_router(fields_router)
-app.include_router(chat_router)
+# app.include_router(chat_router)  # DISABLED - conflicts with CAVA
 app.include_router(simple_registration_router)
 app.include_router(cava_chat_router)
 app.include_router(cava_audit_router)
