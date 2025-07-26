@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from typing import Dict, Optional
 import logging
 import os
+import re
 
 from modules.cava.registration_flow import RegistrationFlow
 from modules.cava.natural_registration import NaturalRegistrationFlow
@@ -37,6 +38,61 @@ logger = logging.getLogger(__name__)
 
 # Registration sessions storage (in-memory for now)
 registration_sessions = {}
+
+def extract_registration_data(user_message: str, conversation_context: str = "") -> Dict[str, str]:
+    """Extract registration data from user messages with smart pattern matching"""
+    extracted = {}
+    message_lower = user_message.lower().strip()
+    
+    # Extract names - look for single capitalized words or "my name is" patterns
+    name_patterns = [
+        r"my name is ([A-Z][a-z]+)",
+        r"i'm ([A-Z][a-z]+)",
+        r"call me ([A-Z][a-z]+)",
+        r"^([A-Z][a-z]+)$"  # Single capitalized word
+    ]
+    
+    for pattern in name_patterns:
+        match = re.search(pattern, user_message, re.IGNORECASE)
+        if match:
+            name = match.group(1).capitalize()
+            # Determine if it's first or last name based on context
+            if "last name" in conversation_context.lower() or "surname" in conversation_context.lower():
+                extracted['last_name'] = name
+            elif "first name" in conversation_context.lower() or len(extracted) == 0:
+                extracted['first_name'] = name
+            break
+    
+    # Extract WhatsApp number - look for phone number patterns
+    phone_patterns = [
+        r'\+\d{1,4}\s?\d{6,14}',  # +country code followed by number
+        r'\d{10,15}',  # Simple 10-15 digit number
+    ]
+    
+    for pattern in phone_patterns:
+        match = re.search(pattern, user_message.replace(' ', '').replace('-', ''))
+        if match:
+            phone = match.group()
+            if not phone.startswith('+'):
+                # Add default country code if missing
+                phone = '+359' + phone.lstrip('0')  # Default to Bulgaria
+            extracted['whatsapp'] = phone
+            break
+    
+    # Extract password - look for password-like strings
+    if "password" in conversation_context.lower():
+        words = user_message.split()
+        for word in words:
+            if len(word) >= 8:  # Minimum password length
+                extracted['password'] = word
+                break
+    
+    return extracted
+
+def is_registration_complete(collected_data: Dict[str, str]) -> bool:
+    """Check if all required fields are collected"""
+    required_fields = ['first_name', 'last_name', 'whatsapp', 'password']
+    return all(field in collected_data and collected_data[field] for field in required_fields)
 
 @router.post("/registration/cava")
 async def cava_registration_chat(request: Request) -> JSONResponse:
@@ -75,24 +131,31 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
             "language": language
         })
         
-        # Build messages for registration context
+        # Build messages for registration context with smart memory tracking
         collected = session.get("collected_data", {})
-        system_content = f"""You are AVA's friendly registration assistant. Help farmers register by collecting these 4 required fields:
+        
+        # Create checkmark status for system prompt
+        status_first = '✅ ' + collected.get('first_name', '') if collected.get('first_name') else '❌ NOT YET'
+        status_last = '✅ ' + collected.get('last_name', '') if collected.get('last_name') else '❌ NOT YET'
+        status_whatsapp = '✅ ' + collected.get('whatsapp', '') if collected.get('whatsapp') else '❌ NOT YET'
+        status_password = '✅ SET' if collected.get('password') else '❌ NOT YET'
+        
+        system_content = f"""You are AVA's friendly registration assistant. 
 
-1. First name
-2. Last name  
-3. WhatsApp number (with country code like +386, +359, +387)
-4. Password (minimum 8 characters, ask for confirmation)
+CURRENT PROGRESS:
+- First name: {status_first}
+- Last name: {status_last}
+- WhatsApp: {status_whatsapp}
+- Password: {status_password}
 
-Current data collected: {collected}
+IMPORTANT RULES:
+- NEVER ask for information marked with ✅ again!
+- Only ask for the NEXT item marked with ❌ NOT YET
+- Be warm and conversational
+- For WhatsApp, require country code (+359, +386, etc.)
+- For password, require minimum 8 characters
 
-Guidelines:
-- Be warm, natural and conversational
-- When someone wants to register, ask for their first name
-- Collect one field at a time naturally
-- For WhatsApp, ensure country code format
-- For password, ask for confirmation
-- When all 4 fields collected, confirm details and say registration is complete
+If all fields have ✅, congratulate and complete registration!
 
 Respond in {language} if possible."""
 
@@ -106,35 +169,48 @@ Respond in {language} if possible."""
         messages.append({"role": "user", "content": message})
         
         try:
-            # Call OpenAI using the SAME working client from main chat
+            # Call OpenAI using GPT-3.5-turbo for cost savings (15x cheaper than GPT-4)
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-3.5-turbo",  # Changed from gpt-4 for cost optimization
                 messages=messages,
                 temperature=0.7,
-                max_tokens=500
+                max_tokens=300  # Reduced for efficiency
             )
             
             llm_response = response.choices[0].message.content
-            logger.info(f"✅ REGISTRATION LLM RESPONSE: {llm_response[:100]}...")
+            logger.info(f"✅ REGISTRATION LLM (GPT-3.5): {llm_response[:100]}...")
             
-            # Update session
+            # Extract registration data from user input
+            conversation_context = " ".join([msg["content"] for msg in messages[-3:]])  # Last few messages for context
+            extracted_data = extract_registration_data(message, conversation_context)
+            
+            # Update collected data with extracted information
+            collected = session.get("collected_data", {})
+            for field, value in extracted_data.items():
+                if value and not collected.get(field):  # Only add if not already collected
+                    collected[field] = value
+                    logger.info(f"📝 EXTRACTED {field}: {value}")
+            
+            # Update session with new data
             session["messages"].append({"role": "user", "content": message})
             session["messages"].append({"role": "assistant", "content": llm_response})
+            session["collected_data"] = collected
             
-            # Basic field extraction (simple pattern matching)
-            # Note: This is simplified - in production you'd want more sophisticated extraction
-            collected = session.get("collected_data", {})
+            # Check if registration is complete
+            is_complete = is_registration_complete(collected)
             
             # Save updated session
             registration_sessions[session_id] = session
             
             result = {
                 "response": llm_response,
-                "registration_complete": False,
+                "registration_complete": is_complete,
                 "llm_used": True,
+                "model_used": "gpt-3.5-turbo",
                 "constitutional_compliance": True,
                 "session_id": session_id,
-                "collected_data": collected
+                "collected_data": collected,
+                "progress_percentage": (len([v for v in collected.values() if v]) / 4) * 100
             }
             
             return JSONResponse(content=result)

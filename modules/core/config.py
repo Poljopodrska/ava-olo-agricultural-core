@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726181500'  # v3.5.0 - Fixed Frontend Endpoint Call
-COMMIT_HASH = "fix-endpoint"  # Fixed frontend to call working LLM endpoint
+DEPLOYMENT_TIMESTAMP = '20250726182000'  # v3.5.1 - Smart Registration Memory + GPT-3.5-turbo
+COMMIT_HASH = "smart-memory"  # Smart registration memory tracking with cost optimization
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.5.0-registration-endpoint-fixed-{BUILD_ID}"
+VERSION = f"v3.5.1-smart-registration-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
