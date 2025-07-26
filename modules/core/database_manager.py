@@ -5,6 +5,7 @@ Handles database connections, pooling, and operations
 """
 import psycopg2
 import logging
+import time
 from contextlib import contextmanager
 from typing import Dict, Any, Optional
 from .config import get_database_config
@@ -82,17 +83,22 @@ class DatabaseManager:
             logger.error(f"Database connection failed: {e}")
             raise
     
-    def test_connection(self):
-        """Test database connectivity"""
-        try:
-            with self.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT 1")
-                    result = cur.fetchone()
-                    return result[0] == 1
-        except Exception as e:
-            logger.error(f"Connection test failed: {e}")
-            return False
+    def test_connection(self, retries=3, delay=2):
+        """Test database connectivity with retry logic"""
+        for attempt in range(retries):
+            try:
+                with self.get_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                        result = cur.fetchone()
+                        return result[0] == 1
+            except Exception as e:
+                if attempt == retries - 1:
+                    logger.error(f"Connection test failed after {retries} attempts: {e}")
+                    return False
+                else:
+                    logger.warning(f"Connection test attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
+                    time.sleep(delay)
     
     def execute_query(self, query: str, params: tuple = None):
         """Execute a query and return results"""

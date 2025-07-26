@@ -106,16 +106,18 @@ app.include_router(env_dashboard_router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize services on startup"""
-    print(f"🚀 Starting AVA OLO Monitoring Dashboards {VERSION}")
+    """Initialize services on startup with resilience"""
+    print(f"🚀 Starting AVA OLO Agricultural Core {VERSION}")
     print(f"📦 Build ID: {BUILD_ID}")
     
-    # Initialize database connection pool
+    # Initialize database connection pool with retry logic
     db_manager = get_db_manager()
-    if db_manager.test_connection():
+    print("🔄 Testing database connection with retry logic...")
+    if db_manager.test_connection(retries=5, delay=3):
         print("✅ Database connection established")
     else:
-        print("⚠️ Database connection failed - running in degraded mode")
+        print("⚠️ Database connection failed after retries - running in degraded mode")
+        print("⚠️ Service will continue to run and serve requests without database")
     
     # Check OpenAI configuration - CONSTITUTIONAL REQUIREMENT
     if not os.getenv("OPENAI_API_KEY"):
@@ -169,7 +171,18 @@ async def dashboard(request: Request):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for ALB"""
+    """Fast health check endpoint for ALB - doesn't check DB to avoid startup issues"""
+    # Quick health check that always returns healthy if the service is running
+    # Database connection is checked separately in /health/detailed
+    return {
+        "status": "healthy",
+        "version": VERSION,
+        "service": "agricultural-core"
+    }
+
+@app.get("/health/detailed")
+async def detailed_health_check():
+    """Detailed health check with database status"""
     db_manager = get_db_manager()
     db_healthy = db_manager.test_connection()
     
@@ -177,7 +190,7 @@ async def health_check():
         "status": "healthy" if db_healthy else "degraded",
         "version": VERSION,
         "database": "connected" if db_healthy else "disconnected",
-        "service": "monitoring-dashboards"
+        "service": "agricultural-core"
     }
 
 @app.get("/version")

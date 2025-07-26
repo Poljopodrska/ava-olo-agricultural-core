@@ -4,8 +4,8 @@
     "executionRoleArn": "arn:aws:iam::127679825789:role/ava-olo-ecs-task-execution-role",
     "networkMode": "awsvpc",
     "requiresCompatibilities": ["FARGATE"],
-    "cpu": "512",
-    "memory": "1024",
+    "cpu": "1024",
+    "memory": "2048",
     "containerDefinitions": [
         {
             "name": "agricultural",
@@ -66,9 +66,9 @@
             "healthCheck": {
                 "command": ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"],
                 "interval": 30,
-                "timeout": 5,
-                "retries": 3,
-                "startPeriod": 60
+                "timeout": 10,
+                "retries": 5,
+                "startPeriod": 120
             }
         }
     ]
