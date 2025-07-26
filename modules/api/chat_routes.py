@@ -15,6 +15,7 @@ from modules.core.openai_config import OpenAIConfig, get_openai_client
 from modules.core.openai_detective import OpenAIKeyDetective
 from modules.cava.conversation_memory import CAVAMemory
 from modules.cava.fact_extractor import FactExtractor
+from modules.cava.memory_enforcer import MemoryEnforcer
 from modules.core.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
@@ -188,6 +189,11 @@ async def chat_endpoint(request: ChatRequest):
         facts = await fact_extractor.extract_facts(message, context['context_summary'])
         print(f"✅ Facts extracted: {facts}")
         
+        # 3a. MEMORY ENFORCEMENT: Extract critical facts
+        memory_enforcer = MemoryEnforcer()
+        critical_facts = memory_enforcer.extract_critical_facts(context)
+        print(f"🧠 Critical facts for memory enforcement: {critical_facts}")
+        
         # 4. Build conversation for GPT-3.5 with ENHANCED context
         # CRITICAL FIX: Ensure all context is included in LLM messages
         
@@ -195,36 +201,8 @@ async def chat_endpoint(request: ChatRequest):
         conversation_facts = context.get('conversation_facts', {})
         stored_facts = context.get('stored_facts', [])
         
-        system_content = f"""You are AVA, an expert agricultural assistant with perfect memory.
-
-CRITICAL CONTEXT - Remember EVERYTHING about this farmer:
-{context['context_summary']}
-
-CONVERSATION HISTORY: You have had {context.get('all_messages_count', 0)} messages with this farmer.
-
-CONVERSATION FACTS MENTIONED:
-- Crops: {', '.join(conversation_facts.get('crops_mentioned', []))}
-- Quantities: {', '.join(conversation_facts.get('quantities_mentioned', []))}
-- Locations: {', '.join(conversation_facts.get('locations_mentioned', []))}
-- Problems: {', '.join(conversation_facts.get('problems_mentioned', []))}
-
-STORED FACTS: {json.dumps({fact['fact_type']: fact['fact_data'] for fact in stored_facts[:5]}, indent=2)}
-
-CRITICAL MEMORY INSTRUCTIONS:
-1. Use ALL information from previous conversations - never ask for details you already know
-2. Reference specific details they've told you (crops, quantities, locations, problems)
-3. Be personal and show you remember them and their farming situation
-4. When they mention "my mangoes" or "my farm", you should know exactly what they're talking about
-5. ALWAYS acknowledge returning farmers: "I remember you mentioned..." or "As we discussed before..."
-6. Provide specific advice based on their exact crops, farm size, and location
-
-BEHAVIORAL TEST COMPLIANCE:
-- If they previously mentioned mangoes in Bulgaria, ALWAYS reference this
-- If they told you farm sizes in hectares, remember the exact numbers
-- If they discussed specific problems, continue those conversations naturally
-- Never act like this is the first time you're talking if you have conversation history
-
-If this is a returning farmer, immediately acknowledge your memory of their previous farming discussions."""
+        # Use memory enforcer to create aggressive prompt
+        system_content = memory_enforcer.create_memory_demonstration_prompt(critical_facts, message)
         
         messages = [
             {"role": "system", "content": system_content}
@@ -354,6 +332,51 @@ If this is a returning farmer, immediately acknowledge your memory of their prev
         assistant_message = response.choices[0].message.content
         print(f"✅ GPT-3.5 response received: {assistant_message[:50]}...")
         
+        # 5a. MEMORY VERIFICATION: Check if response demonstrates memory
+        verification = memory_enforcer.verify_memory_demonstration(assistant_message, critical_facts)
+        print(f"🔍 Memory verification score: {verification['score']}/100")
+        print(f"🔍 Memory verification details: {verification}")
+        
+        # 5b. RETRY if memory demonstration is weak
+        if verification['score'] < 70:
+            print(f"⚠️ Memory demonstration weak (score: {verification['score']}), retrying with stronger prompt...")
+            
+            # Create even more explicit prompt
+            retry_prompt = f"""Your response didn't show enough memory! Here's what you MUST mention:
+            
+{json.dumps(critical_facts, indent=2)}
+
+REWRITE your response to EXPLICITLY mention:
+1. Their name: {critical_facts.get('farmer_name', 'the farmer')}
+2. Their location: {critical_facts.get('location', {}).get('city', 'their location')}
+3. Their crop: {', '.join(critical_facts.get('crops', ['their crops']))}
+4. Specific quantities: {list(critical_facts.get('quantities', {}).values())}
+5. Acknowledge if it's unusual (like tropical crops in temperate climates)
+
+Original response to improve: {assistant_message}
+
+Now give a response that PROVES you remember everything!"""
+            
+            retry_messages = [
+                {"role": "system", "content": retry_prompt},
+                {"role": "user", "content": message}
+            ]
+            
+            try:
+                retry_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo-1106",
+                    messages=retry_messages,
+                    temperature=0.5,  # Lower temperature for more focused response
+                    max_tokens=500
+                )
+                
+                assistant_message = retry_response.choices[0].message.content
+                verification = memory_enforcer.verify_memory_demonstration(assistant_message, critical_facts)
+                print(f"✅ Retry response received with memory score: {verification['score']}/100")
+                
+            except Exception as retry_error:
+                print(f"⚠️ Retry failed: {retry_error}, using original response")
+        
         # 6. Store assistant response
         print(f"📝 Storing assistant response...")
         await store_message(wa_phone_number, 'assistant', assistant_message)
@@ -406,7 +429,9 @@ If this is a returning farmer, immediately acknowledge your memory of their prev
                 'mango_mentioned': 'mango' in crops_in_response,
                 'bulgaria_mentioned': 'bulgaria' in locations_in_response,
                 'hectares_referenced': any('hectare' in qty for qty in conversation_facts.get('quantities_mentioned', []))
-            }
+            },
+            'memory_verification_score': verification['score'],
+            'memory_verification_details': verification
         }
         
         print(f"🧠 Memory Check: {memory_indicators}")

@@ -64,6 +64,9 @@ from modules.api.behavioral_audit_routes import router as behavioral_audit_route
 # NEW: Import OpenAI configuration routes
 from modules.api.openai_config_routes import router as openai_config_router
 
+# NEW: Import memory training routes
+from modules.api.memory_training_routes import router as memory_training_router
+
 # Import WhatsApp module
 from modules.whatsapp.routes import router as whatsapp_router
 
@@ -119,6 +122,9 @@ app.include_router(behavioral_audit_router)
 
 # NEW: Include OpenAI configuration router
 app.include_router(openai_config_router)
+
+# NEW: Include memory training router
+app.include_router(memory_training_router)
 
 app.include_router(system_router)
 app.include_router(debug_services_router)
