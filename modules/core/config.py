@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726163000'  # v3.4.7 - Environment Persistence Fix
-COMMIT_HASH = "env-persist"  # Fixed OpenAI key persistence in ECS
+DEPLOYMENT_TIMESTAMP = '20250726164000'  # v3.4.8 - AWS Secrets Integration
+COMMIT_HASH = "aws-secrets"  # Secure OpenAI key via AWS SSM
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.4.7-env-persistence-fix-{BUILD_ID}"
+VERSION = f"v3.4.8-aws-secrets-fix-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

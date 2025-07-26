@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Simple Direct LLM Chat - v3.4.5 Test
-Direct OpenAI connection with no complexity
+Secure LLM Chat - v3.4.8 AWS Secrets
+Direct OpenAI connection using AWS SSM Parameter Store
 """
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
-from openai import OpenAI
 import os
 import logging
 from datetime import datetime
+
+from modules.chat.openai_key_manager import get_openai_client, key_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
@@ -34,24 +35,27 @@ async def direct_llm_chat_message(request: Request):
     return await handle_chat(chat_request)
 
 async def handle_chat(request: ChatRequest):
-    """Common chat handler"""
+    """Common chat handler using secure AWS SSM key retrieval"""
     
     # Log for debugging
-    logger.info(f"DIRECT LLM TEST: {request.message}")
-    logger.info(f"OpenAI Key exists: {bool(os.getenv('OPENAI_API_KEY'))}")
+    logger.info(f"SECURE LLM CHAT: {request.message}")
     
     try:
-        # Get API key explicitly
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            logger.error("OPENAI_API_KEY not found in environment!")
-            raise ValueError("OPENAI_API_KEY environment variable not set")
+        # Get OpenAI client using secure key management
+        client = get_openai_client()
         
-        logger.info(f"Using OpenAI key: {api_key[:10]}...")
+        if not client:
+            logger.error("Could not create OpenAI client - key not available")
+            return {
+                "response": "AI service temporarily unavailable. Please try again later.",
+                "error": True,
+                "error_type": "key_unavailable",
+                "timestamp": datetime.now().isoformat()
+            }
         
-        # Direct OpenAI call with explicit key
-        client = OpenAI(api_key=api_key)
+        logger.info("Using OpenAI client with secure key from AWS SSM")
         
+        # Direct OpenAI call
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -75,21 +79,26 @@ async def handle_chat(request: ChatRequest):
     except Exception as e:
         logger.error(f"OpenAI error: {e}")
         return {
-            "response": f"LLM Error: {str(e)}",
+            "response": f"AI Error: {str(e)}",
             "error": True,
-            "openai_key_exists": bool(os.getenv("OPENAI_API_KEY")),
+            "error_type": "openai_api_error", 
             "timestamp": datetime.now().isoformat()
         }
 
 @router.get("/status")
 async def llm_status():
-    """Check if OpenAI is properly configured"""
-    key = os.getenv("OPENAI_API_KEY", "")
+    """Check if OpenAI is properly configured using secure key management"""
+    
+    # Check if key is available
+    api_key = key_manager.get_api_key()
+    source = "env" if os.getenv("OPENAI_API_KEY") else "aws_ssm"
+    
     return {
-        "openai_configured": bool(key),
-        "key_prefix": key[:10] if key else None,
-        "key_length": len(key),
-        "test_mode": "direct_llm_v3.4.6",
+        "openai_configured": bool(api_key),
+        "key_prefix": api_key[:10] if api_key else None,
+        "key_length": len(api_key) if api_key else 0,
+        "key_source": source,
+        "test_mode": "aws_secrets_v3.4.8",
         "timestamp": datetime.now().isoformat()
     }
 
@@ -146,27 +155,36 @@ async def debug_all_env():
 
 @router.get("/test")
 async def test_llm():
-    """Quick test endpoint"""
+    """Quick test endpoint using secure key management"""
+    return key_manager.test_connection()
+
+@router.get("/aws-test")
+async def test_aws_integration():
+    """Test AWS SSM integration specifically"""
     try:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment")
-            
-        client = OpenAI(api_key=api_key)
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": "Say 'LLM working!' and the current time."}],
-            max_tokens=50
+        import boto3
+        
+        # Test SSM access
+        ssm = boto3.client('ssm', region_name='us-east-1')
+        
+        # Try to get the parameter (without decryption to test access)
+        response = ssm.get_parameter(
+            Name='/ava-olo/openai-api-key',
+            WithDecryption=False  # Just test access
         )
+        
         return {
-            "test": "success",
-            "response": response.choices[0].message.content,
-            "model": "gpt-4"
+            "aws_ssm_access": True,
+            "parameter_exists": True,
+            "parameter_name": response['Parameter']['Name'],
+            "parameter_type": response['Parameter']['Type'],
+            "last_modified": response['Parameter']['LastModifiedDate'].isoformat(),
+            "version": response['Parameter']['Version']
         }
+        
     except Exception as e:
         return {
-            "test": "failed",
+            "aws_ssm_access": False,
             "error": str(e),
-            "key_exists": bool(os.getenv("OPENAI_API_KEY")),
-            "key_length": len(os.getenv("OPENAI_API_KEY", ""))
+            "boto3_available": True
         }

@@ -1,5 +1,42 @@
 # AVA OLO System Changelog
 
+## [v3.4.8-aws-secrets-fix] - 2025-07-26 17:40 UTC - Secure AWS SSM Integration
+**Deployed to Production**: PENDING ⏳
+**Service**: agricultural-core  
+**Version**: v3.4.8-aws-secrets-fix-aws-secrets-2d8f5e91
+**Purpose**: Secure OpenAI key storage using AWS Systems Manager Parameter Store
+
+### 🔒 SECURITY ENHANCEMENT:
+
+**Problem**: OpenAI API key hardcoded in environment variables (GitHub detected secrets)
+**Solution**: Store key in AWS SSM Parameter Store with secure retrieval
+
+### Implementation:
+1. **Stored key in AWS SSM**: `/ava-olo/openai-api-key` (SecureString)
+2. **Created secure key manager**: `modules/chat/openai_key_manager.py`
+3. **Updated chat endpoints**: Use SSM retrieval with environment fallback
+4. **Added IAM permissions**: ECS task role can access SSM parameters
+
+### New Features:
+- **Secure key retrieval**: SSM → Environment → Error
+- **Key caching**: Avoid repeated SSM calls
+- **Enhanced debugging**: AWS integration test endpoints
+- **Graceful fallback**: Environment vars for local development
+
+### New Endpoints:
+- `/api/v1/chat/aws-test` - Test AWS SSM access
+- `/api/v1/chat/test` - Test OpenAI connection with source info
+- `/api/v1/chat/status` - Shows key source (env/aws_ssm)
+
+### Security Benefits:
+- ✅ No hardcoded keys in code
+- ✅ Encrypted storage in AWS
+- ✅ IAM-controlled access
+- ✅ GitHub secret scanning safe
+- ✅ Production-ready security
+
+---
+
 ## [v3.4.7-env-persistence-fix] - 2025-07-26 17:30 UTC - Fix OpenAI Key Persistence
 **Deployed to Production**: YES ✅
 **Service**: agricultural-core
