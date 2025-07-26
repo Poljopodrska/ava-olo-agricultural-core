@@ -8,7 +8,7 @@
     "memory": "1024",
     "containerDefinitions": [
         {
-            "name": "agricultural-core",
+            "name": "agricultural",
             "image": "127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo-agricultural-core:latest",
             "cpu": 0,
             "portMappings": [
