@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726183000'  # v3.5.3 - Enhanced LLM Prompt
-COMMIT_HASH = "prompt-fix"  # Crystal clear prompt prevents repeated questions
+DEPLOYMENT_TIMESTAMP = '20250726183500'  # v3.5.4 - Comprehensive Registration Prompt
+COMMIT_HASH = "comprehensive-prompt"  # Bulletproof prompt handles all name formats globally
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.5.3-prompt-fix-{BUILD_ID}"
+VERSION = f"v3.5.4-comprehensive-prompt-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

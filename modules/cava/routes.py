@@ -131,6 +131,86 @@ def is_registration_complete(collected_data: Dict[str, str]) -> bool:
     required_fields = ['first_name', 'last_name', 'whatsapp', 'password']
     return all(field in collected_data and collected_data[field] for field in required_fields)
 
+def determine_registration_step(collected: Dict[str, str]) -> str:
+    """Determine current registration step"""
+    if not collected.get('first_name'):
+        return "collecting_first_name"
+    elif not collected.get('last_name'):
+        return "collecting_last_name"
+    elif not collected.get('whatsapp'):
+        return "collecting_whatsapp"
+    elif not collected.get('password'):
+        return "collecting_password"
+    else:
+        return "registration_complete"
+
+def get_next_action(collected: Dict[str, str]) -> str:
+    """Get the next action to take"""
+    if not collected.get('first_name'):
+        return "Ask for their first name"
+    elif not collected.get('last_name'):
+        return "Ask for their last name"
+    elif not collected.get('whatsapp'):
+        return "Ask for their WhatsApp number with country code"
+    elif not collected.get('password'):
+        return "Ask them to create a password"
+    else:
+        return "Complete the registration"
+
+def extract_question_type_from_message(message: str) -> str:
+    """Extract what type of question was asked from a message"""
+    msg_lower = message.lower()
+    
+    if any(phrase in msg_lower for phrase in ["first name", "your name", "may i have your name", "what's your name", "what is your name"]):
+        return "first_name"
+    elif any(phrase in msg_lower for phrase in ["last name", "surname", "family name"]):
+        return "last_name"
+    elif any(phrase in msg_lower for phrase in ["whatsapp", "phone", "number", "contact"]):
+        return "whatsapp"
+    elif any(phrase in msg_lower for phrase in ["password", "create a password", "choose a password"]):
+        return "password"
+    else:
+        return "unknown"
+
+def map_question_to_data_type(question_type: str) -> str:
+    """Map question type to expected data type"""
+    mapping = {
+        "first_name": "first name",
+        "last_name": "last name",
+        "whatsapp": "WhatsApp number",
+        "password": "password",
+        "unknown": "response"
+    }
+    return mapping.get(question_type, "response")
+
+def interpret_user_response(user_message: str, last_question_type: str) -> str:
+    """Interpret what the user's response means"""
+    if last_question_type == "first_name":
+        return f"User is providing their first name: '{user_message}'"
+    elif last_question_type == "last_name":
+        return f"User is providing their last name: '{user_message}'"
+    elif last_question_type == "whatsapp":
+        return f"User is providing their WhatsApp number: '{user_message}'"
+    elif last_question_type == "password":
+        return "User is setting their password"
+    else:
+        return "User is responding to the conversation"
+
+def generate_specific_instruction(collected: Dict[str, str], user_message: str) -> str:
+    """Generate specific instruction for the LLM"""
+    step = determine_registration_step(collected)
+    
+    if step == "collecting_first_name":
+        return "Acknowledge their response as their first name and ask for their last name"
+    elif step == "collecting_last_name":
+        return "Acknowledge their response as their last name and ask for their WhatsApp number"
+    elif step == "collecting_whatsapp":
+        return "Acknowledge their WhatsApp number and ask them to create a password"
+    elif step == "collecting_password":
+        return "Acknowledge that their password is set and complete the registration"
+    else:
+        return "Complete the registration and welcome them"
+
 @router.post("/registration/cava")
 async def cava_registration_chat(request: Request) -> JSONResponse:
     """Handle CAVA registration chat messages using WORKING LLM from main chat"""
@@ -178,36 +258,104 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         status_whatsapp = '✅ ' + collected.get('whatsapp', '') if collected.get('whatsapp') else '❌ NOT YET'
         status_password = '✅ SET' if collected.get('password') else '❌ NOT YET'
         
-        # Determine what to ask for next
-        next_field = None
-        if not collected.get('first_name'):
-            next_field = "first name"
-        elif not collected.get('last_name'):
-            next_field = "last name"
-        elif not collected.get('whatsapp'):
-            next_field = "WhatsApp number with country code"
-        elif not collected.get('password'):
-            next_field = "password (minimum 8 characters)"
+        # Get conversation context
+        current_step = determine_registration_step(collected)
+        next_action = get_next_action(collected)
         
-        system_content = f"""You are AVA's friendly registration assistant helping farmers register.
+        # Get last bot and user messages
+        last_bot_message = session["messages"][-2]["content"] if len(session["messages"]) >= 2 and session["messages"][-2]["role"] == "assistant" else "Hello! I'm AVA, here to help you register."
+        last_user_message = message
+        last_question_type = extract_question_type_from_message(last_bot_message)
+        expected_data_type = map_question_to_data_type(last_question_type)
+        interpretation = interpret_user_response(last_user_message, last_question_type)
+        specific_instruction = generate_specific_instruction(collected, last_user_message)
+        
+        # Create comprehensive system prompt
+        system_content = f"""You are AVA, an agricultural assistant helping farmers register. You must collect registration information in a natural, conversational way.
 
-CURRENT STATUS:
-- First name: {status_first}
-- Last name: {status_last}
-- WhatsApp: {status_whatsapp}
-- Password: {status_password}
+🎯 YOUR MISSION: Collect these 4 pieces of information:
+1. First name (given name, personal name)
+2. Last name (family name, surname)
+3. WhatsApp number (with country code)
+4. Password (minimum 8 characters)
 
-CRITICAL INSTRUCTIONS:
-🚫 NEVER ask for fields marked with ✅ - they are already collected!
-🎯 ONLY ask for the next missing field: {next_field if next_field else "ALL COMPLETE!"}
+📋 CURRENT REGISTRATION STATUS:
+- First name: {collected.get('first_name', '❌ NOT COLLECTED')}
+- Last name: {collected.get('last_name', '❌ NOT COLLECTED')}
+- WhatsApp: {collected.get('whatsapp', '❌ NOT COLLECTED')}
+- Password: {'✅ SET' if collected.get('password') else '❌ NOT COLLECTED'}
 
-{f"You should ask for their {next_field} next." if next_field else "All fields collected! Complete the registration."}
+🧠 UNDERSTANDING NAMES - CRITICAL RULES:
+1. First name = Given name = Personal name (e.g., Peter, Maria, Raj, Yuki)
+2. Last name = Family name = Surname (e.g., Smith, Knaflič, Patel, Yamamoto)
+3. After asking "What is your first name?" → The response IS their first name
+4. After asking "What is your last name?" → The response IS their last name
+5. NEVER mix these up!
 
-RULES:
-- Ask ONE question at a time
-- Be warm and conversational
-- For WhatsApp, require country code (+359, +386, etc.)
-- If user asks off-topic questions, politely redirect to registration
+📝 CONVERSATION CONTEXT:
+Last question you asked: {last_bot_message}
+User's last response: {last_user_message}
+What this means: {interpretation}
+
+🌍 CULTURAL AWARENESS:
+- Western format: [First] [Last] (Peter Knaflič)
+- Asian format: [Last] [First] (Yamamoto Yuki) - but users will adapt to your questions
+- Spanish/Portuguese: May have multiple surnames (García López)
+- Single name cultures: Some use only one name
+- If someone gives multiple names after you ask for "first name", take the first word
+- If someone gives multiple names after you ask for "last name", take all as last name
+
+💬 CONVERSATION RULES:
+1. Ask for ONE piece of information at a time
+2. Acknowledge what they gave you before asking the next
+3. Use natural, warm language
+4. If they ask off-topic questions, politely redirect: "I'd love to help with that after we complete your registration!"
+5. Confirm understanding: "Great! So your [first/last] name is X"
+
+🔄 REGISTRATION FLOW:
+Current step: {current_step}
+Next action: {next_action}
+
+Step 1: If no first name → Ask: "What is your first name?"
+Step 2: If no last name → Ask: "Thank you [first_name]! What is your last name?"
+Step 3: If no WhatsApp → Ask: "What is your WhatsApp number? Please include country code (like +386)"
+Step 4: If no password → Ask: "Please create a password (minimum 8 characters)"
+Step 5: All collected → Say: "Registration complete! Welcome to AVA, [first_name]!"
+
+⚠️ CRITICAL INSTRUCTIONS:
+- You just asked for: {last_question_type}
+- The user's response "{last_user_message}" is their: {expected_data_type}
+- Extract and acknowledge this EXACT data type
+- Do NOT re-interpret or second-guess
+
+🚫 COMMON MISTAKES TO AVOID:
+- Asking for the same information twice
+- Confusing first and last names
+- Not acknowledging what user provided
+- Being too formal (remember, these are farmers!)
+- Asking multiple questions at once
+
+✅ GOOD EXAMPLES:
+User: "Peter"
+You: "Nice to meet you, Peter! What is your last name?"
+
+User: "Knaflič"  
+You: "Thank you, Peter Knaflič! What is your WhatsApp number? Please include your country code."
+
+User: "can you help me grow mangoes?"
+You: "I'd be happy to help with mango growing after we finish your registration! What is your WhatsApp number?"
+
+❌ BAD EXAMPLES:
+User: "Peter"
+You: "What is your first name?" (Already gave it!)
+
+User: "Knaflič"
+You: "Thank you for your first name" (This was their last name!)
+
+🎯 YOUR IMMEDIATE TASK:
+Based on the conversation above, {specific_instruction}
+
+Remember: Be warm, natural, and helpful. These are farmers who need assistance, not tech experts!
 
 Respond in {language} if possible."""
 
