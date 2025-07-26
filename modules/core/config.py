@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726184000'  # v3.5.5 - Deployment Verification Tools
-COMMIT_HASH = "deployment-verify"  # Debug endpoint and verification tools
+DEPLOYMENT_TIMESTAMP = '20250726184500'  # v3.5.6 - Runtime Error Fix
+COMMIT_HASH = "error-fix"  # Fixed variable ordering and added error handling
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.5.5-deployment-verification-{BUILD_ID}"
+VERSION = f"v3.5.6-error-fix-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -282,8 +282,9 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
             interpretation = "User is responding"
             specific_instruction = "Continue with registration"
         
-        # Create comprehensive system prompt
-        system_content = f"""You are AVA, an agricultural assistant helping farmers register. You must collect registration information in a natural, conversational way.
+        # Create comprehensive system prompt with error handling
+        try:
+            system_content = f"""You are AVA, an agricultural assistant helping farmers register. You must collect registration information in a natural, conversational way.
 
 🎯 YOUR MISSION: Collect these 4 pieces of information:
 1. First name (given name, personal name)
@@ -370,6 +371,22 @@ Based on the conversation above, {specific_instruction}
 Remember: Be warm, natural, and helpful. These are farmers who need assistance, not tech experts!
 
 Respond in {language} if possible."""
+        except Exception as e:
+            logger.error(f"Error building comprehensive prompt: {e}")
+            # Fallback to simple prompt
+            system_content = f"""You are AVA's registration assistant helping farmers register.
+
+CURRENT STATUS:
+- First name: {status_first}
+- Last name: {status_last}
+- WhatsApp: {status_whatsapp}
+- Password: {status_password}
+
+Please collect the missing information one at a time. Be friendly and conversational.
+For WhatsApp, require country code (+359, +386, etc.).
+For password, require minimum 8 characters.
+
+Respond in {language} if possible."""
 
         messages = [{"role": "system", "content": system_content}]
         
@@ -435,8 +452,8 @@ Respond in {language} if possible."""
                 "model_used": "gpt-3.5-turbo",
                 "constitutional_compliance": True,
                 "session_id": session_id,
-                "collected_data": collected,
-                "progress_percentage": (len([v for v in collected.values() if v]) / 4) * 100,
+                "collected_data": collected_data,
+                "progress_percentage": (len([v for v in collected_data.values() if v]) / 4) * 100,
                 "debug": {
                     "version": VERSION,
                     "prompt_type": "comprehensive" if "UNDERSTANDING NAMES" in system_content else "old",
