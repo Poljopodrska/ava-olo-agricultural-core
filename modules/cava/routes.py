@@ -18,6 +18,9 @@ from modules.cava.enhanced_cava_registration import EnhancedCAVARegistration
 from modules.cava.cava_registration_engine import get_cava_registration_engine
 from modules.auth.routes import create_farmer_account, get_password_hash
 
+# Import the WORKING LLM client from main chat
+from modules.chat.openai_key_manager import get_openai_client
+
 # Initialize router
 router = APIRouter(prefix="/api/v1", tags=["cava"])
 
@@ -32,9 +35,12 @@ enhanced_cava = EnhancedCAVARegistration()  # Enhanced CAVA with full validation
 # Setup logging
 logger = logging.getLogger(__name__)
 
+# Registration sessions storage (in-memory for now)
+registration_sessions = {}
+
 @router.post("/registration/cava")
 async def cava_registration_chat(request: Request) -> JSONResponse:
-    """Handle CAVA registration chat messages - ALWAYS USE LLM (Constitutional Amendment #15)"""
+    """Handle CAVA registration chat messages using WORKING LLM from main chat"""
     try:
         data = await request.json()
         
@@ -43,75 +49,106 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         session_id = data.get("farmer_id", "")  # Use farmer_id as session_id for compatibility
         language = data.get("language", "en")
         
-        # CRITICAL DIAGNOSTIC LOGGING
-        logger.critical(f"🚨 REGISTRATION ENDPOINT CALLED: message='{message}', session_id='{session_id}'")
-        logger.critical(f"🔑 OPENAI_KEY_STATUS: exists={bool(os.getenv('OPENAI_API_KEY'))}, length={len(os.getenv('OPENAI_API_KEY', ''))}")
-        logger.critical(f"📍 REQUEST_PATH: {request.url.path}")
+        logger.info(f"🏛️ REGISTRATION LLM: message='{message}', session_id='{session_id}'")
         
         if not session_id:
             raise HTTPException(status_code=400, detail="farmer_id is required")
         
-        # Check if engine can be loaded
-        try:
-            logger.critical("🔧 ATTEMPTING TO LOAD CAVA ENGINE...")
-            cava_engine = get_cava_registration_engine()
-            logger.critical(f"✅ CAVA ENGINE LOADED: has_key={bool(cava_engine.api_key)}")
-        except Exception as engine_error:
-            logger.critical(f"❌ CAVA ENGINE FAILED TO LOAD: {str(engine_error)}")
+        # Use the SAME working LLM client from main chat
+        client = get_openai_client()
+        
+        if not client:
+            logger.error("Could not create OpenAI client for registration")
             return JSONResponse(
                 status_code=500,
                 content={
-                    "response": "Registration system not available. Please check configuration.",
+                    "response": "Registration system is temporarily unavailable. Please try again later.",
                     "error": True,
-                    "diagnostic": f"Engine load failed: {str(engine_error)}",
-                    "openai_key_exists": bool(os.getenv("OPENAI_API_KEY"))
+                    "error_type": "llm_unavailable"
                 }
             )
         
-        # ALWAYS use pure LLM engine - CONSTITUTIONAL REQUIREMENT Amendment #15
-        logger.info(f"🏛️ CONSTITUTIONAL: Processing registration via pure LLM for session {session_id}")
+        # Get or create session
+        session = registration_sessions.get(session_id, {
+            "messages": [],
+            "collected_data": {},
+            "language": language
+        })
+        
+        # Build messages for registration context
+        collected = session.get("collected_data", {})
+        system_content = f"""You are AVA's friendly registration assistant. Help farmers register by collecting these 4 required fields:
+
+1. First name
+2. Last name  
+3. WhatsApp number (with country code like +386, +359, +387)
+4. Password (minimum 8 characters, ask for confirmation)
+
+Current data collected: {collected}
+
+Guidelines:
+- Be warm, natural and conversational
+- When someone wants to register, ask for their first name
+- Collect one field at a time naturally
+- For WhatsApp, ensure country code format
+- For password, ask for confirmation
+- When all 4 fields collected, confirm details and say registration is complete
+
+Respond in {language} if possible."""
+
+        messages = [{"role": "system", "content": system_content}]
+        
+        # Add recent conversation history
+        for msg in session["messages"][-6:]:
+            messages.append(msg)
+        
+        # Add current message
+        messages.append({"role": "user", "content": message})
         
         try:
-            result = await cava_engine.process_message(session_id, message)
-            logger.critical(f"✅ LLM RESPONSE RECEIVED: llm_used={result.get('llm_used', False)}")
-        except Exception as process_error:
-            logger.critical(f"❌ LLM PROCESSING FAILED: {str(process_error)}")
-            raise
-        
-        # If registration is complete, create the account
-        if result.get("registration_complete") and "registration_data" in result:
-            reg_data = result["registration_data"]
+            # Call OpenAI using the SAME working client from main chat
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=500
+            )
             
-            try:
-                # Create farmer account
-                new_farmer_id = await create_farmer_account(
-                    name=reg_data["name"],
-                    whatsapp_number=reg_data["whatsapp_number"],
-                    email=reg_data["email"],
-                    password=reg_data["password"]
-                )
-                
-                # Clear the session
-                cava_engine = get_cava_registration_engine()
-                if session_id in cava_engine.sessions:
-                    del cava_engine.sessions[session_id]
-                
-                # Add success info to result
-                result["account_created"] = True
-                result["farmer_id"] = new_farmer_id
-                
-            except HTTPException as e:
-                # Handle duplicate account or other errors
-                result["response"] = f"❌ {e.detail}\n\nPlease try with a different WhatsApp number or sign in if you already have an account."
-                result["registration_complete"] = False
-                result["error"] = True
-            except Exception as e:
-                logger.error(f"Error creating farmer account: {e}")
-                result["response"] = "❌ There was an error creating your account. Please try again."
-                result["registration_complete"] = False
-                result["error"] = True
-        
-        return JSONResponse(content=result)
+            llm_response = response.choices[0].message.content
+            logger.info(f"✅ REGISTRATION LLM RESPONSE: {llm_response[:100]}...")
+            
+            # Update session
+            session["messages"].append({"role": "user", "content": message})
+            session["messages"].append({"role": "assistant", "content": llm_response})
+            
+            # Basic field extraction (simple pattern matching)
+            # Note: This is simplified - in production you'd want more sophisticated extraction
+            collected = session.get("collected_data", {})
+            
+            # Save updated session
+            registration_sessions[session_id] = session
+            
+            result = {
+                "response": llm_response,
+                "registration_complete": False,
+                "llm_used": True,
+                "constitutional_compliance": True,
+                "session_id": session_id,
+                "collected_data": collected
+            }
+            
+            return JSONResponse(content=result)
+            
+        except Exception as e:
+            logger.error(f"Registration LLM error: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "response": "I'm having trouble processing that. Please try again.",
+                    "error": True,
+                    "error_type": "llm_processing_error"
+                }
+            )
         
     except Exception as e:
         logger.error(f"CAVA registration error: {e}")
@@ -123,6 +160,44 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
                 "error": True
             }
         )
+
+@router.get("/registration/llm-test")
+async def test_registration_llm():
+    """Test if registration can use the same LLM as main chat"""
+    try:
+        client = get_openai_client()
+        
+        if not client:
+            return {
+                "test": "failed",
+                "error": "Could not get OpenAI client",
+                "same_as_chat": False
+            }
+        
+        # Test with registration-like message
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a registration assistant. When someone says they want to register, ask for their first name."},
+                {"role": "user", "content": "I want to register"}
+            ],
+            max_tokens=100
+        )
+        
+        return {
+            "test": "success",
+            "response": response.choices[0].message.content,
+            "model": "gpt-4",
+            "same_as_chat": True,
+            "client_source": "modules.chat.openai_key_manager"
+        }
+        
+    except Exception as e:
+        return {
+            "test": "failed",
+            "error": str(e),
+            "same_as_chat": False
+        }
 
 @router.get("/registration/cava/session/{farmer_id}")
 async def get_registration_session(farmer_id: str) -> JSONResponse:

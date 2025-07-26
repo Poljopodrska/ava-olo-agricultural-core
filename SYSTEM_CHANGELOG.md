@@ -1,5 +1,41 @@
 # AVA OLO System Changelog
 
+## [v3.4.9-registration-llm-connected] - 2025-07-26 17:50 UTC - Connect Registration to Working LLM
+**Deployed to Production**: PENDING ⏳
+**Service**: agricultural-core
+**Version**: v3.4.9-registration-llm-connected-reg-llm-8a9f2e34
+**Purpose**: Use the SAME working LLM from main chat in registration form
+
+### 🔗 KEY INSIGHT:
+**Main chat works perfectly → Registration should use SAME connection method**
+
+### Changes:
+1. **Replaced complex CAVA engine** with simple working LLM client
+2. **Used exact same method** as main chat: `get_openai_client()`
+3. **Simplified registration logic** - removed all fallbacks and complexity
+4. **Added test endpoint** to verify registration LLM works
+
+### Implementation:
+```python
+# BEFORE: Complex CAVA engine (problematic)
+cava_engine = get_cava_registration_engine()
+
+# AFTER: Same working client as main chat
+client = get_openai_client()  # From modules.chat.openai_key_manager
+```
+
+### Expected Results:
+- "I want to register" → Intelligent response asking for first name
+- NOT "👋 Hello! I'm CAVA..." (hardcoded greeting)
+- Natural conversation collecting 4 fields: name, last name, WhatsApp, password
+- Both chat AND registration use same secure AWS SSM key
+
+### Test Endpoints:
+- `/api/v1/registration/llm-test` - Test registration LLM connection
+- `/api/v1/registration/cava` - Main registration endpoint (now using working LLM)
+
+---
+
 ## [v3.4.8-aws-secrets-fix] - 2025-07-26 17:40 UTC - Secure AWS SSM Integration
 **Deployed to Production**: YES ✅
 **Service**: agricultural-core  

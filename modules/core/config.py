@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726164000'  # v3.4.8 - AWS Secrets Integration
-COMMIT_HASH = "aws-secrets"  # Secure OpenAI key via AWS SSM
+DEPLOYMENT_TIMESTAMP = '20250726165000'  # v3.4.9 - Registration LLM Connected
+COMMIT_HASH = "reg-llm"  # Connected registration to working LLM
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.4.8-aws-secrets-fix-{BUILD_ID}"
+VERSION = f"v3.4.9-registration-llm-connected-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
