@@ -39,52 +39,89 @@ logger = logging.getLogger(__name__)
 # Registration sessions storage (in-memory for now)
 registration_sessions = {}
 
-def extract_registration_data(user_message: str, conversation_context: str = "") -> Dict[str, str]:
-    """Extract registration data from user messages with smart pattern matching"""
+def detect_question_type(llm_response: str) -> str:
+    """Detect what the LLM is asking for based on its response"""
+    response_lower = llm_response.lower()
+    
+    if "first name" in response_lower or "what's your name" in response_lower or "called" in response_lower:
+        return "first_name"
+    elif "last name" in response_lower or "surname" in response_lower or "family name" in response_lower:
+        return "last_name"
+    elif "whatsapp" in response_lower or "phone" in response_lower or "number" in response_lower:
+        return "whatsapp"
+    elif "password" in response_lower:
+        return "password"
+    else:
+        return "unknown"
+
+def extract_registration_data(user_message: str, last_question_type: str = "", collected_data: Dict[str, str] = None) -> Dict[str, str]:
+    """Extract registration data based on conversation flow and what was just asked"""
+    if collected_data is None:
+        collected_data = {}
+    
     extracted = {}
-    message_lower = user_message.lower().strip()
+    message = user_message.strip()
     
-    # Extract names - look for single capitalized words or "my name is" patterns
-    name_patterns = [
-        r"my name is ([A-Z][a-z]+)",
-        r"i'm ([A-Z][a-z]+)",
-        r"call me ([A-Z][a-z]+)",
-        r"^([A-Z][a-z]+)$"  # Single capitalized word
-    ]
+    # Simple single-word responses to specific questions
+    if last_question_type == "first_name" and not collected_data.get('first_name'):
+        # User likely gave their first name
+        words = message.split()
+        if len(words) == 1 and words[0][0].isupper():
+            extracted['first_name'] = words[0].capitalize()
+        elif len(words) <= 2 and message[0].isupper():
+            # Handle "My name is Peter" or just "Peter"
+            name_match = re.search(r'(?:my name is |i am |call me )?([A-Z][a-zA-ZÀ-ÿ]+)', message, re.IGNORECASE)
+            if name_match:
+                extracted['first_name'] = name_match.group(1).capitalize()
     
-    for pattern in name_patterns:
-        match = re.search(pattern, user_message, re.IGNORECASE)
-        if match:
-            name = match.group(1).capitalize()
-            # Determine if it's first or last name based on context
-            if "last name" in conversation_context.lower() or "surname" in conversation_context.lower():
-                extracted['last_name'] = name
-            elif "first name" in conversation_context.lower() or len(extracted) == 0:
-                extracted['first_name'] = name
-            break
+    elif last_question_type == "last_name" and not collected_data.get('last_name'):
+        # User likely gave their last name
+        words = message.split()
+        if len(words) == 1 and words[0][0].isupper():
+            extracted['last_name'] = words[0].capitalize()
+        elif len(words) <= 2:
+            # Handle various last name formats
+            name_match = re.search(r'([A-Z][a-zA-ZÀ-ÿčšžđćž]+)', message, re.IGNORECASE)
+            if name_match:
+                extracted['last_name'] = name_match.group(1).capitalize()
     
-    # Extract WhatsApp number - look for phone number patterns
-    phone_patterns = [
-        r'\+\d{1,4}\s?\d{6,14}',  # +country code followed by number
-        r'\d{10,15}',  # Simple 10-15 digit number
-    ]
+    elif last_question_type == "whatsapp" and not collected_data.get('whatsapp'):
+        # Extract phone number
+        phone_patterns = [
+            r'\+\d{1,4}\s?\d{6,14}',  # +country code
+            r'\d{9,15}',  # Simple number
+        ]
+        
+        for pattern in phone_patterns:
+            match = re.search(pattern, message.replace(' ', '').replace('-', ''))
+            if match:
+                phone = match.group()
+                if not phone.startswith('+'):
+                    phone = '+359' + phone.lstrip('0')  # Default to Bulgaria
+                extracted['whatsapp'] = phone
+                break
     
-    for pattern in phone_patterns:
-        match = re.search(pattern, user_message.replace(' ', '').replace('-', ''))
-        if match:
-            phone = match.group()
-            if not phone.startswith('+'):
-                # Add default country code if missing
-                phone = '+359' + phone.lstrip('0')  # Default to Bulgaria
-            extracted['whatsapp'] = phone
-            break
-    
-    # Extract password - look for password-like strings
-    if "password" in conversation_context.lower():
-        words = user_message.split()
+    elif last_question_type == "password" and not collected_data.get('password'):
+        # Extract password
+        words = message.split()
         for word in words:
-            if len(word) >= 8:  # Minimum password length
+            if len(word) >= 8:
                 extracted['password'] = word
+                break
+    
+    # Fallback: Try to extract from common patterns regardless of question type
+    if not extracted:
+        # Look for explicit statements
+        patterns = [
+            (r"my name is ([A-Z][a-zA-ZÀ-ÿ]+)", 'first_name'),
+            (r"i am ([A-Z][a-zA-ZÀ-ÿ]+)", 'first_name'),
+            (r"call me ([A-Z][a-zA-ZÀ-ÿ]+)", 'first_name'),
+        ]
+        
+        for pattern, field_type in patterns:
+            match = re.search(pattern, message, re.IGNORECASE)
+            if match and not collected_data.get(field_type):
+                extracted[field_type] = match.group(1).capitalize()
                 break
     
     return extracted
@@ -128,7 +165,8 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         session = registration_sessions.get(session_id, {
             "messages": [],
             "collected_data": {},
-            "language": language
+            "language": language,
+            "last_question_type": "unknown"
         })
         
         # Build messages for registration context with smart memory tracking
@@ -142,19 +180,21 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         
         system_content = f"""You are AVA's friendly registration assistant. 
 
-CURRENT PROGRESS:
+REGISTRATION PROGRESS:
 - First name: {status_first}
 - Last name: {status_last}
 - WhatsApp: {status_whatsapp}
 - Password: {status_password}
 
-IMPORTANT RULES:
+CRITICAL RULES:
 - NEVER ask for information marked with ✅ again!
-- Only ask for the NEXT item marked with ❌ NOT YET
-- Be warm and conversational
+- Only ask for the NEXT missing field (❌ NOT YET)
+- Be warm and conversational, not robotic
+- Ask ONE question at a time
 - For WhatsApp, require country code (+359, +386, etc.)
 - For password, require minimum 8 characters
 
+If user asks off-topic questions, politely redirect to registration.
 If all fields have ✅, congratulate and complete registration!
 
 Respond in {language} if possible."""
@@ -180,21 +220,27 @@ Respond in {language} if possible."""
             llm_response = response.choices[0].message.content
             logger.info(f"✅ REGISTRATION LLM (GPT-3.5): {llm_response[:100]}...")
             
-            # Extract registration data from user input
-            conversation_context = " ".join([msg["content"] for msg in messages[-3:]])  # Last few messages for context
-            extracted_data = extract_registration_data(message, conversation_context)
+            # FIRST: Extract data from user input using previous question context
+            last_question_type = session.get("last_question_type", "unknown")
+            collected = session.get("collected_data", {})
+            extracted_data = extract_registration_data(message, last_question_type, collected)
             
             # Update collected data with extracted information
-            collected = session.get("collected_data", {})
             for field, value in extracted_data.items():
                 if value and not collected.get(field):  # Only add if not already collected
                     collected[field] = value
-                    logger.info(f"📝 EXTRACTED {field}: {value}")
+                    logger.info(f"🎯 EXTRACTED {field}: {value} (was asking for: {last_question_type})")
+            
+            # SECOND: Detect what the LLM is now asking for (for next user response)
+            current_question_type = detect_question_type(llm_response)
             
             # Update session with new data
             session["messages"].append({"role": "user", "content": message})
             session["messages"].append({"role": "assistant", "content": llm_response})
             session["collected_data"] = collected
+            session["last_question_type"] = current_question_type
+            
+            logger.info(f"🔄 FLOW: Asked for {last_question_type} → Now asking for {current_question_type}")
             
             # Check if registration is complete
             is_complete = is_registration_complete(collected)
