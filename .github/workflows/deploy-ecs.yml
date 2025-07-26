@@ -8,6 +8,11 @@ on:
     tags:
       - 'v*'
 
+# Add concurrency control to prevent queue buildup
+concurrency:
+  group: deploy-agricultural-core-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   AWS_REGION: us-east-1
   ECR_REGISTRY: 127679825789.dkr.ecr.us-east-1.amazonaws.com
@@ -109,4 +114,13 @@ jobs:
         run: |
           echo "🎉 Agricultural Core deployed successfully!"
           echo "Version: ${{ steps.version.outputs.VERSION }}"
+          echo "Image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}"
           echo "Service: https://ava-olo-65365776.us-east-1.elb.amazonaws.com/"
+          
+          # Add deployment verification
+          echo "Checking service status..."
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].{Status:status,Running:runningCount,Desired:desiredCount}' \
+            --output table
