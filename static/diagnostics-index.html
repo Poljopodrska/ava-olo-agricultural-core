@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AVA OLO Diagnostics Index</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; }
+        .link-card { 
+            border: 2px solid #007bff; 
+            padding: 20px; 
+            margin: 10px 0; 
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .link-card:hover { background: #f0f8ff; }
+        h1 { color: #333; }
+        .status { 
+            display: inline-block; 
+            padding: 5px 10px; 
+            border-radius: 5px; 
+            margin-left: 10px;
+        }
+        .available { background: #d4edda; color: #155724; }
+        .checking { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>🔧 AVA OLO Diagnostic Interfaces</h1>
+    
+    <div class="link-card" onclick="window.location.href='/chat-debug-audit'">
+        <h3>Chat Debug & Behavioral Audit</h3>
+        <p>Complete chat service diagnostics and CAVA behavioral testing</p>
+        <span class="status checking">Click to access</span>
+    </div>
+    
+    <div class="link-card" onclick="window.location.href='/cava-audit'">
+        <h3>CAVA Component Audit</h3>
+        <p>Original component-based CAVA audit interface</p>
+        <span class="status checking">Click to access</span>
+    </div>
+    
+    <div class="link-card" onclick="checkEndpoint('/api/v1/chat/debug/status')">
+        <h3>Quick Chat Status</h3>
+        <p>Check if chat service is available</p>
+        <span class="status checking" id="chat-status">Checking...</span>
+    </div>
+    
+    <script>
+        async function checkEndpoint(endpoint) {
+            try {
+                const response = await fetch(endpoint);
+                const data = await response.json();
+                document.getElementById('chat-status').textContent = 
+                    data.service_available ? '✅ Available' : '❌ Unavailable';
+                document.getElementById('chat-status').className = 
+                    'status ' + (data.service_available ? 'available' : 'checking');
+            } catch (error) {
+                console.error('Error checking endpoint:', error);
+            }
+        }
+        
+        // Auto-check on load
+        window.onload = () => checkEndpoint('/api/v1/chat/debug/status');
+    </script>
+</body>
+</html>

@@ -212,7 +212,41 @@ async def cava_audit_page():
 @app.get("/chat-debug-audit")
 async def chat_debug_audit_page():
     """Combined chat debug and behavioral audit interface"""
-    return FileResponse("static/chat-debug-audit.html")
+    file_path = os.path.join("static", "chat-debug-audit.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        return {"error": "Debug interface not found", "path_checked": file_path}
+
+@app.get("/api/v1/diagnostics")
+async def list_diagnostic_endpoints():
+    """List all available diagnostic endpoints"""
+    return {
+        "diagnostic_endpoints": [
+            "/chat-debug-audit - Main debug interface",
+            "/api/v1/chat/debug/status - Chat service status",
+            "/api/v1/chat/debug/test-message - Test chat directly",
+            "/api/v1/cava/audit - Component audit",
+            "/api/v1/cava/behavioral-audit - Behavioral audit",
+            "/api/v1/cava/behavioral-audit/quick - Quick mango test",
+            "/cava-audit - Original CAVA audit interface"
+        ],
+        "chat_endpoints": [
+            "/api/v1/chat - Main chat endpoint",
+            "/register - Registration interface"
+        ],
+        "note": "Access these with the full URL: http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/"
+    }
+
+@app.get("/diagnostics")
+async def diagnostics_index():
+    """Serve diagnostics index page"""
+    file_path = os.path.join("static", "diagnostics-index.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        # Fallback to JSON if file not found
+        return await list_diagnostic_endpoints()
 
 @app.get("/dashboard")
 async def dashboard(request: Request):
