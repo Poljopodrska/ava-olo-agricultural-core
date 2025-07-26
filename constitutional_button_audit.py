@@ -171,7 +171,7 @@ def check_production_button_colors():
         '/register-fields'
     ]
     
-    base_url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+    base_url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
     
     for page in pages_to_check:
         try:

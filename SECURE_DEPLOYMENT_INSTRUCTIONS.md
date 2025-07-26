@@ -2,12 +2,12 @@
 
 ## 🔐 IMPORTANT: OpenAI API Key Configuration
 
-The OpenAI API key MUST be set directly in AWS App Runner console for security.
+The OpenAI API key MUST be set directly in AWS ECS console for security.
 GitHub will block any commits containing API keys.
 
 ### Step 1: Set OpenAI API Key in AWS
 
-1. Go to AWS App Runner console
+1. Go to AWS ECS console
 2. Find service: `ava-olo-agricultural-core`
 3. Click "Update service"
 4. Navigate to "Configure service" step
@@ -22,7 +22,7 @@ After setting the environment variable and deploying:
 
 ```bash
 # Check if OpenAI key is configured
-curl https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registration/debug
+curl https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com/api/v1/registration/debug
 
 # Should return:
 {
@@ -36,12 +36,12 @@ curl https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registr
 
 ```bash
 # Test with English
-curl -X POST https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registration/cava \
+curl -X POST https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com/api/v1/registration/cava \
   -H "Content-Type: application/json" \
   -d '{"farmer_id": "test123", "message": "I want to register"}'
 
 # Test with Bulgarian
-curl -X POST https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registration/cava \
+curl -X POST https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com/api/v1/registration/cava \
   -H "Content-Type: application/json" \
   -d '{"farmer_id": "test456", "message": "Искам да се регистрирам"}'
 ```
@@ -54,7 +54,7 @@ curl -X POST https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1
 
 ## Environment Variables Required
 
-Set these in AWS App Runner:
+Set these in AWS ECS:
 
 - `OPENAI_API_KEY`: Get from .env.production (starts with sk-proj-Op4v)
 - `DB_HOST`: farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com

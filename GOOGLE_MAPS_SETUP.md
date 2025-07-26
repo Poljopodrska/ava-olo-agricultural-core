@@ -26,8 +26,8 @@ Add the API key to your environment variables:
 GOOGLE_MAPS_API_KEY=your_api_key_here
 ```
 
-#### For Production (AWS App Runner):
-Add the environment variable in your AWS App Runner configuration:
+#### For Production (AWS ECS):
+Add the environment variable in your AWS ECS configuration:
 ```bash
 GOOGLE_MAPS_API_KEY=your_api_key_here
 ```

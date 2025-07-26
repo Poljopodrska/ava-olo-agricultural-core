@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Import database schema to AWS RDS via App Runner
-This script can be run from App Runner which has VPC access
+Import database schema to AWS RDS via ECS
+This script can be run from ECS which has VPC access
 """
 import os
 from sqlalchemy import create_engine, text

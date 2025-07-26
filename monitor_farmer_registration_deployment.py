@@ -11,7 +11,7 @@ from datetime import datetime
 def monitor_farmer_registration_deployment():
     """Monitor deployment until farmer registration shows correct version"""
     
-    url = "https://6pmgrirjre.us-east-1.awsapprunner.com/farmer-registration"
+    url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com/farmer-registration"
     expected_version = "v2.1.3"
     
     print("🔍 MONITORING FARMER REGISTRATION DEPLOYMENT")

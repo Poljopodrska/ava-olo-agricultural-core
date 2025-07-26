@@ -3,7 +3,7 @@ import requests
 import json
 
 # Base URL for the database explorer
-BASE_URL = "https://6pmgrirjre.us-east-1.awsapprunner.com/database"
+BASE_URL = "https://6pmgrirjre.us-east-1.elb.amazonaws.com/database"
 
 print("🔍 Checking database for existing data...\n")
 

@@ -11,7 +11,7 @@ async def verify_deployment():
     """Verify the critical fix is actually deployed"""
     
     # Production URL
-    base_url = "https://ava-olo-agricultural-core.us-east-1.awsapprunner.com"
+    base_url = "https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com"
     
     print("🔍 DEPLOYMENT VERIFICATION - Commit 8a3408b")
     print("=" * 60)
@@ -120,7 +120,7 @@ async def verify_deployment():
     else:
         print("\n❌ DEPLOYMENT FAILED: Old code still running")
         print("\nRequired Actions:")
-        print("1. Check AWS App Runner deployment status")
+        print("1. Check AWS ECS deployment status")
         print("2. Verify environment variables are set")
         print("3. Force new deployment if needed")
     

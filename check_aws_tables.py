@@ -72,4 +72,4 @@ except Exception as e:
     print("\nThis might be because:")
     print("1. You're connecting from local machine (not within AWS VPC)")
     print("2. The database credentials are incorrect")
-    print("3. The database needs to be accessed through AWS App Runner")
+    print("3. The database needs to be accessed through AWS ECS")

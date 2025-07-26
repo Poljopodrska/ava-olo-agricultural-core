@@ -4,7 +4,7 @@
 import subprocess
 import urllib.request
 
-url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
 
 print("🔍 QUICK DEPLOYMENT VERIFICATION")
 print("=" * 40)

@@ -54,7 +54,7 @@ async def test_llm_connection() -> Dict[str, Any]:
         return {
             "status": "failed",
             "error": "OpenAI API key not configured",
-            "fix": "Set OPENAI_API_KEY environment variable in AWS App Runner",
+            "fix": "Set OPENAI_API_KEY environment variable in AWS ECS",
             "constitutional_compliance": "violated - no LLM available"
         }
     
@@ -970,7 +970,7 @@ async def check_constitutional_compliance() -> Dict[str, Any]:
             "id": 9,
             "name": "Scalable",
             "check": lambda: True,
-            "status": "✅ AWS App Runner auto-scaling"
+            "status": "✅ AWS ECS auto-scaling"
         },
         {
             "id": 10,

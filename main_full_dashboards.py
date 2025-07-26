@@ -1,6 +1,6 @@
 """
 Main entry point for AVA OLO Monitoring Dashboards
-Combines all 4 dashboards into one App Runner service
+Combines all 4 dashboards into one ECS service
 """
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -131,7 +131,7 @@ async def root():
 async def redirect_docs():
     return RedirectResponse(url="/docs")
 
-# Health check endpoint for App Runner
+# Health check endpoint for ECS
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "service": "monitoring-suite", "dashboards": 4}

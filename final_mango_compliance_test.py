@@ -15,7 +15,7 @@ def test_bulgarian_mango_farmer_workflow():
     print("Question: Can a Bulgarian mango farmer register their farm and draw field boundaries easily?")
     print()
     
-    base_url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+    base_url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
     
     # Test 1: Access main dashboard
     print("📋 Test 1: Main Dashboard Access")

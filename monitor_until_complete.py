@@ -6,7 +6,7 @@ import time
 import sys
 from datetime import datetime
 
-service_arn = "arn:aws:apprunner:us-east-1:127679825789:service/ava-olo-monitoring-dashboards/a8cb4bde353646c396b10e6cd3ff290a"
+service_arn = "arn:aws:ecs:us-east-1:127679825789:service/ava-olo-monitoring-dashboards/a8cb4bde353646c396b10e6cd3ff290a"
 start_time = datetime.now()
 
 print("🔄 MONITORING DEPLOYMENT STATUS")
@@ -22,7 +22,7 @@ while True:
     
     # Check AWS status
     result = subprocess.run([
-        'aws', 'apprunner', 'describe-service',
+        'aws', 'ecs', 'describe-service',
         '--service-arn', service_arn,
         '--region', 'us-east-1',
         '--query', 'Service.Status',
@@ -44,7 +44,7 @@ while True:
         # Quick feature check
         import requests
         try:
-            resp = requests.get("https://6pmgrirjre.us-east-1.awsapprunner.com/ui-dashboard", timeout=5)
+            resp = requests.get("https://6pmgrirjre.us-east-1.elb.amazonaws.com/ui-dashboard", timeout=5)
             if resp.status_code == 200 and "dashboard-grid" in resp.text:
                 print("✅ Dashboard features verified!")
             else:

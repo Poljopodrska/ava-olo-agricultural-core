@@ -26,6 +26,6 @@ This ensures consistent governance across the entire AVA OLO ecosystem.
 - System administrators
 
 ## Deployment
-AWS ECS service for production infrastructure (App Runner has been DELETED).
+AWS ECS service for production infrastructure (ECS has been DELETED).
 # Deployment trigger: Wed Jul 23 20:37:02 CEST 2025
 # ECR deployment verification: Wed Jul 23 21:32:55 CEST 2025

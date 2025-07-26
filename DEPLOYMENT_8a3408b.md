@@ -17,7 +17,7 @@
 
 ### 1. Version Check
 ```bash
-curl https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/version
+curl https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com/version
 ```
 **Expected Response**:
 ```json
@@ -29,7 +29,7 @@ curl https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/version
 
 ### 2. Debug Endpoint Check
 ```bash
-curl https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registration/debug
+curl https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com/api/v1/registration/debug
 ```
 **Expected Response**:
 ```json
@@ -42,7 +42,7 @@ curl https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registr
 
 ### 3. Registration Test
 ```bash
-curl -X POST https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1/registration/cava \
+curl -X POST https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com/api/v1/registration/cava \
   -H "Content-Type: application/json" \
   -d '{"farmer_id": "test123", "message": "I want to register", "language": "en"}'
 ```
@@ -82,7 +82,7 @@ curl -X POST https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1
 - `ensure_openai_key.py` - Environment verification
 
 ### Configuration Updates:
-- Updated apprunner.yaml with commit reference
+- Updated ecs.yaml with commit reference
 - Added OpenAI API key to environment
 - Set FORCE_REBUILD to trigger deployment
 
@@ -97,7 +97,7 @@ curl -X POST https://ava-olo-agricultural-core.us-east-1.awsapprunner.com/api/v1
 
 ## Manual Deployment Steps (if automatic fails)
 
-1. **AWS App Runner Console**:
+1. **AWS ECS Console**:
    - Navigate to ava-olo-agricultural-core service
    - Click "Deploy" button
    - Wait for deployment to complete
@@ -125,7 +125,7 @@ python test_bulgarian_registration.py
 ## Rollback Plan
 
 If deployment fails or causes issues:
-1. Revert to previous commit in App Runner
+1. Revert to previous commit in ECS
 2. Check environment variables
 3. Review deployment logs for errors
 4. Ensure database connectivity
@@ -133,6 +133,6 @@ If deployment fails or causes issues:
 ## Contact
 
 For deployment issues:
-- Check AWS App Runner logs
+- Check AWS ECS logs
 - Verify environment variables
 - Ensure GitHub webhook is configured

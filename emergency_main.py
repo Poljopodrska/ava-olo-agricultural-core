@@ -17,7 +17,7 @@ def get_deployment_info():
         "version": "constitutional-emergency-v1.0",
         "deployment_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "status": "DEPLOYED",
-        "environment": "AWS App Runner",
+        "environment": "AWS ECS",
         "platform": "FastAPI Constitutional"
     }
 

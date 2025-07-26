@@ -31,9 +31,9 @@ print("\n4️⃣ OPTION 4: Lambda Function")
 print("   - Create a Lambda function in the VPC")
 print("   - Use it to run the SQL commands")
 
-print("\n5️⃣ OPTION 5: Wait for App Runner")
+print("\n5️⃣ OPTION 5: Wait for ECS")
 print("   - The import feature will be available once deployment completes")
-print("   - Check: https://6pmgrirjre.us-east-1.awsapprunner.com/database/import")
+print("   - Check: https://6pmgrirjre.us-east-1.elb.amazonaws.com/database/import")
 
 # Create a smaller test SQL to verify connection
 with open('test_connection.sql', 'w') as f:
@@ -50,4 +50,4 @@ SELECT * FROM test_connection;
 """)
 
 print("\n📄 Created test_connection.sql to verify your connection works")
-print("\n💡 Most practical: Use AWS Cloud Shell or wait for App Runner deployment")
+print("\n💡 Most practical: Use AWS Cloud Shell or wait for ECS deployment")

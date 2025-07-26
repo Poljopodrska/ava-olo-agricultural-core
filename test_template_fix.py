@@ -4,7 +4,7 @@
 # Check if we can access the UI dashboard directly
 import requests
 
-url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
 
 print("Testing template loading...")
 

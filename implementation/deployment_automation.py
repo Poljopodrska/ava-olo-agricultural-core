@@ -16,7 +16,7 @@ async def verify_production_deployment(service_name: str, features: list) -> boo
     CONSTITUTIONAL REQUIREMENT: Verify deployment in AWS production
     Returns True only if all features are operational
     """
-    base_url = "https://6pmgiripe.us-east-1.awsapprunner.com"
+    base_url = "https://6pmgiripe.us-east-1.elb.amazonaws.com"
     
     print("🔍 CONSTITUTIONAL VERIFICATION: Testing production deployment...")
     
@@ -95,7 +95,7 @@ async def deploy_with_constitutional_verification(service_name: str):
         
         if not verification_success:
             print("🚨 DEPLOYMENT INCOMPLETE: Features not verified in production")
-            print("🔧 REQUIRED: Fix App Runner caching or force rebuild")
+            print("🔧 REQUIRED: Fix ECS caching or force rebuild")
             return False
     
     print("✅ CONSTITUTIONAL DEPLOYMENT COMPLETE: Verified in AWS production")

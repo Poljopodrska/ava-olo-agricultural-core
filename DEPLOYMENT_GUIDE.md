@@ -6,7 +6,7 @@ This guide explains how to deploy the AVA OLO dashboard system with proper routi
 ## Architecture
 
 ```
-User → AWS App Runner → Main App (Port 8080)
+User → AWS ECS → Main App (Port 8080)
                          ├── / (Front Page)
                          ├── /database-dashboard
                          └── /api/* endpoints
@@ -17,12 +17,12 @@ User → AWS App Runner → Main App (Port 8080)
 
 ## Deployment Options
 
-### Option 1: Single App Runner Service (Recommended for AWS)
+### Option 1: Single ECS Service (Recommended for AWS)
 
-Since AWS App Runner doesn't support multiple apps on different ports, we'll modify the main app to include all functionality:
+Since AWS ECS doesn't support multiple apps on different ports, we'll modify the main app to include all functionality:
 
 1. **Update main.py** to include business dashboard routes
-2. **Deploy as single service** to App Runner
+2. **Deploy as single service** to ECS
 3. **All dashboards accessible** from one URL
 
 ### Option 2: Multiple Services with Load Balancer
@@ -45,11 +45,11 @@ python main.py  # Runs on port 8080
 python run_business_dashboard.py  # Runs on port 8004
 ```
 
-## Quick Deployment to AWS App Runner
+## Quick Deployment to AWS ECS
 
 ### 1. Prepare Environment Variables
 
-Set these in AWS App Runner configuration:
+Set these in AWS ECS configuration:
 
 ```
 DB_HOST=your-rds-endpoint
@@ -67,14 +67,14 @@ The main.py already includes:
 - Database dashboard at `/database-dashboard`
 - All API endpoints
 
-### 3. Deploy to App Runner
+### 3. Deploy to ECS
 
 1. Push code to GitHub
-2. In AWS Console → App Runner:
+2. In AWS Console → ECS:
    - Source: GitHub repository
    - Branch: main
    - Deployment trigger: Automatic
-   - Build settings: Use apprunner.yaml
+   - Build settings: Use ecs.yaml
    - Service settings:
      - Port: 8080
      - Start command: `python main.py`
@@ -82,8 +82,8 @@ The main.py already includes:
 ### 4. Access Your Dashboards
 
 After deployment:
-- Front page: `https://your-app.awsapprunner.com/`
-- Database Dashboard: `https://your-app.awsapprunner.com/database-dashboard`
+- Front page: `https://your-app.elb.amazonaws.com/`
+- Database Dashboard: `https://your-app.elb.amazonaws.com/database-dashboard`
 
 ## Adding Business Dashboard to Main App
 
@@ -118,7 +118,7 @@ OPENAI_API_KEY=sk-dev-key
 
 ### Production
 ```bash
-# AWS App Runner Environment
+# AWS ECS Environment
 DB_HOST=your-rds.region.rds.amazonaws.com
 DB_NAME=farmer_crm
 OPENAI_API_KEY=sk-prod-key
@@ -128,12 +128,12 @@ OPENAI_API_KEY=sk-prod-key
 
 1. **Health Check**: `/health` endpoint
 2. **AWS CloudWatch**: Automatic logging
-3. **Error Tracking**: Check App Runner logs
+3. **Error Tracking**: Check ECS logs
 
 ## Troubleshooting
 
 ### Database Connection Issues
-- Verify RDS security group allows App Runner
+- Verify RDS security group allows ECS
 - Check VPC configuration
 - Ensure DB credentials are correct
 
@@ -151,12 +151,12 @@ OPENAI_API_KEY=sk-prod-key
 
 1. **Never commit** `.env` files
 2. **Use AWS Secrets Manager** for production
-3. **Enable HTTPS** (automatic with App Runner)
-4. **Restrict database access** to App Runner only
+3. **Enable HTTPS** (automatic with ECS)
+4. **Restrict database access** to ECS only
 
 ## Scaling
 
-AWS App Runner automatically scales based on:
+AWS ECS automatically scales based on:
 - Request volume
 - CPU/Memory usage
 - Configured limits

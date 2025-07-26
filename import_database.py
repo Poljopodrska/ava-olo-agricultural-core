@@ -131,7 +131,7 @@ def import_database_schema():
         return False
     except FileNotFoundError:
         print("❌ SQL file 'farmer_crm_aws_ready.sql' not found")
-        print("📌 Make sure to upload the SQL file to the App Runner environment first")
+        print("📌 Make sure to upload the SQL file to the ECS environment first")
         return False
     except Exception as e:
         print(f"❌ Unexpected error: {e}")

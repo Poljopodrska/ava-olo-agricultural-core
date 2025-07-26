@@ -82,7 +82,7 @@ async def diagnose_openai():
     print(f"\n5. Recommendations:")
     print(f"   - Check if requirements.txt was properly installed")
     print(f"   - Verify the OpenAI API key is valid and has credits")
-    print(f"   - Check AWS App Runner logs for any errors")
+    print(f"   - Check AWS ECS logs for any errors")
 
 if __name__ == "__main__":
     asyncio.run(diagnose_openai())

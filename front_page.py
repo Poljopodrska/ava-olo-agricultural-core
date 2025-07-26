@@ -15,7 +15,7 @@ app = FastAPI(
 )
 
 # Get the base URL from environment or use default
-BASE_URL = os.getenv('BASE_URL', 'https://ava-olo-monitoring-dashboards.eu-central-1.awsapprunner.com')
+BASE_URL = os.getenv('BASE_URL', 'https://ava-olo-monitoring-dashboards.eu-central-1.elb.amazonaws.com')
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_hub():
@@ -333,7 +333,7 @@ async def dashboard_hub():
             </div>
             <div class="tech-item">
                 <span>☁️</span>
-                <span>AWS App Runner</span>
+                <span>AWS ECS</span>
             </div>
         </div>
         <p style="margin-top: 1rem; font-size: 0.8rem; color: #999;">

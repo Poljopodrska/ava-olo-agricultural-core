@@ -144,7 +144,7 @@ aws budgets update-budget-action \
 - Review ElastiCache usage ($11/month potential)
 - Optimize CloudWatch logs ($4/month potential)
 - Right-size RDS instance ($5-10/month potential)
-- Review App Runner configuration ($5/month potential)
+- Review ECS configuration ($5/month potential)
 
 ## Reporting
 

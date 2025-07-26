@@ -169,7 +169,7 @@
                                         {
                                             "conditions": [],
                                             "endpoint": {
-                                                "url": "https://apprunner-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                "url": "https://ecs-fips.{Region}.{PartitionResult#dualStackDnsSuffix}",
                                                 "properties": {},
                                                 "headers": {}
                                             },
@@ -221,7 +221,7 @@
                                         {
                                             "conditions": [],
                                             "endpoint": {
-                                                "url": "https://apprunner-fips.{Region}.{PartitionResult#dnsSuffix}",
+                                                "url": "https://ecs-fips.{Region}.{PartitionResult#dnsSuffix}",
                                                 "properties": {},
                                                 "headers": {}
                                             },
@@ -273,7 +273,7 @@
                                         {
                                             "conditions": [],
                                             "endpoint": {
-                                                "url": "https://apprunner.{Region}.{PartitionResult#dualStackDnsSuffix}",
+                                                "url": "https://ecs.{Region}.{PartitionResult#dualStackDnsSuffix}",
                                                 "properties": {},
                                                 "headers": {}
                                             },
@@ -293,7 +293,7 @@
                         {
                             "conditions": [],
                             "endpoint": {
-                                "url": "https://apprunner.{Region}.{PartitionResult#dnsSuffix}",
+                                "url": "https://ecs.{Region}.{PartitionResult#dnsSuffix}",
                                 "properties": {},
                                 "headers": {}
                             },

@@ -17,7 +17,7 @@ class AutonomousRetryDeployer:
         self.max_attempts = 10
         self.base_wait_time = 300  # 5 minutes between attempts
         self.max_total_time = 7200  # 2 hours maximum
-        self.working_url = "https://6pmgrirjre.us-east-1.awsapprunner.com"  # Correct URL found!
+        self.working_url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"  # Correct URL found!
         
     def verify_deployment_working(self):
         """Try multiple methods to verify deployment"""

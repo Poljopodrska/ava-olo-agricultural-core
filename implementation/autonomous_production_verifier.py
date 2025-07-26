@@ -14,7 +14,7 @@ from typing import Dict, List, Tuple
 class ConstitutionalProductionVerifier:
     """Autonomous production verification according to Amendment #15"""
     
-    def __init__(self, base_url: str = "https://6pmgrirjre.us-east-1.awsapprunner.com"):
+    def __init__(self, base_url: str = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"):
         self.base_url = base_url
         self.verification_results = []
     

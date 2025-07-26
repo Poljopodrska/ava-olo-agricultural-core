@@ -17,7 +17,7 @@ Every deployment MUST include autonomous verification:
 def autonomous_production_verification():
     """Constitutional requirement - no manual checks allowed"""
     
-    base_url = "https://6pmgiripe.us-east-1.awsapprunner.com"
+    base_url = "https://6pmgiripe.us-east-1.elb.amazonaws.com"
     
     # Test all deployed features automatically
     tests = [

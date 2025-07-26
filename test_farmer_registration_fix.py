@@ -10,7 +10,7 @@ import os
 from datetime import datetime
 
 # Test configuration
-BASE_URL = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+BASE_URL = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
 LOCAL_URL = "http://localhost:8000"
 
 # Use production URL by default

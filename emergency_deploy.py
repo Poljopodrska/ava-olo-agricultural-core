@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Emergency deployment to force App Runner update"""
+"""Emergency deployment to force ECS update"""
 
 import subprocess
 import time
@@ -41,10 +41,10 @@ try:
 except Exception as e:
     print(f"❌ Method 1 failed: {str(e)}")
 
-# Method 2: Update apprunner.yaml
-print("\n🔧 Method 2: Updating apprunner.yaml...")
+# Method 2: Update ecs.yaml
+print("\n🔧 Method 2: Updating ecs.yaml...")
 try:
-    with open('apprunner.yaml', 'r') as f:
+    with open('ecs.yaml', 'r') as f:
         content = f.read()
     
     # Add or update env variable to force rebuild
@@ -57,11 +57,11 @@ try:
       value: "{int(time.time())}"  # FORCE_REBUILD'''
         content = content.replace('  env:', f'  env:\n{env_addition}')
     
-    with open('apprunner.yaml', 'w') as f:
+    with open('ecs.yaml', 'w') as f:
         f.write(content)
     
-    subprocess.run(['git', 'add', 'apprunner.yaml'], check=True)
-    subprocess.run(['git', 'commit', '-m', 'EMERGENCY: Update apprunner.yaml to force rebuild'], check=True)
+    subprocess.run(['git', 'add', 'ecs.yaml'], check=True)
+    subprocess.run(['git', 'commit', '-m', 'EMERGENCY: Update ecs.yaml to force rebuild'], check=True)
     subprocess.run(['git', 'push', 'origin', 'main'], check=True)
     print("✅ Method 2: Deployed")
 except Exception as e:
@@ -91,14 +91,14 @@ except Exception as e:
     print(f"❌ Method 3 failed: {str(e)}")
 
 print("\n📊 EMERGENCY DEPLOYMENT COMPLETE")
-print("Waiting 3 minutes for App Runner to pick up changes...")
+print("Waiting 3 minutes for ECS to pick up changes...")
 print("Run 'python3 quick_verify.py' to check status")
 
 # AWS CLI deployment trigger if available
 try:
     print("\n🔧 Attempting AWS CLI deployment trigger...")
     result = subprocess.run([
-        'aws', 'apprunner', 'list-services', 
+        'aws', 'ecs', 'list-services', 
         '--region', 'us-east-1',
         '--query', 'ServiceSummaryList[?ServiceName==`ava-olo-monitoring-dashboards`].ServiceArn',
         '--output', 'text'
@@ -110,7 +110,7 @@ try:
         
         # Start deployment
         deploy_result = subprocess.run([
-            'aws', 'apprunner', 'start-deployment',
+            'aws', 'ecs', 'start-deployment',
             '--service-arn', service_arn,
             '--region', 'us-east-1'
         ], capture_output=True, text=True)

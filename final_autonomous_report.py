@@ -7,7 +7,7 @@ import requests
 print('📋 FINAL PRODUCTION STATUS REPORT')
 print('=================================')
 
-base_url = 'https://6pmgiripe.us-east-1.awsapprunner.com'
+base_url = 'https://6pmgiripe.us-east-1.elb.amazonaws.com'
 
 try:
     response = requests.get(f'{base_url}/agricultural-dashboard', timeout=10)
@@ -46,4 +46,4 @@ except Exception as e:
     print('✅ Standard procedures updated')
     print('✅ Emergency cache bust deployed')
     print('\n⚠️  MANUAL VERIFICATION REQUIRED:')
-    print('Please check the AWS App Runner console to verify deployment status')
+    print('Please check the AWS ECS console to verify deployment status')

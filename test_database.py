@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 
 # Base URL for the deployed app
-BASE_URL = "https://6pmgrirjre.us-east-1.awsapprunner.com/database"
+BASE_URL = "https://6pmgrirjre.us-east-1.elb.amazonaws.com/database"
 
 def test_connection():
     """Test database connection"""
@@ -139,7 +139,7 @@ def main():
     if tests_passed == total_tests:
         print("✅ All tests passed! Database is working correctly.")
         print("\n🎯 Next steps:")
-        print("1. Visit Database Explorer: https://6pmgrirjre.us-east-1.awsapprunner.com/database/")
+        print("1. Visit Database Explorer: https://6pmgrirjre.us-east-1.elb.amazonaws.com/database/")
         print("2. Browse the farmers table to see your test data")
         print("3. Try the AI Query Assistant")
     else:

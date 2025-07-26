@@ -1,7 +1,7 @@
 # Environment Variables Recovery Guide
 
 ## Overview
-All environment variables were lost during the App Runner to ECS migration. This guide documents the recovery process and the values that were found vs generated.
+All environment variables were lost during the ECS to ECS migration. This guide documents the recovery process and the values that were found vs generated.
 
 ## Recovery Results
 
@@ -10,7 +10,7 @@ All environment variables were lost during the App Runner to ECS migration. This
 | Variable | Value | Source |
 |----------|-------|--------|
 | DB_HOST | farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com | Multiple files |
-| DB_NAME | farmer_crm | apprunner.yaml, multiple .py files |
+| DB_NAME | farmer_crm | ecs.yaml, multiple .py files |
 | DB_USER | postgres | Database scripts |
 | DB_PORT | 5432 | Default PostgreSQL port |
 | AWS_REGION | us-east-1 | ALB endpoints |

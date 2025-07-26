@@ -2,7 +2,7 @@
 
 ## Environment Variables Required
 
-Set these environment variables in AWS App Runner:
+Set these environment variables in AWS ECS:
 
 ```bash
 # Database Configuration
@@ -25,8 +25,8 @@ OPENAI_API_KEY=your_openai_key_here
 
 ## Pre-Deployment Checklist
 
-1. **Environment Variables**: Ensure all environment variables above are set in AWS App Runner
-2. **RDS Security Group**: Verify the RDS security group allows connections from App Runner IP range (172.31.96.0/24)
+1. **Environment Variables**: Ensure all environment variables above are set in AWS ECS
+2. **RDS Security Group**: Verify the RDS security group allows connections from ECS IP range (172.31.96.0/24)
 3. **SSL Mode**: The application is configured to use SSL for RDS connections automatically
 
 ## Deployment Steps
@@ -38,7 +38,7 @@ OPENAI_API_KEY=your_openai_key_here
    git push origin main
    ```
 
-2. **AWS App Runner**: The service should automatically deploy from the GitHub repository
+2. **AWS ECS**: The service should automatically deploy from the GitHub repository
 
 3. **Verify Deployment**:
    - Check `/` - Home page should load
@@ -52,8 +52,8 @@ OPENAI_API_KEY=your_openai_key_here
 **Solution**: 
 1. The password contains special characters that need URL encoding. The application handles this automatically.
 2. **IMPORTANT**: If you see `%3C` in the password (which is `<`), the password might be getting HTML-encoded by AWS. 
-   - Make sure to enter the password in AWS App Runner exactly as: `2hpzvrg_xP~qNbz1[_NppSK$e*O1`
-   - Do NOT use quotes around the password in AWS App Runner environment variables
+   - Make sure to enter the password in AWS ECS exactly as: `2hpzvrg_xP~qNbz1[_NppSK$e*O1`
+   - Do NOT use quotes around the password in AWS ECS environment variables
    - If the password still fails, try using the debug endpoint `/debug/test-password-encoding` to see what's being received
 
 ### Issue: Google Maps Not Loading
@@ -64,7 +64,7 @@ OPENAI_API_KEY=your_openai_key_here
 
 ### Issue: Connection Timeout to RDS
 **Solution**:
-1. Check RDS security group has inbound rule for App Runner IP range
+1. Check RDS security group has inbound rule for ECS IP range
 2. Verify RDS instance is publicly accessible if connecting from outside VPC
 3. Ensure SSL mode is set to 'require' (handled automatically)
 

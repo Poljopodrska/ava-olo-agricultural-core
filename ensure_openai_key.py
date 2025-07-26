@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Ensure OpenAI API key is set in App Runner environment
+Ensure OpenAI API key is set in ECS environment
 Critical for Constitutional Amendment #15 compliance
 """
 import subprocess
@@ -32,12 +32,12 @@ if not openai_key:
     print("Please ensure OPENAI_API_KEY is set in .env.production")
     exit(1)
 
-print("\n🔍 Checking App Runner service...")
+print("\n🔍 Checking ECS service...")
 
 try:
     # List services
     result = subprocess.run([
-        'aws', 'apprunner', 'list-services',
+        'aws', 'ecs', 'list-services',
         '--region', 'us-east-1',
         '--query', 'ServiceSummaryList[?ServiceName==`ava-olo-agricultural-core`]',
         '--output', 'json'
@@ -54,7 +54,7 @@ try:
             
             # Get service details
             detail_result = subprocess.run([
-                'aws', 'apprunner', 'describe-service',
+                'aws', 'ecs', 'describe-service',
                 '--service-arn', service_arn,
                 '--region', 'us-east-1',
                 '--output', 'json'
@@ -75,9 +75,9 @@ try:
                         print(f"   {key}: {value}")
                 
                 if 'OPENAI_API_KEY' not in current_env:
-                    print("\n⚠️  OPENAI_API_KEY not set in App Runner!")
+                    print("\n⚠️  OPENAI_API_KEY not set in ECS!")
                     print("\n📝 To fix this:")
-                    print("1. Go to AWS App Runner console")
+                    print("1. Go to AWS ECS console")
                     print("2. Select ava-olo-agricultural-core service")
                     print("3. Click 'Update service'")
                     print("4. Go to 'Configure service' step")
@@ -90,7 +90,7 @@ try:
             else:
                 print(f"❌ Failed to get service details: {detail_result.stderr}")
         else:
-            print("❌ No App Runner service found named 'ava-olo-agricultural-core'")
+            print("❌ No ECS service found named 'ava-olo-agricultural-core'")
     else:
         print(f"❌ Failed to list services: {result.stderr}")
         
@@ -103,9 +103,9 @@ except FileNotFoundError:
 except Exception as e:
     print(f"❌ Error: {e}")
 
-print("\n🔧 ALTERNATIVE: Update via apprunner.yaml")
-print("The apprunner.yaml has been updated with the OpenAI key.")
+print("\n🔧 ALTERNATIVE: Update via ecs.yaml")
+print("The ecs.yaml has been updated with the OpenAI key.")
 print("Push the changes to trigger a new deployment:")
-print("  git add apprunner.yaml")
-print("  git commit -m 'Add OpenAI API key to App Runner config'")
+print("  git add ecs.yaml")
+print("  git commit -m 'Add OpenAI API key to ECS config'")
 print("  git push origin main")

@@ -2,16 +2,16 @@
   "version":"2.0",
   "metadata":{
     "apiVersion":"2020-05-15",
-    "endpointPrefix":"apprunner",
+    "endpointPrefix":"ecs",
     "jsonVersion":"1.0",
     "protocol":"json",
     "protocols":["json"],
-    "serviceFullName":"AWS App Runner",
+    "serviceFullName":"AWS ECS",
     "serviceId":"AppRunner",
     "signatureVersion":"v4",
-    "signingName":"apprunner",
+    "signingName":"ecs",
     "targetPrefix":"AppRunner",
-    "uid":"apprunner-2020-05-15",
+    "uid":"ecs-2020-05-15",
     "auth":["aws.auth#sigv4"]
   },
   "operations":{
@@ -28,7 +28,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Associate your own domain name with the App Runner subdomain URL of your App Runner service.</p> <p>After you call <code>AssociateCustomDomain</code> and receive a successful response, use the information in the <a>CustomDomain</a> record that's returned to add CNAME records to your Domain Name System (DNS). For each mapped domain name, add a mapping to the target App Runner subdomain and one or more certificate validation records. App Runner then performs DNS validation to verify that you own or control the domain name that you associated. App Runner tracks domain validity in a certificate stored in <a href=\"https://docs.aws.amazon.com/acm/latest/userguide\">AWS Certificate Manager (ACM)</a>.</p>"
+      "documentation":"<p>Associate your own domain name with the ECS subdomain URL of your ECS service.</p> <p>After you call <code>AssociateCustomDomain</code> and receive a successful response, use the information in the <a>CustomDomain</a> record that's returned to add CNAME records to your Domain Name System (DNS). For each mapped domain name, add a mapping to the target ECS subdomain and one or more certificate validation records. ECS then performs DNS validation to verify that you own or control the domain name that you associated. ECS tracks domain validity in a certificate stored in <a href=\"https://docs.aws.amazon.com/acm/latest/userguide\">AWS Certificate Manager (ACM)</a>.</p>"
     },
     "CreateAutoScalingConfiguration":{
       "name":"CreateAutoScalingConfiguration",
@@ -43,7 +43,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ServiceQuotaExceededException"}
       ],
-      "documentation":"<p>Create an App Runner automatic scaling configuration resource. App Runner requires this resource when you create or update App Runner services and you require non-default auto scaling settings. You can share an auto scaling configuration across multiple services.</p> <p>Create multiple revisions of a configuration by calling this action multiple times using the same <code>AutoScalingConfigurationName</code>. The call returns incremental <code>AutoScalingConfigurationRevision</code> values. When you create a service and configure an auto scaling configuration resource, the service uses the latest active revision of the auto scaling configuration by default. You can optionally configure the service to use a specific revision.</p> <p>Configure a higher <code>MinSize</code> to increase the spread of your App Runner service over more Availability Zones in the Amazon Web Services Region. The tradeoff is a higher minimal cost.</p> <p>Configure a lower <code>MaxSize</code> to control your cost. The tradeoff is lower responsiveness during peak demand.</p>"
+      "documentation":"<p>Create an ECS automatic scaling configuration resource. ECS requires this resource when you create or update ECS services and you require non-default auto scaling settings. You can share an auto scaling configuration across multiple services.</p> <p>Create multiple revisions of a configuration by calling this action multiple times using the same <code>AutoScalingConfigurationName</code>. The call returns incremental <code>AutoScalingConfigurationRevision</code> values. When you create a service and configure an auto scaling configuration resource, the service uses the latest active revision of the auto scaling configuration by default. You can optionally configure the service to use a specific revision.</p> <p>Configure a higher <code>MinSize</code> to increase the spread of your ECS service over more Availability Zones in the Amazon Web Services Region. The tradeoff is a higher minimal cost.</p> <p>Configure a lower <code>MaxSize</code> to control your cost. The tradeoff is lower responsiveness during peak demand.</p>"
     },
     "CreateConnection":{
       "name":"CreateConnection",
@@ -58,7 +58,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ServiceQuotaExceededException"}
       ],
-      "documentation":"<p>Create an App Runner connection resource. App Runner requires a connection resource when you create App Runner services that access private repositories from certain third-party providers. You can share a connection across multiple services.</p> <p>A connection resource is needed to access GitHub and Bitbucket repositories. Both require a user interface approval process through the App Runner console before you can use the connection.</p>"
+      "documentation":"<p>Create an ECS connection resource. ECS requires a connection resource when you create ECS services that access private repositories from certain third-party providers. You can share a connection across multiple services.</p> <p>A connection resource is needed to access GitHub and Bitbucket repositories. Both require a user interface approval process through the ECS console before you can use the connection.</p>"
     },
     "CreateObservabilityConfiguration":{
       "name":"CreateObservabilityConfiguration",
@@ -73,7 +73,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ServiceQuotaExceededException"}
       ],
-      "documentation":"<p>Create an App Runner observability configuration resource. App Runner requires this resource when you create or update App Runner services and you want to enable non-default observability features. You can share an observability configuration across multiple services.</p> <p>Create multiple revisions of a configuration by calling this action multiple times using the same <code>ObservabilityConfigurationName</code>. The call returns incremental <code>ObservabilityConfigurationRevision</code> values. When you create a service and configure an observability configuration resource, the service uses the latest active revision of the observability configuration by default. You can optionally configure the service to use a specific revision.</p> <p>The observability configuration resource is designed to configure multiple features (currently one feature, tracing). This action takes optional parameters that describe the configuration of these features (currently one parameter, <code>TraceConfiguration</code>). If you don't specify a feature parameter, App Runner doesn't enable the feature.</p>"
+      "documentation":"<p>Create an ECS observability configuration resource. ECS requires this resource when you create or update ECS services and you want to enable non-default observability features. You can share an observability configuration across multiple services.</p> <p>Create multiple revisions of a configuration by calling this action multiple times using the same <code>ObservabilityConfigurationName</code>. The call returns incremental <code>ObservabilityConfigurationRevision</code> values. When you create a service and configure an observability configuration resource, the service uses the latest active revision of the observability configuration by default. You can optionally configure the service to use a specific revision.</p> <p>The observability configuration resource is designed to configure multiple features (currently one feature, tracing). This action takes optional parameters that describe the configuration of these features (currently one parameter, <code>TraceConfiguration</code>). If you don't specify a feature parameter, ECS doesn't enable the feature.</p>"
     },
     "CreateService":{
       "name":"CreateService",
@@ -88,7 +88,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ServiceQuotaExceededException"}
       ],
-      "documentation":"<p>Create an App Runner service. After the service is created, the action also automatically starts a deployment.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_ListOperations.html\">ListOperations</a> call to track the operation's progress.</p>"
+      "documentation":"<p>Create an ECS service. After the service is created, the action also automatically starts a deployment.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_ListOperations.html\">ListOperations</a> call to track the operation's progress.</p>"
     },
     "CreateVpcConnector":{
       "name":"CreateVpcConnector",
@@ -103,7 +103,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ServiceQuotaExceededException"}
       ],
-      "documentation":"<p>Create an App Runner VPC connector resource. App Runner requires this resource when you want to associate your App Runner service to a custom Amazon Virtual Private Cloud (Amazon VPC).</p>"
+      "documentation":"<p>Create an ECS VPC connector resource. ECS requires this resource when you want to associate your ECS service to a custom Amazon Virtual Private Cloud (Amazon VPC).</p>"
     },
     "CreateVpcIngressConnection":{
       "name":"CreateVpcIngressConnection",
@@ -119,7 +119,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ServiceQuotaExceededException"}
       ],
-      "documentation":"<p>Create an App Runner VPC Ingress Connection resource. App Runner requires this resource when you want to associate your App Runner service with an Amazon VPC endpoint.</p>"
+      "documentation":"<p>Create an ECS VPC Ingress Connection resource. ECS requires this resource when you want to associate your ECS service with an Amazon VPC endpoint.</p>"
     },
     "DeleteAutoScalingConfiguration":{
       "name":"DeleteAutoScalingConfiguration",
@@ -134,7 +134,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Delete an App Runner automatic scaling configuration resource. You can delete a top level auto scaling configuration, a specific revision of one, or all revisions associated with the top level configuration. You can't delete the default auto scaling configuration or a configuration that's used by one or more App Runner services.</p>"
+      "documentation":"<p>Delete an ECS automatic scaling configuration resource. You can delete a top level auto scaling configuration, a specific revision of one, or all revisions associated with the top level configuration. You can't delete the default auto scaling configuration or a configuration that's used by one or more ECS services.</p>"
     },
     "DeleteConnection":{
       "name":"DeleteConnection",
@@ -149,7 +149,7 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Delete an App Runner connection. You must first ensure that there are no running App Runner services that use this connection. If there are any, the <code>DeleteConnection</code> action fails.</p>"
+      "documentation":"<p>Delete an ECS connection. You must first ensure that there are no running ECS services that use this connection. If there are any, the <code>DeleteConnection</code> action fails.</p>"
     },
     "DeleteObservabilityConfiguration":{
       "name":"DeleteObservabilityConfiguration",
@@ -164,7 +164,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Delete an App Runner observability configuration resource. You can delete a specific revision or the latest active revision. You can't delete a configuration that's used by one or more App Runner services.</p>"
+      "documentation":"<p>Delete an ECS observability configuration resource. You can delete a specific revision or the latest active revision. You can't delete a configuration that's used by one or more ECS services.</p>"
     },
     "DeleteService":{
       "name":"DeleteService",
@@ -180,7 +180,7 @@
         {"shape":"InvalidStateException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Delete an App Runner service.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p> <note> <p>Make sure that you don't have any active VPCIngressConnections associated with the service you want to delete. </p> </note>"
+      "documentation":"<p>Delete an ECS service.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p> <note> <p>Make sure that you don't have any active VPCIngressConnections associated with the service you want to delete. </p> </note>"
     },
     "DeleteVpcConnector":{
       "name":"DeleteVpcConnector",
@@ -195,7 +195,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Delete an App Runner VPC connector resource. You can't delete a connector that's used by one or more App Runner services.</p>"
+      "documentation":"<p>Delete an ECS VPC connector resource. You can't delete a connector that's used by one or more ECS services.</p>"
     },
     "DeleteVpcIngressConnection":{
       "name":"DeleteVpcIngressConnection",
@@ -211,7 +211,7 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Delete an App Runner VPC Ingress Connection resource that's associated with an App Runner service. The VPC Ingress Connection must be in one of the following states to be deleted: </p> <ul> <li> <p> <code>AVAILABLE</code> </p> </li> <li> <p> <code>FAILED_CREATION</code> </p> </li> <li> <p> <code>FAILED_UPDATE</code> </p> </li> <li> <p> <code>FAILED_DELETION</code> </p> </li> </ul>"
+      "documentation":"<p>Delete an ECS VPC Ingress Connection resource that's associated with an ECS service. The VPC Ingress Connection must be in one of the following states to be deleted: </p> <ul> <li> <p> <code>AVAILABLE</code> </p> </li> <li> <p> <code>FAILED_CREATION</code> </p> </li> <li> <p> <code>FAILED_UPDATE</code> </p> </li> <li> <p> <code>FAILED_DELETION</code> </p> </li> </ul>"
     },
     "DescribeAutoScalingConfiguration":{
       "name":"DescribeAutoScalingConfiguration",
@@ -226,7 +226,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Return a full description of an App Runner automatic scaling configuration resource.</p>"
+      "documentation":"<p>Return a full description of an ECS automatic scaling configuration resource.</p>"
     },
     "DescribeCustomDomains":{
       "name":"DescribeCustomDomains",
@@ -241,7 +241,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Return a description of custom domain names that are associated with an App Runner service.</p>"
+      "documentation":"<p>Return a description of custom domain names that are associated with an ECS service.</p>"
     },
     "DescribeObservabilityConfiguration":{
       "name":"DescribeObservabilityConfiguration",
@@ -256,7 +256,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Return a full description of an App Runner observability configuration resource.</p>"
+      "documentation":"<p>Return a full description of an ECS observability configuration resource.</p>"
     },
     "DescribeService":{
       "name":"DescribeService",
@@ -271,7 +271,7 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Return a full description of an App Runner service.</p>"
+      "documentation":"<p>Return a full description of an ECS service.</p>"
     },
     "DescribeVpcConnector":{
       "name":"DescribeVpcConnector",
@@ -286,7 +286,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Return a description of an App Runner VPC connector resource.</p>"
+      "documentation":"<p>Return a description of an ECS VPC connector resource.</p>"
     },
     "DescribeVpcIngressConnection":{
       "name":"DescribeVpcIngressConnection",
@@ -301,7 +301,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Return a full description of an App Runner VPC Ingress Connection resource.</p>"
+      "documentation":"<p>Return a full description of an ECS VPC Ingress Connection resource.</p>"
     },
     "DisassociateCustomDomain":{
       "name":"DisassociateCustomDomain",
@@ -317,7 +317,7 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Disassociate a custom domain name from an App Runner service.</p> <p>Certificates tracking domain validity are associated with a custom domain and are stored in <a href=\"https://docs.aws.amazon.com/acm/latest/userguide\">AWS Certificate Manager (ACM)</a>. These certificates aren't deleted as part of this action. App Runner delays certificate deletion for 30 days after a domain is disassociated from your service.</p>"
+      "documentation":"<p>Disassociate a custom domain name from an ECS service.</p> <p>Certificates tracking domain validity are associated with a custom domain and are stored in <a href=\"https://docs.aws.amazon.com/acm/latest/userguide\">AWS Certificate Manager (ACM)</a>. These certificates aren't deleted as part of this action. ECS delays certificate deletion for 30 days after a domain is disassociated from your service.</p>"
     },
     "ListAutoScalingConfigurations":{
       "name":"ListAutoScalingConfigurations",
@@ -331,7 +331,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Returns a list of active App Runner automatic scaling configurations in your Amazon Web Services account. You can query the revisions for a specific configuration name or the revisions for all active configurations in your account. You can optionally query only the latest revision of each requested name.</p> <p>To retrieve a full description of a particular configuration revision, call and provide one of the ARNs returned by <code>ListAutoScalingConfigurations</code>.</p>"
+      "documentation":"<p>Returns a list of active ECS automatic scaling configurations in your Amazon Web Services account. You can query the revisions for a specific configuration name or the revisions for all active configurations in your account. You can optionally query only the latest revision of each requested name.</p> <p>To retrieve a full description of a particular configuration revision, call and provide one of the ARNs returned by <code>ListAutoScalingConfigurations</code>.</p>"
     },
     "ListConnections":{
       "name":"ListConnections",
@@ -345,7 +345,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Returns a list of App Runner connections that are associated with your Amazon Web Services account.</p>"
+      "documentation":"<p>Returns a list of ECS connections that are associated with your Amazon Web Services account.</p>"
     },
     "ListObservabilityConfigurations":{
       "name":"ListObservabilityConfigurations",
@@ -359,7 +359,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Returns a list of active App Runner observability configurations in your Amazon Web Services account. You can query the revisions for a specific configuration name or the revisions for all active configurations in your account. You can optionally query only the latest revision of each requested name.</p> <p>To retrieve a full description of a particular configuration revision, call and provide one of the ARNs returned by <code>ListObservabilityConfigurations</code>.</p>"
+      "documentation":"<p>Returns a list of active ECS observability configurations in your Amazon Web Services account. You can query the revisions for a specific configuration name or the revisions for all active configurations in your account. You can optionally query only the latest revision of each requested name.</p> <p>To retrieve a full description of a particular configuration revision, call and provide one of the ARNs returned by <code>ListObservabilityConfigurations</code>.</p>"
     },
     "ListOperations":{
       "name":"ListOperations",
@@ -374,7 +374,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Return a list of operations that occurred on an App Runner service.</p> <p>The resulting list of <a>OperationSummary</a> objects is sorted in reverse chronological order. The first object on the list represents the last started operation.</p>"
+      "documentation":"<p>Return a list of operations that occurred on an ECS service.</p> <p>The resulting list of <a>OperationSummary</a> objects is sorted in reverse chronological order. The first object on the list represents the last started operation.</p>"
     },
     "ListServices":{
       "name":"ListServices",
@@ -388,7 +388,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Returns a list of running App Runner services in your Amazon Web Services account.</p>"
+      "documentation":"<p>Returns a list of running ECS services in your Amazon Web Services account.</p>"
     },
     "ListServicesForAutoScalingConfiguration":{
       "name":"ListServicesForAutoScalingConfiguration",
@@ -403,7 +403,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"ResourceNotFoundException"}
       ],
-      "documentation":"<p>Returns a list of the associated App Runner services using an auto scaling configuration.</p>"
+      "documentation":"<p>Returns a list of the associated ECS services using an auto scaling configuration.</p>"
     },
     "ListTagsForResource":{
       "name":"ListTagsForResource",
@@ -419,7 +419,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>List tags that are associated with for an App Runner resource. The response contains a list of tag key-value pairs.</p>"
+      "documentation":"<p>List tags that are associated with for an ECS resource. The response contains a list of tag key-value pairs.</p>"
     },
     "ListVpcConnectors":{
       "name":"ListVpcConnectors",
@@ -433,7 +433,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Returns a list of App Runner VPC connectors in your Amazon Web Services account.</p>"
+      "documentation":"<p>Returns a list of ECS VPC connectors in your Amazon Web Services account.</p>"
     },
     "ListVpcIngressConnections":{
       "name":"ListVpcIngressConnections",
@@ -447,7 +447,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Return a list of App Runner VPC Ingress Connections in your Amazon Web Services account.</p>"
+      "documentation":"<p>Return a list of ECS VPC Ingress Connections in your Amazon Web Services account.</p>"
     },
     "PauseService":{
       "name":"PauseService",
@@ -463,7 +463,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Pause an active App Runner service. App Runner reduces compute capacity for the service to zero and loses state (for example, ephemeral storage is removed).</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
+      "documentation":"<p>Pause an active ECS service. ECS reduces compute capacity for the service to zero and loses state (for example, ephemeral storage is removed).</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
     },
     "ResumeService":{
       "name":"ResumeService",
@@ -479,7 +479,7 @@
         {"shape":"InternalServiceErrorException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Resume an active App Runner service. App Runner provisions compute capacity for the service.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
+      "documentation":"<p>Resume an active ECS service. ECS provisions compute capacity for the service.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
     },
     "StartDeployment":{
       "name":"StartDeployment",
@@ -494,7 +494,7 @@
         {"shape":"ResourceNotFoundException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Initiate a manual deployment of the latest commit in a source code repository or the latest image in a source image repository to an App Runner service.</p> <p>For a source code repository, App Runner retrieves the commit and builds a Docker image. For a source image repository, App Runner retrieves the latest Docker image. In both cases, App Runner then deploys the new image to your service and starts a new container instance.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
+      "documentation":"<p>Initiate a manual deployment of the latest commit in a source code repository or the latest image in a source image repository to an ECS service.</p> <p>For a source code repository, ECS retrieves the commit and builds a Docker image. For a source image repository, ECS retrieves the latest Docker image. In both cases, ECS then deploys the new image to your service and starts a new container instance.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
     },
     "TagResource":{
       "name":"TagResource",
@@ -510,7 +510,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Add tags to, or update the tag values of, an App Runner resource. A tag is a key-value pair.</p>"
+      "documentation":"<p>Add tags to, or update the tag values of, an ECS resource. A tag is a key-value pair.</p>"
     },
     "UntagResource":{
       "name":"UntagResource",
@@ -526,7 +526,7 @@
         {"shape":"InvalidRequestException"},
         {"shape":"InvalidStateException"}
       ],
-      "documentation":"<p>Remove tags from an App Runner resource.</p>"
+      "documentation":"<p>Remove tags from an ECS resource.</p>"
     },
     "UpdateDefaultAutoScalingConfiguration":{
       "name":"UpdateDefaultAutoScalingConfiguration",
@@ -557,7 +557,7 @@
         {"shape":"InvalidStateException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Update an App Runner service. You can update the source configuration and instance configuration of the service. You can also update the ARN of the auto scaling configuration resource that's associated with the service. However, you can't change the name or the encryption configuration of the service. These can be set only when you create the service.</p> <p>To update the tags applied to your service, use the separate actions <a>TagResource</a> and <a>UntagResource</a>.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
+      "documentation":"<p>Update an ECS service. You can update the source configuration and instance configuration of the service. You can also update the ARN of the auto scaling configuration resource that's associated with the service. However, you can't change the name or the encryption configuration of the service. These can be set only when you create the service.</p> <p>To update the tags applied to your service, use the separate actions <a>TagResource</a> and <a>UntagResource</a>.</p> <p>This is an asynchronous operation. On a successful call, you can use the returned <code>OperationId</code> and the <a>ListOperations</a> call to track the operation's progress.</p>"
     },
     "UpdateVpcIngressConnection":{
       "name":"UpdateVpcIngressConnection",
@@ -573,7 +573,7 @@
         {"shape":"InvalidStateException"},
         {"shape":"InternalServiceErrorException"}
       ],
-      "documentation":"<p>Update an existing App Runner VPC Ingress Connection resource. The VPC Ingress Connection must be in one of the following states to be updated:</p> <ul> <li> <p> AVAILABLE </p> </li> <li> <p> FAILED_CREATION </p> </li> <li> <p> FAILED_UPDATE </p> </li> </ul>"
+      "documentation":"<p>Update an existing ECS VPC Ingress Connection resource. The VPC Ingress Connection must be in one of the following states to be updated:</p> <ul> <li> <p> AVAILABLE </p> </li> <li> <p> FAILED_CREATION </p> </li> <li> <p> FAILED_UPDATE </p> </li> </ul>"
     }
   },
   "shapes":{
@@ -606,7 +606,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to associate a custom domain name with.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to associate a custom domain name with.</p>"
         },
         "DomainName":{
           "shape":"DomainName",
@@ -614,7 +614,7 @@
         },
         "EnableWWWSubdomain":{
           "shape":"NullableBoolean",
-          "documentation":"<p>Set to <code>true</code> to associate the subdomain <code>www.<i>DomainName</i> </code> with the App Runner service in addition to the base domain.</p> <p>Default: <code>true</code> </p>"
+          "documentation":"<p>Set to <code>true</code> to associate the subdomain <code>www.<i>DomainName</i> </code> with the ECS service in addition to the base domain.</p> <p>Default: <code>true</code> </p>"
         }
       }
     },
@@ -629,11 +629,11 @@
       "members":{
         "DNSTarget":{
           "shape":"String",
-          "documentation":"<p>The App Runner subdomain of the App Runner service. The custom domain name is mapped to this target name.</p>"
+          "documentation":"<p>The ECS subdomain of the ECS service. The custom domain name is mapped to this target name.</p>"
         },
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service with which a custom domain name is associated.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service with which a custom domain name is associated.</p>"
         },
         "CustomDomain":{
           "shape":"CustomDomain",
@@ -650,11 +650,11 @@
       "members":{
         "ConnectionArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner connection that enables the App Runner service to connect to a source repository. It's required for GitHub code repositories.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS connection that enables the ECS service to connect to a source repository. It's required for GitHub code repositories.</p>"
         },
         "AccessRoleArn":{
           "shape":"RoleArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the IAM role that grants the App Runner service access to a source repository. It's required for ECR image repositories (but not for ECR Public repositories).</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the IAM role that grants the ECS service access to a source repository. It's required for ECR image repositories (but not for ECR Public repositories).</p>"
         }
       },
       "documentation":"<p>Describes resources needed to authenticate access to some source repositories. The specific resource depends on the repository provider.</p>"
@@ -684,11 +684,11 @@
         },
         "MaxConcurrency":{
           "shape":"MaxConcurrency",
-          "documentation":"<p>The maximum number of concurrent requests that an instance processes. If the number of concurrent requests exceeds this limit, App Runner scales the service up.</p>"
+          "documentation":"<p>The maximum number of concurrent requests that an instance processes. If the number of concurrent requests exceeds this limit, ECS scales the service up.</p>"
         },
         "MinSize":{
           "shape":"MinSize",
-          "documentation":"<p>The minimum number of instances that App Runner provisions for a service. The service always has at least <code>MinSize</code> provisioned instances. Some of them actively serve traffic. The rest of them (provisioned and inactive instances) are a cost-effective compute capacity reserve and are ready to be quickly activated. You pay for memory usage of all the provisioned instances. You pay for CPU usage of only the active subset.</p> <p>App Runner temporarily doubles the number of provisioned instances during deployments, to maintain the same capacity for both old and new code.</p>"
+          "documentation":"<p>The minimum number of instances that ECS provisions for a service. The service always has at least <code>MinSize</code> provisioned instances. Some of them actively serve traffic. The rest of them (provisioned and inactive instances) are a cost-effective compute capacity reserve and are ready to be quickly activated. You pay for memory usage of all the provisioned instances. You pay for CPU usage of only the active subset.</p> <p>ECS temporarily doubles the number of provisioned instances during deployments, to maintain the same capacity for both old and new code.</p>"
         },
         "MaxSize":{
           "shape":"MaxSize",
@@ -704,14 +704,14 @@
         },
         "HasAssociatedService":{
           "shape":"HasAssociatedService",
-          "documentation":"<p>Indicates if this auto scaling configuration has an App Runner service associated with it. A value of <code>true</code> indicates one or more services are associated. A value of <code>false</code> indicates no services are associated.</p>"
+          "documentation":"<p>Indicates if this auto scaling configuration has an ECS service associated with it. A value of <code>true</code> indicates one or more services are associated. A value of <code>false</code> indicates no services are associated.</p>"
         },
         "IsDefault":{
           "shape":"IsDefault",
-          "documentation":"<p>Indicates if this auto scaling configuration should be used as the default for a new App Runner service that does not have an auto scaling configuration ARN specified during creation. Each account can have only one default <code>AutoScalingConfiguration</code> per region. The default <code>AutoScalingConfiguration</code> can be any revision under the same <code>AutoScalingConfigurationName</code>.</p>"
+          "documentation":"<p>Indicates if this auto scaling configuration should be used as the default for a new ECS service that does not have an auto scaling configuration ARN specified during creation. Each account can have only one default <code>AutoScalingConfiguration</code> per region. The default <code>AutoScalingConfiguration</code> can be any revision under the same <code>AutoScalingConfigurationName</code>.</p>"
         }
       },
-      "documentation":"<p>Describes an App Runner automatic scaling configuration resource.</p> <p>A higher <code>MinSize</code> increases the spread of your App Runner service over more Availability Zones in the Amazon Web Services Region. The tradeoff is a higher minimal cost.</p> <p>A lower <code>MaxSize</code> controls your cost. The tradeoff is lower responsiveness during peak demand.</p> <p>Multiple revisions of a configuration might have the same <code>AutoScalingConfigurationName</code> and different <code>AutoScalingConfigurationRevision</code> values.</p>"
+      "documentation":"<p>Describes an ECS automatic scaling configuration resource.</p> <p>A higher <code>MinSize</code> increases the spread of your ECS service over more Availability Zones in the Amazon Web Services Region. The tradeoff is a higher minimal cost.</p> <p>A lower <code>MaxSize</code> controls your cost. The tradeoff is lower responsiveness during peak demand.</p> <p>Multiple revisions of a configuration might have the same <code>AutoScalingConfigurationName</code> and different <code>AutoScalingConfigurationRevision</code> values.</p>"
     },
     "AutoScalingConfigurationName":{
       "type":"string",
@@ -752,14 +752,14 @@
         },
         "HasAssociatedService":{
           "shape":"HasAssociatedService",
-          "documentation":"<p>Indicates if this auto scaling configuration has an App Runner service associated with it. A value of <code>true</code> indicates one or more services are associated. A value of <code>false</code> indicates no services are associated.</p>"
+          "documentation":"<p>Indicates if this auto scaling configuration has an ECS service associated with it. A value of <code>true</code> indicates one or more services are associated. A value of <code>false</code> indicates no services are associated.</p>"
         },
         "IsDefault":{
           "shape":"IsDefault",
-          "documentation":"<p>Indicates if this auto scaling configuration should be used as the default for a new App Runner service that does not have an auto scaling configuration ARN specified during creation. Each account can have only one default <code>AutoScalingConfiguration</code> per region. The default <code>AutoScalingConfiguration</code> can be any revision under the same <code>AutoScalingConfigurationName</code>.</p>"
+          "documentation":"<p>Indicates if this auto scaling configuration should be used as the default for a new ECS service that does not have an auto scaling configuration ARN specified during creation. Each account can have only one default <code>AutoScalingConfiguration</code> per region. The default <code>AutoScalingConfiguration</code> can be any revision under the same <code>AutoScalingConfigurationName</code>.</p>"
         }
       },
-      "documentation":"<p>Provides summary information about an App Runner automatic scaling configuration resource.</p> <p>This type contains limited information about an auto scaling configuration. It includes only identification information, without configuration details. It's returned by the <a>ListAutoScalingConfigurations</a> action. Complete configuration information is returned by the <a>CreateAutoScalingConfiguration</a>, <a>DescribeAutoScalingConfiguration</a>, and <a>DeleteAutoScalingConfiguration</a> actions using the <a>AutoScalingConfiguration</a> type.</p>"
+      "documentation":"<p>Provides summary information about an ECS automatic scaling configuration resource.</p> <p>This type contains limited information about an auto scaling configuration. It includes only identification information, without configuration details. It's returned by the <a>ListAutoScalingConfigurations</a> action. Complete configuration information is returned by the <a>CreateAutoScalingConfiguration</a>, <a>DescribeAutoScalingConfiguration</a>, and <a>DeleteAutoScalingConfiguration</a> actions using the <a>AutoScalingConfiguration</a> type.</p>"
     },
     "AutoScalingConfigurationSummaryList":{
       "type":"list",
@@ -788,10 +788,10 @@
         },
         "Status":{
           "shape":"CertificateValidationRecordStatus",
-          "documentation":"<p>The current state of the certificate CNAME record validation. It should change to <code>SUCCESS</code> after App Runner completes validation with your DNS.</p>"
+          "documentation":"<p>The current state of the certificate CNAME record validation. It should change to <code>SUCCESS</code> after ECS completes validation with your DNS.</p>"
         }
       },
-      "documentation":"<p>Describes a certificate CNAME record to add to your DNS. For more information, see <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_AssociateCustomDomain.html\">AssociateCustomDomain</a>.</p>"
+      "documentation":"<p>Describes a certificate CNAME record to add to your DNS. For more information, see <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_AssociateCustomDomain.html\">AssociateCustomDomain</a>.</p>"
     },
     "CertificateValidationRecordList":{
       "type":"list",
@@ -811,14 +811,14 @@
       "members":{
         "ConfigurationSource":{
           "shape":"ConfigurationSource",
-          "documentation":"<p>The source of the App Runner configuration. Values are interpreted as follows:</p> <ul> <li> <p> <code>REPOSITORY</code> – App Runner reads configuration values from the <code>apprunner.yaml</code> file in the source code repository and ignores <code>CodeConfigurationValues</code>.</p> </li> <li> <p> <code>API</code> – App Runner uses configuration values provided in <code>CodeConfigurationValues</code> and ignores the <code>apprunner.yaml</code> file in the source code repository.</p> </li> </ul>"
+          "documentation":"<p>The source of the ECS configuration. Values are interpreted as follows:</p> <ul> <li> <p> <code>REPOSITORY</code> – ECS reads configuration values from the <code>ecs.yaml</code> file in the source code repository and ignores <code>CodeConfigurationValues</code>.</p> </li> <li> <p> <code>API</code> – ECS uses configuration values provided in <code>CodeConfigurationValues</code> and ignores the <code>ecs.yaml</code> file in the source code repository.</p> </li> </ul>"
         },
         "CodeConfigurationValues":{
           "shape":"CodeConfigurationValues",
-          "documentation":"<p>The basic configuration for building and running the App Runner service. Use it to quickly launch an App Runner service without providing a <code>apprunner.yaml</code> file in the source code repository (or ignoring the file if it exists).</p>"
+          "documentation":"<p>The basic configuration for building and running the ECS service. Use it to quickly launch an ECS service without providing a <code>ecs.yaml</code> file in the source code repository (or ignoring the file if it exists).</p>"
         }
       },
-      "documentation":"<p>Describes the configuration that App Runner uses to build and run an App Runner service from a source code repository.</p>"
+      "documentation":"<p>Describes the configuration that ECS uses to build and run an ECS service from a source code repository.</p>"
     },
     "CodeConfigurationValues":{
       "type":"structure",
@@ -826,15 +826,15 @@
       "members":{
         "Runtime":{
           "shape":"Runtime",
-          "documentation":"<p>A runtime environment type for building and running an App Runner service. It represents a programming language runtime.</p>"
+          "documentation":"<p>A runtime environment type for building and running an ECS service. It represents a programming language runtime.</p>"
         },
         "BuildCommand":{
           "shape":"BuildCommand",
-          "documentation":"<p>The command App Runner runs to build your application.</p>"
+          "documentation":"<p>The command ECS runs to build your application.</p>"
         },
         "StartCommand":{
           "shape":"StartCommand",
-          "documentation":"<p>The command App Runner runs to start your application.</p>"
+          "documentation":"<p>The command ECS runs to start your application.</p>"
         },
         "Port":{
           "shape":"String",
@@ -842,14 +842,14 @@
         },
         "RuntimeEnvironmentVariables":{
           "shape":"RuntimeEnvironmentVariables",
-          "documentation":"<p>The environment variables that are available to your running App Runner service. An array of key-value pairs.</p>"
+          "documentation":"<p>The environment variables that are available to your running ECS service. An array of key-value pairs.</p>"
         },
         "RuntimeEnvironmentSecrets":{
           "shape":"RuntimeEnvironmentSecrets",
           "documentation":"<p>An array of key-value pairs representing the secrets and parameters that get referenced to your service as an environment variable. The supported values are either the full Amazon Resource Name (ARN) of the Secrets Manager secret or the full ARN of the parameter in the Amazon Web Services Systems Manager Parameter Store.</p> <note> <ul> <li> <p> If the Amazon Web Services Systems Manager Parameter Store parameter exists in the same Amazon Web Services Region as the service that you're launching, you can use either the full ARN or name of the secret. If the parameter exists in a different Region, then the full ARN must be specified. </p> </li> <li> <p> Currently, cross account referencing of Amazon Web Services Systems Manager Parameter Store parameter is not supported. </p> </li> </ul> </note>"
         }
       },
-      "documentation":"<p>Describes the basic configuration needed for building and running an App Runner service. This type doesn't support the full set of possible configuration options. Fur full configuration capabilities, use a <code>apprunner.yaml</code> file in the source code repository.</p>"
+      "documentation":"<p>Describes the basic configuration needed for building and running an ECS service. This type doesn't support the full set of possible configuration options. Fur full configuration capabilities, use a <code>ecs.yaml</code> file in the source code repository.</p>"
     },
     "CodeRepository":{
       "type":"structure",
@@ -901,14 +901,14 @@
         },
         "Status":{
           "shape":"ConnectionStatus",
-          "documentation":"<p>The current state of the App Runner connection. When the state is <code>AVAILABLE</code>, you can use the connection to create an App Runner service.</p>"
+          "documentation":"<p>The current state of the ECS connection. When the state is <code>AVAILABLE</code>, you can use the connection to create an ECS service.</p>"
         },
         "CreatedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The App Runner connection creation time, expressed as a Unix time stamp.</p>"
+          "documentation":"<p>The ECS connection creation time, expressed as a Unix time stamp.</p>"
         }
       },
-      "documentation":"<p>Describes an App Runner connection resource.</p>"
+      "documentation":"<p>Describes an ECS connection resource.</p>"
     },
     "ConnectionName":{
       "type":"string",
@@ -942,14 +942,14 @@
         },
         "Status":{
           "shape":"ConnectionStatus",
-          "documentation":"<p>The current state of the App Runner connection. When the state is <code>AVAILABLE</code>, you can use the connection to create an App Runner service.</p>"
+          "documentation":"<p>The current state of the ECS connection. When the state is <code>AVAILABLE</code>, you can use the connection to create an ECS service.</p>"
         },
         "CreatedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The App Runner connection creation time, expressed as a Unix time stamp.</p>"
+          "documentation":"<p>The ECS connection creation time, expressed as a Unix time stamp.</p>"
         }
       },
-      "documentation":"<p>Provides summary information about an App Runner connection resource.</p>"
+      "documentation":"<p>Provides summary information about an ECS connection resource.</p>"
     },
     "ConnectionSummaryList":{
       "type":"list",
@@ -967,15 +967,15 @@
       "members":{
         "AutoScalingConfigurationName":{
           "shape":"AutoScalingConfigurationName",
-          "documentation":"<p>A name for the auto scaling configuration. When you use it for the first time in an Amazon Web Services Region, App Runner creates revision number <code>1</code> of this name. When you use the same name in subsequent calls, App Runner creates incremental revisions of the configuration.</p> <note> <p>Prior to the release of <a href=\"https://docs.aws.amazon.com/apprunner/latest/relnotes/release-2023-09-22-auto-scale-config.html\">Auto scale configuration enhancements</a>, the name <code>DefaultConfiguration</code> was reserved. </p> <p>This restriction is no longer in place. You can now manage <code>DefaultConfiguration</code> the same way you manage your custom auto scaling configurations. This means you can do the following with the <code>DefaultConfiguration</code> that App Runner provides:</p> <ul> <li> <p>Create new revisions of the <code>DefaultConfiguration</code>.</p> </li> <li> <p>Delete the revisions of the <code>DefaultConfiguration</code>.</p> </li> <li> <p>Delete the auto scaling configuration for which the App Runner <code>DefaultConfiguration</code> was created.</p> </li> <li> <p>If you delete the auto scaling configuration you can create another custom auto scaling configuration with the same <code>DefaultConfiguration</code> name. The original <code>DefaultConfiguration</code> resource provided by App Runner remains in your account unless you make changes to it.</p> </li> </ul> </note>"
+          "documentation":"<p>A name for the auto scaling configuration. When you use it for the first time in an Amazon Web Services Region, ECS creates revision number <code>1</code> of this name. When you use the same name in subsequent calls, ECS creates incremental revisions of the configuration.</p> <note> <p>Prior to the release of <a href=\"https://docs.aws.amazon.com/ecs/latest/relnotes/release-2023-09-22-auto-scale-config.html\">Auto scale configuration enhancements</a>, the name <code>DefaultConfiguration</code> was reserved. </p> <p>This restriction is no longer in place. You can now manage <code>DefaultConfiguration</code> the same way you manage your custom auto scaling configurations. This means you can do the following with the <code>DefaultConfiguration</code> that ECS provides:</p> <ul> <li> <p>Create new revisions of the <code>DefaultConfiguration</code>.</p> </li> <li> <p>Delete the revisions of the <code>DefaultConfiguration</code>.</p> </li> <li> <p>Delete the auto scaling configuration for which the ECS <code>DefaultConfiguration</code> was created.</p> </li> <li> <p>If you delete the auto scaling configuration you can create another custom auto scaling configuration with the same <code>DefaultConfiguration</code> name. The original <code>DefaultConfiguration</code> resource provided by ECS remains in your account unless you make changes to it.</p> </li> </ul> </note>"
         },
         "MaxConcurrency":{
           "shape":"ASConfigMaxConcurrency",
-          "documentation":"<p>The maximum number of concurrent requests that you want an instance to process. If the number of concurrent requests exceeds this limit, App Runner scales up your service.</p> <p>Default: <code>100</code> </p>"
+          "documentation":"<p>The maximum number of concurrent requests that you want an instance to process. If the number of concurrent requests exceeds this limit, ECS scales up your service.</p> <p>Default: <code>100</code> </p>"
         },
         "MinSize":{
           "shape":"ASConfigMinSize",
-          "documentation":"<p>The minimum number of instances that App Runner provisions for your service. The service always has at least <code>MinSize</code> provisioned instances. Some of them actively serve traffic. The rest of them (provisioned and inactive instances) are a cost-effective compute capacity reserve and are ready to be quickly activated. You pay for memory usage of all the provisioned instances. You pay for CPU usage of only the active subset.</p> <p>App Runner temporarily doubles the number of provisioned instances during deployments, to maintain the same capacity for both old and new code.</p> <p>Default: <code>1</code> </p>"
+          "documentation":"<p>The minimum number of instances that ECS provisions for your service. The service always has at least <code>MinSize</code> provisioned instances. Some of them actively serve traffic. The rest of them (provisioned and inactive instances) are a cost-effective compute capacity reserve and are ready to be quickly activated. You pay for memory usage of all the provisioned instances. You pay for CPU usage of only the active subset.</p> <p>ECS temporarily doubles the number of provisioned instances during deployments, to maintain the same capacity for both old and new code.</p> <p>Default: <code>1</code> </p>"
         },
         "MaxSize":{
           "shape":"ASConfigMaxSize",
@@ -993,7 +993,7 @@
       "members":{
         "AutoScalingConfiguration":{
           "shape":"AutoScalingConfiguration",
-          "documentation":"<p>A description of the App Runner auto scaling configuration that's created by this request.</p>"
+          "documentation":"<p>A description of the ECS auto scaling configuration that's created by this request.</p>"
         }
       }
     },
@@ -1006,7 +1006,7 @@
       "members":{
         "ConnectionName":{
           "shape":"ConnectionName",
-          "documentation":"<p>A name for the new connection. It must be unique across all App Runner connections for the Amazon Web Services account in the Amazon Web Services Region.</p>"
+          "documentation":"<p>A name for the new connection. It must be unique across all ECS connections for the Amazon Web Services account in the Amazon Web Services Region.</p>"
         },
         "ProviderType":{
           "shape":"ProviderType",
@@ -1024,7 +1024,7 @@
       "members":{
         "Connection":{
           "shape":"Connection",
-          "documentation":"<p>A description of the App Runner connection that's created by this request.</p>"
+          "documentation":"<p>A description of the ECS connection that's created by this request.</p>"
         }
       }
     },
@@ -1034,11 +1034,11 @@
       "members":{
         "ObservabilityConfigurationName":{
           "shape":"ObservabilityConfigurationName",
-          "documentation":"<p>A name for the observability configuration. When you use it for the first time in an Amazon Web Services Region, App Runner creates revision number <code>1</code> of this name. When you use the same name in subsequent calls, App Runner creates incremental revisions of the configuration.</p> <note> <p>The name <code>DefaultConfiguration</code> is reserved. You can't use it to create a new observability configuration, and you can't create a revision of it.</p> <p>When you want to use your own observability configuration for your App Runner service, <i>create a configuration with a different name</i>, and then provide it when you create or update your service.</p> </note>"
+          "documentation":"<p>A name for the observability configuration. When you use it for the first time in an Amazon Web Services Region, ECS creates revision number <code>1</code> of this name. When you use the same name in subsequent calls, ECS creates incremental revisions of the configuration.</p> <note> <p>The name <code>DefaultConfiguration</code> is reserved. You can't use it to create a new observability configuration, and you can't create a revision of it.</p> <p>When you want to use your own observability configuration for your ECS service, <i>create a configuration with a different name</i>, and then provide it when you create or update your service.</p> </note>"
         },
         "TraceConfiguration":{
           "shape":"TraceConfiguration",
-          "documentation":"<p>The configuration of the tracing feature within this observability configuration. If you don't specify it, App Runner doesn't enable tracing.</p>"
+          "documentation":"<p>The configuration of the tracing feature within this observability configuration. If you don't specify it, ECS doesn't enable tracing.</p>"
         },
         "Tags":{
           "shape":"TagList",
@@ -1052,7 +1052,7 @@
       "members":{
         "ObservabilityConfiguration":{
           "shape":"ObservabilityConfiguration",
-          "documentation":"<p>A description of the App Runner observability configuration that's created by this request.</p>"
+          "documentation":"<p>A description of the ECS observability configuration that's created by this request.</p>"
         }
       }
     },
@@ -1065,11 +1065,11 @@
       "members":{
         "ServiceName":{
           "shape":"ServiceName",
-          "documentation":"<p>A name for the App Runner service. It must be unique across all the running App Runner services in your Amazon Web Services account in the Amazon Web Services Region.</p>"
+          "documentation":"<p>A name for the ECS service. It must be unique across all the running ECS services in your Amazon Web Services account in the Amazon Web Services Region.</p>"
         },
         "SourceConfiguration":{
           "shape":"SourceConfiguration",
-          "documentation":"<p>The source to deploy to the App Runner service. It can be a code or an image repository.</p>"
+          "documentation":"<p>The source to deploy to the ECS service. It can be a code or an image repository.</p>"
         },
         "InstanceConfiguration":{
           "shape":"InstanceConfiguration",
@@ -1077,23 +1077,23 @@
         },
         "Tags":{
           "shape":"TagList",
-          "documentation":"<p>An optional list of metadata items that you can associate with the App Runner service resource. A tag is a key-value pair.</p>"
+          "documentation":"<p>An optional list of metadata items that you can associate with the ECS service resource. A tag is a key-value pair.</p>"
         },
         "EncryptionConfiguration":{
           "shape":"EncryptionConfiguration",
-          "documentation":"<p>An optional custom encryption key that App Runner uses to encrypt the copy of your source repository that it maintains and your service logs. By default, App Runner uses an Amazon Web Services managed key.</p>"
+          "documentation":"<p>An optional custom encryption key that ECS uses to encrypt the copy of your source repository that it maintains and your service logs. By default, ECS uses an Amazon Web Services managed key.</p>"
         },
         "HealthCheckConfiguration":{
           "shape":"HealthCheckConfiguration",
-          "documentation":"<p>The settings for the health check that App Runner performs to monitor the health of the App Runner service.</p>"
+          "documentation":"<p>The settings for the health check that ECS performs to monitor the health of the ECS service.</p>"
         },
         "AutoScalingConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of an App Runner automatic scaling configuration resource that you want to associate with your service. If not provided, App Runner associates the latest revision of a default auto scaling configuration.</p> <p>Specify an ARN with a name and a revision number to associate that revision. For example: <code>arn:aws:apprunner:us-east-1:123456789012:autoscalingconfiguration/high-availability/3</code> </p> <p>Specify just the name to associate the latest revision. For example: <code>arn:aws:apprunner:us-east-1:123456789012:autoscalingconfiguration/high-availability</code> </p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of an ECS automatic scaling configuration resource that you want to associate with your service. If not provided, ECS associates the latest revision of a default auto scaling configuration.</p> <p>Specify an ARN with a name and a revision number to associate that revision. For example: <code>arn:aws:ecs:us-east-1:123456789012:autoscalingconfiguration/high-availability/3</code> </p> <p>Specify just the name to associate the latest revision. For example: <code>arn:aws:ecs:us-east-1:123456789012:autoscalingconfiguration/high-availability</code> </p>"
         },
         "NetworkConfiguration":{
           "shape":"NetworkConfiguration",
-          "documentation":"<p>Configuration settings related to network traffic of the web application that the App Runner service runs.</p>"
+          "documentation":"<p>Configuration settings related to network traffic of the web application that the ECS service runs.</p>"
         },
         "ObservabilityConfiguration":{
           "shape":"ServiceObservabilityConfiguration",
@@ -1110,11 +1110,11 @@
       "members":{
         "Service":{
           "shape":"Service",
-          "documentation":"<p>A description of the App Runner service that's created by this request.</p>"
+          "documentation":"<p>A description of the ECS service that's created by this request.</p>"
         },
         "OperationId":{
           "shape":"UUID",
-          "documentation":"<p>The unique ID of the asynchronous operation that this request started. You can use it combined with the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_ListOperations.html\">ListOperations</a> call to track the operation's progress.</p>"
+          "documentation":"<p>The unique ID of the asynchronous operation that this request started. You can use it combined with the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_ListOperations.html\">ListOperations</a> call to track the operation's progress.</p>"
         }
       }
     },
@@ -1131,11 +1131,11 @@
         },
         "Subnets":{
           "shape":"StringList",
-          "documentation":"<p>A list of IDs of subnets that App Runner should use when it associates your service with a custom Amazon VPC. Specify IDs of subnets of a single Amazon VPC. App Runner determines the Amazon VPC from the subnets you specify.</p> <note> <p> App Runner currently only provides support for IPv4. </p> </note>"
+          "documentation":"<p>A list of IDs of subnets that ECS should use when it associates your service with a custom Amazon VPC. Specify IDs of subnets of a single Amazon VPC. ECS determines the Amazon VPC from the subnets you specify.</p> <note> <p> ECS currently only provides support for IPv4. </p> </note>"
         },
         "SecurityGroups":{
           "shape":"StringList",
-          "documentation":"<p>A list of IDs of security groups that App Runner should use for access to Amazon Web Services resources under the specified subnets. If not specified, App Runner uses the default security group of the Amazon VPC. The default security group allows all outbound traffic.</p>"
+          "documentation":"<p>A list of IDs of security groups that ECS should use for access to Amazon Web Services resources under the specified subnets. If not specified, ECS uses the default security group of the Amazon VPC. The default security group allows all outbound traffic.</p>"
         },
         "Tags":{
           "shape":"TagList",
@@ -1149,7 +1149,7 @@
       "members":{
         "VpcConnector":{
           "shape":"VpcConnector",
-          "documentation":"<p>A description of the App Runner VPC connector that's created by this request.</p>"
+          "documentation":"<p>A description of the ECS VPC connector that's created by this request.</p>"
         }
       }
     },
@@ -1163,7 +1163,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) for this App Runner service that is used to create the VPC Ingress Connection resource.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) for this ECS service that is used to create the VPC Ingress Connection resource.</p>"
         },
         "VpcIngressConnectionName":{
           "shape":"VpcIngressConnectionName",
@@ -1185,7 +1185,7 @@
       "members":{
         "VpcIngressConnection":{
           "shape":"VpcIngressConnection",
-          "documentation":"<p>A description of the App Runner VPC Ingress Connection resource that's created by this request. </p>"
+          "documentation":"<p>A description of the ECS VPC Ingress Connection resource that's created by this request. </p>"
         }
       }
     },
@@ -1203,7 +1203,7 @@
         },
         "EnableWWWSubdomain":{
           "shape":"NullableBoolean",
-          "documentation":"<p>When <code>true</code>, the subdomain <code>www.<i>DomainName</i> </code> is associated with the App Runner service in addition to the base domain.</p>"
+          "documentation":"<p>When <code>true</code>, the subdomain <code>www.<i>DomainName</i> </code> is associated with the ECS service in addition to the base domain.</p>"
         },
         "CertificateValidationRecords":{
           "shape":"CertificateValidationRecordList",
@@ -1214,7 +1214,7 @@
           "documentation":"<p>The current state of the domain name association.</p>"
         }
       },
-      "documentation":"<p>Describes a custom domain that's associated with an App Runner service.</p>"
+      "documentation":"<p>Describes a custom domain that's associated with an ECS service.</p>"
     },
     "CustomDomainAssociationStatus":{
       "type":"string",
@@ -1244,7 +1244,7 @@
       "members":{
         "AutoScalingConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner auto scaling configuration that you want to delete.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is deleted.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS auto scaling configuration that you want to delete.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is deleted.</p>"
         },
         "DeleteAllRevisions":{
           "shape":"Boolean",
@@ -1258,7 +1258,7 @@
       "members":{
         "AutoScalingConfiguration":{
           "shape":"AutoScalingConfiguration",
-          "documentation":"<p>A description of the App Runner auto scaling configuration that this request just deleted.</p>"
+          "documentation":"<p>A description of the ECS auto scaling configuration that this request just deleted.</p>"
         }
       }
     },
@@ -1268,7 +1268,7 @@
       "members":{
         "ConnectionArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner connection that you want to delete.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS connection that you want to delete.</p>"
         }
       }
     },
@@ -1277,7 +1277,7 @@
       "members":{
         "Connection":{
           "shape":"Connection",
-          "documentation":"<p>A description of the App Runner connection that this request just deleted.</p>"
+          "documentation":"<p>A description of the ECS connection that this request just deleted.</p>"
         }
       }
     },
@@ -1287,7 +1287,7 @@
       "members":{
         "ObservabilityConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner observability configuration that you want to delete.</p> <p>The ARN can be a full observability configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is deleted.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS observability configuration that you want to delete.</p> <p>The ARN can be a full observability configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is deleted.</p>"
         }
       }
     },
@@ -1297,7 +1297,7 @@
       "members":{
         "ObservabilityConfiguration":{
           "shape":"ObservabilityConfiguration",
-          "documentation":"<p>A description of the App Runner observability configuration that this request just deleted.</p>"
+          "documentation":"<p>A description of the ECS observability configuration that this request just deleted.</p>"
         }
       }
     },
@@ -1307,7 +1307,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to delete.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to delete.</p>"
         }
       }
     },
@@ -1320,7 +1320,7 @@
       "members":{
         "Service":{
           "shape":"Service",
-          "documentation":"<p>A description of the App Runner service that this request just deleted.</p>"
+          "documentation":"<p>A description of the ECS service that this request just deleted.</p>"
         },
         "OperationId":{
           "shape":"UUID",
@@ -1334,7 +1334,7 @@
       "members":{
         "VpcConnectorArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner VPC connector that you want to delete.</p> <p>The ARN must be a full VPC connector ARN.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS VPC connector that you want to delete.</p> <p>The ARN must be a full VPC connector ARN.</p>"
         }
       }
     },
@@ -1344,7 +1344,7 @@
       "members":{
         "VpcConnector":{
           "shape":"VpcConnector",
-          "documentation":"<p>A description of the App Runner VPC connector that this request just deleted.</p>"
+          "documentation":"<p>A description of the ECS VPC connector that this request just deleted.</p>"
         }
       }
     },
@@ -1354,7 +1354,7 @@
       "members":{
         "VpcIngressConnectionArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner VPC Ingress Connection that you want to delete.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS VPC Ingress Connection that you want to delete.</p>"
         }
       }
     },
@@ -1364,7 +1364,7 @@
       "members":{
         "VpcIngressConnection":{
           "shape":"VpcIngressConnection",
-          "documentation":"<p>A description of the App Runner VPC Ingress Connection that this request just deleted.</p>"
+          "documentation":"<p>A description of the ECS VPC Ingress Connection that this request just deleted.</p>"
         }
       }
     },
@@ -1374,7 +1374,7 @@
       "members":{
         "AutoScalingConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner auto scaling configuration that you want a description for.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is described.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS auto scaling configuration that you want a description for.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is described.</p>"
         }
       }
     },
@@ -1384,7 +1384,7 @@
       "members":{
         "AutoScalingConfiguration":{
           "shape":"AutoScalingConfiguration",
-          "documentation":"<p>A full description of the App Runner auto scaling configuration that you specified in this request.</p>"
+          "documentation":"<p>A full description of the ECS auto scaling configuration that you specified in this request.</p>"
         }
       }
     },
@@ -1399,7 +1399,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want associated custom domain names to be described for.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want associated custom domain names to be described for.</p>"
         },
         "NextToken":{
           "shape":"String",
@@ -1422,11 +1422,11 @@
       "members":{
         "DNSTarget":{
           "shape":"String",
-          "documentation":"<p>The App Runner subdomain of the App Runner service. The associated custom domain names are mapped to this target name.</p>"
+          "documentation":"<p>The ECS subdomain of the ECS service. The associated custom domain names are mapped to this target name.</p>"
         },
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service whose associated custom domain names you want to describe.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service whose associated custom domain names you want to describe.</p>"
         },
         "CustomDomains":{
           "shape":"CustomDomainList",
@@ -1448,7 +1448,7 @@
       "members":{
         "ObservabilityConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner observability configuration that you want a description for.</p> <p>The ARN can be a full observability configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is described.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS observability configuration that you want a description for.</p> <p>The ARN can be a full observability configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is described.</p>"
         }
       }
     },
@@ -1458,7 +1458,7 @@
       "members":{
         "ObservabilityConfiguration":{
           "shape":"ObservabilityConfiguration",
-          "documentation":"<p>A full description of the App Runner observability configuration that you specified in this request.</p>"
+          "documentation":"<p>A full description of the ECS observability configuration that you specified in this request.</p>"
         }
       }
     },
@@ -1468,7 +1468,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want a description for.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want a description for.</p>"
         }
       }
     },
@@ -1478,7 +1478,7 @@
       "members":{
         "Service":{
           "shape":"Service",
-          "documentation":"<p>A full description of the App Runner service that you specified in this request.</p>"
+          "documentation":"<p>A full description of the ECS service that you specified in this request.</p>"
         }
       }
     },
@@ -1488,7 +1488,7 @@
       "members":{
         "VpcConnectorArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner VPC connector that you want a description for.</p> <p>The ARN must be a full VPC connector ARN.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS VPC connector that you want a description for.</p> <p>The ARN must be a full VPC connector ARN.</p>"
         }
       }
     },
@@ -1498,7 +1498,7 @@
       "members":{
         "VpcConnector":{
           "shape":"VpcConnector",
-          "documentation":"<p>A description of the App Runner VPC connector that you specified in this request.</p>"
+          "documentation":"<p>A description of the ECS VPC connector that you specified in this request.</p>"
         }
       }
     },
@@ -1508,7 +1508,7 @@
       "members":{
         "VpcIngressConnectionArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner VPC Ingress Connection that you want a description for.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS VPC Ingress Connection that you want a description for.</p>"
         }
       }
     },
@@ -1518,7 +1518,7 @@
       "members":{
         "VpcIngressConnection":{
           "shape":"VpcIngressConnection",
-          "documentation":"<p>A description of the App Runner VPC Ingress Connection that you specified in this request.</p>"
+          "documentation":"<p>A description of the ECS VPC Ingress Connection that you specified in this request.</p>"
         }
       }
     },
@@ -1531,11 +1531,11 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to disassociate a custom domain name from.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to disassociate a custom domain name from.</p>"
         },
         "DomainName":{
           "shape":"DomainName",
-          "documentation":"<p>The domain name that you want to disassociate from the App Runner service.</p>"
+          "documentation":"<p>The domain name that you want to disassociate from the ECS service.</p>"
         }
       }
     },
@@ -1550,11 +1550,11 @@
       "members":{
         "DNSTarget":{
           "shape":"String",
-          "documentation":"<p>The App Runner subdomain of the App Runner service. The disassociated custom domain name was mapped to this target name.</p>"
+          "documentation":"<p>The ECS subdomain of the ECS service. The disassociated custom domain name was mapped to this target name.</p>"
         },
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that a custom domain name is disassociated from.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that a custom domain name is disassociated from.</p>"
         },
         "CustomDomain":{
           "shape":"CustomDomain",
@@ -1581,10 +1581,10 @@
         },
         "VpcConnectorArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner VPC connector that you want to associate with your App Runner service. Only valid when <code>EgressType = VPC</code>.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS VPC connector that you want to associate with your ECS service. Only valid when <code>EgressType = VPC</code>.</p>"
         }
       },
-      "documentation":"<p>Describes configuration settings related to outbound network traffic of an App Runner service.</p>"
+      "documentation":"<p>Describes configuration settings related to outbound network traffic of an ECS service.</p>"
     },
     "EgressType":{
       "type":"string",
@@ -1602,7 +1602,7 @@
           "documentation":"<p>The ARN of the KMS key that's used for encryption.</p>"
         }
       },
-      "documentation":"<p>Describes a custom encryption key that App Runner uses to encrypt copies of the source repository and service logs.</p>"
+      "documentation":"<p>Describes a custom encryption key that ECS uses to encrypt copies of the source repository and service logs.</p>"
     },
     "ErrorMessage":{
       "type":"string",
@@ -1614,7 +1614,7 @@
       "members":{
         "Protocol":{
           "shape":"HealthCheckProtocol",
-          "documentation":"<p>The IP protocol that App Runner uses to perform health checks for your service.</p> <p>If you set <code>Protocol</code> to <code>HTTP</code>, App Runner sends health check requests to the HTTP path specified by <code>Path</code>.</p> <p>Default: <code>TCP</code> </p>"
+          "documentation":"<p>The IP protocol that ECS uses to perform health checks for your service.</p> <p>If you set <code>Protocol</code> to <code>HTTP</code>, ECS sends health check requests to the HTTP path specified by <code>Path</code>.</p> <p>Default: <code>TCP</code> </p>"
         },
         "Path":{
           "shape":"HealthCheckPath",
@@ -1630,14 +1630,14 @@
         },
         "HealthyThreshold":{
           "shape":"HealthCheckHealthyThreshold",
-          "documentation":"<p>The number of consecutive checks that must succeed before App Runner decides that the service is healthy.</p> <p>Default: <code>1</code> </p>"
+          "documentation":"<p>The number of consecutive checks that must succeed before ECS decides that the service is healthy.</p> <p>Default: <code>1</code> </p>"
         },
         "UnhealthyThreshold":{
           "shape":"HealthCheckUnhealthyThreshold",
-          "documentation":"<p>The number of consecutive checks that must fail before App Runner decides that the service is unhealthy.</p> <p>Default: <code>5</code> </p>"
+          "documentation":"<p>The number of consecutive checks that must fail before ECS decides that the service is unhealthy.</p> <p>Default: <code>5</code> </p>"
         }
       },
-      "documentation":"<p>Describes the settings for the health check that App Runner performs to monitor the health of a service.</p>"
+      "documentation":"<p>Describes the settings for the health check that ECS performs to monitor the health of a service.</p>"
     },
     "HealthCheckHealthyThreshold":{
       "type":"integer",
@@ -1675,11 +1675,11 @@
       "members":{
         "RuntimeEnvironmentVariables":{
           "shape":"RuntimeEnvironmentVariables",
-          "documentation":"<p>Environment variables that are available to your running App Runner service. An array of key-value pairs.</p>"
+          "documentation":"<p>Environment variables that are available to your running ECS service. An array of key-value pairs.</p>"
         },
         "StartCommand":{
           "shape":"StartCommand",
-          "documentation":"<p>An optional command that App Runner runs to start the application in the source image. If specified, this command overrides the Docker image’s default start command.</p>"
+          "documentation":"<p>An optional command that ECS runs to start the application in the source image. If specified, this command overrides the Docker image’s default start command.</p>"
         },
         "Port":{
           "shape":"String",
@@ -1690,7 +1690,7 @@
           "documentation":"<p>An array of key-value pairs representing the secrets and parameters that get referenced to your service as an environment variable. The supported values are either the full Amazon Resource Name (ARN) of the Secrets Manager secret or the full ARN of the parameter in the Amazon Web Services Systems Manager Parameter Store.</p> <note> <ul> <li> <p> If the Amazon Web Services Systems Manager Parameter Store parameter exists in the same Amazon Web Services Region as the service that you're launching, you can use either the full ARN or name of the secret. If the parameter exists in a different Region, then the full ARN must be specified. </p> </li> <li> <p> Currently, cross account referencing of Amazon Web Services Systems Manager Parameter Store parameter is not supported. </p> </li> </ul> </note>"
         }
       },
-      "documentation":"<p>Describes the configuration that App Runner uses to run an App Runner service using an image pulled from a source image repository.</p>"
+      "documentation":"<p>Describes the configuration that ECS uses to run an ECS service using an image pulled from a source image repository.</p>"
     },
     "ImageIdentifier":{
       "type":"string",
@@ -1732,7 +1732,7 @@
       "members":{
         "IsPubliclyAccessible":{
           "shape":"Boolean",
-          "documentation":"<p>Specifies whether your App Runner service is publicly accessible. To make the service publicly accessible set it to <code>True</code>. To make the service privately accessible, from only within an Amazon VPC set it to <code>False</code>. </p>"
+          "documentation":"<p>Specifies whether your ECS service is publicly accessible. To make the service publicly accessible set it to <code>True</code>. To make the service privately accessible, from only within an Amazon VPC set it to <code>False</code>. </p>"
         }
       },
       "documentation":"<p>Network configuration settings for inbound network traffic.</p>"
@@ -1746,28 +1746,28 @@
         },
         "VpcEndpointId":{
           "shape":"String",
-          "documentation":"<p>The ID of the VPC endpoint that your App Runner service connects to. </p>"
+          "documentation":"<p>The ID of the VPC endpoint that your ECS service connects to. </p>"
         }
       },
-      "documentation":"<p>The configuration of your VPC and the associated VPC endpoint. The VPC endpoint is an Amazon Web Services PrivateLink resource that allows access to your App Runner services from within an Amazon VPC.</p>"
+      "documentation":"<p>The configuration of your VPC and the associated VPC endpoint. The VPC endpoint is an Amazon Web Services PrivateLink resource that allows access to your ECS services from within an Amazon VPC.</p>"
     },
     "InstanceConfiguration":{
       "type":"structure",
       "members":{
         "Cpu":{
           "shape":"Cpu",
-          "documentation":"<p>The number of CPU units reserved for each instance of your App Runner service.</p> <p>Default: <code>1 vCPU</code> </p>"
+          "documentation":"<p>The number of CPU units reserved for each instance of your ECS service.</p> <p>Default: <code>1 vCPU</code> </p>"
         },
         "Memory":{
           "shape":"Memory",
-          "documentation":"<p>The amount of memory, in MB or GB, reserved for each instance of your App Runner service.</p> <p>Default: <code>2 GB</code> </p>"
+          "documentation":"<p>The amount of memory, in MB or GB, reserved for each instance of your ECS service.</p> <p>Default: <code>2 GB</code> </p>"
         },
         "InstanceRoleArn":{
           "shape":"RoleArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of an IAM role that provides permissions to your App Runner service. These are permissions that your code needs when it calls any Amazon Web Services APIs.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of an IAM role that provides permissions to your ECS service. These are permissions that your code needs when it calls any Amazon Web Services APIs.</p>"
         }
       },
-      "documentation":"<p>Describes the runtime configuration of an App Runner service instance (scaling unit).</p>"
+      "documentation":"<p>Describes the runtime configuration of an ECS service instance (scaling unit).</p>"
     },
     "Integer":{"type":"integer"},
     "InternalServiceErrorException":{
@@ -1815,7 +1815,7 @@
       "members":{
         "AutoScalingConfigurationName":{
           "shape":"AutoScalingConfigurationName",
-          "documentation":"<p>The name of the App Runner auto scaling configuration that you want to list. If specified, App Runner lists revisions that share this name. If not specified, App Runner returns revisions of all active configurations.</p>"
+          "documentation":"<p>The name of the ECS auto scaling configuration that you want to list. If specified, ECS lists revisions that share this name. If not specified, ECS returns revisions of all active configurations.</p>"
         },
         "LatestOnly":{
           "shape":"Boolean",
@@ -1881,7 +1881,7 @@
       "members":{
         "ObservabilityConfigurationName":{
           "shape":"ObservabilityConfigurationName",
-          "documentation":"<p>The name of the App Runner observability configuration that you want to list. If specified, App Runner lists revisions that share this name. If not specified, App Runner returns revisions of all active configurations.</p>"
+          "documentation":"<p>The name of the ECS observability configuration that you want to list. If specified, ECS lists revisions that share this name. If not specified, ECS returns revisions of all active configurations.</p>"
         },
         "LatestOnly":{
           "shape":"Boolean",
@@ -1922,7 +1922,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want a list of operations for.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want a list of operations for.</p>"
         },
         "NextToken":{
           "shape":"String",
@@ -1953,7 +1953,7 @@
       "members":{
         "AutoScalingConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner auto scaling configuration that you want to list the services for.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is used.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS auto scaling configuration that you want to list the services for.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is used.</p>"
         },
         "MaxResults":{
           "shape":"MaxResults",
@@ -2012,7 +2012,7 @@
       "members":{
         "ResourceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that a tag list is requested for.</p> <p>It must be the ARN of an App Runner resource.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that a tag list is requested for.</p> <p>It must be the ARN of an ECS resource.</p>"
         }
       }
     },
@@ -2124,10 +2124,10 @@
         },
         "IpAddressType":{
           "shape":"IpAddressType",
-          "documentation":"<p>App Runner provides you with the option to choose between <i>Internet Protocol version 4 (IPv4)</i> and <i>dual stack</i> (IPv4 and IPv6) for your incoming public network configuration. This is an optional parameter. If you do not specify an <code>IpAddressType</code>, it defaults to select IPv4.</p> <note> <p> Currently, App Runner supports dual stack for only Public endpoint. Only IPv4 is supported for Private endpoint. If you update a service that's using dual-stack Public endpoint to a Private endpoint, your App Runner service will default to support only IPv4 for Private endpoint and fail to receive traffic originating from IPv6 endpoint. </p> </note>"
+          "documentation":"<p>ECS provides you with the option to choose between <i>Internet Protocol version 4 (IPv4)</i> and <i>dual stack</i> (IPv4 and IPv6) for your incoming public network configuration. This is an optional parameter. If you do not specify an <code>IpAddressType</code>, it defaults to select IPv4.</p> <note> <p> Currently, ECS supports dual stack for only Public endpoint. Only IPv4 is supported for Private endpoint. If you update a service that's using dual-stack Public endpoint to a Private endpoint, your ECS service will default to support only IPv4 for Private endpoint and fail to receive traffic originating from IPv6 endpoint. </p> </note>"
         }
       },
-      "documentation":"<p>Describes configuration settings related to network traffic of an App Runner service. Consists of embedded objects for each configurable network feature.</p>"
+      "documentation":"<p>Describes configuration settings related to network traffic of an ECS service. Consists of embedded objects for each configurable network feature.</p>"
     },
     "NextToken":{
       "type":"string",
@@ -2172,7 +2172,7 @@
           "documentation":"<p>The time when the observability configuration was deleted. It's in Unix time stamp format.</p>"
         }
       },
-      "documentation":"<p>Describes an App Runner observability configuration resource. Multiple revisions of a configuration have the same <code>ObservabilityConfigurationName</code> and different <code>ObservabilityConfigurationRevision</code> values.</p> <p>The resource is designed to configure multiple features (currently one feature, tracing). This type contains optional members that describe the configuration of these features (currently one member, <code>TraceConfiguration</code>). If a feature member isn't specified, the feature isn't enabled.</p>"
+      "documentation":"<p>Describes an ECS observability configuration resource. Multiple revisions of a configuration have the same <code>ObservabilityConfigurationName</code> and different <code>ObservabilityConfigurationRevision</code> values.</p> <p>The resource is designed to configure multiple features (currently one feature, tracing). This type contains optional members that describe the configuration of these features (currently one member, <code>TraceConfiguration</code>). If a feature member isn't specified, the feature isn't enabled.</p>"
     },
     "ObservabilityConfigurationName":{
       "type":"string",
@@ -2203,7 +2203,7 @@
           "documentation":"<p>The revision of this observability configuration. It's unique among all the active configurations (<code>\"Status\": \"ACTIVE\"</code>) that share the same <code>ObservabilityConfigurationName</code>.</p>"
         }
       },
-      "documentation":"<p>Provides summary information about an App Runner observability configuration resource.</p> <p>This type contains limited information about an observability configuration. It includes only identification information, without configuration details. It's returned by the <a>ListObservabilityConfigurations</a> action. Complete configuration information is returned by the <a>CreateObservabilityConfiguration</a>, <a>DescribeObservabilityConfiguration</a>, and <a>DeleteObservabilityConfiguration</a> actions using the <a>ObservabilityConfiguration</a> type.</p>"
+      "documentation":"<p>Provides summary information about an ECS observability configuration resource.</p> <p>This type contains limited information about an observability configuration. It includes only identification information, without configuration details. It's returned by the <a>ListObservabilityConfigurations</a> action. Complete configuration information is returned by the <a>CreateObservabilityConfiguration</a>, <a>DescribeObservabilityConfiguration</a>, and <a>DeleteObservabilityConfiguration</a> actions using the <a>ObservabilityConfiguration</a> type.</p>"
     },
     "ObservabilityConfigurationSummaryList":{
       "type":"list",
@@ -2226,7 +2226,7 @@
       "members":{
         "Id":{
           "shape":"UUID",
-          "documentation":"<p>A unique ID of this operation. It's unique in the scope of the App Runner service.</p>"
+          "documentation":"<p>A unique ID of this operation. It's unique in the scope of the ECS service.</p>"
         },
         "Type":{
           "shape":"OperationType",
@@ -2238,7 +2238,7 @@
         },
         "TargetArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that the operation acted on (for example, an App Runner service).</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that the operation acted on (for example, an ECS service).</p>"
         },
         "StartedAt":{
           "shape":"Timestamp",
@@ -2253,7 +2253,7 @@
           "documentation":"<p>The time when the operation was last updated. It's in the Unix time stamp format.</p>"
         }
       },
-      "documentation":"<p>Provides summary information for an operation that occurred on an App Runner service.</p>"
+      "documentation":"<p>Provides summary information for an operation that occurred on an ECS service.</p>"
     },
     "OperationSummaryList":{
       "type":"list",
@@ -2276,7 +2276,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to pause.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to pause.</p>"
         }
       }
     },
@@ -2286,7 +2286,7 @@
       "members":{
         "Service":{
           "shape":"Service",
-          "documentation":"<p>A description of the App Runner service that this request just paused.</p>"
+          "documentation":"<p>A description of the ECS service that this request just paused.</p>"
         },
         "OperationId":{
           "shape":"UUID",
@@ -2315,7 +2315,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to resume.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to resume.</p>"
         }
       }
     },
@@ -2325,7 +2325,7 @@
       "members":{
         "Service":{
           "shape":"Service",
-          "documentation":"<p>A description of the App Runner service that this request just resumed.</p>"
+          "documentation":"<p>A description of the ECS service that this request just resumed.</p>"
         },
         "OperationId":{
           "shape":"UUID",
@@ -2414,7 +2414,7 @@
         },
         "ServiceId":{
           "shape":"ServiceId",
-          "documentation":"<p>An ID that App Runner generated for this service. It's unique within the Amazon Web Services Region.</p>"
+          "documentation":"<p>An ID that ECS generated for this service. It's unique within the Amazon Web Services Region.</p>"
         },
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
@@ -2422,27 +2422,27 @@
         },
         "ServiceUrl":{
           "shape":"String",
-          "documentation":"<p>A subdomain URL that App Runner generated for this service. You can use this URL to access your service web application.</p>"
+          "documentation":"<p>A subdomain URL that ECS generated for this service. You can use this URL to access your service web application.</p>"
         },
         "CreatedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The time when the App Runner service was created. It's in the Unix time stamp format.</p>"
+          "documentation":"<p>The time when the ECS service was created. It's in the Unix time stamp format.</p>"
         },
         "UpdatedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The time when the App Runner service was last updated at. It's in the Unix time stamp format.</p>"
+          "documentation":"<p>The time when the ECS service was last updated at. It's in the Unix time stamp format.</p>"
         },
         "DeletedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The time when the App Runner service was deleted. It's in the Unix time stamp format.</p>"
+          "documentation":"<p>The time when the ECS service was deleted. It's in the Unix time stamp format.</p>"
         },
         "Status":{
           "shape":"ServiceStatus",
-          "documentation":"<p>The current state of the App Runner service. These particular values mean the following.</p> <ul> <li> <p> <code>CREATE_FAILED</code> – The service failed to create. The failed service isn't usable, and still counts towards your service quota. To troubleshoot this failure, read the failure events and logs, change any parameters that need to be fixed, and rebuild your service using <code>UpdateService</code>.</p> </li> <li> <p> <code>DELETE_FAILED</code> – The service failed to delete and can't be successfully recovered. Retry the service deletion call to ensure that all related resources are removed.</p> </li> </ul>"
+          "documentation":"<p>The current state of the ECS service. These particular values mean the following.</p> <ul> <li> <p> <code>CREATE_FAILED</code> – The service failed to create. The failed service isn't usable, and still counts towards your service quota. To troubleshoot this failure, read the failure events and logs, change any parameters that need to be fixed, and rebuild your service using <code>UpdateService</code>.</p> </li> <li> <p> <code>DELETE_FAILED</code> – The service failed to delete and can't be successfully recovered. Retry the service deletion call to ensure that all related resources are removed.</p> </li> </ul>"
         },
         "SourceConfiguration":{
           "shape":"SourceConfiguration",
-          "documentation":"<p>The source deployed to the App Runner service. It can be a code or an image repository.</p>"
+          "documentation":"<p>The source deployed to the ECS service. It can be a code or an image repository.</p>"
         },
         "InstanceConfiguration":{
           "shape":"InstanceConfiguration",
@@ -2450,15 +2450,15 @@
         },
         "EncryptionConfiguration":{
           "shape":"EncryptionConfiguration",
-          "documentation":"<p>The encryption key that App Runner uses to encrypt the service logs and the copy of the source repository that App Runner maintains for the service. It can be either a customer-provided encryption key or an Amazon Web Services managed key.</p>"
+          "documentation":"<p>The encryption key that ECS uses to encrypt the service logs and the copy of the source repository that ECS maintains for the service. It can be either a customer-provided encryption key or an Amazon Web Services managed key.</p>"
         },
         "HealthCheckConfiguration":{
           "shape":"HealthCheckConfiguration",
-          "documentation":"<p>The settings for the health check that App Runner performs to monitor the health of this service.</p>"
+          "documentation":"<p>The settings for the health check that ECS performs to monitor the health of this service.</p>"
         },
         "AutoScalingConfigurationSummary":{
           "shape":"AutoScalingConfigurationSummary",
-          "documentation":"<p>Summary information for the App Runner automatic scaling configuration resource that's associated with this service.</p>"
+          "documentation":"<p>Summary information for the ECS automatic scaling configuration resource that's associated with this service.</p>"
         },
         "NetworkConfiguration":{
           "shape":"NetworkConfiguration",
@@ -2469,7 +2469,7 @@
           "documentation":"<p>The observability configuration of this service.</p>"
         }
       },
-      "documentation":"<p>Describes an App Runner service. It can describe a service in any state, including deleted services.</p> <p>This type contains the full information about a service, including configuration details. It's returned by the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_CreateService.html\">CreateService</a>, <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_DescribeService.html\">DescribeService</a>, and <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_DeleteService.html\">DeleteService</a> actions. A subset of this information is returned by the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_ListServices.html\">ListServices</a> action using the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_ServiceSummary.html\">ServiceSummary</a> type.</p>"
+      "documentation":"<p>Describes an ECS service. It can describe a service in any state, including deleted services.</p> <p>This type contains the full information about a service, including configuration details. It's returned by the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_CreateService.html\">CreateService</a>, <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_DescribeService.html\">DescribeService</a>, and <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_DeleteService.html\">DeleteService</a> actions. A subset of this information is returned by the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_ListServices.html\">ListServices</a> action using the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_ServiceSummary.html\">ServiceSummary</a> type.</p>"
     },
     "ServiceArnList":{
       "type":"list",
@@ -2502,17 +2502,17 @@
         },
         "ObservabilityConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the observability configuration that is associated with the service. Specified only when <code>ObservabilityEnabled</code> is <code>true</code>.</p> <p>Specify an ARN with a name and a revision number to associate that revision. For example: <code>arn:aws:apprunner:us-east-1:123456789012:observabilityconfiguration/xray-tracing/3</code> </p> <p>Specify just the name to associate the latest revision. For example: <code>arn:aws:apprunner:us-east-1:123456789012:observabilityconfiguration/xray-tracing</code> </p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the observability configuration that is associated with the service. Specified only when <code>ObservabilityEnabled</code> is <code>true</code>.</p> <p>Specify an ARN with a name and a revision number to associate that revision. For example: <code>arn:aws:ecs:us-east-1:123456789012:observabilityconfiguration/xray-tracing/3</code> </p> <p>Specify just the name to associate the latest revision. For example: <code>arn:aws:ecs:us-east-1:123456789012:observabilityconfiguration/xray-tracing</code> </p>"
         }
       },
-      "documentation":"<p>Describes the observability configuration of an App Runner service. These are additional observability features, like tracing, that you choose to enable. They're configured in a separate resource that you associate with your service.</p>"
+      "documentation":"<p>Describes the observability configuration of an ECS service. These are additional observability features, like tracing, that you choose to enable. They're configured in a separate resource that you associate with your service.</p>"
     },
     "ServiceQuotaExceededException":{
       "type":"structure",
       "members":{
         "Message":{"shape":"ErrorMessage"}
       },
-      "documentation":"<p>App Runner can't create this resource. You've reached your account quota for this resource type.</p> <p>For App Runner per-resource quotas, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/apprunner.html\">App Runner endpoints and quotas</a> in the <i>Amazon Web Services General Reference</i>.</p>",
+      "documentation":"<p>ECS can't create this resource. You've reached your account quota for this resource type.</p> <p>For ECS per-resource quotas, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/ecs.html\">ECS endpoints and quotas</a> in the <i>Amazon Web Services General Reference</i>.</p>",
       "exception":true
     },
     "ServiceStatus":{
@@ -2535,7 +2535,7 @@
         },
         "ServiceId":{
           "shape":"ServiceId",
-          "documentation":"<p>An ID that App Runner generated for this service. It's unique within the Amazon Web Services Region.</p>"
+          "documentation":"<p>An ID that ECS generated for this service. It's unique within the Amazon Web Services Region.</p>"
         },
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
@@ -2543,22 +2543,22 @@
         },
         "ServiceUrl":{
           "shape":"String",
-          "documentation":"<p>A subdomain URL that App Runner generated for this service. You can use this URL to access your service web application.</p>"
+          "documentation":"<p>A subdomain URL that ECS generated for this service. You can use this URL to access your service web application.</p>"
         },
         "CreatedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The time when the App Runner service was created. It's in the Unix time stamp format.</p>"
+          "documentation":"<p>The time when the ECS service was created. It's in the Unix time stamp format.</p>"
         },
         "UpdatedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The time when the App Runner service was last updated. It's in theUnix time stamp format.</p>"
+          "documentation":"<p>The time when the ECS service was last updated. It's in theUnix time stamp format.</p>"
         },
         "Status":{
           "shape":"ServiceStatus",
-          "documentation":"<p>The current state of the App Runner service. These particular values mean the following.</p> <ul> <li> <p> <code>CREATE_FAILED</code> – The service failed to create. The failed service isn't usable, and still counts towards your service quota. To troubleshoot this failure, read the failure events and logs, change any parameters that need to be fixed, and rebuild your service using <code>UpdateService</code>.</p> </li> <li> <p> <code>DELETE_FAILED</code> – The service failed to delete and can't be successfully recovered. Retry the service deletion call to ensure that all related resources are removed.</p> </li> </ul>"
+          "documentation":"<p>The current state of the ECS service. These particular values mean the following.</p> <ul> <li> <p> <code>CREATE_FAILED</code> – The service failed to create. The failed service isn't usable, and still counts towards your service quota. To troubleshoot this failure, read the failure events and logs, change any parameters that need to be fixed, and rebuild your service using <code>UpdateService</code>.</p> </li> <li> <p> <code>DELETE_FAILED</code> – The service failed to delete and can't be successfully recovered. Retry the service deletion call to ensure that all related resources are removed.</p> </li> </ul>"
         }
       },
-      "documentation":"<p>Provides summary information for an App Runner service.</p> <p>This type contains limited information about a service. It doesn't include configuration details. It's returned by the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_ListServices.html\">ListServices</a> action. Complete service information is returned by the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_CreateService.html\">CreateService</a>, <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_DescribeService.html\">DescribeService</a>, and <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_DeleteService.html\">DeleteService</a> actions using the <a href=\"https://docs.aws.amazon.com/apprunner/latest/api/API_Service.html\">Service</a> type.</p>"
+      "documentation":"<p>Provides summary information for an ECS service.</p> <p>This type contains limited information about a service. It doesn't include configuration details. It's returned by the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_ListServices.html\">ListServices</a> action. Complete service information is returned by the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_CreateService.html\">CreateService</a>, <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_DescribeService.html\">DescribeService</a>, and <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_DeleteService.html\">DeleteService</a> actions using the <a href=\"https://docs.aws.amazon.com/ecs/latest/api/API_Service.html\">Service</a> type.</p>"
     },
     "ServiceSummaryList":{
       "type":"list",
@@ -2577,10 +2577,10 @@
         },
         "Value":{
           "shape":"String",
-          "documentation":"<p>A source code version.</p> <p>For a git-based repository, a branch name maps to a specific version. App Runner uses the most recent commit to the branch.</p>"
+          "documentation":"<p>A source code version.</p> <p>For a git-based repository, a branch name maps to a specific version. ECS uses the most recent commit to the branch.</p>"
         }
       },
-      "documentation":"<p>Identifies a version of code that App Runner refers to within a source code repository.</p>"
+      "documentation":"<p>Identifies a version of code that ECS refers to within a source code repository.</p>"
     },
     "SourceCodeVersionType":{
       "type":"string",
@@ -2599,14 +2599,14 @@
         },
         "AutoDeploymentsEnabled":{
           "shape":"NullableBoolean",
-          "documentation":"<p>If <code>true</code>, continuous integration from the source repository is enabled for the App Runner service. Each repository change (including any source code commit or new image version) starts a deployment.</p> <p>Default: App Runner sets to <code>false</code> for a source image that uses an ECR Public repository or an ECR repository that's in an Amazon Web Services account other than the one that the service is in. App Runner sets to <code>true</code> in all other cases (which currently include a source code repository or a source image using a same-account ECR repository).</p>"
+          "documentation":"<p>If <code>true</code>, continuous integration from the source repository is enabled for the ECS service. Each repository change (including any source code commit or new image version) starts a deployment.</p> <p>Default: ECS sets to <code>false</code> for a source image that uses an ECR Public repository or an ECR repository that's in an Amazon Web Services account other than the one that the service is in. ECS sets to <code>true</code> in all other cases (which currently include a source code repository or a source image using a same-account ECR repository).</p>"
         },
         "AuthenticationConfiguration":{
           "shape":"AuthenticationConfiguration",
           "documentation":"<p>Describes the resources that are needed to authenticate access to some source repositories.</p>"
         }
       },
-      "documentation":"<p>Describes the source deployed to an App Runner service. It can be a code or an image repository.</p>"
+      "documentation":"<p>Describes the source deployed to an ECS service. It can be a code or an image repository.</p>"
     },
     "SourceDirectory":{
       "type":"string",
@@ -2625,7 +2625,7 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to manually deploy to.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to manually deploy to.</p>"
         }
       }
     },
@@ -2661,7 +2661,7 @@
           "documentation":"<p>The value of the tag.</p>"
         }
       },
-      "documentation":"<p>Describes a tag that is applied to an App Runner resource. A tag is a metadata item consisting of a key-value pair.</p>"
+      "documentation":"<p>Describes a tag that is applied to an ECS resource. A tag is a metadata item consisting of a key-value pair.</p>"
     },
     "TagKey":{
       "type":"string",
@@ -2686,7 +2686,7 @@
       "members":{
         "ResourceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that you want to update tags for.</p> <p>It must be the ARN of an App Runner resource.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that you want to update tags for.</p> <p>It must be the ARN of an ECS resource.</p>"
         },
         "Tags":{
           "shape":"TagList",
@@ -2712,10 +2712,10 @@
       "members":{
         "Vendor":{
           "shape":"TracingVendor",
-          "documentation":"<p>The implementation provider chosen for tracing App Runner services.</p>"
+          "documentation":"<p>The implementation provider chosen for tracing ECS services.</p>"
         }
       },
-      "documentation":"<p>Describes the configuration of the tracing feature within an App Runner observability configuration.</p>"
+      "documentation":"<p>Describes the configuration of the tracing feature within an ECS observability configuration.</p>"
     },
     "TracingVendor":{
       "type":"string",
@@ -2736,7 +2736,7 @@
       "members":{
         "ResourceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that you want to remove tags from.</p> <p>It must be the ARN of an App Runner resource.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the resource that you want to remove tags from.</p> <p>It must be the ARN of an ECS resource.</p>"
         },
         "TagKeys":{
           "shape":"TagKeyList",
@@ -2755,7 +2755,7 @@
       "members":{
         "AutoScalingConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner auto scaling configuration that you want to set as the default.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is set as the default.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS auto scaling configuration that you want to set as the default.</p> <p>The ARN can be a full auto scaling configuration ARN, or a partial ARN ending with either <code>.../<i>name</i> </code> or <code>.../<i>name</i>/<i>revision</i> </code>. If a revision isn't specified, the latest active revision is set as the default.</p>"
         }
       }
     },
@@ -2765,7 +2765,7 @@
       "members":{
         "AutoScalingConfiguration":{
           "shape":"AutoScalingConfiguration",
-          "documentation":"<p>A description of the App Runner auto scaling configuration that was set as default.</p>"
+          "documentation":"<p>A description of the ECS auto scaling configuration that was set as default.</p>"
         }
       }
     },
@@ -2775,11 +2775,11 @@
       "members":{
         "ServiceArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of the App Runner service that you want to update.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of the ECS service that you want to update.</p>"
         },
         "SourceConfiguration":{
           "shape":"SourceConfiguration",
-          "documentation":"<p>The source configuration to apply to the App Runner service.</p> <p>You can change the configuration of the code or image repository that the service uses. However, you can't switch from code to image or the other way around. This means that you must provide the same structure member of <code>SourceConfiguration</code> that you originally included when you created the service. Specifically, you can include either <code>CodeRepository</code> or <code>ImageRepository</code>. To update the source configuration, set the values to members of the structure that you include.</p>"
+          "documentation":"<p>The source configuration to apply to the ECS service.</p> <p>You can change the configuration of the code or image repository that the service uses. However, you can't switch from code to image or the other way around. This means that you must provide the same structure member of <code>SourceConfiguration</code> that you originally included when you created the service. Specifically, you can include either <code>CodeRepository</code> or <code>ImageRepository</code>. To update the source configuration, set the values to members of the structure that you include.</p>"
         },
         "InstanceConfiguration":{
           "shape":"InstanceConfiguration",
@@ -2787,15 +2787,15 @@
         },
         "AutoScalingConfigurationArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (ARN) of an App Runner automatic scaling configuration resource that you want to associate with the App Runner service.</p>"
+          "documentation":"<p>The Amazon Resource Name (ARN) of an ECS automatic scaling configuration resource that you want to associate with the ECS service.</p>"
         },
         "HealthCheckConfiguration":{
           "shape":"HealthCheckConfiguration",
-          "documentation":"<p>The settings for the health check that App Runner performs to monitor the health of the App Runner service.</p>"
+          "documentation":"<p>The settings for the health check that ECS performs to monitor the health of the ECS service.</p>"
         },
         "NetworkConfiguration":{
           "shape":"NetworkConfiguration",
-          "documentation":"<p>Configuration settings related to network traffic of the web application that the App Runner service runs.</p>"
+          "documentation":"<p>Configuration settings related to network traffic of the web application that the ECS service runs.</p>"
         },
         "ObservabilityConfiguration":{
           "shape":"ServiceObservabilityConfiguration",
@@ -2812,7 +2812,7 @@
       "members":{
         "Service":{
           "shape":"Service",
-          "documentation":"<p>A description of the App Runner service updated by this request. All configuration values in the returned <code>Service</code> structure reflect configuration changes that are being applied by this request.</p>"
+          "documentation":"<p>A description of the ECS service updated by this request. All configuration values in the returned <code>Service</code> structure reflect configuration changes that are being applied by this request.</p>"
         },
         "OperationId":{
           "shape":"UUID",
@@ -2829,7 +2829,7 @@
       "members":{
         "VpcIngressConnectionArn":{
           "shape":"AppRunnerResourceArn",
-          "documentation":"<p>The Amazon Resource Name (Arn) for the App Runner VPC Ingress Connection resource that you want to update.</p>"
+          "documentation":"<p>The Amazon Resource Name (Arn) for the ECS VPC Ingress Connection resource that you want to update.</p>"
         },
         "IngressVpcConfiguration":{
           "shape":"IngressVpcConfiguration",
@@ -2843,7 +2843,7 @@
       "members":{
         "VpcIngressConnection":{
           "shape":"VpcIngressConnection",
-          "documentation":"<p>A description of the App Runner VPC Ingress Connection resource that's updated by this request.</p>"
+          "documentation":"<p>A description of the ECS VPC Ingress Connection resource that's updated by this request.</p>"
         }
       }
     },
@@ -2860,15 +2860,15 @@
         },
         "VpcConnectorRevision":{
           "shape":"Integer",
-          "documentation":"<p>The revision of this VPC connector. It's unique among all the active connectors (<code>\"Status\": \"ACTIVE\"</code>) that share the same <code>Name</code>.</p> <note> <p>At this time, App Runner supports only one revision per name.</p> </note>"
+          "documentation":"<p>The revision of this VPC connector. It's unique among all the active connectors (<code>\"Status\": \"ACTIVE\"</code>) that share the same <code>Name</code>.</p> <note> <p>At this time, ECS supports only one revision per name.</p> </note>"
         },
         "Subnets":{
           "shape":"StringList",
-          "documentation":"<p>A list of IDs of subnets that App Runner uses for your service. All IDs are of subnets of a single Amazon VPC.</p>"
+          "documentation":"<p>A list of IDs of subnets that ECS uses for your service. All IDs are of subnets of a single Amazon VPC.</p>"
         },
         "SecurityGroups":{
           "shape":"StringList",
-          "documentation":"<p>A list of IDs of security groups that App Runner uses for access to Amazon Web Services resources under the specified subnets. If not specified, App Runner uses the default security group of the Amazon VPC. The default security group allows all outbound traffic.</p>"
+          "documentation":"<p>A list of IDs of security groups that ECS uses for access to Amazon Web Services resources under the specified subnets. If not specified, ECS uses the default security group of the Amazon VPC. The default security group allows all outbound traffic.</p>"
         },
         "Status":{
           "shape":"VpcConnectorStatus",
@@ -2883,7 +2883,7 @@
           "documentation":"<p>The time when the VPC connector was deleted. It's in Unix time stamp format.</p>"
         }
       },
-      "documentation":"<p>Describes an App Runner VPC connector resource. A VPC connector describes the Amazon Virtual Private Cloud (Amazon VPC) that an App Runner service is associated with, and the subnets and security group that are used.</p> <p>Multiple revisions of a connector might have the same <code>Name</code> and different <code>Revision</code> values.</p> <note> <p>At this time, App Runner supports only one revision per name.</p> </note>"
+      "documentation":"<p>Describes an ECS VPC connector resource. A VPC connector describes the Amazon Virtual Private Cloud (Amazon VPC) that an ECS service is associated with, and the subnets and security group that are used.</p> <p>Multiple revisions of a connector might have the same <code>Name</code> and different <code>Revision</code> values.</p> <note> <p>At this time, ECS supports only one revision per name.</p> </note>"
     },
     "VpcConnectorName":{
       "type":"string",
@@ -2961,10 +2961,10 @@
         },
         "DeletedAt":{
           "shape":"Timestamp",
-          "documentation":"<p>The time when the App Runner service was deleted. It's in the Unix time stamp format.</p> <ul> <li> <p> Type: Timestamp </p> </li> <li> <p> Required: No </p> </li> </ul>"
+          "documentation":"<p>The time when the ECS service was deleted. It's in the Unix time stamp format.</p> <ul> <li> <p> Type: Timestamp </p> </li> <li> <p> Required: No </p> </li> </ul>"
         }
       },
-      "documentation":"<p>The App Runner resource that specifies an App Runner endpoint for incoming traffic. It establishes a connection between a VPC interface endpoint and a App Runner service, to make your App Runner service accessible from only within an Amazon VPC.</p>"
+      "documentation":"<p>The ECS resource that specifies an ECS endpoint for incoming traffic. It establishes a connection between a VPC interface endpoint and a ECS service, to make your ECS service accessible from only within an Amazon VPC.</p>"
     },
     "VpcIngressConnectionName":{
       "type":"string",
@@ -3004,5 +3004,5 @@
       "member":{"shape":"VpcIngressConnectionSummary"}
     }
   },
-  "documentation":"<fullname>App Runner</fullname> <p>App Runner is an application service that provides a fast, simple, and cost-effective way to go directly from an existing container image or source code to a running service in the Amazon Web Services Cloud in seconds. You don't need to learn new technologies, decide which compute service to use, or understand how to provision and configure Amazon Web Services resources.</p> <p>App Runner connects directly to your container registry or source code repository. It provides an automatic delivery pipeline with fully managed operations, high performance, scalability, and security.</p> <p>For more information about App Runner, see the <a href=\"https://docs.aws.amazon.com/apprunner/latest/dg/\">App Runner Developer Guide</a>. For release information, see the <a href=\"https://docs.aws.amazon.com/apprunner/latest/relnotes/\">App Runner Release Notes</a>.</p> <p> To install the Software Development Kits (SDKs), Integrated Development Environment (IDE) Toolkits, and command line tools that you can use to access the API, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>.</p> <p> <b>Endpoints</b> </p> <p>For a list of Region-specific endpoints that App Runner supports, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/apprunner.html\">App Runner endpoints and quotas</a> in the <i>Amazon Web Services General Reference</i>.</p>"
+  "documentation":"<fullname>ECS</fullname> <p>ECS is an application service that provides a fast, simple, and cost-effective way to go directly from an existing container image or source code to a running service in the Amazon Web Services Cloud in seconds. You don't need to learn new technologies, decide which compute service to use, or understand how to provision and configure Amazon Web Services resources.</p> <p>ECS connects directly to your container registry or source code repository. It provides an automatic delivery pipeline with fully managed operations, high performance, scalability, and security.</p> <p>For more information about ECS, see the <a href=\"https://docs.aws.amazon.com/ecs/latest/dg/\">ECS Developer Guide</a>. For release information, see the <a href=\"https://docs.aws.amazon.com/ecs/latest/relnotes/\">ECS Release Notes</a>.</p> <p> To install the Software Development Kits (SDKs), Integrated Development Environment (IDE) Toolkits, and command line tools that you can use to access the API, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>.</p> <p> <b>Endpoints</b> </p> <p>For a list of Region-specific endpoints that ECS supports, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/ecs.html\">ECS endpoints and quotas</a> in the <i>Amazon Web Services General Reference</i>.</p>"
 }

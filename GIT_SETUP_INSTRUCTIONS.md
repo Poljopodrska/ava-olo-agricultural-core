@@ -57,7 +57,7 @@ If you have other unused repositories, you can delete them from:
 https://github.com/Poljopodrska?tab=repositories
 
 ## ⚡ Automatic Deployment
-Every push automatically triggers AWS App Runner deployment (takes ~3-5 minutes)
+Every push automatically triggers AWS ECS deployment (takes ~3-5 minutes)
 
 ## 🆘 Troubleshooting
 - **"Authentication failed"**: Check your token in `.git-token`

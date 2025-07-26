@@ -16,7 +16,7 @@ The AVA OLO platform is currently well within budget with significant room for g
 ### Top Cost Drivers (July 2025)
 1. **EC2 - Other (ALBs, NAT Gateway)**: $21.45 (24.1%)
 2. **Amazon RDS**: $19.67 (22.1%)
-3. **AWS App Runner**: $14.44 (16.2%)
+3. **AWS ECS**: $14.44 (16.2%)
 4. **Amazon ElastiCache**: $11.57 (13.0%)
 5. **EC2 Compute**: $10.78 (12.1%)
 6. **CloudWatch**: $7.85 (8.8%)
@@ -52,7 +52,7 @@ The AVA OLO platform is currently well within budget with significant room for g
 ## Additional Cost Optimization Recommendations
 
 ### Immediate Actions (Quick Wins)
-1. **Review App Runner Configuration**
+1. **Review ECS Configuration**
    - Current: $14.44/month
    - Potential: Reduce compute allocation if over-provisioned
    - Savings: $5-7/month
@@ -114,7 +114,7 @@ With current budget of $440/month, the platform can support:
 
 ### Medium Priority
 1. Analyze RDS usage patterns for right-sizing
-2. Review App Runner auto-scaling settings
+2. Review ECS auto-scaling settings
 3. Audit and remove unused Elastic IPs
 4. Consider Reserved Instances for stable workloads
 

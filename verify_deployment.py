@@ -9,7 +9,7 @@ import sys
 import time
 
 def verify_deployment():
-    base_url = 'https://6pmgiripe.us-east-1.awsapprunner.com'
+    base_url = 'https://6pmgiripe.us-east-1.elb.amazonaws.com'
     
     print('🔍 FINAL CONSTITUTIONAL VERIFICATION:')
     print('=====================================')
@@ -101,7 +101,7 @@ def verify_deployment():
         print(f'❌ DEPLOYMENT VERIFICATION: FAILED ({success_count}/{total_count})')
         print('🚨 CONSTITUTIONAL VIOLATION: Features not fully deployed')
         print('\n🔧 REQUIRED ACTIONS:')
-        print('1. Check AWS App Runner console for deployment status')
+        print('1. Check AWS ECS console for deployment status')
         print('2. Verify GitHub webhook is configured correctly')
         print('3. Force manual deployment if needed')
         print('4. Clear CloudFront/CDN cache if applicable')

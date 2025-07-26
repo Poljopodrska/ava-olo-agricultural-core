@@ -11,7 +11,7 @@
 
 ### ⚠️ Pre-Deployment Checklist:
 
-#### Environment Variables (Set in AWS App Runner):
+#### Environment Variables (Set in AWS ECS):
 ```bash
 # Database Configuration
 DATABASE_URL=postgresql://username:password@hostname:5432/database_name
@@ -57,4 +57,4 @@ All required packages are now in `requirements.txt`
 
 ## Ready to Deploy! 🚀
 
-The application is now ready for AWS App Runner deployment. Just set the environment variables in your AWS configuration and deploy.
+The application is now ready for AWS ECS deployment. Just set the environment variables in your AWS configuration and deploy.

@@ -197,14 +197,14 @@ class EmergencyInfrastructureCheck:
                 self.infrastructure['ecs_services'].append(service_info)
     
     def check_app_runner(self):
-        """Check App Runner services"""
+        """Check ECS services"""
         print("\n\n=== CHECKING APP RUNNER SERVICES ===")
         print("=" * 60)
         
-        response = self.run_aws_command('apprunner', 'list-services')
+        response = self.run_aws_command('ecs', 'list-services')
         
         if not response.get('ServiceSummaryList'):
-            print("No App Runner services found")
+            print("No ECS services found")
             return
         
         for service in response['ServiceSummaryList']:
@@ -213,7 +213,7 @@ class EmergencyInfrastructureCheck:
             
             # Get service details
             details = self.run_aws_command(
-                'apprunner',
+                'ecs',
                 f'describe-service --service-arn {service_arn}'
             )
             
@@ -225,7 +225,7 @@ class EmergencyInfrastructureCheck:
                     'status': svc.get('Status', 'N/A')
                 }
                 
-                print(f"\nApp Runner Service: {service_name}")
+                print(f"\nECS Service: {service_name}")
                 print(f"  URL: https://{service_info['url']}")
                 print(f"  Status: {service_info['status']}")
                 
@@ -242,7 +242,7 @@ class EmergencyInfrastructureCheck:
                         if test_result.stdout.startswith(('2', '3', '4')):
                             print(f"  ✅ Service is responding!")
                             self.working_endpoints.append({
-                                'type': 'App Runner',
+                                'type': 'ECS',
                                 'name': service_name,
                                 'url': test_url,
                                 'status': test_result.stdout
@@ -292,7 +292,7 @@ Generated: {timestamp}
 ## SUMMARY
 - Total ALBs found: {len(self.infrastructure['albs'])}
 - Total ECS services: {len(self.infrastructure['ecs_services'])}
-- Total App Runner services: {len(self.infrastructure['app_runner'])}
+- Total ECS services: {len(self.infrastructure['app_runner'])}
 - Working endpoints found: {len(self.working_endpoints)}
 
 ## WORKING ENDPOINTS

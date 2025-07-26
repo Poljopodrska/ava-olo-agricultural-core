@@ -239,7 +239,7 @@ async def main():
             print("❌ Schema retrieval failed even with working connection")
     else:
         print("\n❌ NO WORKING CONNECTION FOUND")
-        print("Check AWS environment variables in App Runner!")
+        print("Check AWS environment variables in ECS!")
 
 if __name__ == "__main__":
     asyncio.run(main())

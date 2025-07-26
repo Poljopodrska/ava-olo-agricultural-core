@@ -5,8 +5,8 @@ import subprocess
 import time
 import sys
 
-service_arn = "arn:aws:apprunner:us-east-1:127679825789:service/ava-olo-monitoring-dashboards/a8cb4bde353646c396b10e6cd3ff290a"
-url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+service_arn = "arn:aws:ecs:us-east-1:127679825789:service/ava-olo-monitoring-dashboards/a8cb4bde353646c396b10e6cd3ff290a"
+url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
 
 print("🔍 MONITORING DEPLOYMENT PROGRESS")
 print("=" * 40)
@@ -17,7 +17,7 @@ max_wait = 600  # 10 minutes
 while time.time() - start_time < max_wait:
     # Check AWS status
     result = subprocess.run([
-        'aws', 'apprunner', 'describe-service',
+        'aws', 'ecs', 'describe-service',
         '--service-arn', service_arn,
         '--region', 'us-east-1',
         '--query', 'Service.Status',

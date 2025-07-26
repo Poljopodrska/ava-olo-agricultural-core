@@ -212,7 +212,7 @@ git push
 ```
 
 **Why this matters:**
-- Prevents AWS App Runner deployment failures
+- Prevents AWS ECS deployment failures
 - Catches runtime errors before deployment
 - Validates constitutional compliance
 - Ensures system stability

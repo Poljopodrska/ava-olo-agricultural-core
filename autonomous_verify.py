@@ -8,7 +8,7 @@ import sys
 print('🔍 AUTONOMOUS PRODUCTION VERIFICATION')
 print('====================================')
 
-base_url = 'https://6pmgiripe.us-east-1.awsapprunner.com'
+base_url = 'https://6pmgiripe.us-east-1.elb.amazonaws.com'
 success_count = 0
 total_tests = 0
 

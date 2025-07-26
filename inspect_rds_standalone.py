@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Standalone RDS Database Structure Inspector for AWS App Runner
+Standalone RDS Database Structure Inspector for AWS ECS
 Returns database structure information as JSON
 """
 import os

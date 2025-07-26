@@ -24,7 +24,7 @@ FATAL: no pg_hba.conf entry for host "172.31.96.165", user "postgres", database 
 
 ### **Step 1: Environment Variable Configuration**
 ```bash
-# Required AWS App Runner Environment Variables
+# Required AWS ECS Environment Variables
 # NOTE: Password with special characters like [ ] $ * will be automatically URL-encoded
 DB_HOST=farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com
 DB_NAME=farmer_crm
@@ -177,8 +177,8 @@ async def register_farmer(self, farmer_data: Dict[str, Any]) -> Dict[str, Any]:
 
 ### **1. AWS RDS Security Group Configuration**
 ```bash
-# Add your App Runner IP range to RDS security group
-# IP range: 172.31.96.0/24 (or your specific App Runner IPs)
+# Add your ECS IP range to RDS security group
+# IP range: 172.31.96.0/24 (or your specific ECS IPs)
 aws ec2 authorize-security-group-ingress \
   --group-id sg-your-rds-security-group \
   --protocol tcp \
@@ -211,7 +211,7 @@ export DB_SSL_CERT_PATH=/opt/rds-ca-2019-root.pem
 - [ ] Update RDS security group rules
 - [ ] Verify database user permissions
 - [ ] Add SSL certificate configuration
-- [ ] Test connection from App Runner
+- [ ] Test connection from ECS
 
 ### **Phase 2: Standardize Connection Code**
 - [ ] Implement `StandardDatabaseConnection` class
@@ -242,7 +242,7 @@ export DB_SSL_CERT_PATH=/opt/rds-ca-2019-root.pem
 #### **Error: "no pg_hba.conf entry"**
 ```bash
 # Check:
-1. RDS security group allows App Runner IP range
+1. RDS security group allows ECS IP range
 2. SSL mode is set to 'require'
 3. Connection is coming from expected IP range
 ```
@@ -252,7 +252,7 @@ export DB_SSL_CERT_PATH=/opt/rds-ca-2019-root.pem
 # Check:
 1. DB_HOST has no spaces: 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com'
 2. RDS instance is running
-3. DNS resolution works from App Runner
+3. DNS resolution works from ECS
 ```
 
 ---
@@ -299,7 +299,7 @@ async def monitor_query_performance(query_name: str, query_function):
 
 ## 📝 **NEXT STEPS**
 
-1. **Fix AWS RDS Security Group** - Add App Runner IP range
+1. **Fix AWS RDS Security Group** - Add ECS IP range
 2. **Verify Database Permissions** - Ensure postgres user has access
 3. **Implement Standard Connection** - Use unified connection class
 4. **Add SSL Configuration** - Proper SSL certificate handling

@@ -119,7 +119,7 @@ def check_production_compliance():
     print("\n🌐 Checking Production Compliance")
     print("-" * 40)
     
-    url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+    url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
     
     try:
         # Check CSS is accessible

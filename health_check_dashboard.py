@@ -82,19 +82,19 @@ except Exception as e:
 # Service definitions - AWS Production URLs
 SERVICES = {
     "Agricultural Core": {
-        "url": "https://3ksdvgdtud.us-east-1.awsapprunner.com/health",
+        "url": "https://3ksdvgdtud.us-east-1.elb.amazonaws.com/health",
         "description": "Core API and LLM routing"
     },
     "Agronomic Dashboard": {
-        "url": "https://6pmgiripe.us-east-1.awsapprunner.com/agronomic/health",
+        "url": "https://6pmgiripe.us-east-1.elb.amazonaws.com/agronomic/health",
         "description": "Expert approval interface"
     },
     "Business Dashboard": {
-        "url": "https://6pmgiripe.us-east-1.awsapprunner.com/business/health",
+        "url": "https://6pmgiripe.us-east-1.elb.amazonaws.com/business/health",
         "description": "Business KPIs and metrics"
     },
     "Database Explorer": {
-        "url": "https://6pmgiripe.us-east-1.awsapprunner.com/database/health",
+        "url": "https://6pmgiripe.us-east-1.elb.amazonaws.com/database/health",
         "description": "AI-driven database queries"
     }
 }

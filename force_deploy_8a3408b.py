@@ -100,12 +100,12 @@ Co-Authored-By: Claude <noreply@anthropic.com>"""
 except Exception as e:
     print(f"❌ Git push failed: {e}")
 
-# Step 5: Trigger App Runner deployment
-print("\n🔧 Attempting to trigger App Runner deployment...")
+# Step 5: Trigger ECS deployment
+print("\n🔧 Attempting to trigger ECS deployment...")
 try:
     # List services
     result = subprocess.run([
-        'aws', 'apprunner', 'list-services',
+        'aws', 'ecs', 'list-services',
         '--region', 'us-east-1',
         '--query', 'ServiceSummaryList[?ServiceName==`ava-olo-agricultural-core`].ServiceArn',
         '--output', 'text'
@@ -117,7 +117,7 @@ try:
         
         # Start deployment
         deploy_cmd = [
-            'aws', 'apprunner', 'start-deployment',
+            'aws', 'ecs', 'start-deployment',
             '--service-arn', service_arn,
             '--region', 'us-east-1'
         ]
@@ -125,7 +125,7 @@ try:
         deploy_result = subprocess.run(deploy_cmd, capture_output=True, text=True)
         
         if deploy_result.returncode == 0:
-            print("✅ App Runner deployment triggered!")
+            print("✅ ECS deployment triggered!")
             deploy_data = json.loads(deploy_result.stdout)
             operation_id = deploy_data.get('OperationId', 'Unknown')
             print(f"   Operation ID: {operation_id}")
@@ -138,7 +138,7 @@ try:
         else:
             print(f"❌ Deployment trigger failed: {deploy_result.stderr}")
     else:
-        print("❌ Could not find App Runner service")
+        print("❌ Could not find ECS service")
         print("Manual deployment required via AWS Console")
 except FileNotFoundError:
     print("❌ AWS CLI not installed - manual deployment required")
@@ -160,6 +160,6 @@ print("🔍 MANUAL VERIFICATION:")
 print("curl https://ava-olo-agricultural-core.../api/v1/registration/debug")
 print()
 print("If deployment doesn't start automatically:")
-print("1. Go to AWS App Runner console")
+print("1. Go to AWS ECS console")
 print("2. Find ava-olo-agricultural-core service")
 print("3. Click 'Deploy' button")

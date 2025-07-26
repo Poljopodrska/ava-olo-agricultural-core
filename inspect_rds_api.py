@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FastAPI service for RDS database inspection
-Deployable to AWS App Runner
+Deployable to AWS ECS
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse

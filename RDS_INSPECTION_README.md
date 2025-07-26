@@ -32,7 +32,7 @@ python3 inspect_rds_standalone.py --save
 ```
 
 ### 3. `inspect_rds_api.py`
-Lightweight FastAPI service specifically for RDS inspection. Ideal for AWS App Runner deployment.
+Lightweight FastAPI service specifically for RDS inspection. Ideal for AWS ECS deployment.
 
 **Endpoints:**
 - `/` - Service information
@@ -60,9 +60,9 @@ DB_USER=your_username
 DB_PASSWORD=your_password
 ```
 
-## AWS App Runner Deployment
+## AWS ECS Deployment
 
-For AWS App Runner deployment, use `inspect_rds_api.py`:
+For AWS ECS deployment, use `inspect_rds_api.py`:
 
 1. Create a Dockerfile:
 ```dockerfile
@@ -81,9 +81,9 @@ EXPOSE 8006
 CMD ["python", "inspect_rds_api.py"]
 ```
 
-2. Configure App Runner with the required environment variables
+2. Configure ECS with the required environment variables
 
-3. Access the inspection endpoints through the App Runner URL
+3. Access the inspection endpoints through the ECS URL
 
 ## Example Output
 

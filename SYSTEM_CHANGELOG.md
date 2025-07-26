@@ -1988,7 +1988,7 @@ curl -X POST http://monitoring-alb/dashboards/features/webhook/deployment-comple
 - **Top Services**:
   1. EC2/ALBs: $21.45 (24.1%)
   2. RDS: $19.67 (22.1%)
-  3. App Runner: $14.44 (16.2%)
+  3. ECS: $14.44 (16.2%)
   4. ElastiCache: $11.57 (13.0%)
   5. CloudWatch: $7.85 (8.8%)
 

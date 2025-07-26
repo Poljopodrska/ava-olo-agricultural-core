@@ -31,7 +31,7 @@ def get_database_config():
         db_password = os.getenv('DB_PASSWORD')
         db_port = os.getenv('DB_PORT', '5432')
         
-        # Handle potential HTML encoding issues from AWS App Runner
+        # Handle potential HTML encoding issues from AWS ECS
         if db_password:
             # Check if password appears to be HTML-encoded
             if '&lt;' in db_password or '&gt;' in db_password or '&amp;' in db_password:

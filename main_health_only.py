@@ -14,7 +14,7 @@ def get_deployment_info():
         "version": "aws-v1.3",
         "deployment_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "status": "DEPLOYED",
-        "environment": "AWS App Runner",
+        "environment": "AWS ECS",
         "platform": "FastAPI + Constitutional Framework"
     }
 

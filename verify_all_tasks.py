@@ -4,7 +4,7 @@
 import requests
 import time
 
-url = "https://6pmgrirjre.us-east-1.awsapprunner.com"
+url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com"
 
 print("🔍 COMPREHENSIVE DASHBOARD VERIFICATION")
 print("=" * 50)

@@ -202,6 +202,61 @@ async def env_dashboard_page():
     from api.env_dashboard_routes import _get_dashboard_html
     return HTMLResponse(_get_dashboard_html())
 
+@app.get("/api/deployment/reality-check")
+async def deployment_reality_check():
+    """Verify actual deployed features vs version claims"""
+    import os
+    import datetime
+    
+    # Check if new features actually exist
+    features_check = {
+        "security_audit_endpoint": any(r.path == "/api/deployment/audit" for r in app.routes),
+        "git_verification_module": os.path.exists("modules/core/git_verification.py"),
+        "env_scanner_exists": os.path.exists("modules/env_scanner.py"),
+        "env_dashboard_routes": any(r.path == "/api/env/scan" for r in app.routes),
+        "deployment_security_endpoint": any(r.path == "/api/deployment/source" for r in app.routes),
+        "deployment_timestamp": os.getenv('DEPLOYMENT_TIMESTAMP', 'NOT_SET'),
+        "github_sha": os.getenv('GITHUB_SHA', 'NOT_SET'),
+        "build_id": os.getenv('BUILD_ID', BUILD_ID)
+    }
+    
+    # Get file modification times to verify fresh deployment
+    file_checks = {}
+    try:
+        main_py_mtime = datetime.datetime.fromtimestamp(
+            os.path.getmtime(__file__)
+        ).isoformat()
+        file_checks["main.py"] = main_py_mtime
+    except:
+        file_checks["main.py"] = "UNKNOWN"
+        
+    # Check for specific new modules
+    for module_path in ["modules/env_scanner.py", "modules/env_verifier.py", "api/env_dashboard_routes.py"]:
+        try:
+            if os.path.exists(module_path):
+                mtime = datetime.datetime.fromtimestamp(os.path.getmtime(module_path)).isoformat()
+                file_checks[module_path] = mtime
+            else:
+                file_checks[module_path] = "NOT_FOUND"
+        except:
+            file_checks[module_path] = "ERROR"
+    
+    # Count actual features deployed
+    feature_count = sum(1 for v in features_check.values() if v and v not in ['NOT_SET', 'NOT_FROM_GITHUB'])
+    
+    return {
+        "claimed_version": VERSION,
+        "actual_features": features_check,
+        "file_timestamps": file_checks,
+        "container_start": datetime.datetime.now().isoformat(),
+        "infrastructure": "ECS_ONLY",
+        "app_runner_removed": True,
+        "feature_count": feature_count,
+        "total_features": len(features_check),
+        "reality_status": "REAL_DEPLOYMENT" if feature_count >= 5 else "VERSION_ONLY_UPDATE",
+        "warning": "VERSION_ONLY_UPDATE - Features missing!" if feature_count < 5 else "OK - Real deployment verified"
+    }
+
 # Add remaining dashboard placeholders
 @app.get("/database-dashboard", response_class=HTMLResponse)
 async def database_dashboard():

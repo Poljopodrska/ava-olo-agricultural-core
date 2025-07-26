@@ -115,7 +115,7 @@ def check_deployment_ready():
         return False
     else:
         print("\n✅ READY FOR DEPLOYMENT!")
-        print("\nRemember to set environment variables in AWS App Runner:")
+        print("\nRemember to set environment variables in AWS ECS:")
         print("  - DATABASE_URL or DB_HOST/DB_PASSWORD")
         print("  - OPENAI_API_KEY")
         return True

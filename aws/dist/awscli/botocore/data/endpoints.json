@@ -2707,7 +2707,7 @@
           }
         }
       },
-      "apprunner" : {
+      "ecs" : {
         "endpoints" : {
           "ap-northeast-1" : { },
           "ap-south-1" : { },
@@ -2722,37 +2722,37 @@
               "region" : "us-east-1"
             },
             "deprecated" : true,
-            "hostname" : "apprunner-fips.us-east-1.amazonaws.com"
+            "hostname" : "ecs-fips.us-east-1.amazonaws.com"
           },
           "fips-us-east-2" : {
             "credentialScope" : {
               "region" : "us-east-2"
             },
             "deprecated" : true,
-            "hostname" : "apprunner-fips.us-east-2.amazonaws.com"
+            "hostname" : "ecs-fips.us-east-2.amazonaws.com"
           },
           "fips-us-west-2" : {
             "credentialScope" : {
               "region" : "us-west-2"
             },
             "deprecated" : true,
-            "hostname" : "apprunner-fips.us-west-2.amazonaws.com"
+            "hostname" : "ecs-fips.us-west-2.amazonaws.com"
           },
           "us-east-1" : {
             "variants" : [ {
-              "hostname" : "apprunner-fips.us-east-1.amazonaws.com",
+              "hostname" : "ecs-fips.us-east-1.amazonaws.com",
               "tags" : [ "fips" ]
             } ]
           },
           "us-east-2" : {
             "variants" : [ {
-              "hostname" : "apprunner-fips.us-east-2.amazonaws.com",
+              "hostname" : "ecs-fips.us-east-2.amazonaws.com",
               "tags" : [ "fips" ]
             } ]
           },
           "us-west-2" : {
             "variants" : [ {
-              "hostname" : "apprunner-fips.us-west-2.amazonaws.com",
+              "hostname" : "ecs-fips.us-west-2.amazonaws.com",
               "tags" : [ "fips" ]
             } ]
           }

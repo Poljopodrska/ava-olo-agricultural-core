@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced Database Connection Diagnostics
-🎯 Purpose: Comprehensive diagnosis of App Runner → RDS connection issues
+🎯 Purpose: Comprehensive diagnosis of ECS → RDS connection issues
 📜 Constitutional Compliance: Error isolation + transparency
 """
 
@@ -268,7 +268,7 @@ async def diagnose_connection_comprehensive():
         diagnostics["recommendations"].append({
             "type": "environment",
             "message": f"Missing variables: {missing_required}",
-            "action": "Set missing environment variables in AWS App Runner"
+            "action": "Set missing environment variables in AWS ECS"
         })
     
     return diagnostics

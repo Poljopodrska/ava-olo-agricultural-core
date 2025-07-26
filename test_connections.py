@@ -25,9 +25,9 @@ def try_connection_method(method_name, command):
 
 # Test different URLs found in the codebase
 urls = [
-    'https://6pmgiripe.us-east-1.awsapprunner.com/',
-    'https://6pmgrirjre.us-east-1.awsapprunner.com/',
-    'https://6pmgrirjre.us-east-1.awsapprunner.com/ui-dashboard'
+    'https://6pmgiripe.us-east-1.elb.amazonaws.com/',
+    'https://6pmgrirjre.us-east-1.elb.amazonaws.com/',
+    'https://6pmgrirjre.us-east-1.elb.amazonaws.com/ui-dashboard'
 ]
 
 for url in urls:
@@ -41,8 +41,8 @@ for url in urls:
 
 # Method 2: AWS CLI (if credentials available)
 success2 = try_connection_method(
-    'AWS CLI App Runner',
-    'aws apprunner list-services --region us-east-1 2>/dev/null || echo "AWS CLI not configured"'
+    'AWS CLI ECS',
+    'aws ecs list-services --region us-east-1 2>/dev/null || echo "AWS CLI not configured"'
 )
 
 # Method 3: DNS resolution check

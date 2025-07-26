@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create tables in AWS RDS - run this from App Runner or EC2
+Create tables in AWS RDS - run this from ECS or EC2
 """
 import os
 from sqlalchemy import create_engine, text

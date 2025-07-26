@@ -11,7 +11,7 @@ from datetime import datetime
 def check_version_deployment():
     """Check if version v2.1.3 is deployed and visible"""
     
-    url = "https://6pmgrirjre.us-east-1.awsapprunner.com/"
+    url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com/"
     expected_version = "v2.1.3"
     
     print("🔍 MONITORING VERSION DEPLOYMENT")
@@ -82,7 +82,7 @@ def check_template_engine_debug():
     print("\n🔧 TEMPLATE ENGINE DEBUG")
     print("=" * 40)
     
-    url = "https://6pmgrirjre.us-east-1.awsapprunner.com/"
+    url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com/"
     
     try:
         response = requests.get(url, timeout=10)

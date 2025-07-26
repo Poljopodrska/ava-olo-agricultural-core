@@ -13,7 +13,7 @@ def test_farmer_registration_design():
     print("🎨 FARMER REGISTRATION DESIGN ASSESSMENT")
     print("=" * 50)
     
-    url = "https://6pmgrirjre.us-east-1.awsapprunner.com/farmer-registration"
+    url = "https://6pmgrirjre.us-east-1.elb.amazonaws.com/farmer-registration"
     
     try:
         response = requests.get(url, timeout=15)

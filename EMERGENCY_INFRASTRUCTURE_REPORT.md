@@ -4,7 +4,7 @@ Generated: 2025-07-22 02:41:12
 ## SUMMARY
 - Total ALBs found: 3
 - Total ECS services: 3
-- Total App Runner services: 0
+- Total ECS services: 0
 - Working endpoints found: 3
 
 ## WORKING ENDPOINTS
