@@ -1,5 +1,36 @@
 # AVA OLO System Changelog
 
+## [v3.4.6-env-fix] - 2025-07-26 17:26 UTC - Fix OpenAI Key in ECS
+**Deployed to Production**: YES ✅
+**Service**: agricultural-core
+**Version**: v3.4.6-env-fix-env-fix-b8f3d2a1
+**Purpose**: Fix missing OpenAI API key in latest ECS task definition
+
+### 🔧 FIXES:
+
+1. **Root Cause**: Task definition revision 34 was missing OPENAI_API_KEY
+2. **Solution**: Created revision 35 with OpenAI key properly set
+3. **Code Fix**: Made OpenAI client initialization more explicit with error handling
+
+### Changes:
+- Added OPENAI_API_KEY to ECS task definition revision 35
+- Updated service to use new task definition
+- Added `/api/v1/chat/env-check` endpoint for debugging
+- Explicit key validation before OpenAI client creation
+
+### Verification:
+```bash
+# Check environment
+curl http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/api/v1/chat/env-check
+
+# Test chat
+curl -X POST http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Hello GPT-4!"}'
+```
+
+---
+
 ## [v3.4.5-direct-llm-test] - 2025-07-26 17:24 UTC - Simple Direct LLM Test
 **Deployed to Production**: PENDING ⏳
 **Service**: agricultural-core

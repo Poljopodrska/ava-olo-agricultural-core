@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726162400'  # v3.4.5 - Direct LLM Test
-COMMIT_HASH = "direct-llm"  # Simple direct OpenAI test
+DEPLOYMENT_TIMESTAMP = '20250726162600'  # v3.4.6 - Environment Fix
+COMMIT_HASH = "env-fix"  # Fixed OpenAI key in ECS
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.4.5-direct-llm-test-{BUILD_ID}"
+VERSION = f"v3.4.6-env-fix-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

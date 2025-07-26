@@ -41,8 +41,16 @@ async def handle_chat(request: ChatRequest):
     logger.info(f"OpenAI Key exists: {bool(os.getenv('OPENAI_API_KEY'))}")
     
     try:
-        # Direct OpenAI call
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        # Get API key explicitly
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logger.error("OPENAI_API_KEY not found in environment!")
+            raise ValueError("OPENAI_API_KEY environment variable not set")
+        
+        logger.info(f"Using OpenAI key: {api_key[:10]}...")
+        
+        # Direct OpenAI call with explicit key
+        client = OpenAI(api_key=api_key)
         
         response = client.chat.completions.create(
             model="gpt-4",
@@ -81,15 +89,50 @@ async def llm_status():
         "openai_configured": bool(key),
         "key_prefix": key[:10] if key else None,
         "key_length": len(key),
-        "test_mode": "direct_llm_v3.4.5",
+        "test_mode": "direct_llm_v3.4.6",
         "timestamp": datetime.now().isoformat()
+    }
+
+@router.get("/env-check")
+async def check_environment():
+    """Debug endpoint to verify environment variables"""
+    import os
+    
+    # Check various possible key names
+    possible_keys = [
+        "OPENAI_API_KEY",
+        "OPENAI_KEY", 
+        "OPENAI_API_TOKEN",
+        "openai_api_key"
+    ]
+    
+    found_keys = {}
+    for key_name in possible_keys:
+        value = os.getenv(key_name, "")
+        if value:
+            found_keys[key_name] = f"{value[:7]}...{value[-4:]}" if len(value) > 15 else "SHORT_KEY"
+    
+    # Check all env vars starting with OPENAI
+    openai_vars = {k: f"{v[:10]}..." for k, v in os.environ.items() if k.startswith("OPENAI")}
+    
+    return {
+        "found_keys": found_keys,
+        "openai_vars": openai_vars,
+        "env_count": len(os.environ),
+        "path": os.getenv("PATH", "").split(":")[0],
+        "aws_region": os.getenv("AWS_DEFAULT_REGION", "not_set"),
+        "ecs_container": os.getenv("ECS_CONTAINER_METADATA_URI_V4", "not_ecs")
     }
 
 @router.get("/test")
 async def test_llm():
     """Quick test endpoint"""
     try:
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment")
+            
+        client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": "Say 'LLM working!' and the current time."}],
@@ -104,5 +147,6 @@ async def test_llm():
         return {
             "test": "failed",
             "error": str(e),
-            "key_exists": bool(os.getenv("OPENAI_API_KEY"))
+            "key_exists": bool(os.getenv("OPENAI_API_KEY")),
+            "key_length": len(os.getenv("OPENAI_API_KEY", ""))
         }
