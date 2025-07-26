@@ -35,8 +35,19 @@
                     font-size: 14px;
                     font-family: monospace;
                     border: 1px solid rgba(255,255,255,0.3);
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                 ">
                     {{ current_version or 'v0.0.0' }}
+                    <span id="deployment-badge" class="deployment-badge" style="
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        font-size: 10px;
+                        font-weight: bold;
+                        background: #FF9800;
+                        color: white;
+                    ">...</span>
                 </div>
                 <div>
                     {% if current_user %}
@@ -121,7 +132,35 @@
                 link.setAttribute('tabindex', '0');
                 link.setAttribute('onkeypress', 'if(event.key==="Enter") window.location.href=this.href');
             });
+            
+            // Add deployment reality badge
+            updateDeploymentBadge();
         });
+        
+        // Update deployment reality badge
+        async function updateDeploymentBadge() {
+            const badge = document.getElementById('deployment-badge');
+            if (!badge) return;
+            
+            try {
+                const response = await fetch('/api/deployment/reality-check');
+                const data = await response.json();
+                const isReal = data.reality_status === 'REAL_DEPLOYMENT';
+                
+                badge.textContent = isReal ? 'REAL ✓' : 'FAKE ✗';
+                badge.style.background = isReal ? '#4CAF50' : '#F44336';
+                badge.style.color = 'white';
+                
+                // Update every 2 minutes
+                setTimeout(updateDeploymentBadge, 120000);
+            } catch (error) {
+                badge.textContent = '?';
+                badge.style.background = '#FF9800';
+                badge.style.color = 'white';
+                // Retry in 30 seconds on error
+                setTimeout(updateDeploymentBadge, 30000);
+            }
+        }
     </script>
     
     {% block extra_js %}{% endblock %}
