@@ -80,14 +80,22 @@ jobs:
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
-      - name: Deploy to ECS with Force New Deployment
+      - name: Register task definition and deploy
         run: |
-          # Force new deployment with latest image
+          # Register the task definition first
+          TASK_DEF_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://${{ steps.task-def.outputs.task-definition }} \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          
+          echo "Registered task definition: $TASK_DEF_ARN"
+          
+          # Force new deployment with registered task definition
           aws ecs update-service \
             --cluster ${{ env.ECS_CLUSTER }} \
             --service ${{ env.ECS_SERVICE }} \
             --force-new-deployment \
-            --task-definition ${{ steps.task-def.outputs.task-definition }}
+            --task-definition $TASK_DEF_ARN
           
           # Wait for stability with timeout
           aws ecs wait services-stable \
