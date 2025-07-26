@@ -135,6 +135,15 @@ async def startup_event():
         except Exception as e:
             print(f"⚠️ Migration failed: {str(e)} - continuing anyway")
         
+        # Ensure CAVA tables exist (fallback if migrations didn't work)
+        print("🔄 Ensuring CAVA tables exist...")
+        try:
+            from modules.api.cava_audit_routes import ensure_cava_tables_startup
+            await ensure_cava_tables_startup()
+            print("✅ CAVA tables verified")
+        except Exception as e:
+            print(f"⚠️ CAVA table check failed: {str(e)} - continuing anyway")
+        
     else:
         print("⚠️ Database connection failed after retries - running in degraded mode")
         print("⚠️ Service will continue to run and serve requests without database")

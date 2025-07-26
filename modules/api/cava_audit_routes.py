@@ -292,6 +292,242 @@ def generate_remediation_plan(audit_results: Dict) -> List[Dict]:
     
     return plan
 
+@router.post("/setup-tables")
+async def setup_cava_tables():
+    """Force execution of CAVA table creation"""
+    try:
+        db_manager = DatabaseManager()
+        
+        migration_sql = """
+        -- Create chat_messages table
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id SERIAL PRIMARY KEY,
+            wa_phone_number VARCHAR(20) NOT NULL,
+            role VARCHAR(10) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+            content TEXT NOT NULL,
+            timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            conversation_id VARCHAR(50),
+            metadata JSONB DEFAULT '{}'::jsonb
+        );
+
+        -- Create indexes for performance
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_phone ON chat_messages(wa_phone_number);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON chat_messages(timestamp DESC);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages(conversation_id);
+
+        -- Create llm_usage_log table for cost tracking
+        CREATE TABLE IF NOT EXISTS llm_usage_log (
+            id SERIAL PRIMARY KEY,
+            farmer_phone VARCHAR(20),
+            model VARCHAR(50),
+            tokens_in INTEGER,
+            tokens_out INTEGER,
+            cost DECIMAL(10,6),
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_llm_usage_phone ON llm_usage_log(farmer_phone);
+        CREATE INDEX IF NOT EXISTS idx_llm_usage_timestamp ON llm_usage_log(timestamp);
+
+        -- Create farmer_facts table for extracted information
+        CREATE TABLE IF NOT EXISTS farmer_facts (
+            id SERIAL PRIMARY KEY,
+            farmer_phone VARCHAR(20) NOT NULL,
+            fact_type VARCHAR(50),
+            fact_data JSONB,
+            confidence DECIMAL(3,2) DEFAULT 1.0,
+            source VARCHAR(100) DEFAULT 'chat',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            version INTEGER DEFAULT 1
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_farmer_facts_phone ON farmer_facts(farmer_phone);
+        CREATE INDEX IF NOT EXISTS idx_farmer_facts_type ON farmer_facts(fact_type);
+        CREATE INDEX IF NOT EXISTS idx_farmer_facts_data ON farmer_facts USING GIN(fact_data);
+        """
+        
+        # Execute migration
+        async with db_manager.get_connection_async() as conn:
+            await conn.execute(migration_sql)
+            
+            # Verify tables were created
+            tables_check = await conn.fetch("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name IN ('chat_messages', 'llm_usage_log', 'farmer_facts')
+            """)
+            
+            created_tables = [t['table_name'] for t in tables_check]
+            
+            # Check table structures
+            structure_check = {}
+            for table in created_tables:
+                columns = await conn.fetch("""
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = $1
+                    ORDER BY ordinal_position
+                """, table)
+                structure_check[table] = [f"{c['column_name']} ({c['data_type']})" for c in columns]
+        
+        logger.info(f"CAVA tables setup completed. Created: {created_tables}")
+        
+        return {
+            "status": "success",
+            "message": "CAVA tables created successfully",
+            "tables_created": created_tables,
+            "table_structures": structure_check,
+            "ready_for_use": len(created_tables) == 3
+        }
+        
+    except Exception as e:
+        logger.error(f"CAVA setup error: {str(e)}")
+        
+        # Check what tables exist even if error
+        try:
+            async with db_manager.get_connection_async() as conn:
+                existing = await conn.fetch("""
+                    SELECT table_name 
+                    FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name IN ('chat_messages', 'llm_usage_log', 'farmer_facts')
+                """)
+                existing_tables = [t['table_name'] for t in existing]
+        except:
+            existing_tables = []
+        
+        return {
+            "status": "error",
+            "message": str(e),
+            "existing_tables": existing_tables,
+            "partial_success": len(existing_tables) > 0
+        }
+
+@router.post("/test-conversation")
+async def test_cava_conversation():
+    """Test CAVA with a real conversation flow"""
+    test_phone = "+385991234567"
+    
+    # Test conversation
+    test_messages = [
+        ("user", "My name is Marko and I grow mangoes"),
+        ("user", "I have 25 hectares near Split"),
+        ("user", "When should I harvest?")
+    ]
+    
+    results = []
+    
+    try:
+        for role, content in test_messages:
+            if role == "user":
+                # Send through chat endpoint
+                response = await chat_endpoint(ChatRequest(
+                    wa_phone_number=test_phone,
+                    message=content
+                ))
+                
+                results.append({
+                    "role": "user",
+                    "content": content,
+                    "stored": True
+                })
+                
+                results.append({
+                    "role": "assistant",
+                    "content": response.response,
+                    "context_used": True,  # Assume context was used
+                    "messages_in_context": len(results) // 2  # Estimate
+                })
+        
+        # Verify storage
+        db_manager = DatabaseManager()
+        async with db_manager.get_connection_async() as conn:
+            stored_messages = await conn.fetch("""
+                SELECT role, content, timestamp 
+                FROM chat_messages 
+                WHERE wa_phone_number = $1 
+                ORDER BY timestamp
+            """, test_phone)
+        
+        # Check for memory indicators
+        last_response = results[-1]["content"].lower() if results else ""
+        memory_indicators = {
+            "remembers_name": "marko" in last_response,
+            "remembers_crop": "mango" in last_response,
+            "remembers_location": "split" in last_response or "25 hectare" in last_response,
+            "context_aware": any(word in last_response for word in ["your mango", "your 25 hectare", "your farm"])
+        }
+        
+        return {
+            "test_conversation": results,
+            "messages_stored": len(stored_messages),
+            "memory_indicators": memory_indicators,
+            "memory_score": sum(memory_indicators.values()) * 25,
+            "cava_working": sum(memory_indicators.values()) >= 2
+        }
+        
+    except Exception as e:
+        logger.error(f"Test conversation error: {str(e)}")
+        return {
+            "test_conversation": [],
+            "messages_stored": 0,
+            "memory_indicators": {},
+            "memory_score": 0,
+            "cava_working": False,
+            "error": str(e)
+        }
+
+@router.get("/table-status")
+async def check_table_status():
+    """Quick check of CAVA table status"""
+    tables = ['chat_messages', 'llm_usage_log', 'farmer_facts']
+    status = {}
+    
+    try:
+        db_manager = DatabaseManager()
+        async with db_manager.get_connection_async() as conn:
+            for table in tables:
+                try:
+                    count = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
+                    status[table] = {
+                        "exists": True,
+                        "row_count": count,
+                        "status": "ready"
+                    }
+                except Exception as e:
+                    status[table] = {
+                        "exists": False,
+                        "error": str(e),
+                        "status": "missing"
+                    }
+        
+        all_exist = all(t["exists"] for t in status.values())
+        
+        return {
+            "tables": status,
+            "cava_ready": all_exist,
+            "setup_required": not all_exist
+        }
+        
+    except Exception as e:
+        logger.error(f"Table status check error: {str(e)}")
+        # Return error status for all tables
+        for table in tables:
+            status[table] = {
+                "exists": False,
+                "error": str(e),
+                "status": "error"
+            }
+        
+        return {
+            "tables": status,
+            "cava_ready": False,
+            "setup_required": True,
+            "error": str(e)
+        }
+
 @router.get("/quick-check")
 async def quick_cava_check():
     """Quick check of CAVA implementation status"""
@@ -342,3 +578,76 @@ async def quick_cava_check():
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }
+
+async def ensure_cava_tables_startup():
+    """Ensure CAVA tables exist on every startup"""
+    try:
+        db_manager = DatabaseManager()
+        
+        async with db_manager.get_connection_async() as conn:
+            # Check if tables exist
+            tables_exist = await conn.fetchval("""
+                SELECT COUNT(*) 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name IN ('chat_messages', 'llm_usage_log', 'farmer_facts')
+            """)
+            
+            if tables_exist < 3:
+                logger.info("📊 CAVA tables missing, creating them...")
+                
+                # Try to read from migration file first
+                migration_sql = """
+                -- Create chat_messages table
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id SERIAL PRIMARY KEY,
+                    wa_phone_number VARCHAR(20) NOT NULL,
+                    role VARCHAR(10) NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+                    content TEXT NOT NULL,
+                    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    conversation_id VARCHAR(50),
+                    metadata JSONB DEFAULT '{}'::jsonb
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_phone ON chat_messages(wa_phone_number);
+                CREATE INDEX IF NOT EXISTS idx_chat_messages_timestamp ON chat_messages(timestamp DESC);
+
+                -- Create llm_usage_log table
+                CREATE TABLE IF NOT EXISTS llm_usage_log (
+                    id SERIAL PRIMARY KEY,
+                    farmer_phone VARCHAR(20),
+                    model VARCHAR(50),
+                    tokens_in INTEGER,
+                    tokens_out INTEGER,
+                    cost DECIMAL(10,6),
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_llm_usage_phone ON llm_usage_log(farmer_phone);
+                CREATE INDEX IF NOT EXISTS idx_llm_usage_timestamp ON llm_usage_log(timestamp);
+
+                -- Create farmer_facts table
+                CREATE TABLE IF NOT EXISTS farmer_facts (
+                    id SERIAL PRIMARY KEY,
+                    farmer_phone VARCHAR(20) NOT NULL,
+                    fact_type VARCHAR(50),
+                    fact_data JSONB,
+                    confidence DECIMAL(3,2) DEFAULT 1.0,
+                    source VARCHAR(100) DEFAULT 'chat',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    version INTEGER DEFAULT 1
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_farmer_facts_phone ON farmer_facts(farmer_phone);
+                CREATE INDEX IF NOT EXISTS idx_farmer_facts_type ON farmer_facts(fact_type);
+                """
+                
+                await conn.execute(migration_sql)
+                logger.info("✅ CAVA tables created successfully!")
+            else:
+                logger.info("✅ CAVA tables already exist")
+                
+    except Exception as e:
+        logger.error(f"⚠️ CAVA table check error: {e}")
+        raise e

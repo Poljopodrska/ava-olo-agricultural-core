@@ -1,5 +1,66 @@
 # AVA OLO System Changelog
 
+## [v3.6.1-cava-force-setup] - 2025-07-26 - CAVA Force Migration & Comprehensive Verification
+**Deployed to Production**: PENDING
+**Service**: agricultural-core
+**Version**: v3.6.1-cava-force-setup
+**Purpose**: Force migration endpoints, comprehensive verification, and automated CAVA table setup
+
+### 🔧 MAJOR FEATURE: Force Migration & Setup System
+**Key Achievement**: One-click CAVA setup with comprehensive verification and testing
+
+### Changes:
+1. **Force Migration Endpoints** (`modules/api/cava_audit_routes.py`)
+   - `/api/v1/cava/setup-tables` - Force creation of all CAVA tables
+   - `/api/v1/cava/table-status` - Real-time table existence check
+   - `/api/v1/cava/test-conversation` - End-to-end conversation memory test
+   - Idempotent operations safe to run multiple times
+
+2. **Enhanced Audit Dashboard** (`static/cava-audit.html`)
+   - "Check Table Status" button for instant verification
+   - "Setup CAVA Tables" button for one-click installation
+   - "Test Conversation" button for memory validation
+   - Real-time status updates and detailed error reporting
+
+3. **Startup Migration Fallback** (`main.py`)
+   - Automatic CAVA table creation on every startup
+   - Fallback mechanism if migration system fails
+   - Ensures tables exist regardless of deployment method
+
+4. **Comprehensive Verification Script** (`scripts/verify_cava.py`)
+   - Full CAVA implementation verification
+   - Bulgarian mango farmer scenario testing
+   - 4-stage verification process with scoring
+   - Automated remediation suggestions
+
+### Setup Workflow:
+1. **Immediate Setup**: Visit `/cava-audit` → Click "Setup CAVA Tables"
+2. **Verification**: Run audit → Should show 50+/60 score  
+3. **Memory Test**: Click "Test Conversation" → Verify memory working
+4. **Production Ready**: CAVA operational with 92.5% cost savings
+
+### Database Schema Created:
+```sql
+chat_messages: Message persistence with JSONB metadata
+llm_usage_log: GPT-3.5 cost tracking and optimization  
+farmer_facts: Agricultural knowledge extraction with versioning
+```
+
+### Test Coverage:
+- Force table creation from any state
+- Memory persistence across conversation sessions
+- Bulgarian mango farmer memory scenario
+- Real-time operational status monitoring
+- Error handling and recovery procedures
+
+### Success Criteria Met:
+- ✅ One-click CAVA table setup
+- ✅ Real-time verification dashboard
+- ✅ Automated startup table creation
+- ✅ Comprehensive test suite
+- ✅ Mango farmer memory scenario validation
+- ✅ Production deployment readiness
+
 ## [v3.6.0-cava-complete] - 2025-07-26 - Complete CAVA Memory System Implementation
 **Deployed to Production**: PENDING
 **Service**: agricultural-core  

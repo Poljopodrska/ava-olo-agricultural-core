@@ -249,10 +249,11 @@
     
     <div class="audit-container">
         <div class="controls">
-            <button onclick="runQuickCheck()" id="quickCheckBtn">Quick Check</button>
+            <button onclick="checkTableStatus()" id="statusBtn" style="background: #17a2b8;">Check Table Status</button>
+            <button onclick="setupTables()" id="setupBtn" style="background: #28a745;">Setup CAVA Tables</button>
             <button onclick="runFullAudit()" id="auditBtn">Run Full Audit</button>
-            <button onclick="testMemory()" id="memoryBtn">Test Memory System</button>
-            <button onclick="setupTables()" id="setupBtn" style="background: #ff9800;">Setup Tables</button>
+            <button onclick="testConversation()" id="testBtn" style="background: #6f42c1;">Test Conversation</button>
+            <button onclick="runQuickCheck()" id="quickCheckBtn">Quick Check</button>
             <span id="quickStatus" class="quick-check" style="display:none;"></span>
         </div>
         
@@ -458,6 +459,64 @@
             error.style.display = 'block';
         }
         
+        async function checkTableStatus() {
+            const btn = document.getElementById('statusBtn');
+            const results = document.getElementById('results');
+            
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/v1/cava/table-status');
+                const data = await response.json();
+                
+                let html = '<h2>📊 CAVA Table Status</h2>';
+                
+                for (const [table, status] of Object.entries(data.tables)) {
+                    const statusClass = status.exists ? 'pass' : 'fail';
+                    const icon = status.exists ? '✅' : '❌';
+                    
+                    html += `
+                        <div class="component ${statusClass}">
+                            <div class="component-header">
+                                <span class="component-name">${icon} ${table}</span>
+                                <span class="component-score">${status.exists ? 'EXISTS' : 'MISSING'}</span>
+                            </div>
+                            ${status.exists ? 
+                                `<p>Rows: ${status.row_count}</p>` : 
+                                `<p>Error: ${status.error}</p>`
+                            }
+                        </div>
+                    `;
+                }
+                
+                if (!data.cava_ready) {
+                    html += `
+                        <div class="component fail">
+                            <h3>⚠️ Setup Required</h3>
+                            <p>Some CAVA tables are missing. Click "Setup CAVA Tables" to create them.</p>
+                            <button onclick="setupTables()" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px;">
+                                Setup Tables Now
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="component pass">
+                            <h3>✅ All Tables Ready!</h3>
+                            <p>CAVA is ready to use. You can now run the full audit or test conversations.</p>
+                        </div>
+                    `;
+                }
+                
+                results.innerHTML = html;
+                
+            } catch (error) {
+                showError('Table status check failed: ' + error.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+        
         async function setupTables() {
             if (!confirm('This will create the required CAVA tables. Continue?')) return;
             
@@ -484,13 +543,14 @@
                 let html = `
                     <div class="score-display">
                         <h2>Table Setup Results</h2>
-                        <p style="color: ${data.success ? '#4CAF50' : '#F44336'}; font-size: 24px;">
-                            ${data.success ? '✅ Success' : '❌ Failed'}
+                        <p style="color: ${data.status === 'success' ? '#4CAF50' : '#F44336'}; font-size: 24px;">
+                            ${data.status === 'success' ? '✅ Success' : '❌ Failed'}
                         </p>
+                        <p>${data.message}</p>
                     </div>
                 `;
                 
-                if (data.tables_created.length > 0) {
+                if (data.tables_created && data.tables_created.length > 0) {
                     html += `
                         <div class="component pass">
                             <h3>Tables Created:</h3>
@@ -499,44 +559,30 @@
                     `;
                 }
                 
-                if (data.tables_existed.length > 0) {
+                if (data.table_structures) {
+                    html += '<h3>Table Structures:</h3>';
+                    for (const [table, structure] of Object.entries(data.table_structures)) {
+                        html += `
+                            <div class="component">
+                                <h4>${table}</h4>
+                                <pre>${structure.join('\n')}</pre>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if (data.status === 'success') {
                     html += `
-                        <div class="component partial">
-                            <h3>Tables Already Existed:</h3>
-                            <ul>${data.tables_existed.map(t => `<li>${t}</li>`).join('')}</ul>
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button onclick="runFullAudit()" style="background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin: 5px;">
+                                Run Audit Now
+                            </button>
+                            <button onclick="testConversation()" style="background: #6f42c1; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; margin: 5px;">
+                                Test Conversation
+                            </button>
                         </div>
                     `;
                 }
-                
-                if (data.errors.length > 0) {
-                    html += `
-                        <div class="component fail">
-                            <h3>Errors:</h3>
-                            <ul>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>
-                        </div>
-                    `;
-                }
-                
-                if (data.table_stats) {
-                    html += `
-                        <div class="component">
-                            <h3>Table Statistics:</h3>
-                            <ul>
-                                ${Object.entries(data.table_stats).map(([table, count]) => 
-                                    `<li>${table}: ${count} rows</li>`
-                                ).join('')}
-                            </ul>
-                        </div>
-                    `;
-                }
-                
-                html += `
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button onclick="runFullAudit()" style="background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer;">
-                            Run Audit Now
-                        </button>
-                    </div>
-                `;
                 
                 results.innerHTML = html;
                 
@@ -548,9 +594,84 @@
             }
         }
         
-        // Run quick check on page load
+        async function testConversation() {
+            const btn = document.getElementById('testBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            loading.querySelector('p').textContent = 'Testing CAVA conversation memory...';
+            results.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/v1/cava/test-conversation', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                let html = `
+                    <div class="score-display">
+                        <h2>🧠 Conversation Memory Test</h2>
+                        <div class="score-number">${data.memory_score}/100</div>
+                        <div class="score-status ${data.cava_working ? 'status-full_cava' : 'status-not_implemented'}">
+                            ${data.cava_working ? '✅ CAVA WORKING' : '❌ NOT WORKING'}
+                        </div>
+                    </div>
+                `;
+                
+                // Show conversation flow
+                html += '<h3>📱 Test Conversation:</h3>';
+                for (const msg of data.test_conversation) {
+                    const msgClass = msg.role === 'user' ? 'component partial' : 'component pass';
+                    html += `
+                        <div class="${msgClass}">
+                            <strong>${msg.role.toUpperCase()}:</strong> ${msg.content}
+                            ${msg.context_used !== undefined ? 
+                                `<br><small>Context: ${msg.context_used ? 'Used' : 'Not used'} (${msg.messages_in_context} messages)</small>` : 
+                                ''
+                            }
+                        </div>
+                    `;
+                }
+                
+                // Show memory indicators
+                html += '<h3>🧠 Memory Indicators:</h3>';
+                html += '<div class="component">';
+                for (const [indicator, value] of Object.entries(data.memory_indicators)) {
+                    const icon = value ? '✅' : '❌';
+                    html += `<p>${icon} ${indicator.replace(/_/g, ' ')}: ${value ? 'DETECTED' : 'MISSING'}</p>`;
+                }
+                html += `<p><strong>Messages Stored: ${data.messages_stored}</strong></p>`;
+                html += '</div>';
+                
+                if (data.error) {
+                    html += `
+                        <div class="component fail">
+                            <h3>❌ Error</h3>
+                            <p>${data.error}</p>
+                        </div>
+                    `;
+                }
+                
+                results.innerHTML = html;
+                
+            } catch (err) {
+                showError('Conversation test failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+        
+        // Check table status on page load
         window.onload = () => {
-            runQuickCheck();
+            checkTableStatus();
         };
     </script>
 </body>
