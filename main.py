@@ -67,11 +67,17 @@ from modules.api.openai_config_routes import router as openai_config_router
 # NEW: Import memory training routes
 from modules.api.memory_training_routes import router as memory_training_router
 
+# NEW: Import emergency routes
+from modules.api.emergency_routes import router as emergency_router
+
 # Import WhatsApp module
 from modules.whatsapp.routes import router as whatsapp_router
 
 # Import ENV dashboard module
 from api.env_dashboard_routes import router as env_dashboard_router
+
+# Import for startup
+import asyncio
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -126,6 +132,9 @@ app.include_router(openai_config_router)
 # NEW: Include memory training router
 app.include_router(memory_training_router)
 
+# NEW: Include emergency router
+app.include_router(emergency_router)
+
 app.include_router(system_router)
 app.include_router(debug_services_router)
 app.include_router(debug_deployment_router)
@@ -135,9 +144,31 @@ app.include_router(env_dashboard_router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize services on startup with resilience"""
-    print(f"🚀 Starting AVA OLO Agricultural Core {VERSION}")
+    """Initialize services on startup with comprehensive validation and auto-recovery"""
+    print(f"🚀 Starting AVA OLO Agricultural Core {VERSION} with self-healing system")
     print(f"📦 Build ID: {BUILD_ID}")
+    
+    # NEW: Run comprehensive startup validation
+    from modules.core.startup_validator import StartupValidator
+    from modules.core.api_key_manager import APIKeyManager
+    
+    print("🔍 Running comprehensive startup validation...")
+    validation_report = await StartupValidator.validate_and_fix()
+    
+    if validation_report["system_ready"]:
+        print("✅ System validation passed - all systems operational")
+    else:
+        print("⚠️ System validation failed - operating in degraded mode")
+        print(f"Failed checks: {[k for k,v in validation_report['checks'].items() if not v]}")
+        print(f"Fixes applied: {validation_report.get('fixes_applied', [])}")
+    
+    # Start continuous health monitoring
+    asyncio.create_task(StartupValidator.continuous_health_check())
+    print("🏥 Started continuous health monitoring (checks every 5 minutes)")
+    
+    # Log API key diagnostic info
+    api_key_info = APIKeyManager.get_diagnostic_info()
+    print(f"🔑 API Key Status: {api_key_info}")
     
     # Initialize database connection pool with retry logic
     db_manager = get_db_manager()
@@ -312,6 +343,24 @@ async def detailed_health_check():
 async def get_version():
     """Get current version"""
     return {"version": VERSION, "build_id": BUILD_ID}
+
+@app.get("/api/v1/system/health")
+async def system_health():
+    """Comprehensive system health check with auto-recovery"""
+    from modules.core.startup_validator import StartupValidator
+    from modules.core.api_key_manager import APIKeyManager
+    
+    # Re-run validation
+    validation = await StartupValidator.validate_and_fix()
+    
+    return {
+        "status": "healthy" if validation["system_ready"] else "degraded",
+        "timestamp": datetime.now().isoformat(),
+        "validation": validation,
+        "api_key_info": APIKeyManager.get_diagnostic_info(),
+        "quick_fix_available": not validation["system_ready"],
+        "version": VERSION
+    }
 
 @app.get("/deployment-method")
 async def deployment_method():
