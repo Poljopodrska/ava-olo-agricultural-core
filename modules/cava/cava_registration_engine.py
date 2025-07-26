@@ -47,8 +47,9 @@ class CAVARegistrationEngine:
         # Session storage
         self.sessions: Dict[str, Dict] = {}
         
-        # Test connection
-        self._test_openai_connection()
+        # Test connection (skip in test environment)
+        if not os.getenv("SKIP_OPENAI_TEST"):
+            self._test_openai_connection()
         
         logger.info("✅ CAVA Registration Engine initialized - Constitutional compliance verified")
     
@@ -57,7 +58,8 @@ class CAVARegistrationEngine:
         try:
             # Synchronous test call
             import openai
-            response = openai.ChatCompletion.create(
+            client = openai.OpenAI(api_key=self.api_key)
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[{"role": "user", "content": "test"}],
                 max_tokens=5
@@ -96,8 +98,9 @@ class CAVARegistrationEngine:
             logger.info(f"[{session_id}] Calling OpenAI API with {len(messages)} messages...")
             
             import openai
+            client = openai.OpenAI(api_key=self.api_key)
             response = await asyncio.to_thread(
-                openai.ChatCompletion.create,
+                client.chat.completions.create,
                 model="gpt-4",
                 messages=messages,
                 temperature=0.7,
