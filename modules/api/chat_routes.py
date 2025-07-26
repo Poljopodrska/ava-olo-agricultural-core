@@ -127,8 +127,8 @@ async def chat_endpoint(request: ChatRequest):
         # 1. Store user message
         await store_message(wa_phone_number, 'user', message)
         
-        # 2. Get CAVA context
-        context = await cava_memory.get_conversation_context(wa_phone_number)
+        # 2. Get enhanced CAVA context (includes stored facts)
+        context = await cava_memory.get_enhanced_context(wa_phone_number)
         
         # 3. Extract facts from user message
         facts = await fact_extractor.extract_facts(message, context['context_summary'])

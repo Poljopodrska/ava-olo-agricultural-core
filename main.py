@@ -121,6 +121,20 @@ async def startup_event():
     print("🔄 Testing database connection with retry logic...")
     if db_manager.test_connection(retries=5, delay=3):
         print("✅ Database connection established")
+        
+        # Run database migrations
+        print("🔄 Running database migrations...")
+        try:
+            from modules.core.migration_runner import run_startup_migrations
+            migration_result = run_startup_migrations()
+            
+            if migration_result["success"]:
+                print(f"✅ {migration_result['message']}")
+            else:
+                print(f"⚠️ Migration warning: {migration_result['message']}")
+        except Exception as e:
+            print(f"⚠️ Migration failed: {str(e)} - continuing anyway")
+        
     else:
         print("⚠️ Database connection failed after retries - running in degraded mode")
         print("⚠️ Service will continue to run and serve requests without database")

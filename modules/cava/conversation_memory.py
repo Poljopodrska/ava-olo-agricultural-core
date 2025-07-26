@@ -190,32 +190,147 @@ class CAVAMemory:
     
     async def store_extracted_facts(self, wa_phone_number: str, facts: Dict[str, Any]):
         """
-        Store extracted facts in a structured way for future reference
-        This can be expanded to store in dedicated fact tables
+        Store extracted facts in farmer_facts table for future reference
         """
         try:
-            # For now, log the facts - in future this could go to a dedicated table
-            logger.info(f"Extracted facts for {wa_phone_number}: {facts}")
+            if not facts:
+                return
+                
+            logger.info(f"Storing extracted facts for {wa_phone_number}: {facts}")
             
-            # Example of how to store specific facts
-            if facts.get('crops'):
-                await self._update_farmer_crops(wa_phone_number, facts['crops'])
+            # Store each fact type in the farmer_facts table
+            async with self.db_manager.get_connection_async() as conn:
+                for fact_type, fact_data in facts.items():
+                    if fact_data:  # Only store non-empty facts
+                        insert_query = """
+                            INSERT INTO farmer_facts (
+                                farmer_phone, fact_type, fact_data, source, created_at, updated_at
+                            ) VALUES ($1, $2, $3, $4, NOW(), NOW())
+                            ON CONFLICT (farmer_phone, fact_type, fact_data) 
+                            DO UPDATE SET 
+                                updated_at = NOW(),
+                                version = farmer_facts.version + 1
+                        """
+                        
+                        # Convert fact_data to JSON if it's not already
+                        import json
+                        if isinstance(fact_data, (dict, list)):
+                            fact_json = json.dumps(fact_data)
+                        else:
+                            fact_json = json.dumps({"value": fact_data})
+                        
+                        await conn.execute(
+                            insert_query,
+                            wa_phone_number,
+                            fact_type,
+                            fact_json,
+                            'chat'
+                        )
             
-            if facts.get('chemicals_used'):
-                await self._log_chemical_usage(wa_phone_number, facts['chemicals_used'])
+            logger.info(f"Successfully stored {len(facts)} fact types for {wa_phone_number}")
             
         except Exception as e:
             logger.error(f"Error storing extracted facts: {str(e)}")
     
-    async def _update_farmer_crops(self, wa_phone_number: str, crops: List[str]):
-        """Update farmer's crop information based on conversation"""
-        # This is a placeholder - actual implementation would update field_crops table
-        logger.info(f"Would update crops for {wa_phone_number}: {crops}")
+    async def get_farmer_facts(self, wa_phone_number: str, fact_type: str = None) -> List[Dict]:
+        """
+        Retrieve stored facts for a farmer
+        
+        Args:
+            wa_phone_number: Phone number
+            fact_type: Optional filter by fact type
+            
+        Returns:
+            List of fact records
+        """
+        try:
+            if fact_type:
+                query = """
+                    SELECT fact_type, fact_data, confidence, created_at, updated_at, version
+                    FROM farmer_facts 
+                    WHERE farmer_phone = $1 AND fact_type = $2
+                    ORDER BY updated_at DESC
+                """
+                params = [wa_phone_number, fact_type]
+            else:
+                query = """
+                    SELECT fact_type, fact_data, confidence, created_at, updated_at, version
+                    FROM farmer_facts 
+                    WHERE farmer_phone = $1
+                    ORDER BY fact_type, updated_at DESC
+                """
+                params = [wa_phone_number]
+            
+            async with self.db_manager.get_connection_async() as conn:
+                rows = await conn.fetch(query, *params)
+            
+            facts = []
+            for row in rows:
+                import json
+                facts.append({
+                    'fact_type': row['fact_type'],
+                    'fact_data': json.loads(row['fact_data']),
+                    'confidence': float(row['confidence']) if row['confidence'] else 1.0,
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None,
+                    'updated_at': row['updated_at'].isoformat() if row['updated_at'] else None,
+                    'version': row['version']
+                })
+            
+            logger.info(f"Retrieved {len(facts)} facts for {wa_phone_number}")
+            return facts
+            
+        except Exception as e:
+            logger.error(f"Error retrieving farmer facts: {str(e)}")
+            return []
     
-    async def _log_chemical_usage(self, wa_phone_number: str, chemicals: List[str]):
-        """Log chemical usage mentioned in conversation"""
-        # This is a placeholder - actual implementation would create task records
-        logger.info(f"Would log chemical usage for {wa_phone_number}: {chemicals}")
+    async def get_enhanced_context(self, wa_phone_number: str, limit: int = 10) -> Dict[str, Any]:
+        """
+        Get enhanced conversation context including stored facts
+        """
+        try:
+            # Get basic context
+            context = await self.get_conversation_context(wa_phone_number, limit)
+            
+            # Add stored facts
+            stored_facts = await self.get_farmer_facts(wa_phone_number)
+            context['stored_facts'] = stored_facts
+            
+            # Enhance context summary with facts
+            if stored_facts:
+                fact_summary = self._build_facts_summary(stored_facts)
+                context['context_summary'] += f" | Known facts: {fact_summary}"
+            
+            return context
+            
+        except Exception as e:
+            logger.error(f"Error getting enhanced context: {str(e)}")
+            return await self.get_conversation_context(wa_phone_number, limit)
+    
+    def _build_facts_summary(self, facts: List[Dict]) -> str:
+        """Build a summary of stored facts for context"""
+        fact_types = {}
+        
+        for fact in facts:
+            fact_type = fact['fact_type']
+            if fact_type not in fact_types:
+                fact_types[fact_type] = []
+            
+            fact_data = fact['fact_data']
+            if isinstance(fact_data, dict) and 'value' in fact_data:
+                fact_types[fact_type].append(str(fact_data['value']))
+            elif isinstance(fact_data, list):
+                fact_types[fact_type].extend([str(item) for item in fact_data])
+            else:
+                fact_types[fact_type].append(str(fact_data))
+        
+        # Build summary
+        summary_parts = []
+        for fact_type, values in fact_types.items():
+            if values:
+                unique_values = list(set(values))[:3]  # Max 3 values per type
+                summary_parts.append(f"{fact_type}: {', '.join(unique_values)}")
+        
+        return "; ".join(summary_parts[:5])  # Max 5 fact types
     
     async def get_conversation_messages_for_llm(self, wa_phone_number: str, limit: int = 5) -> List[Dict[str, str]]:
         """
