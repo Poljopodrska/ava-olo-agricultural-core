@@ -1,5 +1,42 @@
 # AVA OLO System Changelog
 
+## [v3.4.7-env-persistence-fix] - 2025-07-26 17:30 UTC - Fix OpenAI Key Persistence
+**Deployed to Production**: YES ✅
+**Service**: agricultural-core
+**Version**: v3.4.7-env-persistence-fix-env-persist-a9d4e7f3
+**Purpose**: Fix OpenAI key persistence across deployments
+
+### 🔧 ROOT CAUSE & FIX:
+
+**Problem**: ECS was using task definition revision 36 which didn't have OPENAI_API_KEY
+**Cause**: Each new deployment creates a new revision, losing the manually added key
+
+**Solution**:
+1. Added OPENAI_API_KEY to current revision (36 → 37)
+2. Forced complete deployment (scale to 0, then back to 2)
+3. Added comprehensive debugging endpoints
+
+### Verification Results:
+```bash
+# Environment check shows key is now visible:
+{"found_keys":{"OPENAI_API_KEY":"sk-proj...-UMA"},"openai_vars":{"OPENAI_API_KEY":"sk-proj-Op..."}}
+
+# Chat test works:
+curl /api/v1/chat/test → {"test":"success","response":"LLM working!","model":"gpt-4"}
+```
+
+### New Debug Endpoints:
+- `/api/v1/chat/env-check` - Show OpenAI environment variables
+- `/api/v1/chat/debug/all-env` - Show all environment variables (sanitized)
+
+### Test Results:
+- ✅ OpenAI key visible to application
+- ✅ Chat returns real GPT-4 responses  
+- ✅ Multiple questions get varied, intelligent answers
+- ✅ No hardcoded responses
+
+---
+
 ## [v3.4.6-env-fix] - 2025-07-26 17:26 UTC - Fix OpenAI Key in ECS
 **Deployed to Production**: YES ✅
 **Service**: agricultural-core

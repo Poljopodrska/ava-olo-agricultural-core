@@ -124,6 +124,26 @@ async def check_environment():
         "ecs_container": os.getenv("ECS_CONTAINER_METADATA_URI_V4", "not_ecs")
     }
 
+@router.get("/debug/all-env")
+async def debug_all_env():
+    """Show ALL environment variables (sanitized)"""
+    import os
+    
+    all_env = {}
+    for key, value in os.environ.items():
+        if any(sensitive in key.upper() for sensitive in ['KEY', 'SECRET', 'PASSWORD', 'TOKEN']):
+            all_env[key] = f"{value[:5]}...{value[-5:]}" if len(value) > 10 else "***"
+        else:
+            all_env[key] = value
+    
+    return {
+        "total_env_vars": len(all_env),
+        "has_openai_key": "OPENAI_API_KEY" in os.environ,
+        "all_vars": all_env,
+        "task_arn": os.getenv("ECS_CONTAINER_METADATA_URI_V4", "not_in_ecs"),
+        "timestamp": datetime.now().isoformat()
+    }
+
 @router.get("/test")
 async def test_llm():
     """Quick test endpoint"""
