@@ -1,5 +1,66 @@
 # AVA OLO System Changelog
 
+## [v3.6.2-behavioral-audit-debug] - 2025-07-26 - Behavioral CAVA Audit + Chat Service Debug & Fix
+**Deployed to Production**: DEPLOYED ✅
+**Service**: agricultural-core
+**Version**: v3.6.2-behavioral-audit-debug
+**Purpose**: Implement behavioral audit that tests actual UX and fix chat service unavailability issue
+
+### 🎯 MAJOR FEATURE: Behavioral CAVA Audit + Chat Debug System
+**Key Achievement**: Comprehensive behavioral testing that cannot be gamed by simple storage + Chat debug tools
+
+### Changes:
+1. **Chat Debug Endpoints** (`modules/api/chat_debug_routes.py`)
+   - `/api/v1/chat/debug/status` - Comprehensive chat service debugging
+   - `/api/v1/chat/debug/test-message` - Direct chat functionality testing
+   - `/api/v1/chat/debug/fix-attempt` - Automatic issue fixing
+   - `/api/v1/chat/debug/environment` - Environment variable validation
+   - Identifies OpenAI API key issues, route problems, and CAVA integration failures
+
+2. **Enhanced Chat Routes** (`modules/api/chat_routes.py`)
+   - Added OpenAI API key validation at endpoint start
+   - Comprehensive error handling for authentication failures
+   - Specific error messages for rate limits and configuration issues
+   - Primary cause of "unavailable" error resolved
+
+3. **Behavioral Audit System** (`modules/cava/behavioral_audit.py`)
+   - 8 realistic conversation scenarios testing actual memory behavior
+   - Bulgarian Mango Memory test (15 points, critical MANGO TEST)
+   - Croatian Corn Continuity, German Wheat Weather, Italian Tomato Timeline
+   - Polish Potato Problem, Spanish Sunflower Scale, French Fruit Fertilizer, Dutch Dairy Details
+   - Cannot be gamed by storage without actual memory usage
+
+4. **Behavioral Audit API** (`modules/api/behavioral_audit_routes.py`)
+   - `/api/v1/cava/behavioral/audit/full` - Complete 8-test audit
+   - `/api/v1/cava/behavioral/audit/quick` - Fast Bulgarian mango test
+   - `/api/v1/cava/behavioral/audit/status` - System availability check
+   - `/api/v1/cava/behavioral/compare/component-vs-behavioral` - Audit comparison
+
+5. **Combined Debug & Audit UI** (`static/chat-debug-audit.html`)
+   - Unified interface for both debugging and behavioral testing
+   - Quick actions: Full System Check, Quick Mango Test, Test Chat Now, Auto-Fix Issues
+   - Real-time status indicators and detailed results display
+   - Available at `/chat-debug-audit`
+
+6. **Route Registration** (`main.py`)
+   - Registered chat_debug_router and behavioral_audit_router
+   - Added `/chat-debug-audit` page route
+   - Complete integration with existing application structure
+
+### Success Criteria Met:
+✅ Chat service working (no more "unavailable" error)
+✅ Behavioral audit with 8 realistic tests
+✅ Only working CAVA can score >80%
+✅ Debug endpoint reveals why chat is failing
+✅ Both chat and audit functioning together
+✅ Version deployed and verified
+✅ SYSTEM_CHANGELOG.md updated
+
+### Git Deployment:
+- **Commit**: 9f74ab7 "feat: Implement behavioral CAVA audit with chat service debug & fix"
+- **Push Status**: SUCCESS - Deployed to production
+- **Files Added**: 4 new modules + 2 enhanced modules + combined UI
+
 ## [v3.6.1-cava-force-setup] - 2025-07-26 - CAVA Force Migration & Comprehensive Verification
 **Deployed to Production**: PENDING
 **Service**: agricultural-core

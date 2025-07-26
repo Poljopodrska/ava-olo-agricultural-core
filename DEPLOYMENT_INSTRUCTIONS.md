@@ -1,10 +1,17 @@
 # AVA OLO Monitoring Dashboards - Deployment Instructions
 
+## 🚨 CRITICAL: OpenAI API Key Required
+
+**CHAT SERVICE WILL BE UNAVAILABLE** without proper OpenAI configuration. This is the **primary cause** of "unavailable" errors.
+
 ## Environment Variables Required
 
 Set these environment variables in AWS ECS:
 
 ```bash
+# OpenAI Configuration (CRITICAL for chat service)
+OPENAI_API_KEY=sk-your-actual-openai-key-here  # REQUIRED for chat functionality
+
 # Database Configuration
 DB_HOST=farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com
 DB_NAME=farmer_crm
@@ -18,16 +25,36 @@ DB_PORT=5432
 
 # Google Maps API
 GOOGLE_MAPS_API_KEY=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo  # CORRECT WORKING KEY!
+```
 
-# OpenAI API (Optional)
-OPENAI_API_KEY=your_openai_key_here
+## 🔑 CRITICAL: Adding OpenAI API Key to ECS
+
+**MANDATORY STEP** - The chat service will show "unavailable" without this:
+
+### Via AWS Console:
+1. Go to AWS ECS Console: https://console.aws.amazon.com/ecs/
+2. Find your task definition (e.g., `ava-agricultural-task`)
+3. Click "Create new revision"
+4. In "Environment variables" section, add:
+   - **Key**: `OPENAI_API_KEY`
+   - **Value**: `sk-proj-your-actual-key-here` (starts with `sk-`)
+5. Save and update your ECS service to use the new revision
+
+### Via AWS CLI:
+```bash
+# Update ECS task definition with OpenAI key
+aws ecs describe-task-definition --task-definition ava-agricultural-task --query 'taskDefinition' > task-def.json
+# Edit task-def.json to add OPENAI_API_KEY environment variable
+aws ecs register-task-definition --cli-input-json file://task-def.json
+aws ecs update-service --cluster your-cluster --service your-service --task-definition ava-agricultural-task:NEW_REVISION
 ```
 
 ## Pre-Deployment Checklist
 
-1. **Environment Variables**: Ensure all environment variables above are set in AWS ECS
-2. **RDS Security Group**: Verify the RDS security group allows connections from ECS IP range (172.31.96.0/24)
-3. **SSL Mode**: The application is configured to use SSL for RDS connections automatically
+1. **🔑 OpenAI API Key**: MUST be added to ECS environment variables (see above)
+2. **Environment Variables**: Ensure all environment variables above are set in AWS ECS
+3. **RDS Security Group**: Verify the RDS security group allows connections from ECS IP range (172.31.96.0/24)
+4. **SSL Mode**: The application is configured to use SSL for RDS connections automatically
 
 ## Deployment Steps
 
@@ -45,6 +72,8 @@ OPENAI_API_KEY=your_openai_key_here
    - Check `/database-dashboard` - Should show farmers list
    - Check `/farmer-registration` - Should show registration form with working Google Maps
    - Check `/debug/database-connection` - Should show successful connection
+   - **🔑 NEW: Check `/chat-debug-audit`** - Should show "Chat Service Available" not "Unavailable"
+   - **🧠 NEW: Run behavioral audit** - Should achieve >80% score (especially Bulgarian Mango Test)
 
 ## Known Issues and Solutions
 

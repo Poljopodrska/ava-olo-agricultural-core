@@ -159,11 +159,23 @@ async def startup_event():
         print("⚠️ Database connection failed after retries - running in degraded mode")
         print("⚠️ Service will continue to run and serve requests without database")
     
-    # Check OpenAI configuration - CONSTITUTIONAL REQUIREMENT
-    if not os.getenv("OPENAI_API_KEY"):
-        print("🚨 CRITICAL WARNING: OPENAI_API_KEY not set!")
+    # Initialize OpenAI configuration - CONSTITUTIONAL REQUIREMENT
+    print("🔑 Initializing OpenAI configuration...")
+    from modules.core.openai_config import OpenAIConfig
+    
+    if OpenAIConfig.initialize():
+        print("✅ OpenAI configured successfully - Constitutional compliance verified")
+        openai_status = OpenAIConfig.get_status()
+        print(f"🔑 API key format valid: {openai_status.get('api_key_format_valid', False)}")
+        print(f"🔑 Key preview: {openai_status.get('api_key_preview', 'NOT_SET')}")
+    else:
+        print("🚨 CRITICAL WARNING: OpenAI configuration failed!")
         print("🏛️ CONSTITUTIONAL VIOLATION: System requires 95%+ LLM intelligence (Amendment #15)")
-        print("⚠️  Registration and chat will use fallback responses - NOT COMPLIANT!")
+        print("⚠️  Chat service will be unavailable - NOT COMPLIANT!")
+        
+        # Show detailed status for debugging
+        openai_status = OpenAIConfig.get_status()
+        print(f"🔍 OpenAI Status: {openai_status}")
         
         # Try to load from .env.production if available
         try:
@@ -171,17 +183,15 @@ async def startup_event():
             env_path = ".env.production"
             if os.path.exists(env_path):
                 load_dotenv(env_path)
-                if os.getenv("OPENAI_API_KEY"):
-                    print("✅ Loaded OPENAI_API_KEY from .env.production")
+                print("🔄 Attempting re-initialization after loading .env.production...")
+                if OpenAIConfig.initialize(force=True):
+                    print("✅ OpenAI configured after loading .env.production")
                 else:
-                    print("❌ .env.production exists but OPENAI_API_KEY not found")
+                    print("❌ OpenAI configuration still failed after .env.production")
             else:
                 print("❌ .env.production file not found")
         except ImportError:
             print("⚠️  python-dotenv not installed, cannot auto-load .env files")
-    else:
-        print("✅ OpenAI API key configured - Constitutional compliance verified")
-        print(f"🔑 Key prefix: {os.getenv('OPENAI_API_KEY')[:10]}...")
     
     # Constitutional deployment completion
     constitutional_deployment_completion()

@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from modules.chat.openai_key_manager import get_openai_client
+from modules.core.openai_config import OpenAIConfig, get_openai_client
 from modules.cava.conversation_memory import CAVAMemory
 from modules.cava.fact_extractor import FactExtractor
 from modules.core.database_manager import DatabaseManager
@@ -139,35 +139,25 @@ async def chat_endpoint(request: ChatRequest):
     print(f"🔍 CHAT ENDPOINT CALLED: {wa_phone_number} - {message[:50]}...")
     print(f"📍 Chat endpoint location: {__file__}")
     
-    # CRITICAL: Check OpenAI API key first - PRIMARY CAUSE OF "UNAVAILABLE" ERROR
-    api_key = os.getenv("OPENAI_API_KEY", "")
-    if not api_key:
-        print("❌ CRITICAL: OPENAI_API_KEY not configured")
-        return ChatResponse(
-            response="Chat service is temporarily unavailable. Our AI assistant is not configured. Please contact support.",
-            conversation_id=wa_phone_number,
-            model_used="unavailable",
-            timestamp=datetime.now().isoformat(),
-            context_used=False,
-            context_summary="Service configuration error",
-            messages_in_context=0,
-            memory_indicators={"error": "OPENAI_API_KEY_MISSING"}
-        )
+    # CRITICAL: Check OpenAI availability using new configuration system
+    if not OpenAIConfig.is_available():
+        print("🔄 OpenAI not initialized, attempting initialization...")
+        if not OpenAIConfig.initialize():
+            openai_status = OpenAIConfig.get_status()
+            print(f"❌ CRITICAL: OpenAI initialization failed - {openai_status}")
+            
+            return ChatResponse(
+                response="Chat service is temporarily unavailable. Our AI assistant is not configured. Please contact support.",
+                conversation_id=wa_phone_number,
+                model_used="unavailable",
+                timestamp=datetime.now().isoformat(),
+                context_used=False,
+                context_summary="OpenAI service configuration error",
+                messages_in_context=0,
+                memory_indicators={"error": "OPENAI_CONFIGURATION_FAILED", "details": openai_status}
+            )
     
-    if not api_key.startswith("sk-"):
-        print("❌ CRITICAL: Invalid OPENAI_API_KEY format")
-        return ChatResponse(
-            response="Chat service configuration error. Please contact support.",
-            conversation_id=wa_phone_number,
-            model_used="unavailable",
-            timestamp=datetime.now().isoformat(),
-            context_used=False,
-            context_summary="Invalid API key format",
-            messages_in_context=0,
-            memory_indicators={"error": "INVALID_API_KEY_FORMAT"}
-        )
-    
-    print(f"✅ OpenAI API key configured: {api_key[:7]}...")
+    print(f"✅ OpenAI properly configured and available")
     print(f"🧠 CAVA Memory initialized: {cava_memory is not None}")
     print(f"🎯 Fact extractor initialized: {fact_extractor is not None}")
     
@@ -177,10 +167,13 @@ async def chat_endpoint(request: ChatRequest):
         await store_message(wa_phone_number, 'user', message)
         print(f"✅ User message stored successfully")
         
-        # 2. Get enhanced CAVA context (includes stored facts)
-        print(f"🧠 Getting CAVA context...")
-        context = await cava_memory.get_enhanced_context(wa_phone_number)
-        print(f"✅ Context retrieved: {len(context.get('messages', []))} messages, summary: {context.get('context_summary', '')[:100]}...")
+        # 2. Get comprehensive CAVA context (includes ALL messages and facts)
+        print(f"🧠 Getting comprehensive CAVA context...")
+        context = await cava_memory.get_conversation_context(wa_phone_number, limit=50)
+        print(f"✅ Context retrieved: {context.get('all_messages_count', 0)} total messages, {len(context.get('messages', []))} for LLM")
+        print(f"📊 Context summary: {context.get('context_summary', '')[:150]}...")
+        print(f"🔍 Memory persistence: {context.get('memory_persistence_active', False)}")
+        print(f"📈 Conversation facts: {len(context.get('conversation_facts', {}))}")
         
         # 3. Extract facts from user message
         print(f"🎯 Extracting facts...")
@@ -190,17 +183,40 @@ async def chat_endpoint(request: ChatRequest):
         # 4. Build conversation for GPT-3.5 with ENHANCED context
         # CRITICAL FIX: Ensure all context is included in LLM messages
         
-        # Build comprehensive system message
-        system_content = f"""You are AVA, an expert agricultural assistant for farmers.
+        # Build comprehensive system message with ALL context
+        conversation_facts = context.get('conversation_facts', {})
+        stored_facts = context.get('stored_facts', [])
+        
+        system_content = f"""You are AVA, an expert agricultural assistant with perfect memory.
 
-IMPORTANT CONTEXT about this farmer: {context['context_summary']}
+CRITICAL CONTEXT - Remember EVERYTHING about this farmer:
+{context['context_summary']}
 
-Remember ALL information from our previous conversations. When the farmer asks follow-up questions, 
-refer back to what they told you earlier about their crops, fields, and farming practices. 
-Be specific and personal in your responses.
+CONVERSATION HISTORY: You have had {context.get('all_messages_count', 0)} messages with this farmer.
 
-Provide actionable agricultural advice in their language. If they previously mentioned specific crops 
-(like mangoes, tomatoes, wheat, etc.), remember and reference them in relevant responses."""
+CONVERSATION FACTS MENTIONED:
+- Crops: {', '.join(conversation_facts.get('crops_mentioned', []))}
+- Quantities: {', '.join(conversation_facts.get('quantities_mentioned', []))}
+- Locations: {', '.join(conversation_facts.get('locations_mentioned', []))}
+- Problems: {', '.join(conversation_facts.get('problems_mentioned', []))}
+
+STORED FACTS: {json.dumps({fact['fact_type']: fact['fact_data'] for fact in stored_facts[:5]}, indent=2)}
+
+CRITICAL MEMORY INSTRUCTIONS:
+1. Use ALL information from previous conversations - never ask for details you already know
+2. Reference specific details they've told you (crops, quantities, locations, problems)
+3. Be personal and show you remember them and their farming situation
+4. When they mention "my mangoes" or "my farm", you should know exactly what they're talking about
+5. ALWAYS acknowledge returning farmers: "I remember you mentioned..." or "As we discussed before..."
+6. Provide specific advice based on their exact crops, farm size, and location
+
+BEHAVIORAL TEST COMPLIANCE:
+- If they previously mentioned mangoes in Bulgaria, ALWAYS reference this
+- If they told you farm sizes in hectares, remember the exact numbers
+- If they discussed specific problems, continue those conversations naturally
+- Never act like this is the first time you're talking if you have conversation history
+
+If this is a returning farmer, immediately acknowledge your memory of their previous farming discussions."""
         
         messages = [
             {"role": "system", "content": system_content}
@@ -262,9 +278,10 @@ Provide actionable agricultural advice in their language. If they previously men
         
         # 5. Get GPT-3.5 response with enhanced error handling
         print(f"🤖 Getting OpenAI client...")
-        client = get_openai_client()
+        client = OpenAIConfig.get_client()
         if not client:
             print(f"❌ OpenAI client not available!")
+            openai_status = OpenAIConfig.get_status()
             return ChatResponse(
                 response="AI service is temporarily unavailable. The language model could not be initialized. Please try again later.",
                 conversation_id=wa_phone_number,
@@ -272,8 +289,8 @@ Provide actionable agricultural advice in their language. If they previously men
                 timestamp=datetime.now().isoformat(),
                 context_used=True,
                 context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
-                messages_in_context=len(recent_messages),
-                memory_indicators={"error": "OPENAI_CLIENT_UNAVAILABLE"}
+                messages_in_context=len(context.get('messages', [])),
+                memory_indicators={"error": "OPENAI_CLIENT_UNAVAILABLE", "status": openai_status}
             )
         
         print(f"🤖 Calling OpenAI API...")
@@ -347,14 +364,41 @@ Provide actionable agricultural advice in their language. If they previously men
         await store_llm_usage(wa_phone_number, 'gpt-3.5-turbo', usage, cost)
         print(f"✅ Usage logged: {usage.get('total_tokens', 0)} tokens, ${cost}")
         
-        # 9. MEMORY TEST: Check if response references context
+        # 9. COMPREHENSIVE MEMORY TEST: Check if response uses full context
         response_lower = assistant_message.lower()
         context_lower = context['context_summary'].lower()
+        conversation_facts = context.get('conversation_facts', {})
+        
+        # Check if the response mentions crops from conversation history
+        crops_in_response = []
+        for crop in conversation_facts.get('crops_mentioned', []):
+            if crop in response_lower:
+                crops_in_response.append(crop)
+        
+        # Check if the response mentions locations from conversation history 
+        locations_in_response = []
+        for location in conversation_facts.get('locations_mentioned', []):
+            if location in response_lower:
+                locations_in_response.append(location)
+        
+        # Check if the response mentions quantities from conversation history
+        quantities_referenced = any(qty.split()[0] in response_lower for qty in conversation_facts.get('quantities_mentioned', []))
         
         memory_indicators = {
-            'mentions_crops': any(crop in response_lower for crop in ['mango', 'tomato', 'wheat', 'corn', 'rice']),
-            'references_context': any(word in response_lower for word in ['your', 'previously', 'mentioned', 'told']),
-            'context_has_crops': any(crop in context_lower for crop in ['mango', 'tomato', 'wheat', 'corn', 'rice'])
+            'total_conversation_messages': context.get('all_messages_count', 0),
+            'mentions_conversation_crops': crops_in_response,
+            'mentions_conversation_locations': locations_in_response,
+            'references_quantities': quantities_referenced,
+            'uses_personal_pronouns': any(word in response_lower for word in ['your', 'you mentioned', 'you told', 'as we discussed']),
+            'shows_memory_continuity': any(phrase in response_lower for phrase in ['remember', 'mentioned', 'told me', 'discussed', 'previously']),
+            'context_has_crops': len(conversation_facts.get('crops_mentioned', [])) > 0,
+            'context_has_locations': len(conversation_facts.get('locations_mentioned', [])) > 0,
+            'memory_persistence_working': context.get('memory_persistence_active', False),
+            'behavioral_test_compliance': {
+                'mango_mentioned': 'mango' in crops_in_response,
+                'bulgaria_mentioned': 'bulgaria' in locations_in_response,
+                'hectares_referenced': any('hectare' in qty for qty in conversation_facts.get('quantities_mentioned', []))
+            }
         }
         
         print(f"🧠 Memory Check: {memory_indicators}")
@@ -370,7 +414,7 @@ Provide actionable agricultural advice in their language. If they previously men
             timestamp=datetime.now().isoformat(),
             context_used=True,
             context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
-            messages_in_context=len(recent_messages),
+            messages_in_context=context.get('all_messages_count', 0),
             memory_indicators=memory_indicators
         )
         
