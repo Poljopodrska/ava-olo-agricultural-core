@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenAI Setup Wizard</title>
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; }
+        .wizard-step { 
+            border: 2px solid #007bff; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 8px;
+        }
+        .success { background: #d4edda; border-color: #28a745; }
+        .error { background: #f8d7da; border-color: #dc3545; }
+        .warning { background: #fff3cd; border-color: #ffc107; }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        pre { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            overflow-x: auto;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 OpenAI Configuration Wizard</h1>
+    
+    <div class="wizard-step">
+        <h2>Step 1: Investigate Current Configuration</h2>
+        <button onclick="investigate()">Run Investigation</button>
+        <div id="investigation-results"></div>
+    </div>
+    
+    <div class="wizard-step">
+        <h2>Step 2: Temporary Configuration (For Testing)</h2>
+        <p>Enter your OpenAI API key to temporarily configure the service:</p>
+        <input type="text" id="api-key" placeholder="sk-..." />
+        <button onclick="configureTemporary()">Configure Temporarily</button>
+        <div id="config-results"></div>
+    </div>
+    
+    <div class="wizard-step">
+        <h2>Step 3: Test Configuration</h2>
+        <button onclick="testConnection()">Test OpenAI Connection</button>
+        <button onclick="testChat()">Test Chat Functionality</button>
+        <div id="test-results"></div>
+    </div>
+    
+    <div class="wizard-step warning">
+        <h2>⚠️ Permanent Fix Required</h2>
+        <p>The temporary configuration will be lost on restart. Follow these steps for permanent fix:</p>
+        <ol id="permanent-fix-steps">
+            <li>Loading instructions...</li>
+        </ol>
+    </div>
+    
+    <script>
+        async function investigate() {
+            const resultsDiv = document.getElementById('investigation-results');
+            resultsDiv.innerHTML = '<p>Investigating...</p>';
+            
+            try {
+                const response = await fetch('/api/v1/openai/investigate');
+                const data = await response.json();
+                
+                let html = '<h3>Investigation Results:</h3>';
+                html += '<p>Key Found: ' + (data.key_found ? '✅ YES' : '❌ NO') + '</p>';
+                
+                if (data.environment_variables) {
+                    html += '<h4>Environment Variables Checked:</h4><ul>';
+                    for (const [key, value] of Object.entries(data.environment_variables)) {
+                        html += '<li>' + key + ': ' + value + '</li>';
+                    }
+                    html += '</ul>';
+                }
+                
+                if (data.manual_fix_instructions) {
+                    const stepsDiv = document.getElementById('permanent-fix-steps');
+                    stepsDiv.innerHTML = data.manual_fix_instructions.map(step => '<li>' + step + '</li>').join('');
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = '<p class="error">Investigation failed: ' + error.message + '</p>';
+            }
+        }
+        
+        async function configureTemporary() {
+            const apiKey = document.getElementById('api-key').value;
+            const resultsDiv = document.getElementById('config-results');
+            
+            if (!apiKey.startsWith('sk-')) {
+                resultsDiv.innerHTML = '<p class="error">Invalid key format. Must start with sk-</p>';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/v1/openai/configure', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({api_key: apiKey})
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultsDiv.innerHTML = '<p class="success">✅ ' + data.message + '</p>';
+                } else {
+                    resultsDiv.innerHTML = '<p class="error">❌ ' + (data.detail || 'Configuration failed') + '</p>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+            }
+        }
+        
+        async function testConnection() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Testing OpenAI connection...</p>';
+            
+            try {
+                const response = await fetch('/api/v1/openai/test');
+                const data = await response.json();
+                
+                if (data.status === 'working') {
+                    resultsDiv.innerHTML = '<p class="success">✅ OpenAI is working! Response: ' + data.response + '</p>';
+                } else {
+                    resultsDiv.innerHTML = '<p class="error">❌ ' + data.error + '</p>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = '<p class="error">Test failed: ' + error.message + '</p>';
+            }
+        }
+        
+        async function testChat() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Testing chat functionality...</p>';
+            
+            try {
+                const response = await fetch('/api/v1/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        wa_phone_number: '+385WIZARD',
+                        message: 'Hello, can you help me grow mangoes?'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.response && data.status !== 'unavailable') {
+                    resultsDiv.innerHTML = '<p class="success">✅ Chat is working!<br>Response: ' + data.response + '</p>';
+                } else {
+                    resultsDiv.innerHTML = '<p class="error">❌ Chat unavailable: ' + (data.error || 'Unknown error') + '</p>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML = '<p class="error">Chat test failed: ' + error.message + '</p>';
+            }
+        }
+        
+        // Auto-investigate on load
+        window.onload = () => investigate();
+    </script>
+</body>
+</html>

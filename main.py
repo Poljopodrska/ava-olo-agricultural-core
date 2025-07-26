@@ -61,6 +61,9 @@ from modules.api.cava_debug_routes import router as cava_debug_router
 from modules.api.chat_debug_routes import router as chat_debug_router
 from modules.api.behavioral_audit_routes import router as behavioral_audit_router
 
+# NEW: Import OpenAI configuration routes
+from modules.api.openai_config_routes import router as openai_config_router
+
 # Import WhatsApp module
 from modules.whatsapp.routes import router as whatsapp_router
 
@@ -113,6 +116,9 @@ app.include_router(whatsapp_router)
 # NEW: Include chat debug and behavioral audit routers
 app.include_router(chat_debug_router)
 app.include_router(behavioral_audit_router)
+
+# NEW: Include OpenAI configuration router
+app.include_router(openai_config_router)
 
 app.include_router(system_router)
 app.include_router(debug_services_router)
@@ -247,6 +253,15 @@ async def diagnostics_index():
     else:
         # Fallback to JSON if file not found
         return await list_diagnostic_endpoints()
+
+@app.get("/openai-wizard")
+async def openai_setup_wizard():
+    """Serve OpenAI setup wizard"""
+    file_path = os.path.join("static", "openai-setup-wizard.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    else:
+        return {"error": "OpenAI wizard not found", "path_checked": file_path}
 
 @app.get("/dashboard")
 async def dashboard(request: Request):

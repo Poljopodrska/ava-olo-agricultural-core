@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 from modules.core.openai_config import OpenAIConfig, get_openai_client
+from modules.core.openai_detective import OpenAIKeyDetective
 from modules.cava.conversation_memory import CAVAMemory
 from modules.cava.fact_extractor import FactExtractor
 from modules.core.database_manager import DatabaseManager
@@ -141,20 +142,27 @@ async def chat_endpoint(request: ChatRequest):
     
     # CRITICAL: Check OpenAI availability using new configuration system
     if not OpenAIConfig.is_available():
-        print("🔄 OpenAI not initialized, attempting initialization...")
-        if not OpenAIConfig.initialize():
-            openai_status = OpenAIConfig.get_status()
-            print(f"❌ CRITICAL: OpenAI initialization failed - {openai_status}")
+        print("🔄 OpenAI not initialized, attempting recovery...")
+        
+        # Try automatic recovery with detective
+        if not OpenAIKeyDetective.attempt_recovery():
+            # If recovery fails, provide detailed diagnostics
+            investigation = OpenAIKeyDetective.investigate()
+            print(f"❌ CRITICAL: OpenAI recovery failed - {investigation}")
             
             return ChatResponse(
-                response="Chat service is temporarily unavailable. Our AI assistant is not configured. Please contact support.",
+                response="Chat service is not configured. Please check the diagnostics.",
                 conversation_id=wa_phone_number,
                 model_used="unavailable",
                 timestamp=datetime.now().isoformat(),
                 context_used=False,
                 context_summary="OpenAI service configuration error",
                 messages_in_context=0,
-                memory_indicators={"error": "OPENAI_CONFIGURATION_FAILED", "details": openai_status}
+                memory_indicators={
+                    "error": "OPENAI_CONFIGURATION_FAILED",
+                    "diagnostics": investigation,
+                    "fix_url": "/openai-wizard"
+                }
             )
     
     print(f"✅ OpenAI properly configured and available")
