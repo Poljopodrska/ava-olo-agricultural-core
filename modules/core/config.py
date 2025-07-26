@@ -11,9 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726140000'  # v3.4.1 - Enhanced CAVA Registration
-BUILD_ID = hashlib.md5(f"{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}".encode()).hexdigest()[:8]
-VERSION = f"v3.4.1-enhanced-cava-registration-{BUILD_ID}"
+DEPLOYMENT_TIMESTAMP = '20250726143000'  # v3.4.2 - Critical Constitutional Fix
+COMMIT_HASH = "8a3408b"  # Critical fix commit
+BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
+VERSION = f"v3.4.2-constitutional-fix-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

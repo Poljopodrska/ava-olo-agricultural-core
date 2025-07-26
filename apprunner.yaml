@@ -3,17 +3,17 @@ runtime: python3
 build:
   commands:
     pre-build:
-      - echo "🚨 FORCE REBUILD v2.2.4 - $(date) 🚨"
-      - echo "REMOVING ALL CACHE TO FORCE COMPLETE DEPLOYMENT"
+      - echo "🚨 CRITICAL CONSTITUTIONAL FIX - Commit 8a3408b - $(date) 🚨"
+      - echo "DEPLOYING LLM REGISTRATION FIX - CONSTITUTIONAL AMENDMENT #15"
       - rm -rf /tmp/cache/* || true
-      - echo "Cache cleared - forcing fresh build"
+      - echo "Cache cleared - deploying critical fix"
     build:
       - pip install -r requirements.txt
-      - echo "Dependencies installed - version 2.2.4-force-deployment"
-      - echo "RED BANNER DEPLOYMENT - UNMISTAKABLE CHANGES"
+      - echo "Dependencies installed - v3.4.2-constitutional-fix-8a3408b"
+      - echo "CRITICAL FIX: Registration now uses LLM (Constitutional compliance)"
     post-build:
-      - echo "Build completed - v2.2.4 with RED BANNER - $(date)"
-      - echo "If deployment works, you will see a RED BANNER on dashboard"
+      - echo "Build completed - v3.4.2-constitutional-fix-8a3408b - $(date)"
+      - echo "Critical fix deployed: Registration now uses OpenAI LLM"
 run:
   runtime-version: latest
   command: python main.py
@@ -22,11 +22,13 @@ run:
     env: PORT
   env:
     - name: FORCE_REBUILD
-      value: "1752947700"  # FORCE_REBUILD v2.2.4-force-deployment
+      value: "8a3408b-1753620780"  # FORCE_REBUILD - Critical constitutional fix
     - name: DEPLOYMENT_ID
-      value: "2.2.4-2025-07-19-20-30"
+      value: "3.4.2-8a3408b-2025-07-26"
     - name: FORCE_FRESH_DEPLOY
       value: "TRUE"
+    - name: COMMIT_HASH
+      value: "8a3408b"
     - name: DB_HOST
       value: "your-db-host"
     - name: DB_NAME
@@ -38,4 +40,4 @@ run:
     - name: DB_PORT
       value: "5432"
     - name: OPENAI_API_KEY
-      value: "your-openai-key"
+      value: "MUST_BE_SET_IN_AWS_CONSOLE"  # Set this in AWS App Runner console for security
