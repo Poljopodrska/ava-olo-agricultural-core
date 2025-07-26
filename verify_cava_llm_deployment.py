@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 # Production URL
-BASE_URL = "https://ava-olo-65365776.us-east-1.elb.amazonaws.com"
+BASE_URL = "https://ava-olo-agricultural-core.us-east-1.elb.amazonaws.com"
 
 async def verify_cava_llm_deployment():
     """Verify CAVA LLM is deployed and working"""

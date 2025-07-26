@@ -1,5 +1,43 @@
 # AVA OLO System Changelog
 
+## [v3.4.3-diagnostic] - 2025-07-26 17:00 UTC - LLM Registration Diagnostic
+**Deployed to Production**: YES ✅
+**Service**: agricultural-core
+**Version**: v3.4.3-diagnostic-diagnostic-c3faee34
+**Purpose**: Diagnose why LLM registration not working in production
+
+### 🔍 DIAGNOSTIC FINDINGS:
+
+**ROOT CAUSE IDENTIFIED**: OpenAI API key missing in ECS environment variables
+
+#### Test Results:
+```json
+{
+  "openai_key_exists": false,  // ❌ ROOT CAUSE
+  "engine_error": "OpenAI API key REQUIRED for constitutional compliance",
+  "critical_check": "🔴 NOT READY"
+}
+```
+
+#### Solution Required:
+1. Add OPENAI_API_KEY to ECS Task Definition
+2. Value exists in .env.production
+3. Manual AWS Console update needed
+4. See: `/20250726_diagnostics/ECS_OPENAI_KEY_FIX.md`
+
+### Diagnostic Features Added:
+- `/api/v1/registration/llm-status` - Shows OpenAI key status
+- `/api/v1/registration/all-endpoints` - Lists all registration routes
+- Critical logging in registration endpoint
+- Diagnostic error messages when engine fails
+
+### Files Created:
+- `20250726_diagnostics/DIAGNOSTIC_REPORT_v3.4.3.md`
+- `20250726_diagnostics/DIAGNOSTIC_RESULTS.md`
+- `20250726_diagnostics/ECS_OPENAI_KEY_FIX.md`
+
+---
+
 ## [v3.4.1] - 2025-07-26 14:00 UTC | 15:00 CET - Enhanced CAVA Registration with Full Validation
 **Deployed to Production**: READY FOR DEPLOYMENT ✅
 **Service**: agricultural-core
