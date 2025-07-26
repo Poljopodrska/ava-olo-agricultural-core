@@ -47,6 +47,7 @@ def calculate_gpt35_cost(usage: Dict) -> float:
 async def store_message(wa_phone_number: str, role: str, content: str) -> None:
     """Store message in chat_messages table"""
     try:
+        print(f"🔄 STORING MESSAGE: {role} from {wa_phone_number}")
         db_manager = DatabaseManager()
         query = """
             INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
@@ -55,11 +56,15 @@ async def store_message(wa_phone_number: str, role: str, content: str) -> None:
         
         async with db_manager.get_connection_async() as conn:
             await conn.execute(query, wa_phone_number, role, content)
+            print(f"✅ MESSAGE STORED SUCCESSFULLY in database")
             
         logger.info(f"Stored {role} message for {wa_phone_number}")
         
     except Exception as e:
+        print(f"❌ FAILED TO STORE MESSAGE: {str(e)}")
         logger.error(f"Failed to store message: {str(e)}")
+        # Re-raise to ensure calling code knows about the failure
+        raise e
 
 async def store_llm_usage(wa_phone_number: str, model: str, usage: Dict, cost: float) -> None:
     """Store LLM usage for cost tracking"""
@@ -433,6 +438,34 @@ async def test_cava_direct():
             "error": str(e),
             "cava_working_directly": False,
             "timestamp": datetime.now().isoformat()
+        }
+
+@router.get("/chat/status")
+async def chat_status():
+    """Quick status check for CAVA chat system"""
+    try:
+        db_manager = DatabaseManager()
+        async with db_manager.get_connection_async() as conn:
+            # Check if table exists and get count
+            total_messages = await conn.fetchval("SELECT COUNT(*) FROM chat_messages") or 0
+            recent_messages = await conn.fetchval("""
+                SELECT COUNT(*) FROM chat_messages 
+                WHERE timestamp > NOW() - INTERVAL '1 hour'
+            """) or 0
+        
+        return {
+            'status': 'operational',
+            'cava_enabled': True,
+            'total_messages_stored': total_messages,
+            'recent_messages': recent_messages,
+            'message_storage_working': total_messages > 0,
+            'timestamp': datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
         }
 
 @router.get("/chat/test")
