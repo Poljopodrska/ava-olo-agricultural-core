@@ -52,6 +52,7 @@ class CAVARegistrationEngine:
             self._test_openai_connection()
         
         logger.info("✅ CAVA Registration Engine initialized - Constitutional compliance verified")
+        logger.info("🚀 DEPLOYMENT: v3.4.3-cava-llm-deployment - LLM engine ACTIVE")
     
     def _test_openai_connection(self):
         """Test OpenAI connection - CRITICAL for constitutional compliance"""
