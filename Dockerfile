@@ -1,9 +1,9 @@
 # AVA OLO Agricultural Core Service - NUCLEAR CACHE BUSTING
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.11-slim
+
+# Cache busting AFTER the FROM
 ARG CACHEBUST=1
 RUN echo "Cache bust: ${CACHEBUST}"
-
-# Force fresh base image pull
-FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.11-slim AS builder
 
 # Build arguments for Git verification
 ARG GITHUB_SHA
