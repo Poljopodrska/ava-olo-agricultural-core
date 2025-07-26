@@ -1,5 +1,39 @@
 # AVA OLO System Changelog
 
+## [v3.4.5-direct-llm-test] - 2025-07-26 17:24 UTC - Simple Direct LLM Test
+**Deployed to Production**: PENDING ⏳
+**Service**: agricultural-core
+**Version**: v3.4.5-direct-llm-test-direct-llm-c8a3e4d2
+**Purpose**: Replace main chat with direct OpenAI connection - simplest possible test
+
+### 🎯 CHANGES:
+
+**Simplified Chat to Bare Minimum**:
+- Removed ALL complex chat logic
+- No CAVA integration
+- No session management
+- No fallbacks
+- Just: message → GPT-4 → response
+
+### New Endpoints:
+- `POST /api/v1/chat` - Direct LLM chat
+- `POST /api/v1/chat/message` - Dashboard compatibility
+- `GET /api/v1/chat/status` - Check OpenAI config
+- `GET /api/v1/chat/test` - Quick LLM test
+
+### Test After Deployment:
+```bash
+# Status check
+curl http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/api/v1/chat/status
+
+# Direct test
+curl -X POST http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is 2+2?"}'
+```
+
+---
+
 ## [v3.4.4-llm-fixed] - 2025-07-26 17:21 UTC - LLM Registration Fixed
 **Deployed to Production**: IN PROGRESS ⏳
 **Service**: agricultural-core

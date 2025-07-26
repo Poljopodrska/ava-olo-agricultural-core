@@ -21,20 +21,6 @@ class ChatRequest(BaseModel):
 @router.post("")
 async def direct_llm_chat(request: ChatRequest):
     """Direct OpenAI test - no CAVA, no complexity"""
-    return await handle_chat(request)
-
-@router.post("/message")
-async def direct_llm_chat_message(request: Request):
-    """Handle /message endpoint used by dashboard"""
-    body = await request.json()
-    chat_request = ChatRequest(
-        message=body.get("content", ""),
-        farmer_id=body.get("farmer_id", "test")
-    )
-    return await handle_chat(chat_request)
-
-async def handle_chat(request: ChatRequest):
-    """Common chat handler"""
     
     # Log for debugging
     logger.info(f"DIRECT LLM TEST: {request.message}")
