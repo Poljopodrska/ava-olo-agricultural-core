@@ -43,13 +43,40 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         session_id = data.get("farmer_id", "")  # Use farmer_id as session_id for compatibility
         language = data.get("language", "en")
         
+        # CRITICAL DIAGNOSTIC LOGGING
+        logger.critical(f"🚨 REGISTRATION ENDPOINT CALLED: message='{message}', session_id='{session_id}'")
+        logger.critical(f"🔑 OPENAI_KEY_STATUS: exists={bool(os.getenv('OPENAI_API_KEY'))}, length={len(os.getenv('OPENAI_API_KEY', ''))}")
+        logger.critical(f"📍 REQUEST_PATH: {request.url.path}")
+        
         if not session_id:
             raise HTTPException(status_code=400, detail="farmer_id is required")
         
+        # Check if engine can be loaded
+        try:
+            logger.critical("🔧 ATTEMPTING TO LOAD CAVA ENGINE...")
+            cava_engine = get_cava_registration_engine()
+            logger.critical(f"✅ CAVA ENGINE LOADED: has_key={bool(cava_engine.api_key)}")
+        except Exception as engine_error:
+            logger.critical(f"❌ CAVA ENGINE FAILED TO LOAD: {str(engine_error)}")
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "response": "Registration system not available. Please check configuration.",
+                    "error": True,
+                    "diagnostic": f"Engine load failed: {str(engine_error)}",
+                    "openai_key_exists": bool(os.getenv("OPENAI_API_KEY"))
+                }
+            )
+        
         # ALWAYS use pure LLM engine - CONSTITUTIONAL REQUIREMENT Amendment #15
         logger.info(f"🏛️ CONSTITUTIONAL: Processing registration via pure LLM for session {session_id}")
-        cava_engine = get_cava_registration_engine()
-        result = await cava_engine.process_message(session_id, message)
+        
+        try:
+            result = await cava_engine.process_message(session_id, message)
+            logger.critical(f"✅ LLM RESPONSE RECEIVED: llm_used={result.get('llm_used', False)}")
+        except Exception as process_error:
+            logger.critical(f"❌ LLM PROCESSING FAILED: {str(process_error)}")
+            raise
         
         # If registration is complete, create the account
         if result.get("registration_complete") and "registration_data" in result:
@@ -330,4 +357,87 @@ async def debug_registration():
         "openai_key_set": bool(openai_key),
         "key_prefix": openai_key[:10] if openai_key else None,
         "cava_mode": "llm" if openai_key else "fallback"
+    }
+
+@router.get("/registration/llm-status")
+async def check_llm_status(request: Request):
+    """DIAGNOSTIC: Check actual LLM engine status in production"""
+    from modules.core.config import VERSION
+    from datetime import datetime
+    import sys
+    
+    # Check if engine is loaded
+    engine_error = None
+    try:
+        from modules.cava.cava_registration_engine import get_cava_registration_engine
+        engine_loaded = True
+        try:
+            engine = get_cava_registration_engine()
+            engine_initialized = True
+            engine_has_key = bool(engine.api_key)
+        except Exception as e:
+            engine_initialized = False
+            engine_has_key = False
+            engine_error = str(e)
+    except Exception as e:
+        engine_loaded = False
+        engine_initialized = False
+        engine_has_key = False
+        engine_error = str(e)
+    
+    openai_key = os.getenv("OPENAI_API_KEY")
+    
+    return {
+        "🚨_DIAGNOSTIC_REPORT": "LLM Registration Status",
+        "timestamp": datetime.now().isoformat(),
+        "version": VERSION,
+        "endpoint_path": str(request.url.path),
+        "environment": {
+            "openai_key_exists": bool(openai_key),
+            "key_first_chars": openai_key[:7] if openai_key else None,
+            "key_length": len(openai_key) if openai_key else 0,
+            "python_path": sys.path[:3]  # First 3 paths
+        },
+        "engine_status": {
+            "cava_engine_module_loaded": engine_loaded,
+            "cava_engine_initialized": engine_initialized,
+            "engine_has_api_key": engine_has_key,
+            "engine_error": engine_error if not engine_initialized else None
+        },
+        "routes_loaded": {
+            "registration_cava": any(r.path == "/api/v1/registration/cava" for r in router.routes),
+            "registration_debug": any(r.path == "/api/v1/registration/debug" for r in router.routes),
+            "registration_llm_status": True  # This endpoint
+        },
+        "critical_check": "🟢 READY" if (openai_key and engine_initialized) else "🔴 NOT READY"
+    }
+
+@router.get("/registration/all-endpoints")
+async def list_registration_endpoints():
+    """DIAGNOSTIC: List all registration-related endpoints"""
+    from main import app
+    
+    registration_endpoints = []
+    for route in app.routes:
+        if hasattr(route, 'path') and 'register' in str(route.path).lower():
+            registration_endpoints.append({
+                "path": str(route.path),
+                "methods": list(route.methods) if hasattr(route, 'methods') else [],
+                "name": route.name if hasattr(route, 'name') else None
+            })
+    
+    return {
+        "🔍_REGISTRATION_ENDPOINTS": "All endpoints containing 'register'",
+        "endpoints": sorted(registration_endpoints, key=lambda x: x['path']),
+        "total_count": len(registration_endpoints),
+        "llm_endpoints": [
+            "/api/v1/registration/cava",
+            "/api/v1/chat/register",
+            "/api/v1/registration/cava/enhanced"
+        ],
+        "diagnostic_endpoints": [
+            "/api/v1/registration/debug",
+            "/api/v1/registration/llm-status",
+            "/api/v1/registration/all-endpoints"
+        ]
     }

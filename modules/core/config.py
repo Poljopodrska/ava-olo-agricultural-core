@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726155000'  # v3.4.3 - CAVA LLM Deployment Force
-COMMIT_HASH = "b4329ae"  # LLM engine commit
+DEPLOYMENT_TIMESTAMP = '20250726160000'  # v3.4.3-diagnostic - LLM Diagnostic Deployment
+COMMIT_HASH = "diagnostic"  # Diagnostic version
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.4.3-cava-llm-deployment-{BUILD_ID}"
+VERSION = f"v3.4.3-diagnostic-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
