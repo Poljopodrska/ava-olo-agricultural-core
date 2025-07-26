@@ -56,10 +56,11 @@ def get_database_config():
     
     return {
         'url': DATABASE_URL,
-        'host': os.getenv('DB_HOST'),
-        'name': os.getenv('DB_NAME', 'farmer_crm'),
+        'host': os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com'),
+        'database': os.getenv('DB_NAME', 'postgres'),  # asyncpg expects 'database' key
+        'name': os.getenv('DB_NAME', 'postgres'),  # Keep for backward compatibility
         'user': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD'),
+        'password': os.getenv('DB_PASSWORD', 'j2D8J4LH:~eFrUz>$:kkNT(P$Rq_'),
         'port': os.getenv('DB_PORT', '5432')
     }
 

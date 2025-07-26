@@ -32,8 +32,9 @@ async def run_cava_audit():
     try:
         logger.info("Starting CAVA audit...")
         
-        # Get database manager
+        # Get database manager and ensure async pool is initialized
         db_manager = DatabaseManager()
+        await db_manager.init_async_pool()
         
         # Initialize and run audit
         audit = CAVAAudit(db_manager)
