@@ -258,17 +258,29 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         status_whatsapp = '✅ ' + collected.get('whatsapp', '') if collected.get('whatsapp') else '❌ NOT YET'
         status_password = '✅ SET' if collected.get('password') else '❌ NOT YET'
         
-        # Get conversation context
-        current_step = determine_registration_step(collected)
-        next_action = get_next_action(collected)
-        
-        # Get last bot and user messages
-        last_bot_message = session["messages"][-2]["content"] if len(session["messages"]) >= 2 and session["messages"][-2]["role"] == "assistant" else "Hello! I'm AVA, here to help you register."
-        last_user_message = message
-        last_question_type = extract_question_type_from_message(last_bot_message)
-        expected_data_type = map_question_to_data_type(last_question_type)
-        interpretation = interpret_user_response(last_user_message, last_question_type)
-        specific_instruction = generate_specific_instruction(collected, last_user_message)
+        # Get conversation context - with error handling
+        try:
+            current_step = determine_registration_step(collected)
+            next_action = get_next_action(collected)
+            
+            # Get last bot and user messages
+            last_bot_message = session["messages"][-2]["content"] if len(session["messages"]) >= 2 and session["messages"][-2]["role"] == "assistant" else "Hello! I'm AVA, here to help you register."
+            last_user_message = message
+            last_question_type = extract_question_type_from_message(last_bot_message)
+            expected_data_type = map_question_to_data_type(last_question_type)
+            interpretation = interpret_user_response(last_user_message, last_question_type)
+            specific_instruction = generate_specific_instruction(collected, last_user_message)
+        except Exception as e:
+            logger.error(f"Error building conversation context: {e}")
+            # Fallback values
+            current_step = "unknown"
+            next_action = "continue registration"
+            last_bot_message = "Hello"
+            last_user_message = message
+            last_question_type = "unknown"
+            expected_data_type = "response"
+            interpretation = "User is responding"
+            specific_instruction = "Continue with registration"
         
         # Create comprehensive system prompt
         system_content = f"""You are AVA, an agricultural assistant helping farmers register. You must collect registration information in a natural, conversational way.
@@ -389,15 +401,15 @@ Respond in {language} if possible."""
             logger.critical(f"🚨 EXPECTED DATA TYPE: {expected_data_type}")
             
             # FIRST: Extract data from user input using previous question context
-            last_question_type = session.get("last_question_type", "unknown")
-            collected = session.get("collected_data", {})
-            extracted_data = extract_registration_data(message, last_question_type, collected)
+            previous_question_type = session.get("last_question_type", "unknown")
+            collected_data = session.get("collected_data", {})
+            extracted_data = extract_registration_data(message, previous_question_type, collected_data)
             
             # Update collected data with extracted information
             for field, value in extracted_data.items():
-                if value and not collected.get(field):  # Only add if not already collected
-                    collected[field] = value
-                    logger.info(f"🎯 EXTRACTED {field}: {value} (was asking for: {last_question_type})")
+                if value and not collected_data.get(field):  # Only add if not already collected
+                    collected_data[field] = value
+                    logger.info(f"🎯 EXTRACTED {field}: {value} (was asking for: {previous_question_type})")
             
             # SECOND: Detect what the LLM is now asking for (for next user response)
             current_question_type = detect_question_type(llm_response)
@@ -405,13 +417,13 @@ Respond in {language} if possible."""
             # Update session with new data
             session["messages"].append({"role": "user", "content": message})
             session["messages"].append({"role": "assistant", "content": llm_response})
-            session["collected_data"] = collected
+            session["collected_data"] = collected_data
             session["last_question_type"] = current_question_type
             
-            logger.info(f"🔄 FLOW: Asked for {last_question_type} → Now asking for {current_question_type}")
+            logger.info(f"🔄 FLOW: Asked for {previous_question_type} → Now asking for {current_question_type}")
             
             # Check if registration is complete
-            is_complete = is_registration_complete(collected)
+            is_complete = is_registration_complete(collected_data)
             
             # Save updated session
             registration_sessions[session_id] = session
