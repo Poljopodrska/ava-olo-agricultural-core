@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726160000'  # v3.4.3-diagnostic - LLM Diagnostic Deployment
-COMMIT_HASH = "diagnostic"  # Diagnostic version
+DEPLOYMENT_TIMESTAMP = '20250726162100'  # v3.4.4 - LLM Fixed with OpenAI Key
+COMMIT_HASH = "llm-fixed"  # Fixed OpenAI API call
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.4.3-diagnostic-{BUILD_ID}"
+VERSION = f"v3.4.4-llm-fixed-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

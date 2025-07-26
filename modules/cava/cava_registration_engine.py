@@ -100,13 +100,16 @@ class CAVARegistrationEngine:
             
             import openai
             client = openai.OpenAI(api_key=self.api_key)
+            
+            # Add JSON instruction to system message instead of using response_format
+            messages[0]["content"] += "\n\nIMPORTANT: Always respond with valid JSON in this format: {\"response\": \"your message here\", \"extracted_data\": {\"field\": \"value\"}}"
+            
             response = await asyncio.to_thread(
                 client.chat.completions.create,
                 model="gpt-4",
                 messages=messages,
                 temperature=0.7,
-                max_tokens=500,
-                response_format={"type": "json_object"}
+                max_tokens=500
             )
             
             llm_response_text = response.choices[0].message.content

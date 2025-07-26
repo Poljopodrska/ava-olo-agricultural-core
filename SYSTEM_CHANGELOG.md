@@ -1,5 +1,29 @@
 # AVA OLO System Changelog
 
+## [v3.4.4-llm-fixed] - 2025-07-26 17:21 UTC - LLM Registration Fixed
+**Deployed to Production**: IN PROGRESS ⏳
+**Service**: agricultural-core
+**Version**: v3.4.4-llm-fixed-llm-fixed-8b2e4c91
+**Purpose**: Fix OpenAI API call and deploy with API key
+
+### 🔧 FIXES APPLIED:
+
+1. **OpenAI Key Added to ECS** ✅
+   - Key deployed to ECS task definition revision 32
+   - Verified key exists in environment
+
+2. **Fixed OpenAI API Call** ✅
+   - Removed unsupported `response_format` parameter
+   - Added JSON instruction to system message instead
+   - Error was: "response_format of type json_object not supported"
+
+### Deployment Status:
+- OpenAI key confirmed in environment
+- API call fixed to work with GPT-4
+- Registration endpoint ready for LLM responses
+
+---
+
 ## [v3.4.3-diagnostic] - 2025-07-26 17:00 UTC - LLM Registration Diagnostic
 **Deployed to Production**: YES ✅
 **Service**: agricultural-core
