@@ -4,9 +4,10 @@ Database Manager module for AVA OLO Monitoring Dashboards
 Handles database connections, pooling, and operations
 """
 import psycopg2
+import asyncpg
 import logging
 import time
-from contextlib import contextmanager
+from contextlib import contextmanager, asynccontextmanager
 from typing import Dict, Any, Optional
 from .config import get_database_config
 
@@ -29,6 +30,7 @@ class DatabaseManager:
     def __init__(self):
         self.config = get_database_config()
         self.pool_initialized = False
+        self.async_pool = None
         
         if POOL_AVAILABLE:
             try:
@@ -158,6 +160,41 @@ class DatabaseManager:
             'active_connections': 1 if self.test_connection() else 0,
             'pool_available': self.pool_initialized
         }
+    
+    async def init_async_pool(self):
+        """Initialize async connection pool"""
+        if not self.async_pool:
+            try:
+                db_url = f"postgresql://{self.config['user']}:{self.config['password']}@{self.config['host']}:{self.config['port']}/{self.config['database']}"
+                self.async_pool = await asyncpg.create_pool(
+                    db_url,
+                    min_size=2,
+                    max_size=10,
+                    timeout=30.0,
+                    command_timeout=10.0
+                )
+                logger.info("Async connection pool initialized")
+            except Exception as e:
+                logger.error(f"Failed to create async pool: {e}")
+                raise
+    
+    @asynccontextmanager
+    async def get_connection_async(self):
+        """Get an async database connection"""
+        if not self.async_pool:
+            await self.init_async_pool()
+        
+        try:
+            async with self.async_pool.acquire() as conn:
+                yield conn
+        except Exception as e:
+            logger.error(f"Async connection error: {e}")
+            raise
+    
+    async def execute_query_async(self, query: str, *params):
+        """Execute an async query"""
+        async with self.get_connection_async() as conn:
+            return await conn.fetch(query, *params)
 
 # Create singleton instance
 _db_manager = None

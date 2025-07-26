@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726183500'  # v3.5.4 - Comprehensive Registration Prompt
-COMMIT_HASH = "comprehensive-prompt"  # Bulletproof prompt handles all name formats globally
+DEPLOYMENT_TIMESTAMP = '20250726184000'  # v3.5.5 - Deployment Verification Tools
+COMMIT_HASH = "deployment-verify"  # Debug endpoint and verification tools
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.5.4-comprehensive-prompt-{BUILD_ID}"
+VERSION = f"v3.5.5-deployment-verification-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

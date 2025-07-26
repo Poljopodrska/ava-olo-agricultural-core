@@ -380,6 +380,14 @@ Respond in {language} if possible."""
             llm_response = response.choices[0].message.content
             logger.info(f"✅ REGISTRATION LLM (GPT-3.5): {llm_response[:100]}...")
             
+            # Add critical logging for debugging deployment issues
+            logger.critical(f"🚨 PROMPT CHECK: Using comprehensive prompt: {'UNDERSTANDING NAMES' in system_content}")
+            logger.critical(f"🚨 PROMPT LENGTH: {len(system_content)} chars")
+            logger.critical(f"🚨 VERSION: {VERSION}")
+            logger.critical(f"🚨 LAST USER MSG: '{message}'")
+            logger.critical(f"🚨 DETECTED QUESTION TYPE: {last_question_type}")
+            logger.critical(f"🚨 EXPECTED DATA TYPE: {expected_data_type}")
+            
             # FIRST: Extract data from user input using previous question context
             last_question_type = session.get("last_question_type", "unknown")
             collected = session.get("collected_data", {})
@@ -416,7 +424,15 @@ Respond in {language} if possible."""
                 "constitutional_compliance": True,
                 "session_id": session_id,
                 "collected_data": collected,
-                "progress_percentage": (len([v for v in collected.values() if v]) / 4) * 100
+                "progress_percentage": (len([v for v in collected.values() if v]) / 4) * 100,
+                "debug": {
+                    "version": VERSION,
+                    "prompt_type": "comprehensive" if "UNDERSTANDING NAMES" in system_content else "old",
+                    "last_question_was": last_question_type,
+                    "detected_as": current_question_type,
+                    "prompt_length": len(system_content),
+                    "has_comprehensive_prompt": "UNDERSTANDING NAMES" in system_content
+                }
             }
             
             return JSONResponse(content=result)
@@ -767,6 +783,160 @@ async def check_llm_status(request: Request):
             "registration_llm_status": True  # This endpoint
         },
         "critical_check": "🟢 READY" if (openai_key and engine_initialized) else "🔴 NOT READY"
+    }
+
+@router.get("/registration/debug-prompt")
+async def debug_registration_prompt():
+    """Show exactly what prompt is being sent to LLM"""
+    import os
+    from datetime import datetime
+    
+    # Create a test session to show what prompt would be generated
+    test_session = {
+        'collected_data': {'first_name': 'Peter'},
+        'messages': [
+            {'role': 'assistant', 'content': 'What is your last name?'},
+            {'role': 'user', 'content': 'Knaflič'}
+        ],
+        'language': 'en',
+        'last_question_type': 'last_name'
+    }
+    
+    # Extract the test message
+    message = "Knaflič"
+    collected = test_session['collected_data']
+    
+    # Build the same prompt that would be used
+    current_step = determine_registration_step(collected)
+    next_action = get_next_action(collected)
+    
+    last_bot_message = test_session["messages"][-2]["content"] if len(test_session["messages"]) >= 2 else "Hello"
+    last_user_message = message
+    last_question_type = extract_question_type_from_message(last_bot_message)
+    expected_data_type = map_question_to_data_type(last_question_type)
+    interpretation = interpret_user_response(last_user_message, last_question_type)
+    specific_instruction = generate_specific_instruction(collected, last_user_message)
+    
+    # Build the actual system prompt
+    system_content = f"""You are AVA, an agricultural assistant helping farmers register. You must collect registration information in a natural, conversational way.
+
+🎯 YOUR MISSION: Collect these 4 pieces of information:
+1. First name (given name, personal name)
+2. Last name (family name, surname)
+3. WhatsApp number (with country code)
+4. Password (minimum 8 characters)
+
+📋 CURRENT REGISTRATION STATUS:
+- First name: {collected.get('first_name', '❌ NOT COLLECTED')}
+- Last name: {collected.get('last_name', '❌ NOT COLLECTED')}
+- WhatsApp: {collected.get('whatsapp', '❌ NOT COLLECTED')}
+- Password: {'✅ SET' if collected.get('password') else '❌ NOT COLLECTED'}
+
+🧠 UNDERSTANDING NAMES - CRITICAL RULES:
+1. First name = Given name = Personal name (e.g., Peter, Maria, Raj, Yuki)
+2. Last name = Family name = Surname (e.g., Smith, Knaflič, Patel, Yamamoto)
+3. After asking "What is your first name?" → The response IS their first name
+4. After asking "What is your last name?" → The response IS their last name
+5. NEVER mix these up!
+
+📝 CONVERSATION CONTEXT:
+Last question you asked: {last_bot_message}
+User's last response: {last_user_message}
+What this means: {interpretation}
+
+🌍 CULTURAL AWARENESS:
+- Western format: [First] [Last] (Peter Knaflič)
+- Asian format: [Last] [First] (Yamamoto Yuki) - but users will adapt to your questions
+- Spanish/Portuguese: May have multiple surnames (García López)
+- Single name cultures: Some use only one name
+- If someone gives multiple names after you ask for "first name", take the first word
+- If someone gives multiple names after you ask for "last name", take all as last name
+
+💬 CONVERSATION RULES:
+1. Ask for ONE piece of information at a time
+2. Acknowledge what they gave you before asking the next
+3. Use natural, warm language
+4. If they ask off-topic questions, politely redirect: "I'd love to help with that after we complete your registration!"
+5. Confirm understanding: "Great! So your [first/last] name is X"
+
+🔄 REGISTRATION FLOW:
+Current step: {current_step}
+Next action: {next_action}
+
+Step 1: If no first name → Ask: "What is your first name?"
+Step 2: If no last name → Ask: "Thank you [first_name]! What is your last name?"
+Step 3: If no WhatsApp → Ask: "What is your WhatsApp number? Please include country code (like +386)"
+Step 4: If no password → Ask: "Please create a password (minimum 8 characters)"
+Step 5: All collected → Say: "Registration complete! Welcome to AVA, [first_name]!"
+
+⚠️ CRITICAL INSTRUCTIONS:
+- You just asked for: {last_question_type}
+- The user's response "{last_user_message}" is their: {expected_data_type}
+- Extract and acknowledge this EXACT data type
+- Do NOT re-interpret or second-guess
+
+🚫 COMMON MISTAKES TO AVOID:
+- Asking for the same information twice
+- Confusing first and last names
+- Not acknowledging what user provided
+- Being too formal (remember, these are farmers!)
+- Asking multiple questions at once
+
+✅ GOOD EXAMPLES:
+User: "Peter"
+You: "Nice to meet you, Peter! What is your last name?"
+
+User: "Knaflič"  
+You: "Thank you, Peter Knaflič! What is your WhatsApp number? Please include your country code."
+
+User: "can you help me grow mangoes?"
+You: "I'd be happy to help with mango growing after we finish your registration! What is your WhatsApp number?"
+
+❌ BAD EXAMPLES:
+User: "Peter"
+You: "What is your first name?" (Already gave it!)
+
+User: "Knaflič"
+You: "Thank you for your first name" (This was their last name!)
+
+🎯 YOUR IMMEDIATE TASK:
+Based on the conversation above, {specific_instruction}
+
+Remember: Be warm, natural, and helpful. These are farmers who need assistance, not tech experts!
+
+Respond in en if possible."""
+    
+    # Get file modification time
+    try:
+        file_path = os.path.abspath(__file__)
+        file_modified = datetime.fromtimestamp(os.path.getmtime(file_path)).isoformat()
+    except:
+        file_modified = "Unable to determine"
+    
+    return {
+        "🚨_DEBUG_INFO": "Registration Prompt Analysis",
+        "prompt_length": len(system_content),
+        "prompt_preview": system_content[:500] + "...",
+        "full_prompt": system_content,
+        "code_version": VERSION,
+        "file_modified": file_modified,
+        "contains_comprehensive": "UNDERSTANDING NAMES" in system_content,
+        "prompt_type": "comprehensive" if "UNDERSTANDING NAMES" in system_content else "old",
+        "test_scenario": {
+            "collected": collected,
+            "last_bot_message": last_bot_message,
+            "user_response": last_user_message,
+            "detected_question_type": last_question_type,
+            "expected_data_type": expected_data_type,
+            "interpretation": interpretation,
+            "next_instruction": specific_instruction
+        },
+        "prompt_indicators": {
+            "has_cultural_awareness": "CULTURAL AWARENESS" in system_content,
+            "has_understanding_names": "UNDERSTANDING NAMES" in system_content,
+            "has_good_examples": "GOOD EXAMPLES" in system_content,
+            "has_immediate_task": "YOUR IMMEDIATE TASK" in system_content
+        }
     }
 
 @router.get("/registration/all-endpoints")

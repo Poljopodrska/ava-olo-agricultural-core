@@ -38,7 +38,7 @@
                 },
                 {
                     "name": "DB_NAME",
-                    "value": "farmer_crm"
+                    "value": "postgres"
                 },
                 {
                     "name": "DB_USER",
@@ -46,7 +46,7 @@
                 },
                 {
                     "name": "DB_PASSWORD",
-                    "value": "Y<~Xzntr2r~m6-7)~4*MO(Mul>#YW"
+                    "value": "j2D8J4LH:~eFrUz>$:kkNT(P$Rq_"
                 },
                 {
                     "name": "VERSION",
