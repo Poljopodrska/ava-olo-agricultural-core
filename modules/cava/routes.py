@@ -13,6 +13,7 @@ from modules.cava.natural_registration import NaturalRegistrationFlow
 from modules.cava.true_cava_registration import TrueCAVARegistration
 from modules.cava.simple_chat import SimpleRegistrationChat
 from modules.cava.pure_chat import PureChat
+from modules.cava.enhanced_cava_registration import EnhancedCAVARegistration
 from modules.auth.routes import create_farmer_account, get_password_hash
 
 # Initialize router
@@ -24,6 +25,7 @@ natural_registration = NaturalRegistrationFlow()  # New natural flow
 true_cava = TrueCAVARegistration()  # True CAVA - no hardcoding
 simple_chat = SimpleRegistrationChat()  # Step 1 - Simple chat only
 pure_chat = PureChat()  # Pure chat - NO validation or hardcoding
+enhanced_cava = EnhancedCAVARegistration()  # Enhanced CAVA with full validation
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -238,6 +240,52 @@ async def get_true_cava_session(session_id: str) -> JSONResponse:
         "exists": True,
         "collected_data": session_data,
         "registration_complete": all(session_data.values())
+    })
+
+@router.post("/registration/cava/enhanced")
+async def enhanced_cava_registration(request: Request) -> JSONResponse:
+    """Enhanced CAVA registration with full validation and language support"""
+    try:
+        data = await request.json()
+        
+        # Extract required fields
+        message = data.get("message", "").strip()
+        session_id = data.get("session_id", "")
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        
+        # Process message through enhanced CAVA
+        result = await enhanced_cava.process_message(session_id, message)
+        
+        return JSONResponse(content=result)
+        
+    except Exception as e:
+        logger.error(f"Enhanced CAVA registration error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "response": "I'm having trouble understanding. Could you please try again?",
+                "registration_complete": False,
+                "error": True
+            }
+        )
+
+@router.get("/registration/cava/enhanced/session/{session_id}")
+async def get_enhanced_cava_session(session_id: str) -> JSONResponse:
+    """Get enhanced CAVA session status"""
+    session_data = enhanced_cava.get_session_data(session_id)
+    
+    if not session_data:
+        return JSONResponse(content={
+            "exists": False,
+            "message": "No active session"
+        })
+    
+    return JSONResponse(content={
+        "exists": True,
+        "session_data": session_data,
+        "registration_complete": session_data.get("complete", False)
     })
 
 @router.post("/registration/chat")

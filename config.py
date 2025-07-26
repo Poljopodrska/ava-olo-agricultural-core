@@ -45,6 +45,15 @@ API_CONFIG = {
     "rate_limit": int(os.getenv("API_RATE_LIMIT", "100"))
 }
 
+# Twilio WhatsApp Configuration
+TWILIO_CONFIG = {
+    "account_sid": os.getenv("TWILIO_ACCOUNT_SID"),
+    "auth_token": os.getenv("TWILIO_AUTH_TOKEN"),
+    "whatsapp_number": os.getenv("TWILIO_WHATSAPP_NUMBER"),  # Format: whatsapp:+1234567890
+    "webhook_url": os.getenv("TWILIO_WEBHOOK_URL"),  # Public URL for webhook
+    "enabled": bool(os.getenv("TWILIO_ENABLED", "false").lower() == "true")
+}
+
 # Logging Configuration
 LOG_CONFIG = {
     "level": os.getenv("LOG_LEVEL", "INFO"),

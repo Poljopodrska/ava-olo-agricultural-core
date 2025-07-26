@@ -221,6 +221,14 @@ async def llm_register_page(request: Request):
         "version": VERSION
     })
 
+@router.get("/register/enhanced", response_class=HTMLResponse)
+async def enhanced_register_page(request: Request):
+    """Display enhanced CAVA registration with full validation"""
+    return templates.TemplateResponse("register_enhanced.html", {
+        "request": request,
+        "version": VERSION
+    })
+
 @router.post("/register")
 async def register_submit(
     request: Request,

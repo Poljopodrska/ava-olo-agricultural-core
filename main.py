@@ -52,6 +52,9 @@ from modules.fields.routes import router as fields_router
 from modules.chat.routes import router as chat_router
 from modules.chat.simple_registration import router as simple_registration_router
 
+# Import WhatsApp module
+from modules.whatsapp.routes import router as whatsapp_router
+
 # Initialize FastAPI app
 app = FastAPI(
     title="AVA OLO Farmer Portal",
@@ -89,6 +92,7 @@ app.include_router(cava_router)
 app.include_router(fields_router)
 app.include_router(chat_router)
 app.include_router(simple_registration_router)
+app.include_router(whatsapp_router)
 app.include_router(system_router)
 app.include_router(debug_services_router)
 app.include_router(debug_deployment_router)
