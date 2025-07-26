@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726165000'  # v3.4.9 - Registration LLM Connected
-COMMIT_HASH = "reg-llm"  # Connected registration to working LLM
+DEPLOYMENT_TIMESTAMP = '20250726181500'  # v3.5.0 - Fixed Frontend Endpoint Call
+COMMIT_HASH = "fix-endpoint"  # Fixed frontend to call working LLM endpoint
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.4.9-registration-llm-connected-{BUILD_ID}"
+VERSION = f"v3.5.0-registration-endpoint-fixed-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -552,15 +552,16 @@
             showTyping();
             
             try {
-                // Use simple registration endpoint
-                const response = await fetch('/api/v1/chat/register', {
+                // Use LLM registration endpoint (fixed in v3.4.9)
+                const response = await fetch('/api/v1/registration/cava', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
                         message: message,
-                        session_id: sessionId
+                        farmer_id: sessionId,  // LLM endpoint expects farmer_id
+                        language: 'en'
                     })
                 });
                 
@@ -570,7 +571,7 @@
                 hideTyping();
                 
                 // Add AVA response
-                addMessage(data.response, true, data.error || !data.connected);
+                addMessage(data.response, true, data.error || false);
                 
                 // NEW: Update progress indicators
                 if (data.collected_data) {
