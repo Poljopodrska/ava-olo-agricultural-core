@@ -222,7 +222,7 @@
         <header class="header">
             <div class="nav-brand">
                 <h1>⚡ Health Dashboard</h1>
-                <span class="version" id="version-info">Loading...</span>
+                <span class="version" id="version-info">Loading...</span> <span id="deployment-badge" class="deployment-badge" style="margin-left: 8px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; background: #FF9800; color: white;">...</span>
             </div>
             <div class="nav-links">
                 <a href="/dashboards/" class="btn btn-secondary">← Dashboard Hub</a>
@@ -396,8 +396,30 @@
                     const response = await fetch('/health');
                     const data = await response.json();
                     document.getElementById('version-info').textContent = `v${data.version || 'Unknown'}`;
+                    
+                    // Update deployment reality badge
+                    await this.updateDeploymentBadge();
                 } catch (error) {
                     console.error('Failed to load version:', error);
+                }
+            }
+            
+            async updateDeploymentBadge() {
+                const badge = document.getElementById('deployment-badge');
+                if (!badge) return;
+                
+                try {
+                    const response = await fetch('/api/deployment/reality-check');
+                    const data = await response.json();
+                    const isReal = data.reality_status === 'REAL_DEPLOYMENT';
+                    
+                    badge.textContent = isReal ? 'REAL ✓' : 'FAKE ✗';
+                    badge.style.background = isReal ? '#4CAF50' : '#F44336';
+                    badge.style.color = 'white';
+                } catch (error) {
+                    badge.textContent = '?';
+                    badge.style.background = '#FF9800';
+                    badge.style.color = 'white';
                 }
             }
 

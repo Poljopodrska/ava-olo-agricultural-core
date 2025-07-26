@@ -15,6 +15,7 @@ from modules.cava.true_cava_registration import TrueCAVARegistration
 from modules.cava.simple_chat import SimpleRegistrationChat
 from modules.cava.pure_chat import PureChat
 from modules.cava.enhanced_cava_registration import EnhancedCAVARegistration
+from modules.cava.cava_registration_engine import get_cava_registration_engine
 from modules.auth.routes import create_farmer_account, get_password_hash
 
 # Initialize router
@@ -45,9 +46,10 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         if not session_id:
             raise HTTPException(status_code=400, detail="farmer_id is required")
         
-        # ALWAYS use enhanced CAVA with full LLM intelligence - CONSTITUTIONAL REQUIREMENT
-        logger.info(f"CONSTITUTIONAL: Processing registration via LLM for session {session_id}")
-        result = await enhanced_cava.process_message(session_id, message)
+        # ALWAYS use pure LLM engine - CONSTITUTIONAL REQUIREMENT Amendment #15
+        logger.info(f"🏛️ CONSTITUTIONAL: Processing registration via pure LLM for session {session_id}")
+        cava_engine = get_cava_registration_engine()
+        result = await cava_engine.process_message(session_id, message)
         
         # If registration is complete, create the account
         if result.get("registration_complete") and "registration_data" in result:
@@ -63,7 +65,9 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
                 )
                 
                 # Clear the session
-                enhanced_cava.sessions.pop(session_id, None)
+                cava_engine = get_cava_registration_engine()
+                if session_id in cava_engine.sessions:
+                    del cava_engine.sessions[session_id]
                 
                 # Add success info to result
                 result["account_created"] = True

@@ -456,7 +456,32 @@
         </div>
     </div>
     
-    <div class="version-display">{{ version }}</div>
+    <div class="version-display">{{ version }} <span id="deployment-badge" class="deployment-badge" style="margin-left: 8px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; background: #FF9800; color: white;">...</span></div>
+    
+    <script>
+        // Update deployment reality badge
+        async function updateDeploymentBadge() {
+            const badge = document.getElementById('deployment-badge');
+            if (!badge) return;
+            
+            try {
+                const response = await fetch('/api/deployment/reality-check');
+                const data = await response.json();
+                const isReal = data.reality_status === 'REAL_DEPLOYMENT';
+                
+                badge.textContent = isReal ? 'REAL ✓' : 'FAKE ✗';
+                badge.style.background = isReal ? '#4CAF50' : '#F44336';
+                badge.style.color = 'white';
+            } catch (error) {
+                badge.textContent = '?';
+                badge.style.background = '#FF9800';
+                badge.style.color = 'white';
+            }
+        }
+        
+        // Update badge on page load
+        document.addEventListener('DOMContentLoaded', updateDeploymentBadge);
+    </script>
     
     <script>
         // Generate unique session ID
