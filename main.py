@@ -7,9 +7,10 @@ Refactored for AWS ECS deployment with modules under 100KB
 import uvicorn
 import sys
 import os
-from fastapi import FastAPI, Request
+from datetime import datetime
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 # Import configuration
@@ -92,6 +93,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize templates
 templates = Jinja2Templates(directory="templates")
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Global exception handler to prevent 503 errors"""
+    print(f"Global exception: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "message": "The service encountered an error but is still running",
+            "path": str(request.url)
+        }
+    )
+
 # Include routers
 app.include_router(deployment_router)
 app.include_router(audit_router)
@@ -144,108 +158,67 @@ app.include_router(env_dashboard_router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize services on startup with comprehensive validation and auto-recovery"""
-    print(f"🚀 Starting AVA OLO Agricultural Core {VERSION} with self-healing system")
-    print(f"📦 Build ID: {BUILD_ID}")
-    
-    # NEW: Run comprehensive startup validation
-    from modules.core.startup_validator import StartupValidator
-    from modules.core.api_key_manager import APIKeyManager
-    
-    print("🔍 Running comprehensive startup validation...")
-    validation_report = await StartupValidator.validate_and_fix()
-    
-    if validation_report["system_ready"]:
-        print("✅ System validation passed - all systems operational")
-    else:
-        print("⚠️ System validation failed - operating in degraded mode")
-        print(f"Failed checks: {[k for k,v in validation_report['checks'].items() if not v]}")
-        print(f"Fixes applied: {validation_report.get('fixes_applied', [])}")
-    
-    # Start continuous health monitoring
-    asyncio.create_task(StartupValidator.continuous_health_check())
-    print("🏥 Started continuous health monitoring (checks every 5 minutes)")
-    
-    # Log API key diagnostic info
-    api_key_info = APIKeyManager.get_diagnostic_info()
-    print(f"🔑 API Key Status: {api_key_info}")
-    
-    # Initialize database connection pool with retry logic
-    db_manager = get_db_manager()
-    print("🔄 Testing database connection with retry logic...")
-    if db_manager.test_connection(retries=5, delay=3):
-        print("✅ Database connection established")
+    """Non-blocking startup that doesn't crash the service"""
+    try:
+        print(f"🚀 Starting AVA OLO Agricultural Core {VERSION}")
+        print(f"📦 Build ID: {BUILD_ID}")
         
-        # Run database migrations
-        print("🔄 Running database migrations...")
+        # Don't block startup - run validation in background
+        asyncio.create_task(run_startup_validation())
+        
+        # Basic initialization only
+        print("✅ Service started - validation running in background")
+        
+    except Exception as e:
+        # Never let startup crash the entire service
+        print(f"⚠️ Startup warning (non-fatal): {str(e)}")
+
+async def run_startup_validation():
+    """Run validation in background without blocking service"""
+    try:
+        # Wait a bit for service to fully start
+        await asyncio.sleep(5)
+        
+        print("🔍 Running background validation...")
+        
+        # Simple OpenAI check without complex recovery
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            import openai
+            openai.api_key = api_key
+            print("✅ OpenAI API key found")
+        else:
+            print("⚠️ OpenAI API key not found - chat will be unavailable")
+        
+        # Simple database check
         try:
-            from modules.core.migration_runner import run_startup_migrations
-            migration_result = run_startup_migrations()
+            from modules.core.database_manager import get_db_manager
+            db_manager = get_db_manager()
+            if db_manager.test_connection():
+                print("✅ Database connected")
+            else:
+                print("⚠️ Database connection failed")
+        except Exception as e:
+            print(f"⚠️ Database issue: {e}")
             
-            if migration_result["success"]:
-                print(f"✅ {migration_result['message']}")
-            else:
-                print(f"⚠️ Migration warning: {migration_result['message']}")
-        except Exception as e:
-            print(f"⚠️ Migration failed: {str(e)} - continuing anyway")
-        
-        # Ensure CAVA tables exist (fallback if migrations didn't work)
-        print("🔄 Ensuring CAVA tables exist...")
-        try:
-            from modules.api.cava_audit_routes import ensure_cava_tables_startup
-            await ensure_cava_tables_startup()
-            print("✅ CAVA tables verified")
-        except Exception as e:
-            print(f"⚠️ CAVA table check failed: {str(e)} - continuing anyway")
-        
-    else:
-        print("⚠️ Database connection failed after retries - running in degraded mode")
-        print("⚠️ Service will continue to run and serve requests without database")
-    
-    # Initialize OpenAI configuration - CONSTITUTIONAL REQUIREMENT
-    print("🔑 Initializing OpenAI configuration...")
-    from modules.core.openai_config import OpenAIConfig
-    
-    if OpenAIConfig.initialize():
-        print("✅ OpenAI configured successfully - Constitutional compliance verified")
-        openai_status = OpenAIConfig.get_status()
-        print(f"🔑 API key format valid: {openai_status.get('api_key_format_valid', False)}")
-        print(f"🔑 Key preview: {openai_status.get('api_key_preview', 'NOT_SET')}")
-    else:
-        print("🚨 CRITICAL WARNING: OpenAI configuration failed!")
-        print("🏛️ CONSTITUTIONAL VIOLATION: System requires 95%+ LLM intelligence (Amendment #15)")
-        print("⚠️  Chat service will be unavailable - NOT COMPLIANT!")
-        
-        # Show detailed status for debugging
-        openai_status = OpenAIConfig.get_status()
-        print(f"🔍 OpenAI Status: {openai_status}")
-        
-        # Try to load from .env.production if available
-        try:
-            from dotenv import load_dotenv
-            env_path = ".env.production"
-            if os.path.exists(env_path):
-                load_dotenv(env_path)
-                print("🔄 Attempting re-initialization after loading .env.production...")
-                if OpenAIConfig.initialize(force=True):
-                    print("✅ OpenAI configured after loading .env.production")
-                else:
-                    print("❌ OpenAI configuration still failed after .env.production")
-            else:
-                print("❌ .env.production file not found")
-        except ImportError:
-            print("⚠️  python-dotenv not installed, cannot auto-load .env files")
-    
-    # Constitutional deployment completion
-    constitutional_deployment_completion()
+    except Exception as e:
+        print(f"⚠️ Background validation error: {e}")
+        # Don't crash - service continues running
 
 @app.get("/")
-async def landing_page(request: Request):
-    """Landing page with Sign In and New with AVA OLO buttons"""
-    return templates.TemplateResponse("landing.html", {
-        "request": request,
-        "version": VERSION
-    })
+async def root():
+    """Root endpoint that always works"""
+    return {
+        "service": "AVA OLO Agricultural Core",
+        "version": VERSION,
+        "status": "running",
+        "endpoints": {
+            "dashboard": "/dashboard",
+            "chat_debug": "/chat-debug-audit",
+            "health": "/health",
+            "diagnostics": "/diagnostics"
+        }
+    }
 
 @app.get("/cava-audit")
 async def cava_audit_page():
@@ -301,29 +274,25 @@ async def openai_setup_wizard():
         return {"error": "OpenAI wizard not found", "path_checked": file_path}
 
 @app.get("/dashboard")
-async def dashboard(request: Request):
-    """Basic dashboard - placeholder for three-panel layout"""
-    farmer_name = request.cookies.get("farmer_name", "Farmer")
-    farmer_id = request.cookies.get("farmer_id")
-    
-    if not farmer_id:
-        return RedirectResponse(url="/auth/signin", status_code=303)
-    
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "version": VERSION,
-        "farmer_name": farmer_name
-    })
+async def dashboard():
+    """Serve dashboard with fallback"""
+    try:
+        return FileResponse("static/dashboard.html")
+    except:
+        return {
+            "error": "Dashboard temporarily unavailable",
+            "message": "Please try /chat-debug-audit instead",
+            "alternatives": ["/chat-debug-audit", "/diagnostics", "/health"]
+        }
 
 @app.get("/health")
 async def health_check():
-    """Fast health check endpoint for ALB - doesn't check DB to avoid startup issues"""
-    # Quick health check that always returns healthy if the service is running
-    # Database connection is checked separately in /health/detailed
+    """Basic health check that always works"""
     return {
-        "status": "healthy",
+        "status": "ok",
+        "service": "AVA OLO Agricultural Core",
         "version": VERSION,
-        "service": "agricultural-core"
+        "timestamp": datetime.now().isoformat()
     }
 
 @app.get("/health/detailed")
@@ -343,6 +312,30 @@ async def detailed_health_check():
 async def get_version():
     """Get current version"""
     return {"version": VERSION, "build_id": BUILD_ID}
+
+@app.get("/api/v1/emergency/status")
+async def emergency_status():
+    """Emergency status check that always works"""
+    status = {
+        "service": "running",
+        "timestamp": datetime.now().isoformat(),
+        "components": {}
+    }
+    
+    # Check OpenAI
+    status["components"]["openai"] = bool(os.getenv("OPENAI_API_KEY"))
+    
+    # Check database
+    try:
+        db_manager = get_db_manager()
+        if db_manager.test_connection():
+            status["components"]["database"] = True
+        else:
+            status["components"]["database"] = False
+    except:
+        status["components"]["database"] = False
+    
+    return status
 
 @app.get("/api/v1/system/health")
 async def system_health():

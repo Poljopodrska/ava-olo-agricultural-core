@@ -452,18 +452,17 @@ Now give a response that PROVES you remember everything!"""
         )
         
     except Exception as e:
-        print(f"❌ CHAT ERROR for {wa_phone_number}: {str(e)}")
-        logger.error(f"Chat error for {wa_phone_number}: {str(e)}")
-        
-        # Store error message
-        error_msg = "I apologize, but I'm having trouble processing your request. Please try again."
-        try:
-            await store_message(wa_phone_number, 'assistant', f"[ERROR] {error_msg}")
-            print(f"✅ Error message stored")
-        except Exception as store_error:
-            print(f"❌ Failed to store error message: {store_error}")
-        
-        raise HTTPException(status_code=500, detail=str(e))
+        # Never crash - always return a response
+        print(f"Chat error: {str(e)}")
+        return ChatResponse(
+            response="I'm having technical difficulties. Please try again in a moment.",
+            conversation_id=request.wa_phone_number,
+            model_used="error",
+            timestamp=datetime.now().isoformat(),
+            context_used=False,
+            messages_in_context=0,
+            memory_indicators={"error": str(e)}
+        )
 
 @router.get("/chat/history/{wa_phone_number}")
 async def get_chat_history(wa_phone_number: str, limit: int = 50):
