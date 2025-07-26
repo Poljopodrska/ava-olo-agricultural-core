@@ -252,6 +252,7 @@
             <button onclick="runQuickCheck()" id="quickCheckBtn">Quick Check</button>
             <button onclick="runFullAudit()" id="auditBtn">Run Full Audit</button>
             <button onclick="testMemory()" id="memoryBtn">Test Memory System</button>
+            <button onclick="setupTables()" id="setupBtn" style="background: #ff9800;">Setup Tables</button>
             <span id="quickStatus" class="quick-check" style="display:none;"></span>
         </div>
         
@@ -455,6 +456,96 @@
             const error = document.getElementById('error');
             error.textContent = message;
             error.style.display = 'block';
+        }
+        
+        async function setupTables() {
+            if (!confirm('This will create the required CAVA tables. Continue?')) return;
+            
+            const btn = document.getElementById('setupBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            loading.querySelector('p').textContent = 'Creating CAVA tables...';
+            results.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/v1/cava/setup-tables', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                let html = `
+                    <div class="score-display">
+                        <h2>Table Setup Results</h2>
+                        <p style="color: ${data.success ? '#4CAF50' : '#F44336'}; font-size: 24px;">
+                            ${data.success ? '✅ Success' : '❌ Failed'}
+                        </p>
+                    </div>
+                `;
+                
+                if (data.tables_created.length > 0) {
+                    html += `
+                        <div class="component pass">
+                            <h3>Tables Created:</h3>
+                            <ul>${data.tables_created.map(t => `<li>${t}</li>`).join('')}</ul>
+                        </div>
+                    `;
+                }
+                
+                if (data.tables_existed.length > 0) {
+                    html += `
+                        <div class="component partial">
+                            <h3>Tables Already Existed:</h3>
+                            <ul>${data.tables_existed.map(t => `<li>${t}</li>`).join('')}</ul>
+                        </div>
+                    `;
+                }
+                
+                if (data.errors.length > 0) {
+                    html += `
+                        <div class="component fail">
+                            <h3>Errors:</h3>
+                            <ul>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>
+                        </div>
+                    `;
+                }
+                
+                if (data.table_stats) {
+                    html += `
+                        <div class="component">
+                            <h3>Table Statistics:</h3>
+                            <ul>
+                                ${Object.entries(data.table_stats).map(([table, count]) => 
+                                    `<li>${table}: ${count} rows</li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button onclick="runFullAudit()" style="background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer;">
+                            Run Audit Now
+                        </button>
+                    </div>
+                `;
+                
+                results.innerHTML = html;
+                
+            } catch (err) {
+                showError('Table setup failed: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
         }
         
         // Run quick check on page load
