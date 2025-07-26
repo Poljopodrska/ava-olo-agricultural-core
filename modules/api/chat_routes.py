@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 import logging
 import json
+import os
 from datetime import datetime
 from typing import Optional, Dict, Any
 
@@ -125,6 +126,7 @@ async def store_extracted_facts(wa_phone_number: str, facts: Dict[str, Any]) -> 
 async def chat_endpoint(request: ChatRequest):
     """
     CAVA-powered chat endpoint with GPT-3.5 Turbo
+    Enhanced with comprehensive error handling for service availability
     - Stores all messages in PostgreSQL
     - Uses conversation context for better responses
     - Extracts and stores farming facts
@@ -136,6 +138,36 @@ async def chat_endpoint(request: ChatRequest):
     # 🔍 DIAGNOSTIC LOGGING - ADDED FOR DEBUGGING
     print(f"🔍 CHAT ENDPOINT CALLED: {wa_phone_number} - {message[:50]}...")
     print(f"📍 Chat endpoint location: {__file__}")
+    
+    # CRITICAL: Check OpenAI API key first - PRIMARY CAUSE OF "UNAVAILABLE" ERROR
+    api_key = os.getenv("OPENAI_API_KEY", "")
+    if not api_key:
+        print("❌ CRITICAL: OPENAI_API_KEY not configured")
+        return ChatResponse(
+            response="Chat service is temporarily unavailable. Our AI assistant is not configured. Please contact support.",
+            conversation_id=wa_phone_number,
+            model_used="unavailable",
+            timestamp=datetime.now().isoformat(),
+            context_used=False,
+            context_summary="Service configuration error",
+            messages_in_context=0,
+            memory_indicators={"error": "OPENAI_API_KEY_MISSING"}
+        )
+    
+    if not api_key.startswith("sk-"):
+        print("❌ CRITICAL: Invalid OPENAI_API_KEY format")
+        return ChatResponse(
+            response="Chat service configuration error. Please contact support.",
+            conversation_id=wa_phone_number,
+            model_used="unavailable",
+            timestamp=datetime.now().isoformat(),
+            context_used=False,
+            context_summary="Invalid API key format",
+            messages_in_context=0,
+            memory_indicators={"error": "INVALID_API_KEY_FORMAT"}
+        )
+    
+    print(f"✅ OpenAI API key configured: {api_key[:7]}...")
     print(f"🧠 CAVA Memory initialized: {cava_memory is not None}")
     print(f"🎯 Fact extractor initialized: {fact_extractor is not None}")
     
@@ -228,18 +260,71 @@ Provide actionable agricultural advice in their language. If they previously men
         if recent_messages:
             print(f"📋 Last conversation message: {recent_messages[-1].get('content', '')[:100]}...")
         
-        # 5. Get GPT-3.5 response
+        # 5. Get GPT-3.5 response with enhanced error handling
+        print(f"🤖 Getting OpenAI client...")
         client = get_openai_client()
         if not client:
             print(f"❌ OpenAI client not available!")
-            raise HTTPException(status_code=503, detail="AI service temporarily unavailable")
+            return ChatResponse(
+                response="AI service is temporarily unavailable. The language model could not be initialized. Please try again later.",
+                conversation_id=wa_phone_number,
+                model_used="unavailable",
+                timestamp=datetime.now().isoformat(),
+                context_used=True,
+                context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
+                messages_in_context=len(recent_messages),
+                memory_indicators={"error": "OPENAI_CLIENT_UNAVAILABLE"}
+            )
         
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo-1106",  # Latest GPT-3.5 model
-            messages=messages,
-            temperature=0.7,
-            max_tokens=500
-        )
+        print(f"🤖 Calling OpenAI API...")
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo-1106",  # Latest GPT-3.5 model
+                messages=messages,
+                temperature=0.7,
+                max_tokens=500
+            )
+        except Exception as openai_error:
+            error_type = type(openai_error).__name__
+            error_msg = str(openai_error)
+            
+            print(f"❌ OpenAI API error: {error_type} - {error_msg}")
+            
+            # Handle specific OpenAI errors
+            if "authentication" in error_msg.lower() or "401" in error_msg:
+                return ChatResponse(
+                    response="Authentication with AI service failed. Please contact support to resolve this issue.",
+                    conversation_id=wa_phone_number,
+                    model_used="auth_error",
+                    timestamp=datetime.now().isoformat(),
+                    context_used=True,
+                    context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
+                    messages_in_context=len(recent_messages),
+                    memory_indicators={"error": "OPENAI_AUTH_FAILED", "error_type": error_type}
+                )
+            elif "rate limit" in error_msg.lower():
+                return ChatResponse(
+                    response="Our AI service is temporarily busy. Please wait a moment and try again.",
+                    conversation_id=wa_phone_number,
+                    model_used="rate_limited",
+                    timestamp=datetime.now().isoformat(),
+                    context_used=True,
+                    context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
+                    messages_in_context=len(recent_messages),
+                    memory_indicators={"error": "OPENAI_RATE_LIMIT", "error_type": error_type}
+                )
+            else:
+                # Generic error
+                return ChatResponse(
+                    response="I'm experiencing technical difficulties with the AI service. Please try again in a few moments.",
+                    conversation_id=wa_phone_number,
+                    model_used="error",
+                    timestamp=datetime.now().isoformat(),
+                    context_used=True,
+                    context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
+                    messages_in_context=len(recent_messages),
+                    memory_indicators={"error": "OPENAI_API_ERROR", "error_type": error_type, "error_msg": error_msg[:100]}
+                )
         
         assistant_message = response.choices[0].message.content
         print(f"✅ GPT-3.5 response received: {assistant_message[:50]}...")

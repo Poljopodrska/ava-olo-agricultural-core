@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CAVA Chat Debug & Behavioral Audit</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1400px; 
+            margin: 20px auto; 
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 20px; 
+            margin-bottom: 20px;
+        }
+        .panel { 
+            border: 2px solid #ddd; 
+            padding: 20px; 
+            border-radius: 8px; 
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .debug-panel { border-left: 5px solid #007bff; }
+        .audit-panel { border-left: 5px solid #28a745; }
+        .status-good { color: #28a745; font-weight: bold; }
+        .status-bad { color: #dc3545; font-weight: bold; }
+        .status-warning { color: #ffc107; font-weight: bold; }
+        button { 
+            padding: 10px 20px; 
+            margin: 5px; 
+            cursor: pointer; 
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .primary { background: #007bff; color: white; }
+        .primary:hover { background: #0056b3; }
+        .success { background: #28a745; color: white; }
+        .success:hover { background: #1e7e34; }
+        .danger { background: #dc3545; color: white; }
+        .danger:hover { background: #c82333; }
+        .warning { background: #ffc107; color: black; }
+        .warning:hover { background: #e0a800; }
+        .check-item { 
+            padding: 8px; 
+            margin: 5px 0; 
+            border-left: 4px solid #ddd;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .check-pass { border-left-color: #28a745; }
+        .check-fail { border-left-color: #dc3545; }
+        .check-warning { border-left-color: #ffc107; }
+        pre { 
+            background: #f8f9fa; 
+            padding: 10px; 
+            overflow-x: auto;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .score-display {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .score-excellent { background: #d4edda; color: #155724; }
+        .score-good { background: #d1ecf1; color: #0c5460; }
+        .score-warning { background: #fff3cd; color: #856404; }
+        .score-poor { background: #f8d7da; color: #721c24; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .test-pass { background: #d4edda; border-color: #c3e6cb; }
+        .test-fail { background: #f8d7da; border-color: #f5c6cb; }
+        .test-partial { background: #fff3cd; border-color: #ffeaa7; }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .quick-actions {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-green { background: #28a745; }
+        .status-red { background: #dc3545; }
+        .status-yellow { background: #ffc107; }
+        h1 { color: #333; text-align: center; }
+        h2 { color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        h3 { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🔧 CAVA System Diagnostics & Behavioral Audit</h1>
+    
+    <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <button class="success" onclick="runFullDiagnostic()">🔍 Full System Check</button>
+        <button class="warning" onclick="runQuickMangoTest()">🥭 Quick Mango Test</button>
+        <button class="primary" onclick="testChatDirect()">💬 Test Chat Now</button>
+        <button class="danger" onclick="attemptFixAll()">🔧 Auto-Fix Issues</button>
+    </div>
+    
+    <div class="container">
+        <!-- Chat Debug Panel -->
+        <div class="panel debug-panel">
+            <h2>🔧 Chat Service Debug</h2>
+            
+            <button class="primary" onclick="checkChatStatus()">Check Status</button>
+            <button class="warning" onclick="checkEnvironment()">Check Environment</button>
+            <button class="danger" onclick="attemptFix()">Attempt Fix</button>
+            <button class="success" onclick="testChat()">Test Chat</button>
+            
+            <div id="chat-status">
+                <p><em>Click "Check Status" to diagnose chat service...</em></p>
+            </div>
+        </div>
+        
+        <!-- Behavioral Audit Panel -->
+        <div class="panel audit-panel">
+            <h2>🧠 Behavioral Audit</h2>
+            
+            <button class="success" onclick="runQuickBehavioralTest()">Quick Mango Test</button>
+            <button class="primary" onclick="runFullBehavioralAudit()">Full Behavioral Audit</button>
+            <button class="warning" onclick="compareAudits()">Compare Component vs Behavioral</button>
+            
+            <div id="audit-results">
+                <p><em>Click "Quick Mango Test" to test memory behavior...</em></p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Full Width Results Panel -->
+    <div class="panel full-width" id="full-results" style="display: none;">
+        <h2>📊 Complete Diagnostic Results</h2>
+        <div id="diagnostic-summary"></div>
+    </div>
+    
+    <script>
+        // Chat Debug Functions
+        async function checkChatStatus() {
+            const statusDiv = document.getElementById('chat-status');
+            statusDiv.innerHTML = '<div class="loading"></div> Checking chat service status...';
+            
+            try {
+                const response = await fetch('/api/v1/chat/debug/status');
+                const result = await response.json();
+                const status = result.data;
+                
+                let html = '<h3>Chat Service Status</h3>';
+                
+                // Overall status
+                if (status.service_available) {
+                    html += '<p class="status-good">✅ Chat Service Available</p>';
+                } else {
+                    html += '<p class="status-bad">❌ Chat Service Unavailable</p>';
+                }
+                
+                // Score display
+                const scoreClass = status.score_percentage >= 80 ? 'score-excellent' : 
+                                 status.score_percentage >= 60 ? 'score-good' : 
+                                 status.score_percentage >= 40 ? 'score-warning' : 'score-poor';
+                
+                html += `<div class="score-display ${scoreClass}">
+                    Score: ${status.overall_score}/${status.max_score} (${status.score_percentage.toFixed(1)}%)
+                </div>`;
+                
+                // Individual checks
+                html += '<h4>System Checks:</h4>';
+                
+                // OpenAI API Key
+                if (status.checks.openai_api_key) {
+                    const apiCheck = status.checks.openai_api_key;
+                    html += `<div class="check-item ${apiCheck.present ? 'check-pass' : 'check-fail'}">
+                        <span class="status-indicator ${apiCheck.present ? 'status-green' : 'status-red'}"></span>
+                        OpenAI API Key: ${apiCheck.present ? '✅ Present' : '❌ Missing'}
+                        ${apiCheck.present ? ` (Format: ${apiCheck.valid_format ? 'Valid' : 'Invalid'})` : ''}
+                    </div>`;
+                }
+                
+                // OpenAI Connection
+                if (status.checks.openai_connection) {
+                    const conn = status.checks.openai_connection;
+                    html += `<div class="check-item check-pass">
+                        <span class="status-indicator status-green"></span>
+                        OpenAI Connection: ✅ ${conn.status}
+                    </div>`;
+                } else if (status.checks.openai_api_key && status.checks.openai_api_key.present) {
+                    html += `<div class="check-item check-fail">
+                        <span class="status-indicator status-red"></span>
+                        OpenAI Connection: ❌ Failed to connect
+                    </div>`;
+                }
+                
+                // Database
+                if (status.checks.database) {
+                    const db = status.checks.database;
+                    html += `<div class="check-item ${db.connected ? 'check-pass' : 'check-fail'}">
+                        <span class="status-indicator ${db.connected ? 'status-green' : 'status-red'}"></span>
+                        Database: ${db.connected ? '✅ Connected' : '❌ Failed'}
+                        ${db.chat_messages_count !== undefined ? ` (${db.chat_messages_count} messages)` : ''}
+                    </div>`;
+                }
+                
+                // CAVA Memory
+                if (status.checks.cava_memory) {
+                    const cava = status.checks.cava_memory;
+                    html += `<div class="check-item ${cava.module_loaded ? 'check-pass' : 'check-fail'}">
+                        <span class="status-indicator ${cava.module_loaded ? 'status-green' : 'status-red'}"></span>
+                        CAVA Memory: ${cava.module_loaded ? '✅ Loaded' : '❌ Failed'}
+                    </div>`;
+                }
+                
+                // Routes
+                if (status.checks.routes) {
+                    const routes = status.checks.routes;
+                    html += `<div class="check-item ${routes.main_chat_registered ? 'check-pass' : 'check-fail'}">
+                        <span class="status-indicator ${routes.main_chat_registered ? 'status-green' : 'status-red'}"></span>
+                        Chat Routes: ${routes.main_chat_registered ? '✅ Registered' : '❌ Missing'} 
+                        (${routes.chat_routes_count} total)
+                    </div>`;
+                }
+                
+                // Errors
+                if (status.errors && status.errors.length > 0) {
+                    html += '<h4>Errors Found:</h4><ul>';
+                    status.errors.forEach(error => {
+                        html += `<li class="status-bad">❌ ${error}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                
+                // Next steps
+                if (status.next_steps && status.next_steps.length > 0) {
+                    html += '<h4>Next Steps:</h4><ol>';
+                    status.next_steps.forEach(step => {
+                        html += `<li>${step}</li>`;
+                    });
+                    html += '</ol>';
+                }
+                
+                statusDiv.innerHTML = html;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="status-bad">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function checkEnvironment() {
+            const statusDiv = document.getElementById('chat-status');
+            statusDiv.innerHTML = '<div class="loading"></div> Checking environment variables...';
+            
+            try {
+                const response = await fetch('/api/v1/chat/debug/environment');
+                const envStatus = await response.json();
+                
+                let html = '<h3>Environment Variables</h3>';
+                
+                // Critical variables
+                html += '<h4>Critical Variables:</h4>';
+                for (const [varName, varInfo] of Object.entries(envStatus.critical_vars)) {
+                    html += `<div class="check-item ${varInfo.present ? 'check-pass' : 'check-fail'}">
+                        <span class="status-indicator ${varInfo.present ? 'status-green' : 'status-red'}"></span>
+                        ${varName}: ${varInfo.present ? '✅' : '❌'} ${varInfo.preview}
+                        <br><small>${varInfo.description}</small>
+                    </div>`;
+                }
+                
+                // Environment score
+                const scoreClass = envStatus.environment_score >= 80 ? 'score-excellent' : 
+                                 envStatus.environment_score >= 60 ? 'score-good' : 'score-poor';
+                
+                html += `<div class="score-display ${scoreClass}">
+                    Environment Score: ${envStatus.environment_score}/100
+                </div>`;
+                
+                if (envStatus.missing_critical.length > 0) {
+                    html += '<h4 class="status-bad">Missing Critical Variables:</h4><ul>';
+                    envStatus.missing_critical.forEach(varName => {
+                        html += `<li>${varName}</li>`;
+                    });
+                    html += '</ul>';
+                    html += '<p class="status-warning">⚠️ Add missing variables to ECS task definition</p>';
+                }
+                
+                statusDiv.innerHTML = html;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="status-bad">❌ Environment check failed: ${error.message}</p>`;
+            }
+        }
+        
+        async function attemptFix() {
+            const statusDiv = document.getElementById('chat-status');
+            statusDiv.innerHTML = '<div class="loading"></div> Attempting to fix chat service...';
+            
+            try {
+                const response = await fetch('/api/v1/chat/debug/fix-attempt');
+                const result = await response.json();
+                
+                let html = '<h3>Fix Attempt Results</h3>';
+                
+                if (result.fix_status === 'all_good') {
+                    html += '<p class="status-good">✅ All systems appear functional</p>';
+                } else if (result.fix_status === 'mostly_fixed') {
+                    html += '<p class="status-warning">⚠️ Some issues found but mostly working</p>';
+                } else {
+                    html += '<p class="status-bad">❌ Significant issues remain</p>';
+                }
+                
+                if (result.fixes_applied && result.fixes_applied.length > 0) {
+                    html += '<h4>Fixes Applied:</h4><ul>';
+                    result.fixes_applied.forEach(fix => {
+                        html += `<li class="status-good">✅ ${fix}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                
+                if (result.warnings && result.warnings.length > 0) {
+                    html += '<h4>Warnings:</h4><ul>';
+                    result.warnings.forEach(warning => {
+                        html += `<li class="status-warning">⚠️ ${warning}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                
+                html += `<p><strong>Recommendation:</strong> ${result.recommendation}</p>`;
+                
+                statusDiv.innerHTML = html;
+                
+                // Auto-recheck status after fix
+                setTimeout(checkChatStatus, 2000);
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="status-bad">❌ Fix failed: ${error.message}</p>`;
+            }
+        }
+        
+        async function testChat() {
+            const statusDiv = document.getElementById('chat-status');
+            statusDiv.innerHTML = '<div class="loading"></div> Testing chat directly...';
+            
+            try {
+                const response = await fetch('/api/v1/chat/debug/test-message', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                let html = '<h3>Direct Chat Test</h3>';
+                
+                if (result.chat_working) {
+                    html += '<p class="status-good">✅ Chat is working!</p>';
+                    html += `<div class="check-item check-pass">
+                        <strong>Test Response:</strong><br>
+                        ${result.response.response.substring(0, 200)}...
+                    </div>`;
+                    html += `<p><small>Model: ${result.response.model_used} | Context: ${result.response.context_used}</small></p>`;
+                } else {
+                    html += '<p class="status-bad">❌ Chat test failed</p>';
+                    html += `<div class="check-item check-fail">
+                        <strong>Error:</strong> ${result.error}
+                    </div>`;
+                    if (result.error_analysis) {
+                        html += '<h4>Error Analysis:</h4>';
+                        if (result.error_analysis.is_openai_error) {
+                            html += '<p class="status-warning">⚠️ OpenAI API related error</p>';
+                        }
+                        if (result.error_analysis.is_auth_error) {
+                            html += '<p class="status-bad">🔑 Authentication error - check API key</p>';
+                        }
+                    }
+                }
+                
+                statusDiv.innerHTML = html;
+                
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="status-bad">❌ Test failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Behavioral Audit Functions
+        async function runQuickBehavioralTest() {
+            const auditDiv = document.getElementById('audit-results');
+            auditDiv.innerHTML = '<div class="loading"></div> Running quick Bulgarian mango test...';
+            
+            try {
+                const response = await fetch('/api/v1/cava/behavioral/audit/quick', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                const data = result.data;
+                
+                let html = '<h3>🥭 Quick Mango Test Results</h3>';
+                
+                const scoreClass = data.percentage >= 80 ? 'score-excellent' : 
+                                 data.percentage >= 60 ? 'score-good' : 
+                                 data.percentage >= 40 ? 'score-warning' : 'score-poor';
+                
+                html += `<div class="score-display ${scoreClass}">
+                    ${data.quick_assessment}: ${data.score}/${data.max_score} (${data.percentage.toFixed(1)}%)
+                </div>`;
+                
+                if (data.mango_test_passed) {
+                    html += '<p class="status-good">✅ MANGO TEST PASSED</p>';
+                    html += '<p>🧠 Memory is working across sessions</p>';
+                } else {
+                    html += '<p class="status-bad">❌ MANGO TEST FAILED</p>';
+                    html += '<p>⚠️ Memory not persisting across sessions</p>';
+                }
+                
+                if (data.test_result && data.test_result.result) {
+                    const indicators = data.test_result.result.memory_indicators;
+                    if (indicators) {
+                        html += '<h4>Memory Indicators:</h4>';
+                        for (const [indicator, detected] of Object.entries(indicators)) {
+                            html += `<div class="check-item ${detected ? 'check-pass' : 'check-fail'}">
+                                ${detected ? '✅' : '❌'} ${indicator.replace(/_/g, ' ').toUpperCase()}
+                            </div>`;
+                        }
+                    }
+                }
+                
+                auditDiv.innerHTML = html;
+                
+            } catch (error) {
+                auditDiv.innerHTML = `<p class="status-bad">❌ Quick test failed: ${error.message}</p>`;
+            }
+        }
+        
+        async function runFullBehavioralAudit() {
+            const auditDiv = document.getElementById('audit-results');
+            auditDiv.innerHTML = '<div class="loading"></div> Running full behavioral audit (8 tests)...';
+            
+            try {
+                const response = await fetch('/api/v1/cava/behavioral/audit/full', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                const data = result.data;
+                
+                let html = '<h3>📊 Full Behavioral Audit Results</h3>';
+                
+                // Overall score
+                const scoreClass = data.summary.percentage >= 85 ? 'score-excellent' : 
+                                 data.summary.percentage >= 70 ? 'score-good' : 
+                                 data.summary.percentage >= 55 ? 'score-warning' : 'score-poor';
+                
+                html += `<div class="score-display ${scoreClass}">
+                    Overall: ${data.summary.total_score}/${data.summary.max_score} (${data.summary.percentage.toFixed(1)}%)
+                    <br><small>Memory Quality: ${data.summary.memory_quality.toUpperCase()}</small>
+                </div>`;
+                
+                // Production readiness
+                if (data.interpretation.production_ready) {
+                    html += '<p class="status-good">🎉 PRODUCTION READY - Reliable memory behavior</p>';
+                } else {
+                    html += '<p class="status-bad">⚠️ NOT PRODUCTION READY - Memory issues detected</p>';
+                }
+                
+                // Individual test results
+                html += '<h4>Test Results:</h4>';
+                for (const [testName, testResult] of Object.entries(data.audit_results.tests)) {
+                    const passed = testResult.final_score >= testResult.weight * 0.6;
+                    html += `<div class="test-result ${passed ? 'test-pass' : testResult.final_score > 0 ? 'test-partial' : 'test-fail'}">
+                        <strong>${testName}</strong>: ${testResult.final_score}/${testResult.weight} 
+                        (${testResult.percentage.toFixed(0)}%)
+                        ${passed ? '✅' : testResult.final_score > 0 ? '⚠️' : '❌'}
+                    </div>`;
+                }
+                
+                auditDiv.innerHTML = html;
+                
+            } catch (error) {
+                auditDiv.innerHTML = `<p class="status-bad">❌ Full audit failed: ${error.message}</p>`;
+            }
+        }
+        
+        async function compareAudits() {
+            const auditDiv = document.getElementById('audit-results');
+            auditDiv.innerHTML = '<div class="loading"></div> Comparing audit types...';
+            
+            try {
+                const response = await fetch('/api/v1/cava/behavioral/compare/component-vs-behavioral');
+                const result = await response.json();
+                const data = result.data;
+                
+                let html = '<h3>🔍 Component vs Behavioral Audit</h3>';
+                
+                html += `<div class="check-item">
+                    <strong>Component Audit:</strong> ${data.component_audit.percentage.toFixed(1)}%
+                    <br><small>${data.component_audit.focus}</small>
+                </div>`;
+                
+                html += `<div class="check-item">
+                    <strong>Behavioral Audit:</strong> ${data.behavioral_audit.percentage.toFixed(1)}%
+                    <br><small>${data.behavioral_audit.focus}</small>
+                </div>`;
+                
+                if (data.comparison.gap_detected) {
+                    html += '<p class="status-warning">⚠️ Significant gap detected between audits</p>';
+                }
+                
+                if (data.recommendations && data.recommendations.length > 0) {
+                    html += '<h4>Recommendations:</h4><ul>';
+                    data.recommendations.forEach(rec => {
+                        html += `<li>${rec}</li>`;
+                    });
+                    html += '</ul>';
+                }
+                
+                auditDiv.innerHTML = html;
+                
+            } catch (error) {
+                auditDiv.innerHTML = `<p class="status-bad">❌ Comparison failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Combined Functions
+        async function runFullDiagnostic() {
+            const resultsPanel = document.getElementById('full-results');
+            const summaryDiv = document.getElementById('diagnostic-summary');
+            
+            resultsPanel.style.display = 'block';
+            summaryDiv.innerHTML = '<div class="loading"></div> Running complete system diagnostic...';
+            
+            try {
+                // Run both debug and behavioral tests
+                const [chatResponse, auditResponse] = await Promise.all([
+                    fetch('/api/v1/chat/debug/status'),
+                    fetch('/api/v1/cava/behavioral/audit/quick', { method: 'POST' })
+                ]);
+                
+                const chatData = await chatResponse.json();
+                const auditData = await auditResponse.json();
+                
+                let html = '<h3>📊 Complete System Status</h3>';
+                
+                // Overall system health
+                const chatHealthy = chatData.data.service_available;
+                const memoryWorking = auditData.data.memory_working;
+                
+                if (chatHealthy && memoryWorking) {
+                    html += '<div class="score-display score-excellent">🎉 SYSTEM FULLY OPERATIONAL</div>';
+                } else if (chatHealthy || memoryWorking) {
+                    html += '<div class="score-display score-warning">⚠️ PARTIAL FUNCTIONALITY</div>';
+                } else {
+                    html += '<div class="score-display score-poor">❌ SYSTEM ISSUES DETECTED</div>';
+                }
+                
+                // Component breakdown
+                html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">';
+                
+                html += '<div>';
+                html += '<h4>🔧 Chat Service</h4>';
+                html += `<p>Status: ${chatHealthy ? '✅ Available' : '❌ Unavailable'}</p>`;
+                html += `<p>Score: ${chatData.data.overall_score}/${chatData.data.max_score}</p>`;
+                html += '</div>';
+                
+                html += '<div>';
+                html += '<h4>🧠 Memory System</h4>';
+                html += `<p>Status: ${memoryWorking ? '✅ Working' : '❌ Issues'}</p>`;
+                html += `<p>Score: ${auditData.data.score}/${auditData.data.max_score}</p>`;
+                html += '</div>';
+                
+                html += '</div>';
+                
+                // Next actions
+                html += '<h4>Next Actions:</h4>';
+                if (chatHealthy && memoryWorking) {
+                    html += '<p class="status-good">✅ System ready for production use</p>';
+                } else {
+                    html += '<ul>';
+                    if (!chatHealthy) {
+                        html += '<li>Fix chat service issues (likely OpenAI API key)</li>';
+                    }
+                    if (!memoryWorking) {
+                        html += '<li>Investigate memory persistence issues</li>';
+                    }
+                    html += '</ul>';
+                }
+                
+                summaryDiv.innerHTML = html;
+                
+            } catch (error) {
+                summaryDiv.innerHTML = `<p class="status-bad">❌ Diagnostic failed: ${error.message}</p>`;
+            }
+        }
+        
+        async function runQuickMangoTest() {
+            await runQuickBehavioralTest();
+        }
+        
+        async function testChatDirect() {
+            await testChat();
+        }
+        
+        async function attemptFixAll() {
+            await attemptFix();
+        }
+        
+        // Auto-load status on page load
+        window.onload = () => {
+            checkChatStatus();
+            runQuickBehavioralTest();
+        };
+    </script>
+</body>
+</html>

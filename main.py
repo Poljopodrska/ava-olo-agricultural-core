@@ -57,6 +57,10 @@ from modules.api.cava_audit_routes import router as cava_audit_router
 from modules.api.cava_setup_routes import router as cava_setup_router
 from modules.api.cava_debug_routes import router as cava_debug_router
 
+# NEW: Import chat debug and behavioral audit routes  
+from modules.api.chat_debug_routes import router as chat_debug_router
+from modules.api.behavioral_audit_routes import router as behavioral_audit_router
+
 # Import WhatsApp module
 from modules.whatsapp.routes import router as whatsapp_router
 
@@ -105,6 +109,11 @@ app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
 app.include_router(whatsapp_router)
+
+# NEW: Include chat debug and behavioral audit routers
+app.include_router(chat_debug_router)
+app.include_router(behavioral_audit_router)
+
 app.include_router(system_router)
 app.include_router(debug_services_router)
 app.include_router(debug_deployment_router)
@@ -189,6 +198,11 @@ async def landing_page(request: Request):
 async def cava_audit_page():
     """CAVA implementation audit dashboard"""
     return FileResponse("static/cava-audit.html")
+
+@app.get("/chat-debug-audit")
+async def chat_debug_audit_page():
+    """Combined chat debug and behavioral audit interface"""
+    return FileResponse("static/chat-debug-audit.html")
 
 @app.get("/dashboard")
 async def dashboard(request: Request):
