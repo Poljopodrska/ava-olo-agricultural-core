@@ -35,6 +35,10 @@ class ChatResponse(BaseModel):
     model_used: str
     facts_extracted: Optional[Dict[str, Any]] = None
     timestamp: str
+    context_used: bool = True
+    context_summary: Optional[str] = None
+    messages_in_context: int = 0
+    memory_indicators: Optional[Dict[str, Any]] = None
 
 def calculate_gpt35_cost(usage: Dict) -> float:
     """
@@ -278,7 +282,11 @@ Provide actionable agricultural advice in their language. If they previously men
             conversation_id=wa_phone_number,
             model_used="gpt-3.5-turbo",
             facts_extracted=facts if facts else None,
-            timestamp=datetime.now().isoformat()
+            timestamp=datetime.now().isoformat(),
+            context_used=True,
+            context_summary=context['context_summary'][:200] if context.get('context_summary') else None,
+            messages_in_context=len(recent_messages),
+            memory_indicators=memory_indicators
         )
         
     except Exception as e:

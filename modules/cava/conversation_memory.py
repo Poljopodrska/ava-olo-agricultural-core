@@ -139,19 +139,41 @@ class CAVAMemory:
         if recent_topics:
             summary_parts.append(f"Recent topics: {', '.join(recent_topics)}")
         
-        # Check if this is a new conversation
+        # Check if this is a new conversation or returning session
         if not messages:
             summary_parts.append("New conversation - no previous messages")
         else:
-            # Add time since last conversation
+            # Add time since last conversation (CRITICAL for session persistence)
             if messages and messages[-1].get('timestamp'):
                 last_msg_time = datetime.fromisoformat(messages[-1]['timestamp'])
                 time_diff = datetime.now() - last_msg_time
                 
-                if time_diff > timedelta(days=7):
-                    summary_parts.append(f"Returning after {time_diff.days} days")
-                elif time_diff > timedelta(days=1):
-                    summary_parts.append(f"Last conversation {time_diff.days} days ago")
+                if time_diff > timedelta(hours=1):
+                    # This is a returning session - emphasize memory continuity
+                    if time_diff > timedelta(days=7):
+                        summary_parts.append(f"RETURNING USER after {time_diff.days} days - remember all previous farming discussions")
+                    elif time_diff > timedelta(days=1):
+                        summary_parts.append(f"RETURNING USER after {time_diff.days} days - continue previous conversation about farming")
+                    elif time_diff > timedelta(hours=3):
+                        summary_parts.append(f"RETURNING USER after {int(time_diff.total_seconds()/3600)} hours - remember earlier farming topics")
+                    else:
+                        summary_parts.append("CONTINUING previous conversation - remember all context")
+                        
+            # Add historical context summary for returning users
+            if len(messages) > 2:
+                # Extract key topics from all messages (not just recent)
+                all_topics = self._extract_topics(messages)
+                crops_mentioned = []
+                for msg in messages:
+                    content = msg.get('content', '').lower()
+                    for crop in ['mango', 'tomato', 'wheat', 'corn', 'rice', 'banana', 'apple']:
+                        if crop in content and crop not in crops_mentioned:
+                            crops_mentioned.append(crop)
+                
+                if crops_mentioned:
+                    summary_parts.append(f"IMPORTANT: Previously discussed crops: {', '.join(crops_mentioned)}")
+                if all_topics:
+                    summary_parts.append(f"Previous farming topics: {', '.join(all_topics)}")
         
         context_summary = " | ".join(summary_parts)
         logger.info(f"Built context summary: {context_summary}")
@@ -332,15 +354,54 @@ class CAVAMemory:
         
         return "; ".join(summary_parts[:5])  # Max 5 fact types
     
-    async def get_conversation_messages_for_llm(self, wa_phone_number: str, limit: int = 5) -> List[Dict[str, str]]:
+    async def get_conversation_messages_for_llm(self, wa_phone_number: str, limit: int = 8) -> List[Dict[str, str]]:
         """
         Get conversation messages formatted for LLM context
+        Enhanced for session persistence - includes more historical context
         Returns in the format expected by OpenAI chat completions API
         """
+        # Get more messages to ensure session persistence
         messages = await self._get_recent_messages(wa_phone_number, limit)
         
+        # For session persistence, include key historical messages even beyond limit
+        if len(messages) >= limit:
+            # Get older messages that contain important agricultural terms
+            try:
+                agricultural_query = """
+                    SELECT role, content, timestamp 
+                    FROM chat_messages 
+                    WHERE wa_phone_number = $1 
+                    AND (
+                        LOWER(content) LIKE '%mango%' OR 
+                        LOWER(content) LIKE '%hectare%' OR 
+                        LOWER(content) LIKE '%farm%' OR 
+                        LOWER(content) LIKE '%crop%' OR
+                        LOWER(content) LIKE '%grow%'
+                    )
+                    ORDER BY timestamp DESC 
+                    LIMIT 3
+                """
+                
+                async with self.db_manager.get_connection_async() as conn:
+                    historical_rows = await conn.fetch(agricultural_query, wa_phone_number)
+                    
+                    # Add important historical messages that aren't in recent messages
+                    for row in historical_rows:
+                        historical_msg = {
+                            'role': row['role'],
+                            'content': row['content'],
+                            'timestamp': row['timestamp'].isoformat() if row['timestamp'] else None
+                        }
+                        
+                        # Only add if not already in recent messages
+                        if not any(msg['content'] == historical_msg['content'] for msg in messages):
+                            messages.insert(0, historical_msg)  # Insert at beginning
+                            
+            except Exception as e:
+                logger.warning(f"Could not retrieve historical agricultural messages: {str(e)}")
+        
         llm_messages = []
-        for msg in messages:
+        for msg in messages[-limit:]:  # Still respect limit but with better selection
             llm_messages.append({
                 "role": msg['role'] if msg['role'] in ['user', 'assistant'] else 'user',
                 "content": msg['content']
