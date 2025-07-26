@@ -50,11 +50,12 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.version.outputs.VERSION }}
         run: |
-          # Build the Docker image with Git verification
-          docker build \
+          # Build the Docker image with Git verification - FORCE FRESH BUILD NO CACHE
+          docker build --no-cache \
             --build-arg GITHUB_SHA=${{ github.sha }} \
             --build-arg GITHUB_REF=${{ github.ref }} \
             --build-arg BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
+            --build-arg CACHEBUST=$(date +%s) \
             -t $ECR_REPOSITORY:$IMAGE_TAG .
 
           # Tag for ECR
