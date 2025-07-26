@@ -7,6 +7,7 @@ from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import JSONResponse
 from typing import Dict, Optional
 import logging
+import os
 
 from modules.cava.registration_flow import RegistrationFlow
 from modules.cava.natural_registration import NaturalRegistrationFlow
@@ -32,20 +33,21 @@ logger = logging.getLogger(__name__)
 
 @router.post("/registration/cava")
 async def cava_registration_chat(request: Request) -> JSONResponse:
-    """Handle CAVA registration chat messages"""
+    """Handle CAVA registration chat messages - ALWAYS USE LLM (Constitutional Amendment #15)"""
     try:
         data = await request.json()
         
         # Extract required fields
         message = data.get("message", "").strip()
-        farmer_id = data.get("farmer_id", "")
+        session_id = data.get("farmer_id", "")  # Use farmer_id as session_id for compatibility
         language = data.get("language", "en")
         
-        if not farmer_id:
+        if not session_id:
             raise HTTPException(status_code=400, detail="farmer_id is required")
         
-        # Process message through registration flow
-        result = await registration_flow.process_message(farmer_id, message)
+        # ALWAYS use enhanced CAVA with full LLM intelligence - CONSTITUTIONAL REQUIREMENT
+        logger.info(f"CONSTITUTIONAL: Processing registration via LLM for session {session_id}")
+        result = await enhanced_cava.process_message(session_id, message)
         
         # If registration is complete, create the account
         if result.get("registration_complete") and "registration_data" in result:
@@ -61,7 +63,7 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
                 )
                 
                 # Clear the session
-                registration_flow.clear_session(farmer_id)
+                enhanced_cava.sessions.pop(session_id, None)
                 
                 # Add success info to result
                 result["account_created"] = True
@@ -314,3 +316,14 @@ async def registration_chat(request: Request) -> JSONResponse:
                 "error": True
             }
         )
+
+@router.get("/registration/debug")
+async def debug_registration():
+    """Debug endpoint to verify OpenAI API status - CONSTITUTIONAL REQUIREMENT"""
+    openai_key = os.getenv("OPENAI_API_KEY")
+    
+    return {
+        "openai_key_set": bool(openai_key),
+        "key_prefix": openai_key[:10] if openai_key else None,
+        "cava_mode": "llm" if openai_key else "fallback"
+    }

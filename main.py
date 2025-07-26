@@ -111,11 +111,29 @@ async def startup_event():
     else:
         print("⚠️ Database connection failed - running in degraded mode")
     
-    # Check OpenAI configuration
+    # Check OpenAI configuration - CONSTITUTIONAL REQUIREMENT
     if not os.getenv("OPENAI_API_KEY"):
-        print("⚠️ WARNING: OPENAI_API_KEY not set. Chat functionality will be limited to mock responses.")
+        print("🚨 CRITICAL WARNING: OPENAI_API_KEY not set!")
+        print("🏛️ CONSTITUTIONAL VIOLATION: System requires 95%+ LLM intelligence (Amendment #15)")
+        print("⚠️  Registration and chat will use fallback responses - NOT COMPLIANT!")
+        
+        # Try to load from .env.production if available
+        try:
+            from dotenv import load_dotenv
+            env_path = ".env.production"
+            if os.path.exists(env_path):
+                load_dotenv(env_path)
+                if os.getenv("OPENAI_API_KEY"):
+                    print("✅ Loaded OPENAI_API_KEY from .env.production")
+                else:
+                    print("❌ .env.production exists but OPENAI_API_KEY not found")
+            else:
+                print("❌ .env.production file not found")
+        except ImportError:
+            print("⚠️  python-dotenv not installed, cannot auto-load .env files")
     else:
-        print("✅ OpenAI API key configured")
+        print("✅ OpenAI API key configured - Constitutional compliance verified")
+        print(f"🔑 Key prefix: {os.getenv('OPENAI_API_KEY')[:10]}...")
     
     # Constitutional deployment completion
     constitutional_deployment_completion()

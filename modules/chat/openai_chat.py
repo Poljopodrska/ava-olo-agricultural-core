@@ -108,6 +108,9 @@ IMPORTANT:
     async def send_message(self, session_id: str, message: str, farmer_context: Dict) -> Dict:
         """Send message to OpenAI and get response"""
         try:
+            # CONSTITUTIONAL LOGGING - Track all LLM usage
+            logger.info(f"🏛️ CONSTITUTIONAL LLM CALL: session={session_id}, message_length={len(message)}")
+            
             # Get or create conversation history
             if session_id not in self.conversations:
                 self.conversations[session_id] = []
@@ -127,6 +130,7 @@ IMPORTANT:
             
             # Use mock response if no API key
             if not self.api_key:
+                logger.warning(f"⚠️ NO API KEY - Using fallback for session {session_id}")
                 return await self._get_mock_response(message, farmer_context)
             
             # Call OpenAI API
@@ -152,6 +156,9 @@ IMPORTANT:
                 if response.status_code == 200:
                     data = response.json()
                     ai_response = data['choices'][0]['message']['content']
+                    
+                    # Log successful LLM response
+                    logger.info(f"✅ LLM RESPONSE: session={session_id}, response_length={len(ai_response)}, model={self.model}")
                     
                     # Check for duplicate response
                     if history and len(history) >= 2 and history[-1].get("content") == ai_response:

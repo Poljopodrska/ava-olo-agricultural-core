@@ -13,6 +13,7 @@ from typing import Dict, Optional
 from modules.chat.openai_chat import get_openai_chat
 from modules.core.database_manager import get_db_manager
 import hashlib
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -312,4 +313,15 @@ async def registration_status():
         "sessions_active": len(registration_sessions),
         "openai_connected": bool(chat_service.api_key),
         "endpoint": "/api/v1/chat/register"
+    }
+
+@router.get("/registration/debug")
+async def debug_registration():
+    """Debug endpoint to verify OpenAI API status - EXACT AS SPECIFIED"""
+    openai_key = os.getenv("OPENAI_API_KEY")
+    
+    return {
+        "openai_key_set": bool(openai_key),
+        "key_prefix": openai_key[:10] if openai_key else None,
+        "cava_mode": "llm" if openai_key else "fallback"
     }

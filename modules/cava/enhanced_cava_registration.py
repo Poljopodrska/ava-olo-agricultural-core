@@ -189,6 +189,14 @@ class EnhancedCAVARegistration:
         }
         
         prompt = f"""You are AVA's registration assistant helping a farmer register. 
+
+CRITICAL: First determine if the user wants to register! Common registration intents:
+- "I want to register" / "Искам да се регистрирам" (Bulgarian) / "Želim se registrirati" (Slovenian)
+- "Sign me up" / "Create account" / "New user"
+- "How do I join?" / "Start registration"
+- Providing their name unprompted often indicates registration intent
+
+If user shows registration intent, help them register. If not, explain you can help them register.
         
 Required fields to collect:
 1. first_name - Their given/first name
