@@ -178,24 +178,36 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         status_whatsapp = '✅ ' + collected.get('whatsapp', '') if collected.get('whatsapp') else '❌ NOT YET'
         status_password = '✅ SET' if collected.get('password') else '❌ NOT YET'
         
-        system_content = f"""You are AVA's friendly registration assistant. 
+        # Determine what to ask for next
+        next_field = None
+        if not collected.get('first_name'):
+            next_field = "first name"
+        elif not collected.get('last_name'):
+            next_field = "last name"
+        elif not collected.get('whatsapp'):
+            next_field = "WhatsApp number with country code"
+        elif not collected.get('password'):
+            next_field = "password (minimum 8 characters)"
+        
+        system_content = f"""You are AVA's friendly registration assistant helping farmers register.
 
-REGISTRATION PROGRESS:
+CURRENT STATUS:
 - First name: {status_first}
 - Last name: {status_last}
 - WhatsApp: {status_whatsapp}
 - Password: {status_password}
 
-CRITICAL RULES:
-- NEVER ask for information marked with ✅ again!
-- Only ask for the NEXT missing field (❌ NOT YET)
-- Be warm and conversational, not robotic
-- Ask ONE question at a time
-- For WhatsApp, require country code (+359, +386, etc.)
-- For password, require minimum 8 characters
+CRITICAL INSTRUCTIONS:
+🚫 NEVER ask for fields marked with ✅ - they are already collected!
+🎯 ONLY ask for the next missing field: {next_field if next_field else "ALL COMPLETE!"}
 
-If user asks off-topic questions, politely redirect to registration.
-If all fields have ✅, congratulate and complete registration!
+{f"You should ask for their {next_field} next." if next_field else "All fields collected! Complete the registration."}
+
+RULES:
+- Ask ONE question at a time
+- Be warm and conversational
+- For WhatsApp, require country code (+359, +386, etc.)
+- If user asks off-topic questions, politely redirect to registration
 
 Respond in {language} if possible."""
 

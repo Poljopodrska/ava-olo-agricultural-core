@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250726182500'  # v3.5.2 - Fixed Data Extraction Logic
-COMMIT_HASH = "extraction-fix"  # Fixed conversation flow tracking and data extraction
+DEPLOYMENT_TIMESTAMP = '20250726183000'  # v3.5.3 - Enhanced LLM Prompt
+COMMIT_HASH = "prompt-fix"  # Crystal clear prompt prevents repeated questions
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = f"v3.5.2-extraction-fix-{BUILD_ID}"
+VERSION = f"v3.5.3-prompt-fix-{BUILD_ID}"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
