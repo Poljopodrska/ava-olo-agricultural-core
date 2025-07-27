@@ -58,24 +58,51 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          registry-type: public
+      - name: Get ECR registry alias
+        id: ecr-registry
+        run: |
+          # Get the ECR public registry alias
+          REGISTRY_ALIAS=$(aws ecr-public describe-registries --region us-east-1 --query 'registries[0].registryId' --output text 2>/dev/null || echo "")
+          if [ -z "$REGISTRY_ALIAS" ]; then
+            echo "❌ No ECR public registry found. It may need to be created."
+            exit 1
+          fi
+          echo "ECR Registry Alias: $REGISTRY_ALIAS"
+          echo "registry_alias=$REGISTRY_ALIAS" >> $GITHUB_OUTPUT
+      
+      - name: Login to Amazon ECR Public
+        run: |
+          echo "🔐 Authenticating to ECR Public..."
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      
+      - name: Check/Create ECR repository
+        env:
+          REPOSITORY_NAME: ava-olo-agricultural-core
+        run: |
+          echo "📦 Checking if ECR repository exists..."
+          if ! aws ecr-public describe-repositories --repository-names $REPOSITORY_NAME --region us-east-1 2>/dev/null; then
+            echo "Creating ECR public repository..."
+            aws ecr-public create-repository --repository-name $REPOSITORY_NAME --region us-east-1
+          else
+            echo "✅ Repository already exists"
+          fi
       
       - name: Build and push image
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ava-olo-agricultural-core
+          REGISTRY_ALIAS: ${{ steps.ecr-registry.outputs.registry_alias }}
+          REPOSITORY_NAME: ava-olo-agricultural-core
           IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🐳 Building Docker image..."
-          docker build --build-arg GITHUB_SHA=${{ github.sha }} -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          echo "📤 Pushing to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          FULL_IMAGE_NAME="public.ecr.aws/${REGISTRY_ALIAS}/${REPOSITORY_NAME}"
+          
+          docker build --build-arg GITHUB_SHA=${{ github.sha }} -t ${FULL_IMAGE_NAME}:${IMAGE_TAG} .
+          docker tag ${FULL_IMAGE_NAME}:${IMAGE_TAG} ${FULL_IMAGE_NAME}:latest
+          
+          echo "📤 Pushing to ECR Public..."
+          echo "Image: ${FULL_IMAGE_NAME}:${IMAGE_TAG}"
+          docker push ${FULL_IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${FULL_IMAGE_NAME}:latest
       
       - name: Deploy to ECS
         run: |
