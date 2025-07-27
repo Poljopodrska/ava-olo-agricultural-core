@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250727224500'  # v3.5.32 - Fix Actual Registration Route with Debug Logging  
-COMMIT_HASH = "cava-reg-actual-fix"  # Fixed the actual registration route in modules/cava/routes.py with debug
+DEPLOYMENT_TIMESTAMP = '20250727230000'  # v3.5.33 - Fix Progress Tracking and Data Collection
+COMMIT_HASH = "cava-reg-progress-fix"  # Fixed progress tracking, field mapping, and password handling
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.5.32"
+VERSION = "v3.5.33"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

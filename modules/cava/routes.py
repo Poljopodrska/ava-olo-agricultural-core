@@ -52,6 +52,8 @@ def detect_question_type(llm_response: str) -> str:
         return "last_name"
     elif "whatsapp" in response_lower or "phone" in response_lower or "number" in response_lower:
         return "whatsapp"
+    elif "confirm" in response_lower and "password" in response_lower or "repeat" in response_lower and "password" in response_lower:
+        return "password_confirmation"
     elif "password" in response_lower:
         return "password"
     else:
@@ -88,7 +90,7 @@ def extract_registration_data(user_message: str, last_question_type: str = "", c
             if name_match:
                 extracted['last_name'] = name_match.group(1).capitalize()
     
-    elif last_question_type == "whatsapp" and not collected_data.get('whatsapp'):
+    elif last_question_type == "whatsapp" and not collected_data.get('wa_phone_number'):
         # Extract phone number
         phone_patterns = [
             r'\+\d{1,4}\s?\d{6,14}',  # +country code
@@ -101,16 +103,20 @@ def extract_registration_data(user_message: str, last_question_type: str = "", c
                 phone = match.group()
                 if not phone.startswith('+'):
                     phone = '+359' + phone.lstrip('0')  # Default to Bulgaria
-                extracted['whatsapp'] = phone
+                extracted['wa_phone_number'] = phone
                 break
     
     elif last_question_type == "password" and not collected_data.get('password'):
-        # Extract password
-        words = message.split()
-        for word in words:
-            if len(word) >= 8:
-                extracted['password'] = word
-                break
+        # Extract password - be smarter about context
+        if len(message.strip()) >= 3:  # Accept shorter passwords if user wants
+            extracted['password'] = message.strip()
+    
+    elif last_question_type == "password_confirmation" and collected_data.get('password'):
+        # Handle password confirmation
+        if message.strip() == collected_data.get('password'):
+            extracted['password_confirmed'] = True
+        else:
+            extracted['password_confirmed'] = False
     
     # Fallback: Try to extract from common patterns regardless of question type
     if not extracted:
@@ -131,7 +137,7 @@ def extract_registration_data(user_message: str, last_question_type: str = "", c
 
 def is_registration_complete(collected_data: Dict[str, str]) -> bool:
     """Check if all required fields are collected"""
-    required_fields = ['first_name', 'last_name', 'whatsapp', 'password']
+    required_fields = ['first_name', 'last_name', 'wa_phone_number', 'password']
     return all(field in collected_data and collected_data[field] for field in required_fields)
 
 def determine_registration_step(collected: Dict[str, str]) -> str:
@@ -140,7 +146,7 @@ def determine_registration_step(collected: Dict[str, str]) -> str:
         return "collecting_first_name"
     elif not collected.get('last_name'):
         return "collecting_last_name"
-    elif not collected.get('whatsapp'):
+    elif not collected.get('wa_phone_number'):
         return "collecting_whatsapp"
     elif not collected.get('password'):
         return "collecting_password"
@@ -153,7 +159,7 @@ def get_next_action(collected: Dict[str, str]) -> str:
         return "Ask for their first name"
     elif not collected.get('last_name'):
         return "Ask for their last name"
-    elif not collected.get('whatsapp'):
+    elif not collected.get('wa_phone_number'):
         return "Ask for their WhatsApp number with country code"
     elif not collected.get('password'):
         return "Ask them to create a password"
@@ -309,7 +315,7 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
 📋 CURRENT REGISTRATION STATUS:
 - First name: {collected.get('first_name', '❌ NOT COLLECTED')}
 - Last name: {collected.get('last_name', '❌ NOT COLLECTED')}
-- WhatsApp: {collected.get('whatsapp', '❌ NOT COLLECTED')}
+- WhatsApp: {collected.get('wa_phone_number', '❌ NOT COLLECTED')}
 - Password: {'✅ SET' if collected.get('password') else '❌ NOT COLLECTED'}
 
 🧠 UNDERSTANDING NAMES - CRITICAL RULES:
@@ -465,6 +471,15 @@ Respond in {language} if possible."""
             # Save updated session
             registration_sessions[session_id] = session
             
+            # Map collected data to format expected by frontend
+            collected_fields = {
+                "first_name": bool(collected_data.get('first_name')),
+                "last_name": bool(collected_data.get('last_name')),
+                "wa_phone_number": bool(collected_data.get('wa_phone_number')),
+                "password": bool(collected_data.get('password')),
+                "password_confirmed": bool(collected_data.get('password_confirmed'))
+            }
+            
             result = {
                 "response": llm_response,
                 "registration_complete": is_complete,
@@ -472,7 +487,8 @@ Respond in {language} if possible."""
                 "model_used": "gpt-3.5-turbo",
                 "constitutional_compliance": True,
                 "session_id": session_id,
-                "collected_data": collected_data,
+                "collected_data": collected_data,  # Keep for backward compatibility
+                "collected_fields": collected_fields,  # Frontend expects this
                 "progress_percentage": (len([v for v in collected_data.values() if v]) / 4) * 100,
                 "debug": {
                     "version": VERSION,
@@ -899,7 +915,7 @@ async def debug_registration_prompt():
 📋 CURRENT REGISTRATION STATUS:
 - First name: {collected.get('first_name', '❌ NOT COLLECTED')}
 - Last name: {collected.get('last_name', '❌ NOT COLLECTED')}
-- WhatsApp: {collected.get('whatsapp', '❌ NOT COLLECTED')}
+- WhatsApp: {collected.get('wa_phone_number', '❌ NOT COLLECTED')}
 - Password: {'✅ SET' if collected.get('password') else '❌ NOT COLLECTED'}
 
 🧠 UNDERSTANDING NAMES - CRITICAL RULES:
