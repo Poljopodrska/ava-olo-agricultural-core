@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-07-27T07:47:36.824473",
+  "features": {
+    "farmer_registration": {
+      "endpoint": "/register",
+      "form_fields": [
+        "first_name",
+        "last_name",
+        "farm_name",
+        "phone"
+      ],
+      "database_table": "farmers",
+      "status": "working"
+    },
+    "business_dashboard": {
+      "endpoint": "/business-dashboard",
+      "required_elements": [
+        "farmer_count",
+        "hectares_display",
+        "yellow_box"
+      ],
+      "data_source": "farmers table",
+      "status": "working"
+    },
+    "version_display": {
+      "location": "all_pages",
+      "format": "vX.X.X",
+      "position": "top_right",
+      "status": "working"
+    },
+    "database_connection": {
+      "type": "postgresql",
+      "tables": [
+        "farmers",
+        "fields",
+        "crops"
+      ],
+      "status": "working"
+    }
+  },
+  "git_commit": "003d25043e39bd8fe26251693c90560a44eab26a",
+  "captured_by": "feature_protection_system"
+}
