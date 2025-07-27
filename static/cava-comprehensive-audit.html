@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAVA Comprehensive Audit Dashboard - AVA OLO v3.5.23</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .version-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .main-container {
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 968px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 24px;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        
+        .card h2 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: #2E7D32;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h3 {
+            font-size: 18px;
+            margin: 16px 0 8px 0;
+            color: #555;
+        }
+        
+        .score-card {
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .score-ring {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            position: relative;
+        }
+        
+        .score-ring svg {
+            transform: rotate(-90deg);
+        }
+        
+        .score-ring-bg {
+            fill: none;
+            stroke: #e0e0e0;
+            stroke-width: 20;
+        }
+        
+        .score-ring-progress {
+            fill: none;
+            stroke: #4CAF50;
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+        
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+        
+        .score-label {
+            font-size: 24px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-excellent { background: #4CAF50; color: white; }
+        .status-good { background: #8BC34A; color: white; }
+        .status-fair { background: #FFC107; color: #333; }
+        .status-poor { background: #FF5722; color: white; }
+        .status-critical { background: #F44336; color: white; }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-item {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2E7D32;
+        }
+        
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        
+        .component-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .component-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #ddd;
+        }
+        
+        .component-item.implemented {
+            border-left-color: #4CAF50;
+        }
+        
+        .component-item.partial {
+            border-left-color: #FFC107;
+        }
+        
+        .component-item.missing {
+            border-left-color: #F44336;
+        }
+        
+        .component-name {
+            font-weight: 500;
+        }
+        
+        .component-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #e0e0e0;
+        }
+        
+        .test-section {
+            margin-top: 20px;
+        }
+        
+        .test-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .test-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .test-button:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+        
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .test-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        
+        .test-result.show {
+            display: block;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            color: #F44336;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .success-message {
+            color: #4CAF50;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .refresh-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #2E7D32;
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s;
+        }
+        
+        .refresh-button:hover {
+            transform: rotate(180deg);
+            background: #1B5E20;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="version-badge">v3.5.23</div>
+        <h1>CAVA Comprehensive Audit Dashboard</h1>
+        <div class="subtitle">Conversation Architecture for AVA - Real-time System Analysis</div>
+    </div>
+    
+    <div class="main-container">
+        <div class="grid-layout">
+            <!-- Overall Score Card -->
+            <div class="card score-card">
+                <h2>🎯 CAVA Implementation Score</h2>
+                <div class="score-ring">
+                    <svg width="200" height="200">
+                        <circle cx="100" cy="100" r="80" class="score-ring-bg"></circle>
+                        <circle cx="100" cy="100" r="80" class="score-ring-progress" 
+                                stroke-dasharray="502.65" 
+                                stroke-dashoffset="502.65"
+                                id="scoreRing"></circle>
+                    </svg>
+                    <div class="score-text" id="scoreValue">0%</div>
+                </div>
+                <div class="score-label" id="scoreLabel">Calculating...</div>
+                <div class="status-badge" id="statusBadge">Loading</div>
+            </div>
+            
+            <!-- System Status Card -->
+            <div class="card">
+                <h2>🔧 System Status</h2>
+                <div class="metric-grid">
+                    <div class="metric-item">
+                        <div class="metric-value" id="openaiStatus">-</div>
+                        <div class="metric-label">OpenAI API</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="dbStatus">-</div>
+                        <div class="metric-label">Database</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="memoryStatus">-</div>
+                        <div class="metric-label">Memory System</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="chatEngine">-</div>
+                        <div class="metric-label">Chat Engine</div>
+                    </div>
+                </div>
+                <div id="systemMessages"></div>
+            </div>
+        </div>
+        
+        <!-- Components Status -->
+        <div class="card">
+            <h2>📦 CAVA Components Status</h2>
+            <div class="grid-layout">
+                <div>
+                    <h3>Core Components</h3>
+                    <ul class="component-list" id="coreComponents">
+                        <li class="component-item">
+                            <span class="component-name">Loading...</span>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Intelligence Features</h3>
+                    <ul class="component-list" id="intelligenceFeatures">
+                        <li class="component-item">
+                            <span class="component-name">Loading...</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Chat Test -->
+        <div class="card">
+            <h2>💬 Live CAVA Chat Test</h2>
+            <div class="test-section">
+                <input type="text" id="testMessage" class="test-input" 
+                       placeholder="Ask CAVA an agricultural question (e.g., 'How do I grow mangoes in Slovenia?')"
+                       value="How do I grow mangoes in Slovenia?">
+                <button id="testButton" class="test-button" onclick="testChat()">
+                    Test CAVA Response
+                </button>
+                <div id="testResult" class="test-result"></div>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="card">
+            <h2>📊 Performance Metrics</h2>
+            <div class="metric-grid">
+                <div class="metric-item">
+                    <div class="metric-value" id="responseTime">-</div>
+                    <div class="metric-label">Avg Response Time</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="tokenUsage">-</div>
+                    <div class="metric-label">Tokens/Message</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="successRate">-</div>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="activeSessions">-</div>
+                    <div class="metric-label">Active Sessions</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Constitutional Compliance -->
+        <div class="card">
+            <h2>🏛️ Constitutional Compliance</h2>
+            <div class="component-list">
+                <div class="component-item implemented">
+                    <span class="component-name">Amendment #15: 95%+ LLM-generated intelligence</span>
+                    <span class="component-status" id="llmCompliance">Checking...</span>
+                </div>
+                <div class="component-item">
+                    <span class="component-name">GPT-3.5 Integration Status</span>
+                    <span class="component-status" id="gptIntegration">Checking...</span>
+                </div>
+                <div class="component-item">
+                    <span class="component-name">Intelligent Response Generation</span>
+                    <span class="component-status" id="intelligentResponse">Checking...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="refresh-button" onclick="refreshAudit()">🔄</button>
+    
+    <script>
+        let auditData = null;
+        
+        async function loadAudit() {
+            try {
+                // Fetch comprehensive audit data
+                const response = await fetch('/api/v1/cava/comprehensive-audit');
+                auditData = await response.json();
+                
+                // Update score display
+                updateScore(auditData.overall_score);
+                
+                // Update system status
+                updateSystemStatus(auditData.system_status);
+                
+                // Update components
+                updateComponents(auditData.components);
+                
+                // Update performance metrics
+                updateMetrics(auditData.metrics);
+                
+                // Update constitutional compliance
+                updateCompliance(auditData.constitutional_compliance);
+                
+            } catch (error) {
+                console.error('Failed to load audit:', error);
+                document.getElementById('systemMessages').innerHTML = 
+                    '<div class="error-message">Failed to load audit data: ' + error.message + '</div>';
+            }
+        }
+        
+        function updateScore(score) {
+            const scoreValue = document.getElementById('scoreValue');
+            const scoreLabel = document.getElementById('scoreLabel');
+            const statusBadge = document.getElementById('statusBadge');
+            const scoreRing = document.getElementById('scoreRing');
+            
+            // Animate score
+            animateValue(scoreValue, 0, score, 1000);
+            
+            // Update ring progress
+            const circumference = 2 * Math.PI * 80;
+            const offset = circumference - (score / 100) * circumference;
+            scoreRing.style.strokeDashoffset = offset;
+            
+            // Update label and status
+            if (score >= 90) {
+                scoreLabel.textContent = 'Excellent Implementation';
+                statusBadge.textContent = 'Excellent';
+                statusBadge.className = 'status-badge status-excellent';
+                scoreRing.style.stroke = '#4CAF50';
+            } else if (score >= 75) {
+                scoreLabel.textContent = 'Good Implementation';
+                statusBadge.textContent = 'Good';
+                statusBadge.className = 'status-badge status-good';
+                scoreRing.style.stroke = '#8BC34A';
+            } else if (score >= 60) {
+                scoreLabel.textContent = 'Fair Implementation';
+                statusBadge.textContent = 'Fair';
+                statusBadge.className = 'status-badge status-fair';
+                scoreRing.style.stroke = '#FFC107';
+            } else if (score >= 40) {
+                scoreLabel.textContent = 'Poor Implementation';
+                statusBadge.textContent = 'Poor';
+                statusBadge.className = 'status-badge status-poor';
+                scoreRing.style.stroke = '#FF5722';
+            } else {
+                scoreLabel.textContent = 'Critical Issues';
+                statusBadge.textContent = 'Critical';
+                statusBadge.className = 'status-badge status-critical';
+                scoreRing.style.stroke = '#F44336';
+            }
+        }
+        
+        function animateValue(element, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value + '%';
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        function updateSystemStatus(status) {
+            document.getElementById('openaiStatus').textContent = status.openai_connected ? '✅' : '❌';
+            document.getElementById('dbStatus').textContent = status.database_connected ? '✅' : '❌';
+            document.getElementById('memoryStatus').textContent = status.memory_system_active ? '✅' : '❌';
+            document.getElementById('chatEngine').textContent = status.chat_engine_ready ? '✅' : '❌';
+            
+            // Show any system messages
+            const messages = [];
+            if (!status.openai_connected) {
+                messages.push('<div class="error-message">⚠️ OpenAI API not connected - Chat functionality limited</div>');
+            }
+            if (!status.database_connected) {
+                messages.push('<div class="error-message">⚠️ Database not connected - Message history unavailable</div>');
+            }
+            document.getElementById('systemMessages').innerHTML = messages.join('');
+        }
+        
+        function updateComponents(components) {
+            // Core components
+            const coreHtml = components.core.map(comp => `
+                <li class="component-item ${comp.status}">
+                    <span class="component-name">${comp.name}</span>
+                    <span class="component-status">${comp.status === 'implemented' ? '✅' : comp.status === 'partial' ? '⚠️' : '❌'}</span>
+                </li>
+            `).join('');
+            document.getElementById('coreComponents').innerHTML = coreHtml;
+            
+            // Intelligence features
+            const intelligenceHtml = components.intelligence.map(comp => `
+                <li class="component-item ${comp.status}">
+                    <span class="component-name">${comp.name}</span>
+                    <span class="component-status">${comp.status === 'implemented' ? '✅' : comp.status === 'partial' ? '⚠️' : '❌'}</span>
+                </li>
+            `).join('');
+            document.getElementById('intelligenceFeatures').innerHTML = intelligenceHtml;
+        }
+        
+        function updateMetrics(metrics) {
+            document.getElementById('responseTime').textContent = metrics.avg_response_time || '-';
+            document.getElementById('tokenUsage').textContent = metrics.avg_tokens_per_message || '-';
+            document.getElementById('successRate').textContent = metrics.success_rate || '-';
+            document.getElementById('activeSessions').textContent = metrics.active_sessions || '0';
+        }
+        
+        function updateCompliance(compliance) {
+            document.getElementById('llmCompliance').textContent = 
+                compliance.llm_percentage >= 95 ? '✅ Compliant' : '❌ Non-compliant';
+            document.getElementById('gptIntegration').textContent = 
+                compliance.gpt35_active ? '✅ Active' : '❌ Inactive';
+            document.getElementById('intelligentResponse').textContent = 
+                compliance.intelligent_responses ? '✅ Enabled' : '❌ Disabled';
+        }
+        
+        async function testChat() {
+            const button = document.getElementById('testButton');
+            const resultDiv = document.getElementById('testResult');
+            const message = document.getElementById('testMessage').value;
+            
+            if (!message.trim()) {
+                resultDiv.innerHTML = '<div class="error-message">Please enter a message</div>';
+                resultDiv.classList.add('show');
+                return;
+            }
+            
+            button.disabled = true;
+            button.innerHTML = '<span class="loading"></span> Testing...';
+            resultDiv.classList.remove('show');
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch('/api/v1/chat/cava-engine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        wa_phone_number: '+385991234567',
+                        message: message
+                    })
+                });
+                
+                const result = await response.json();
+                const responseTime = Date.now() - startTime;
+                
+                let resultHtml = '<h4>CAVA Response:</h4>';
+                resultHtml += '<p style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 10px 0;">' + 
+                             result.response + '</p>';
+                resultHtml += '<div style="font-size: 14px; color: #666;">';
+                resultHtml += `<p>📊 Model: ${result.model_used}</p>`;
+                resultHtml += `<p>⏱️ Response Time: ${responseTime}ms</p>`;
+                resultHtml += `<p>🧠 Context Used: ${result.context_used ? 'Yes' : 'No'}</p>`;
+                if (result.memory_indicators) {
+                    resultHtml += `<p>💾 Tokens Used: ${result.memory_indicators.tokens_used || 'N/A'}</p>`;
+                }
+                resultHtml += '</div>';
+                
+                resultDiv.innerHTML = resultHtml;
+                resultDiv.classList.add('show');
+                
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error-message">Test failed: ' + error.message + '</div>';
+                resultDiv.classList.add('show');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = 'Test CAVA Response';
+            }
+        }
+        
+        function refreshAudit() {
+            const button = document.querySelector('.refresh-button');
+            button.style.transform = 'rotate(360deg)';
+            setTimeout(() => {
+                button.style.transform = '';
+                loadAudit();
+            }, 300);
+        }
+        
+        // Load audit on page load
+        window.addEventListener('DOMContentLoaded', loadAudit);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadAudit, 30000);
+    </script>
+</body>
+</html>

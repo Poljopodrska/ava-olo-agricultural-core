@@ -15,6 +15,7 @@ from fastapi.templating import Jinja2Templates
 # Import configuration
 from modules.core.config import VERSION, BUILD_ID, constitutional_deployment_completion, config
 from modules.core.database_manager import get_db_manager
+from modules.core.version_badge_middleware import VersionBadgeMiddleware
 
 # Import API routers
 from modules.api.deployment_routes import router as deployment_router, audit_router
@@ -76,8 +77,12 @@ from modules.whatsapp.routes import router as whatsapp_router
 # Import ENV dashboard module
 from api.env_dashboard_routes import router as env_dashboard_router
 
+# Import comprehensive audit routes
+from modules.api.cava_comprehensive_audit_routes import router as cava_comprehensive_audit_router
+
 # Import for startup
 import asyncio
+from datetime import datetime
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -85,6 +90,9 @@ app = FastAPI(
     version=VERSION,
     description="WhatsApp-style farmer portal with weather, chat, and farm management"
 )
+
+# Add version badge middleware
+app.add_middleware(VersionBadgeMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -141,6 +149,7 @@ app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(deployment_security_router)
 app.include_router(env_dashboard_router)
+app.include_router(cava_comprehensive_audit_router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -236,6 +245,15 @@ async def startup_event():
         except ImportError:
             print("⚠️  python-dotenv not installed, cannot auto-load .env files")
     
+    # Initialize CAVA Chat Engine
+    print("🤖 Initializing CAVA Chat Engine...")
+    from modules.cava.chat_engine import initialize_cava
+    cava_initialized = await initialize_cava()
+    if cava_initialized:
+        print("✅ CAVA Chat Engine ready for intelligent agricultural conversations")
+    else:
+        print("⚠️ CAVA Chat Engine initialization failed - chat may be limited")
+    
     # Constitutional deployment completion
     constitutional_deployment_completion()
 
@@ -251,6 +269,11 @@ async def landing_page(request: Request):
 async def cava_audit_page():
     """CAVA implementation audit dashboard"""
     return FileResponse("static/cava-audit.html")
+
+@app.get("/cava-comprehensive-audit")
+async def cava_comprehensive_audit_page():
+    """CAVA comprehensive audit dashboard with advanced scoring"""
+    return FileResponse("static/cava-comprehensive-audit.html")
 
 @app.get("/chat-debug-audit")
 async def chat_debug_audit_page():
@@ -378,6 +401,39 @@ async def env_dashboard_page():
     """Direct route to ENV dashboard"""
     from api.env_dashboard_routes import _get_dashboard_html
     return HTMLResponse(_get_dashboard_html())
+
+@app.get("/api/deployment/status")
+async def deployment_status():
+    """Get deployment status for version badge"""
+    try:
+        # Check if critical services are working
+        db_manager = get_db_manager()
+        db_connected = db_manager.test_connection()
+        
+        # Check for key features deployment
+        features_deployed = {
+            "version_badge": True,  # We're running this code
+            "cava_endpoint": any(r.path == "/api/v1/chat" for r in app.routes),
+            "audit_dashboard": any(r.path == "/cava-audit" for r in app.routes),
+            "database": db_connected,
+            "openai_configured": os.getenv('OPENAI_API_KEY', '').startswith('sk-')
+        }
+        
+        fully_deployed = all(features_deployed.values())
+        
+        return {
+            "version": VERSION,
+            "fully_deployed": fully_deployed,
+            "features": features_deployed,
+            "deployment_time": os.getenv('DEPLOYMENT_TIMESTAMP', datetime.now().isoformat()),
+            "build_id": BUILD_ID
+        }
+    except Exception as e:
+        return {
+            "version": VERSION,
+            "fully_deployed": False,
+            "error": str(e)
+        }
 
 @app.get("/api/deployment/reality-check")
 async def deployment_reality_check():

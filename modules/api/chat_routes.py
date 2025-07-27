@@ -16,6 +16,7 @@ from modules.core.openai_detective import OpenAIKeyDetective
 from modules.cava.conversation_memory import CAVAMemory
 from modules.cava.fact_extractor import FactExtractor
 from modules.cava.memory_enforcer import MemoryEnforcer
+from modules.cava.chat_engine import get_cava_engine, initialize_cava
 from modules.core.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ router = APIRouter(prefix="/api/v1", tags=["chat"])
 # Initialize CAVA components
 cava_memory = CAVAMemory()
 fact_extractor = FactExtractor()
+cava_engine = get_cava_engine()
 
 class ChatRequest(BaseModel):
     """Chat request model"""
@@ -608,6 +610,117 @@ async def chat_debug():
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }
+
+@router.post("/chat/cava-engine", response_model=ChatResponse)
+async def chat_with_cava_engine(request: ChatRequest):
+    """Direct chat using new CAVA Chat Engine with GPT-3.5"""
+    wa_phone_number = request.wa_phone_number
+    message = request.message
+    
+    print(f"🤖 CAVA Engine Chat Request from {wa_phone_number}")
+    
+    # Initialize CAVA engine if needed
+    if not cava_engine.initialized:
+        success = await cava_engine.initialize()
+        if not success:
+            return ChatResponse(
+                response="CAVA is starting up. Please try again in a moment.",
+                conversation_id=wa_phone_number,
+                model_used="not_initialized",
+                timestamp=datetime.now().isoformat(),
+                context_used=False,
+                messages_in_context=0,
+                memory_indicators={"status": cava_engine.get_status()}
+            )
+    
+    try:
+        # Get farmer context from database
+        db_manager = DatabaseManager()
+        farmer_context = {
+            "farmer_name": "Farmer",
+            "location": "Slovenia",
+            "weather": {},
+            "fields": []
+        }
+        
+        # Try to get farmer details
+        try:
+            async with db_manager.get_connection_async() as conn:
+                # Get farmer info
+                farmer_result = await conn.fetchrow(
+                    "SELECT first_name, last_name, location FROM farmers WHERE wa_phone_number = $1",
+                    wa_phone_number
+                )
+                if farmer_result:
+                    farmer_context["farmer_name"] = f"{farmer_result['first_name']} {farmer_result['last_name']}"
+                    farmer_context["location"] = farmer_result['location'] or "Slovenia"
+                
+                # Get fields
+                fields_result = await conn.fetch(
+                    "SELECT field_name, crop, hectares FROM fields WHERE farmer_phone = $1",
+                    wa_phone_number
+                )
+                farmer_context["fields"] = [
+                    {"name": f["field_name"], "crop": f["crop"], "hectares": f["hectares"]}
+                    for f in fields_result
+                ]
+        except Exception as e:
+            logger.warning(f"Could not fetch farmer context: {e}")
+        
+        # Store user message
+        await store_message(wa_phone_number, 'user', message)
+        
+        # Get CAVA response
+        result = await cava_engine.chat(
+            session_id=wa_phone_number,
+            message=message,
+            farmer_context=farmer_context
+        )
+        
+        if result.get("success"):
+            # Store assistant response
+            await store_message(wa_phone_number, 'assistant', result["response"])
+            
+            # Extract facts from conversation
+            facts = await fact_extractor.extract_facts(message, farmer_context.get("location", ""))
+            
+            return ChatResponse(
+                response=result["response"],
+                conversation_id=wa_phone_number,
+                model_used=result.get("model", "gpt-3.5-turbo"),
+                facts_extracted=facts,
+                timestamp=datetime.now().isoformat(),
+                context_used=True,
+                context_summary=f"Talking to {farmer_context['farmer_name']} about {', '.join(f['crop'] for f in farmer_context['fields'][:3])}",
+                messages_in_context=len(cava_engine.get_session_history(wa_phone_number)),
+                memory_indicators={
+                    "engine": "cava_chat_engine",
+                    "tokens_used": result.get("tokens_used", 0),
+                    "status": cava_engine.get_status()
+                }
+            )
+        else:
+            return ChatResponse(
+                response=result.get("response", "I'm having trouble processing your message."),
+                conversation_id=wa_phone_number,
+                model_used="error",
+                timestamp=datetime.now().isoformat(),
+                context_used=False,
+                messages_in_context=0,
+                memory_indicators={"error": result.get("error", "unknown")}
+            )
+            
+    except Exception as e:
+        logger.error(f"CAVA Engine error: {e}")
+        return ChatResponse(
+            response="I encountered an error. Please try again.",
+            conversation_id=wa_phone_number,
+            model_used="error",
+            timestamp=datetime.now().isoformat(),
+            context_used=False,
+            messages_in_context=0,
+            memory_indicators={"error": str(e)}
+        )
 
 @router.post("/chat/test-cava-direct")
 async def test_cava_direct():
