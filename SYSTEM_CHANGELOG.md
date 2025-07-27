@@ -1,5 +1,40 @@
 # AVA OLO System Changelog
 
+## [Rollback] - 2025-07-27 - Revert to Commit d93e304
+**Deployed to Production**: PENDING ⏳
+**Service**: agricultural-core  
+**Action**: Git reset to d93e304
+**Purpose**: Return to last known stable version
+
+### 🔄 REVERTED TO STABLE STATE
+**Key Achievement**: Restored system to commit d93e304 - the last working version before service disruptions
+
+### Reason for Rollback:
+- Aggressive memory optimization attempts broke the service
+- 503/502/504 errors occurred after enhancement attempts
+- Multiple attempts to fix resulted in more instability
+- Decision made to revert to stable version before making incremental improvements
+
+### What This Rollback Contains:
+- Version at commit d93e304: "feat: Permanent multi-layer API key management with self-healing system"
+- This includes the self-healing API key system
+- CAVA working at ~53% behavioral score
+- No 503 errors, stable service operation
+- All original functionality intact
+
+### Commit References:
+- Reverted to: d93e304 (2025-07-26)
+- Rolled back from: 032eaca (attempted stable restore)
+- Removed commits: cf5af3e, 4b6f6a0, f1e297c, 032eaca
+
+### Next Steps:
+- Test thoroughly at this stable version
+- Make small, incremental improvements
+- Test each change in isolation
+- Avoid aggressive optimizations
+
+# AVA OLO System Changelog
+
 ## [v3.6.5-memory-enhancement] - 2025-07-26 - Ultimate CAVA Memory Enhancement
 **Deployed to Production**: DEPLOYED ✅
 **Service**: agricultural-core  
