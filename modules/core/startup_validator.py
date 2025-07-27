@@ -5,6 +5,7 @@ from modules.core.api_key_manager import APIKeyManager
 from modules.cava.conversation_memory import CAVAMemory
 from modules.core.database_manager import DatabaseManager
 from datetime import datetime
+from typing import Dict
 import openai
 import asyncio
 import json
