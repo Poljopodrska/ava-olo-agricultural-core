@@ -15,7 +15,7 @@ DATABASE_CONFIG = {
     "port": int(os.getenv("DB_PORT", "5432")),
     "database": os.getenv("DB_NAME", "ava_olo"),
     "username": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "your_password")
+    "password": os.getenv("DB_PASSWORD")  # Required from environment
 }
 
 # Single PostgreSQL Database URL

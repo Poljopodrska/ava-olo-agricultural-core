@@ -13,7 +13,7 @@ DB_HOST = os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds
 DB_PORT = os.getenv('DB_PORT', '5432')
 DB_NAME = os.getenv('DB_NAME', 'postgres')
 DB_USER = os.getenv('DB_USER', 'postgres')
-DB_PASSWORD = os.getenv('DB_PASSWORD', '2hpzvrg_xP~qNbz1[_NppSK$e*O1')
+DB_PASSWORD = os.getenv('DB_PASSWORD')  # Must be set via environment variable
 
 print(f"Connecting to AWS RDS database...")
 print(f"Host: {DB_HOST}")
