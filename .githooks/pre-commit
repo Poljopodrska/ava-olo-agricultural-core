@@ -1,0 +1,62 @@
+#!/bin/bash
+# AVA OLO Pre-commit Protection Hook
+# Runs all protection checks before allowing commit
+
+echo "🏛️ Running AVA OLO Protection System Checks..."
+
+# Track overall status
+ALL_PASS=true
+
+# 🔒 AWS-ONLY ENVIRONMENT VARIABLE ENFORCEMENT
+echo "🔐 Checking environment variable security..."
+
+# Block .env files
+env_files=$(git diff --cached --name-only | grep -E '\.env$|\.env\.|env\.|environment\.' || true)
+if [ ! -z "$env_files" ]; then
+    echo "❌ ERROR: .env files are FORBIDDEN!"
+    echo "All environment variables MUST be in AWS ECS task definitions"
+    echo "Found:"
+    echo "$env_files"
+    echo ""
+    echo "🏛️ Constitutional Rule: All secrets in AWS only (Principle 8)"
+    ALL_PASS=false
+fi
+
+# Block hardcoded secrets (exclude documentation examples)
+if git diff --cached | grep -E '["\'"'"']?[A-Z_]*API_KEY["\'"'"']?\s*=\s*["\'"'"'][^"\'"'"']*["\'"'"']' | grep -v "os.getenv" | grep -v "CentralConfig" | grep -v "example" | grep -v "_here" | grep -v "your_" | grep -v ".md:"; then
+    echo "❌ ERROR: Hardcoded API keys detected!"
+    echo "Use CentralConfig class to access AWS environment variables"
+    echo "NEVER hardcode secrets in code!"
+    ALL_PASS=false
+fi
+
+# Block hardcoded database passwords (exclude documentation examples)
+if git diff --cached | grep -E '["\'"'"']?DB_PASSWORD["\'"'"']?\s*=\s*["\'"'"'][^"\'"'"']*["\'"'"']' | grep -v "os.getenv" | grep -v "example" | grep -v "_here" | grep -v "your_" | grep -v ".md:"; then
+    echo "❌ ERROR: Hardcoded database password detected!"
+    echo "Database passwords MUST come from AWS Secrets Manager"
+    ALL_PASS=false
+fi
+
+# Block hardcoded OpenAI keys (exclude documentation examples)
+if git diff --cached | grep -E 'sk-[a-zA-Z0-9]{20,}' | grep -v ".md:" | grep -v "example" | grep -v "_here" | grep -v "your_" | grep -v "task-definition"; then
+    echo "❌ ERROR: OpenAI API key hardcoded in code!"
+    echo "OpenAI keys MUST be in AWS ECS environment variables"
+    ALL_PASS=false
+fi
+
+# Check for design changes without approval
+design_files=$(git diff --cached --name-only | grep -E '\.(css|scss|html)$' || true)
+if [ ! -z "$design_files" ]; then
+    echo "🎨 Design changes detected - approval required:"
+    echo "$design_files"
+    echo "Ensure you have approval for visual changes"
+fi
+
+if [ "$ALL_PASS" = false ]; then
+    echo ""
+    echo "❌ PROTECTION SYSTEM BLOCKED COMMIT"
+    echo "Fix the security violations above before committing"
+    exit 1
+fi
+
+echo "✅ All protection checks passed - commit allowed"

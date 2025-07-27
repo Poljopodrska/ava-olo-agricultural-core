@@ -1,0 +1,27 @@
+#!/bin/bash
+# AVA OLO Commit Message Validation Hook
+# Enforces version format: vX.X.X - Description
+
+commit_regex='^v[0-9]+\.[0-9]+\.[0-9]+ - .{10,}'
+
+if ! grep -qE "$commit_regex" "$1"; then
+    echo "❌ ERROR: Commit message must follow format: vX.X.X - Description"
+    echo "Example: v3.5.2 - Complete protection system implementation"
+    echo ""
+    echo "Your message: $(cat $1)"
+    echo ""
+    echo "🏛️ Constitutional Rule: All commits must be versioned and descriptive"
+    exit 1
+fi
+
+# Check version progression
+current_version=$(cat $1 | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+')
+last_version=$(git log -1 --pretty=%s 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' || echo "")
+
+if [ ! -z "$last_version" ] && [ "$current_version" = "$last_version" ]; then
+    echo "⚠️  WARNING: Version $current_version already used in previous commit"
+    echo "Please increment the version number"
+    exit 1
+fi
+
+echo "✅ Commit message format validated: $current_version"
