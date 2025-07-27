@@ -72,7 +72,8 @@ async def initialize_registration_session(request: dict):
 async def cava_registration_chat(request: ChatMessageRequest):
     """CAVA-powered registration endpoint"""
     try:
-        logger.info(f"🤖 CAVA Registration: session={request.session_id}, message_length={len(request.message)}")
+        logger.info(f"🤖 CAVA Registration: session={request.session_id}, message='{request.message}'")
+        logger.info(f"🔑 OpenAI API Key configured: {bool(cava_registration.api_key)}")
         
         # Process with CAVA
         result = await cava_registration.process_registration_message(
@@ -81,12 +82,30 @@ async def cava_registration_chat(request: ChatMessageRequest):
         )
         
         logger.info(f"📊 Registration result: success={result.get('success', False)}, complete={result.get('registration_complete', False)}")
+        logger.info(f"💬 CAVA response: {result.get('response', 'No response')[:100]}...")
         
         return result
         
     except Exception as e:
         logger.error(f"❌ CAVA Registration error: {e}")
-        raise HTTPException(status_code=500, detail=f"Registration error: {str(e)}")
+        import traceback
+        logger.error(f"📋 Full traceback: {traceback.format_exc()}")
+        
+        # Return friendly error instead of HTTP exception
+        return {
+            "success": False,
+            "response": "I'm having a small technical issue. Let me try again - what is your name?",
+            "error": True,
+            "error_details": str(e),
+            "registration_complete": False,
+            "collected_fields": {
+                "first_name": False,
+                "last_name": False,
+                "wa_phone_number": False,
+                "password": False,
+                "password_confirmed": False
+            }
+        }
 
 @router.get("/api/v1/registration/status/{session_id}")
 async def registration_status(session_id: str) -> SessionStatusResponse:
@@ -112,6 +131,49 @@ async def clear_registration_session(session_id: str):
     except Exception as e:
         logger.error(f"❌ Session clear error: {e}")
         raise HTTPException(status_code=500, detail=f"Clear error: {str(e)}")
+
+@router.get("/api/v1/registration/debug")
+async def registration_debug():
+    """Debug registration CAVA connection and status"""
+    try:
+        import httpx
+        
+        # Test OpenAI connection directly
+        test_result = "unknown"
+        if cava_registration.api_key:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {cava_registration.api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": "gpt-3.5-turbo",
+                            "messages": [{"role": "user", "content": "test"}],
+                            "max_tokens": 5
+                        },
+                        timeout=10.0
+                    )
+                    test_result = "success" if response.status_code == 200 else f"http_{response.status_code}"
+            except Exception as e:
+                test_result = f"error: {str(e)}"
+        
+        return {
+            "registration_engine_initialized": cava_registration is not None,
+            "openai_api_key_configured": bool(cava_registration.api_key),
+            "openai_connection_test": test_result,
+            "active_sessions": len(cava_registration.sessions),
+            "model": cava_registration.model,
+            "api_url": cava_registration.api_url
+        }
+        
+    except Exception as e:
+        return {
+            "error": str(e),
+            "registration_engine_initialized": False
+        }
 
 @router.get("/api/v1/registration/test-connection")
 async def test_registration_connection():

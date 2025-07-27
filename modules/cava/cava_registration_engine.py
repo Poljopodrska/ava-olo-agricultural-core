@@ -106,13 +106,8 @@ class CAVARegistrationEngine:
         system_prompt = self._build_registration_prompt(session)
         
         try:
-            # Call OpenAI GPT-3.5
-            import requests
-            
-            headers = {
-                'Authorization': f'Bearer {self.api_key}',
-                'Content-Type': 'application/json'
-            }
+            # Call OpenAI GPT-3.5 using same method as working chat engine
+            import httpx
             
             payload = {
                 'model': self.model,
@@ -124,7 +119,16 @@ class CAVARegistrationEngine:
                 'max_tokens': 500
             }
             
-            response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.api_url,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=payload,
+                    timeout=30.0
+                )
             
             if response.status_code == 200:
                 ai_response = response.json()
@@ -249,7 +253,7 @@ Remember: You're helping a farmer register. Be patient, friendly, and helpful li
         return updated_fields
     
     def _extract_data_from_text(self, user_message: str, ai_response: str) -> Dict[str, str]:
-        """Extract registration data from user message using simple pattern matching"""
+        """Extract registration data from user message using intelligent pattern matching"""
         extracted = {}
         
         # Extract phone numbers (starts with +)
@@ -258,25 +262,36 @@ Remember: You're helping a farmer register. Be patient, friendly, and helpful li
         if phone_match:
             extracted['wa_phone_number'] = re.sub(r'[^\d+]', '', phone_match.group())
         
-        # Extract potential names (single words that might be names)
+        # Extract names with better logic
         words = user_message.split()
+        clean_words = []
         for word in words:
-            # Remove punctuation and check if it could be a name
+            # Clean word but preserve Unicode characters for names like "Петър"
             clean_word = re.sub(r'[^\w\u00C0-\u017F\u0400-\u04FF]', '', word)
-            if len(clean_word) >= 2 and clean_word.isalpha():
-                # Could be a name - let simple heuristics decide
-                if len(words) == 1 or (len(words) == 2 and all(w.isalpha() for w in words)):
-                    # Likely a name
-                    if 'first_name' not in extracted:
-                        extracted['first_name'] = clean_word.title()
-                    elif 'last_name' not in extracted and clean_word.title() != extracted.get('first_name'):
-                        extracted['last_name'] = clean_word.title()
+            if len(clean_word) >= 1 and clean_word.replace('_', '').isalpha():
+                clean_words.append(clean_word.title())
         
-        # Extract password (if it looks like a password and we're in password context)
-        if len(user_message.strip()) >= 8 and not phone_match and not any(word.isalpha() and len(word) <= 3 for word in words):
-            # Might be a password
+        # Name extraction logic
+        if len(clean_words) == 1:
+            # Single word - likely first name
+            extracted['first_name'] = clean_words[0]
+        elif len(clean_words) == 2:
+            # Two words - likely first and last name
+            extracted['first_name'] = clean_words[0]
+            extracted['last_name'] = clean_words[1]
+        elif len(clean_words) > 2:
+            # Multiple words - take first two as first and last name
+            extracted['first_name'] = clean_words[0]
+            extracted['last_name'] = clean_words[1]
+        
+        # Extract password (if it's long enough and doesn't look like a name/phone)
+        if (len(user_message.strip()) >= 8 and 
+            not phone_match and 
+            not clean_words and
+            not user_message.strip().isalpha()):
             extracted['password'] = user_message.strip()
         
+        logger.info(f"📝 Extracted from '{user_message}': {extracted}")
         return extracted
     
     def _is_complete(self, session: Dict[str, Any]) -> bool:

@@ -1,5 +1,58 @@
 # AVA OLO System Changelog
 
+## v3.5.30 - 2025-07-27 - Fix CAVA Registration GPT-3.5 Connection Error
+**Deployed to Production**: DEPLOYING 🚀
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: ECS Auto-Deploy via GitHub Actions
+
+### 🔧 GPT-3.5 CONNECTION FIX
+**Key Achievement**: Fixed the "trouble processing" error when users respond to CAVA registration
+
+### Root Cause Identified:
+**Problem**: Registration engine used `requests` (sync) while working chat engine used `httpx.AsyncClient` (async)
+**Solution**: Updated registration to use same async httpx client as working main chat
+
+### What's Fixed:
+1. **OpenAI API Connection** 
+   - Changed from `requests.post()` to `httpx.AsyncClient()`
+   - Now uses same connection method as working main chat
+   - Proper async/await handling
+
+2. **Error Handling Improvements**
+   - Added detailed logging for troubleshooting
+   - Better error messages instead of generic "trouble processing"
+   - Graceful fallbacks when GPT-3.5 unavailable
+
+3. **Enhanced Data Extraction**
+   - Improved name extraction for Bulgarian names like "Петър"
+   - Better Unicode support for Cyrillic characters
+   - Smarter pattern matching for names vs passwords
+
+4. **Debug Endpoint** (`/api/v1/registration/debug`)
+   - Real-time OpenAI connection testing
+   - Session monitoring and diagnostics
+   - API key configuration verification
+
+### Technical Changes:
+- **HTTP Client**: `requests` → `httpx.AsyncClient`
+- **Error Handling**: Added full traceback logging
+- **Data Extraction**: Enhanced Unicode and multilingual support
+- **Debugging**: New debug endpoint for troubleshooting
+
+### Bulgarian Mango Farmer Fix:
+```
+BEFORE: "Peter" → "I'm having trouble processing your message"
+AFTER:  "Peter" → "Nice to meet you, Peter! What's your last name?"
+BEFORE: "Петър" → Error
+AFTER:  "Петър" → "Здравей, Петър! Как е фамилията ви?" (Bulgarian response)
+```
+
+### API Endpoints Added:
+- `/api/v1/registration/debug` - Connection diagnostics and troubleshooting
+
+---
+
 ## v3.5.29 - 2025-07-27 - Fix CAVA Registration Connection and Auto-Greeting
 **Deployed to Production**: DEPLOYING 🚀
 **Service**: agricultural-core  
