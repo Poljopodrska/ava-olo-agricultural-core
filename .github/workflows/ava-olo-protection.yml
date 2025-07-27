@@ -89,15 +89,15 @@ jobs:
         run: |
           echo "🚀 Deploying to ECS..."
           aws ecs update-service \
-            --cluster ava-olo-cluster \
-            --service ava-olo-agricultural-core \
+            --cluster ava-olo-production \
+            --service agricultural-core \
             --force-new-deployment \
             --desired-count 1
           
           echo "⏳ Waiting for deployment..."
           aws ecs wait services-stable \
-            --cluster ava-olo-cluster \
-            --services ava-olo-agricultural-core
+            --cluster ava-olo-production \
+            --services agricultural-core
           
           echo "✅ Deployment complete!"
       
