@@ -1,5 +1,54 @@
 # AVA OLO System Changelog
 
+## v3.5.29 - 2025-07-27 - Fix CAVA Registration Connection and Auto-Greeting
+**Deployed to Production**: DEPLOYING 🚀
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: ECS Auto-Deploy via GitHub Actions
+
+### 🔧 CAVA REGISTRATION CONNECTION FIX
+**Key Achievement**: Fixed CAVA registration engine connection issues and implemented auto-greeting functionality
+
+### What's Fixed:
+1. **OpenAI Response Format Issue**
+   - Removed forced JSON response format that was causing "trouble processing" errors
+   - Updated response parsing to handle natural language responses
+   - Added fallback data extraction from natural conversation
+
+2. **Auto-Greeting System** (`/api/v1/registration/initialize`)
+   - New initialization endpoint creates session with automatic greeting
+   - CAVA greets immediately: "Hi! I'm AVA, let me help you register. What is your name? 😊"
+   - No more waiting for user to start conversation
+
+3. **Natural Conversation Flow**
+   - Updated CAVA prompt to be more conversational and friendly
+   - Removed rigid JSON format requirements
+   - Added emoji support and warm, human-like responses
+   - Better data extraction from natural language
+
+4. **Frontend Auto-Initialization**
+   - Page automatically initializes CAVA session on load
+   - Immediate greeting display without user action
+   - Improved error handling and connection status
+
+### Technical Improvements:
+- **Natural Language Processing**: Extract data from conversational text
+- **Session Auto-Initialization**: Immediate CAVA greeting on page load
+- **Error Resilience**: Graceful handling of API response variations
+- **User Experience**: No more "trouble processing" messages
+
+### Bulgarian Mango Farmer Ready:
+```
+AUTO-GREETING: "Hi! I'm AVA, let me help you register. What is your name? 😊"
+User: "Петър"
+CAVA: "Nice to meet you, Петър! What's your last name?"
+```
+
+### API Endpoints Added:
+- `/api/v1/registration/initialize` - Auto-initialize session with greeting
+
+---
+
 ## v3.5.27 - 2025-07-27 - CAVA-Powered Intelligent Registration System
 **Deployed to Production**: DEPLOYING 🚀
 **Service**: agricultural-core  

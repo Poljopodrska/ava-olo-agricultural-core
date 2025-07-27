@@ -121,7 +121,6 @@ class CAVARegistrationEngine:
                     *[{'role': msg['role'], 'content': msg['content']} for msg in session['conversation_history']]
                 ],
                 'temperature': 0.7,
-                'response_format': {'type': 'json_object'},
                 'max_tokens': 500
             }
             
@@ -130,20 +129,29 @@ class CAVARegistrationEngine:
             if response.status_code == 200:
                 ai_response = response.json()
                 ai_content = ai_response['choices'][0]['message']['content']
-                ai_data = json.loads(ai_content)
+                
+                # Try to parse as JSON first, fallback to natural language
+                try:
+                    ai_data = json.loads(ai_content)
+                    response_text = ai_data.get('response', ai_content)
+                    extracted_data = ai_data.get('extracted_data', {})
+                except json.JSONDecodeError:
+                    # Natural language response - extract data ourselves
+                    response_text = ai_content
+                    extracted_data = self._extract_data_from_text(message, ai_content)
                 
                 # Update session with extracted data
-                updated_fields = self._update_session_data(session, ai_data)
+                updated_fields = self._update_session_data(session, {'extracted_data': extracted_data})
                 
                 # Add AI response to history
                 session['conversation_history'].append({
                     'role': 'assistant',
-                    'content': ai_data.get('response', 'I apologize, but I encountered an error. Please try again.'),
+                    'content': response_text,
                     'timestamp': datetime.utcnow().isoformat()
                 })
                 
                 # Check if registration complete
-                registration_complete = ai_data.get('registration_complete', False) and self._is_complete(session)
+                registration_complete = self._is_complete(session)
                 
                 if registration_complete and not session.get('farmer_created'):
                     # Create farmer in database
@@ -158,7 +166,7 @@ class CAVARegistrationEngine:
                 
                 return {
                     'success': True,
-                    'response': ai_data.get('response'),
+                    'response': response_text,
                     'registration_complete': registration_complete,
                     'farmer_id': session.get('farmer_id'),
                     'collected_fields': self._get_collection_status(session),
@@ -185,50 +193,38 @@ class CAVARegistrationEngine:
             'password_confirmed': session.get('password_confirmation') == session.get('password') if session.get('password') else False
         }
         
-        return f"""You are CAVA, an intelligent agricultural assistant helping farmers register for AVA OLO.
+        return f"""You are AVA, a friendly agricultural assistant helping a farmer register for AVA OLO.
 
-Your job is to collect registration information through natural conversation and extract data from their messages.
+Have a NATURAL CONVERSATION like a real person would. Be warm, friendly, and conversational.
 
-REQUIRED REGISTRATION FIELDS:
-- first_name: Their first/given name
-- last_name: Their last/family name  
-- wa_phone_number: WhatsApp phone number (with country code like +359, +386, etc.)
-- password: A secure password (minimum 8 characters)
-- password_confirmation: They must repeat the password to confirm it matches
+REQUIRED INFORMATION TO COLLECT:
+- First name
+- Last name  
+- WhatsApp phone number (with country code like +359, +386, etc.)
+- Password (must ask them to repeat it for confirmation)
 
 CURRENT COLLECTED DATA: {json.dumps(collected_summary, indent=2)}
 
-INSTRUCTIONS:
-1. Analyze their message and extract ANY registration data you can find
-2. Respond naturally in their language (detect from their message)
-3. Guide them to provide the next missing piece of information
-4. If they provide a password, ask them to repeat it for confirmation
-5. When ALL fields are collected AND confirmed, mark registration as complete
-6. Be conversational, friendly, and agricultural-focused
-7. Handle any language (Bulgarian, English, Slovenian, etc.)
+CONVERSATION GUIDELINES:
+1. Be conversational and friendly, use emojis occasionally 😊
+2. When they give their first name, acknowledge it warmly
+3. Ask for one piece of information at a time
+4. If they give multiple pieces, acknowledge all and note them down
+5. When asking for password, explain it's for security
+6. React naturally to their responses
+7. Use their name once you know it
+8. Handle any language (Bulgarian, English, Slovenian, etc.)
 
-EXTRACTION RULES:
-- Names can be in any format: "John Smith", "Петър", "My name is Maria", etc.
-- Phone numbers: Look for +country_code followed by digits
-- Passwords: Any mention of password, pass, парола, etc.
-- Confirmations: When they repeat something after being asked to confirm
+EXAMPLES OF NATURAL RESPONSES:
+- "Nice to meet you, Peter! What's your last name?"
+- "Great! And what's your WhatsApp number so we can stay in touch?"
+- "Perfect! Now I need you to create a password for your account. Make it something secure!"
+- "Could you type that password again just to make sure I got it right?"
+- "Wonderful! You're all set, Peter Horvat! Welcome to AVA OLO! 🌱"
 
-RESPONSE FORMAT (JSON):
-{{
-    "extracted_data": {{
-        "first_name": "extracted_first_name_or_null",
-        "last_name": "extracted_last_name_or_null", 
-        "wa_phone_number": "extracted_phone_or_null",
-        "password": "extracted_password_or_null",
-        "password_confirmation": "extracted_confirmation_or_null"
-    }},
-    "response": "Your natural conversational response to the farmer",
-    "registration_complete": false,
-    "next_field_needed": "Description of what to ask for next",
-    "language_detected": "detected_language"
-}}
+RESPOND NATURALLY - no need for JSON format. Just have a normal conversation and I'll extract the data.
 
-IMPORTANT: Only set registration_complete to true when ALL fields are collected AND password is confirmed!"""
+Remember: You're helping a farmer register. Be patient, friendly, and helpful like a real person would be."""
     
     def _update_session_data(self, session: Dict[str, Any], ai_data: Dict[str, Any]) -> list:
         """Update session with extracted data and return list of updated fields"""
@@ -251,6 +247,37 @@ IMPORTANT: Only set registration_complete to true when ALL fields are collected 
             session['language'] = ai_data['language_detected']
         
         return updated_fields
+    
+    def _extract_data_from_text(self, user_message: str, ai_response: str) -> Dict[str, str]:
+        """Extract registration data from user message using simple pattern matching"""
+        extracted = {}
+        
+        # Extract phone numbers (starts with +)
+        import re
+        phone_match = re.search(r'\+\d{1,4}[\d\s-]{8,15}', user_message)
+        if phone_match:
+            extracted['wa_phone_number'] = re.sub(r'[^\d+]', '', phone_match.group())
+        
+        # Extract potential names (single words that might be names)
+        words = user_message.split()
+        for word in words:
+            # Remove punctuation and check if it could be a name
+            clean_word = re.sub(r'[^\w\u00C0-\u017F\u0400-\u04FF]', '', word)
+            if len(clean_word) >= 2 and clean_word.isalpha():
+                # Could be a name - let simple heuristics decide
+                if len(words) == 1 or (len(words) == 2 and all(w.isalpha() for w in words)):
+                    # Likely a name
+                    if 'first_name' not in extracted:
+                        extracted['first_name'] = clean_word.title()
+                    elif 'last_name' not in extracted and clean_word.title() != extracted.get('first_name'):
+                        extracted['last_name'] = clean_word.title()
+        
+        # Extract password (if it looks like a password and we're in password context)
+        if len(user_message.strip()) >= 8 and not phone_match and not any(word.isalpha() and len(word) <= 3 for word in words):
+            # Might be a password
+            extracted['password'] = user_message.strip()
+        
+        return extracted
     
     def _is_complete(self, session: Dict[str, Any]) -> bool:
         """Check if all required fields are collected and confirmed"""

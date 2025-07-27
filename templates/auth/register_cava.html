@@ -613,21 +613,44 @@
             }
         }
         
-        // Check CAVA connection
-        async function checkCavaConnection() {
+        // Initialize CAVA session and show greeting
+        async function initializeCavaSession() {
             try {
-                const response = await fetch('/api/v1/registration/test-connection');
+                // Initialize session
+                const response = await fetch('/api/v1/registration/initialize', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        session_id: sessionId
+                    })
+                });
+                
                 const data = await response.json();
                 
                 const statusDiv = document.getElementById('connection-status');
-                if (data.success && data.cava_connected) {
+                if (data.success) {
                     statusDiv.style.display = 'none';
+                    
+                    // Hide welcome and show CAVA's greeting
+                    const welcome = document.getElementById('chat-welcome');
+                    if (welcome) {
+                        welcome.style.display = 'none';
+                    }
+                    
+                    // Show CAVA's greeting
+                    setTimeout(() => {
+                        addMessage('cava', data.greeting);
+                    }, 500);
+                    
                 } else {
                     statusDiv.style.display = 'block';
-                    statusDiv.innerHTML = '⚠️ CAVA AI is not fully connected. Registration will use fallback mode.';
+                    statusDiv.innerHTML = '⚠️ CAVA AI initialization failed. Using fallback mode.';
                 }
             } catch (error) {
-                console.error('Connection check failed:', error);
+                console.error('CAVA initialization failed:', error);
+                const statusDiv = document.getElementById('connection-status');
+                statusDiv.style.display = 'block';
+                statusDiv.innerHTML = '⚠️ CAVA AI is not connected. Using fallback mode.';
             }
         }
         
@@ -794,7 +817,7 @@
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
             updateDeploymentBadge();
-            checkCavaConnection();
+            initializeCavaSession();
             document.getElementById('registration-input').focus();
         });
     </script>

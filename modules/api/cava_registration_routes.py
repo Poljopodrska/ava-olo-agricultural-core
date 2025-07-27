@@ -4,6 +4,7 @@ CAVA Registration API Routes
 Intelligent registration endpoints using GPT-3.5
 """
 import logging
+from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
@@ -29,6 +30,43 @@ class SessionStatusResponse(BaseModel):
     language: Optional[str] = None
     created_at: Optional[str] = None
     completed_at: Optional[str] = None
+
+@router.post("/api/v1/registration/initialize")
+async def initialize_registration_session(request: dict):
+    """Initialize a new registration session with auto-greeting"""
+    try:
+        session_id = request.get("session_id")
+        
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        
+        # Initialize session with greeting
+        cava_registration.sessions[session_id] = {
+            'first_name': None,
+            'last_name': None,
+            'wa_phone_number': None,
+            'password': None,
+            'password_confirmation': None,
+            'language': None,
+            'conversation_history': [{
+                'role': 'assistant',
+                'content': "Hi! I'm AVA, let me help you register. What is your name? 😊",
+                'timestamp': datetime.utcnow().isoformat()
+            }],
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        logger.info(f"🔄 Initialized registration session: {session_id}")
+        
+        return {
+            "success": True,
+            "session_id": session_id,
+            "greeting": "Hi! I'm AVA, let me help you register. What is your name? 😊"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Session initialization error: {e}")
+        raise HTTPException(status_code=500, detail=f"Initialization error: {str(e)}")
 
 @router.post("/api/v1/registration/cava")
 async def cava_registration_chat(request: ChatMessageRequest):
