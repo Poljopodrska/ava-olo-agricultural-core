@@ -22,6 +22,9 @@ from modules.auth.routes import create_farmer_account, get_password_hash
 # Import the WORKING LLM client from main chat
 from modules.chat.openai_key_manager import get_openai_client
 
+# Import version for debug info
+from modules.core.config import VERSION
+
 # Initialize router
 router = APIRouter(prefix="/api/v1", tags=["cava"])
 
@@ -219,18 +222,27 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
         
         # Extract required fields
         message = data.get("message", "").strip()
-        session_id = data.get("farmer_id", "")  # Use farmer_id as session_id for compatibility
+        session_id = data.get("session_id", "") or data.get("farmer_id", "")  # Accept both session_id and farmer_id
         language = data.get("language", "en")
         
         logger.info(f"🏛️ REGISTRATION LLM: message='{message}', session_id='{session_id}'")
         
+        print("=" * 80)
+        print("🚨 ACTUAL REGISTRATION ENDPOINT HIT - modules/cava/routes.py")
+        print(f"📨 Request data: {data}")
+        print(f"📨 Message: '{message}', Session ID: '{session_id}'")
+        print("=" * 80)
+        
         if not session_id:
-            raise HTTPException(status_code=400, detail="farmer_id is required")
+            print("❌ ERROR: No session_id provided")
+            raise HTTPException(status_code=400, detail="session_id is required")
         
         # Use the SAME working LLM client from main chat
+        print("🔍 Step 1: Getting OpenAI client...")
         client = get_openai_client()
         
         if not client:
+            print("❌ ERROR: Could not create OpenAI client")
             logger.error("Could not create OpenAI client for registration")
             return JSONResponse(
                 status_code=500,
@@ -240,6 +252,8 @@ async def cava_registration_chat(request: Request) -> JSONResponse:
                     "error_type": "llm_unavailable"
                 }
             )
+        else:
+            print("✅ OpenAI client created successfully")
         
         # Get or create session
         session = registration_sessions.get(session_id, {
@@ -398,6 +412,10 @@ Respond in {language} if possible."""
         messages.append({"role": "user", "content": message})
         
         try:
+            print("🔍 Step 2: Calling OpenAI API...")
+            print(f"   Model: gpt-3.5-turbo")
+            print(f"   Messages count: {len(messages)}")
+            
             # Call OpenAI using GPT-3.5-turbo for cost savings (15x cheaper than GPT-4)
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",  # Changed from gpt-4 for cost optimization
@@ -407,6 +425,8 @@ Respond in {language} if possible."""
             )
             
             llm_response = response.choices[0].message.content
+            print(f"✅ OpenAI API call successful")
+            print(f"   Response: {llm_response[:200]}...")
             logger.info(f"✅ REGISTRATION LLM (GPT-3.5): {llm_response[:100]}...")
             
             # Add critical logging for debugging deployment issues
@@ -467,24 +487,45 @@ Respond in {language} if possible."""
             return JSONResponse(content=result)
             
         except Exception as e:
+            print("=" * 80)
+            print("❌ OPENAI API CALL FAILED")
+            print(f"Exception type: {type(e).__name__}")
+            print(f"Exception message: {str(e)}")
+            import traceback
+            print("Full traceback:")
+            traceback.print_exc()
+            print("=" * 80)
+            
             logger.error(f"Registration LLM error: {e}")
             return JSONResponse(
                 status_code=500,
                 content={
-                    "response": "I'm having trouble processing that. Please try again.",
+                    "response": f"DEBUG: OpenAI call failed: {type(e).__name__}: {str(e)}",
                     "error": True,
-                    "error_type": "llm_processing_error"
+                    "error_type": "llm_processing_error",
+                    "error_details": str(e)
                 }
             )
         
     except Exception as e:
+        print("=" * 80)
+        print("❌ MAIN EXCEPTION HANDLER")
+        print(f"Exception type: {type(e).__name__}")
+        print(f"Exception message: {str(e)}")
+        import traceback
+        print("Full traceback:")
+        traceback.print_exc()
+        print("=" * 80)
+        
         logger.error(f"CAVA registration error: {e}")
         return JSONResponse(
             status_code=500,
             content={
-                "response": "I'm having trouble processing your message. Please try again.",
+                "response": f"DEBUG: Main error: {type(e).__name__}: {str(e)}",
                 "registration_complete": False,
-                "error": True
+                "error": True,
+                "error_details": str(e),
+                "error_type": type(e).__name__
             }
         )
 
