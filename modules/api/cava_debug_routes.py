@@ -1,26 +1,164 @@
 #!/usr/bin/env python3
 """
-CAVA Production Debug Routes
-Comprehensive diagnostics to identify why context isn't working on AWS
+CAVA Debug Routes - Real-time debugging and verification
+Proves that tests are real and GPT integration is working
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import inspect
+from typing import Dict, Any
+import logging
 import os
-import sys
-import json
-import asyncio
+import time
 from datetime import datetime
-from typing import Dict, Any, List
+import httpx
 
+from modules.core.openai_config import OpenAIConfig
+from modules.cava.chat_engine import get_cava_engine
 from modules.core.database_manager import DatabaseManager
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/cava/debug", tags=["cava-debug"])
 
 class DebugResponse(BaseModel):
     status: str
     timestamp: str
     data: Dict[str, Any]
+
+@router.get("/openai-connection")
+async def debug_openai_connection() -> Dict[str, Any]:
+    """Debug why OpenAI connection might be failing"""
+    debug_info = {
+        "timestamp": datetime.now().isoformat(),
+        "environment_check": {},
+        "api_key_check": {},
+        "connection_test": {},
+        "cava_engine_status": {}
+    }
+    
+    # 1. Check environment variables
+    env_vars = ["OPENAI_API_KEY", "OPENAI_KEY", "openai_api_key"]
+    for var in env_vars:
+        value = os.getenv(var)
+        debug_info["environment_check"][var] = {
+            "present": value is not None,
+            "length": len(value) if value else 0,
+            "starts_with_sk": value.startswith("sk-") if value else False,
+            "preview": value[:15] + "..." if value and len(value) > 15 else value
+        }
+    
+    # 2. Check OpenAIConfig status
+    openai_status = OpenAIConfig.get_status()
+    debug_info["api_key_check"] = openai_status
+    
+    # 3. Test actual OpenAI connection
+    try:
+        client = OpenAIConfig.get_client()
+        if client:
+            # Try a minimal API call
+            start_time = time.time()
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": "Say 'connected' if you can hear me"}],
+                    max_tokens=10,
+                    temperature=0
+                )
+                
+                debug_info["connection_test"] = {
+                    "status": "success",
+                    "response": response.choices[0].message.content,
+                    "model": response.model,
+                    "latency_ms": (time.time() - start_time) * 1000,
+                    "usage": {
+                        "prompt_tokens": response.usage.prompt_tokens,
+                        "completion_tokens": response.usage.completion_tokens
+                    }
+                }
+            except Exception as api_error:
+                debug_info["connection_test"] = {
+                    "status": "api_error",
+                    "error": str(api_error),
+                    "error_type": type(api_error).__name__
+                }
+        else:
+            debug_info["connection_test"] = {
+                "status": "no_client",
+                "error": "OpenAI client not initialized"
+            }
+    except Exception as e:
+        debug_info["connection_test"] = {
+            "status": "exception",
+            "error": str(e),
+            "error_type": type(e).__name__
+        }
+    
+    # 4. Check CAVA engine status
+    cava_engine = get_cava_engine()
+    debug_info["cava_engine_status"] = cava_engine.get_status()
+    
+    return debug_info
+
+@router.post("/test-live-gpt")
+async def test_live_gpt_response(message: str = "What's the best fertilizer for tomatoes?") -> Dict[str, Any]:
+    """Test real GPT response vs fallback"""
+    test_result = {
+        "timestamp": datetime.now().isoformat(),
+        "test_message": message,
+        "gpt_response": None,
+        "fallback_response": None,
+        "using_gpt": False,
+        "response_source": None,
+        "execution_details": {}
+    }
+    
+    # Try GPT first
+    try:
+        cava_engine = get_cava_engine()
+        
+        # Ensure engine is initialized
+        if not cava_engine.initialized:
+            await cava_engine.initialize()
+        
+        # Get GPT response
+        start_time = time.time()
+        result = await cava_engine.chat(
+            session_id="test_session",
+            message=message,
+            farmer_context={"farmer_name": "Test User", "location": "Slovenia"}
+        )
+        
+        if result.get("success"):
+            test_result["gpt_response"] = result["response"]
+            test_result["using_gpt"] = True
+            test_result["response_source"] = "OpenAI GPT-3.5"
+            test_result["execution_details"] = {
+                "model": result.get("model", "unknown"),
+                "tokens_used": result.get("tokens_used", 0),
+                "latency_ms": (time.time() - start_time) * 1000
+            }
+        else:
+            test_result["gpt_error"] = result.get("error", "Unknown error")
+            test_result["fallback_response"] = "I can help with fertilizer recommendations. For tomatoes, a balanced NPK fertilizer works well."
+            test_result["response_source"] = "Fallback (GPT failed)"
+            
+    except Exception as e:
+        test_result["gpt_error"] = str(e)
+        test_result["error_type"] = type(e).__name__
+        test_result["fallback_response"] = "I can help with fertilizer recommendations. For tomatoes, a balanced NPK fertilizer works well."
+        test_result["response_source"] = "Fallback (Exception)"
+    
+    # Analyze response characteristics
+    response_text = test_result.get("gpt_response") or test_result.get("fallback_response", "")
+    test_result["response_analysis"] = {
+        "length": len(response_text),
+        "looks_like_gpt": len(response_text) > 100 and any(
+            phrase in response_text.lower() 
+            for phrase in ["npk", "nitrogen", "phosphorus", "soil", "growth"]
+        ),
+        "has_detail": len(response_text) > 200
+    }
+    
+    return test_result
 
 @router.get("/endpoints")
 async def debug_all_chat_endpoints():

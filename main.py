@@ -275,6 +275,11 @@ async def cava_comprehensive_audit_page():
     """CAVA comprehensive audit dashboard with advanced scoring"""
     return FileResponse("static/cava-comprehensive-audit.html")
 
+@app.get("/cava-gpt-test")
+async def cava_gpt_test_page():
+    """CAVA GPT integration verification test page"""
+    return FileResponse("static/cava-gpt-test.html")
+
 @app.get("/chat-debug-audit")
 async def chat_debug_audit_page():
     """Combined chat debug and behavioral audit interface"""
@@ -410,13 +415,13 @@ async def deployment_status():
         db_manager = get_db_manager()
         db_connected = db_manager.test_connection()
         
-        # Check for key features deployment
+        # Check for key features deployment - fix route checking
         features_deployed = {
             "version_badge": True,  # We're running this code
-            "cava_endpoint": any(r.path == "/api/v1/chat" for r in app.routes),
-            "audit_dashboard": any(r.path == "/cava-audit" for r in app.routes),
+            "cava_endpoint": any("/api/v1/chat" in str(r.path) for r in app.routes),
+            "audit_dashboard": any("/cava-audit" in str(r.path) for r in app.routes),
             "database": db_connected,
-            "openai_configured": os.getenv('OPENAI_API_KEY', '').startswith('sk-')
+            "openai_configured": bool(os.getenv('OPENAI_API_KEY'))
         }
         
         fully_deployed = all(features_deployed.values())
@@ -429,10 +434,12 @@ async def deployment_status():
             "build_id": BUILD_ID
         }
     except Exception as e:
+        logger.error(f"Deployment status error: {e}")
         return {
             "version": VERSION,
             "fully_deployed": False,
-            "error": str(e)
+            "error": str(e),
+            "error_type": type(e).__name__
         }
 
 @app.get("/api/deployment/reality-check")

@@ -141,17 +141,33 @@ class ComprehensiveAuditor:
     
     @staticmethod
     async def _check_intelligence_features() -> Dict[str, Any]:
-        """Check AI/intelligence features"""
+        """Check AI/intelligence features with real-time testing"""
         features = []
         score = 0
         
-        # Check OpenAI integration
-        openai_status = OpenAIConfig.get_status()
-        if openai_status.get("configured") and openai_status.get("api_key_valid"):
-            features.append({"name": "OpenAI GPT-3.5 Integration", "status": "implemented", "points": 30})
-            score += 30
-        else:
-            features.append({"name": "OpenAI GPT-3.5 Integration", "status": "missing", "points": 0})
+        # Check OpenAI integration with REAL test
+        try:
+            from modules.core.openai_config import OpenAIConfig
+            client = OpenAIConfig.get_client()
+            
+            if client:
+                # Actually test the connection
+                test_response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": "test"}],
+                    max_tokens=5
+                )
+                
+                if test_response and test_response.choices:
+                    features.append({"name": "OpenAI GPT-3.5 Integration", "status": "implemented", "points": 30})
+                    score += 30
+                else:
+                    features.append({"name": "OpenAI GPT-3.5 Integration", "status": "partial", "points": 15})
+                    score += 15
+            else:
+                features.append({"name": "OpenAI GPT-3.5 Integration", "status": "missing", "points": 0})
+        except Exception as e:
+            features.append({"name": "OpenAI GPT-3.5 Integration", "status": "missing", "points": 0, "error": str(e)})
         
         # Check intelligent responses
         cava_engine = get_cava_engine()

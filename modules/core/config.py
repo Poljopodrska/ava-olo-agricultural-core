@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250727203000'  # v3.5.23 - CAVA Complete Implementation
-COMMIT_HASH = "cava-complete"  # Universal version badge + GPT-3.5 + Comprehensive audit
+DEPLOYMENT_TIMESTAMP = '20250727210000'  # v3.5.24 - GPT Integration Fix & Audit Verification
+COMMIT_HASH = "gpt-fix"  # Real-time OpenAI testing + Debug endpoints + Fixed deployment status
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.5.23"
+VERSION = "v3.5.24"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
