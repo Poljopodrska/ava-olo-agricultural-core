@@ -62,6 +62,16 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
       
+      - name: Check/Create ECR repository
+        run: |
+          echo "📦 Checking if ECR repository exists..."
+          if ! aws ecr describe-repositories --repository-names ava-olo-agricultural-core --region us-east-1 2>/dev/null; then
+            echo "Creating ECR repository..."
+            aws ecr create-repository --repository-name ava-olo-agricultural-core --region us-east-1
+          else
+            echo "✅ Repository already exists"
+          fi
+      
       - name: Build and push image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
