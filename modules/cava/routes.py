@@ -132,6 +132,12 @@ def extract_registration_data(user_message: str, last_question_type: str = "", c
             if match and not collected_data.get(field_type):
                 extracted[field_type] = match.group(1).capitalize()
                 break
+        
+        # If still nothing extracted and we have no first name, assume single word is first name
+        if not extracted and not collected_data.get('first_name'):
+            words = message.strip().split()
+            if len(words) == 1 and words[0].replace('-', '').replace('.', '').isalpha():
+                extracted['first_name'] = words[0].capitalize()
     
     return extracted
 
