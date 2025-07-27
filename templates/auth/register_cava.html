@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="app-version" content="{{ version }}">
+    <title>CAVA Registration - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--ava-olive-primary) 0%, var(--ava-brown-primary) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .registration-container {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 900px;
+            height: 80vh;
+            min-height: 600px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--ava-brown-secondary);
+            display: flex;
+            overflow: hidden;
+        }
+        
+        /* Left Panel - Progress */
+        .progress-panel {
+            width: 300px;
+            background: var(--ava-brown-primary);
+            color: white;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .progress-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .progress-logo {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .progress-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .progress-subtitle {
+            font-size: 1rem;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+        
+        .progress-fields {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .progress-field {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-field.collected {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid #4CAF50;
+        }
+        
+        .progress-icon {
+            font-size: 1.5rem;
+            width: 30px;
+            text-align: center;
+        }
+        
+        .progress-label {
+            flex: 1;
+            font-weight: bold;
+        }
+        
+        .progress-status {
+            font-size: 1.2rem;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        
+        .progress-percentage {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        /* Right Panel - Chat */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f8f8;
+        }
+        
+        .chat-header {
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .chat-title {
+            font-size: 1.5rem;
+            color: var(--ava-brown-primary);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .chat-subtitle {
+            color: var(--ava-brown-muted);
+            font-size: 1rem;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .chat-message {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            font-size: 1rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .chat-message.user {
+            background: var(--ava-olive-primary);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .chat-message.cava {
+            background: white;
+            color: var(--ava-brown-primary);
+            align-self: flex-start;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .chat-message.error {
+            background: #FEE2E2;
+            color: #DC2626;
+            align-self: center;
+            border: 1px solid #DC2626;
+            max-width: 90%;
+        }
+        
+        .chat-welcome {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--ava-brown-muted);
+        }
+        
+        .chat-welcome-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .chat-welcome-title {
+            font-size: 1.5rem;
+            color: var(--ava-brown-primary);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .chat-welcome-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 20px;
+            border-bottom-left-radius: 5px;
+            margin: 10px 0;
+            width: fit-content;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--ava-brown-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+        
+        .chat-input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            resize: none;
+            max-height: 100px;
+            min-height: 50px;
+        }
+        
+        .chat-input:focus {
+            border-color: var(--ava-olive-primary);
+        }
+        
+        .chat-send-btn {
+            background: var(--ava-olive-primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .chat-send-btn:hover {
+            background: var(--ava-olive-secondary);
+            transform: scale(1.1);
+        }
+        
+        .chat-send-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .connection-status {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 20px;
+            margin: 0 20px 10px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+        
+        .success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(76, 175, 80, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .success-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            margin: 20px;
+        }
+        
+        .success-icon {
+            font-size: 4rem;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        .success-title {
+            font-size: 2rem;
+            color: var(--ava-brown-primary);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        .success-message {
+            font-size: 1.1rem;
+            color: var(--ava-brown-muted);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .success-button {
+            background: var(--ava-brown-primary);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .success-button:hover {
+            background: var(--ava-brown-secondary);
+            transform: translateY(-2px);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--ava-brown-primary);
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .back-link:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .version-display {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: var(--ava-brown-primary);
+            font-weight: bold;
+            z-index: 100;
+        }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .registration-container {
+                flex-direction: column;
+                height: 90vh;
+                max-width: 100%;
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .progress-panel {
+                width: 100%;
+                max-height: 200px;
+                padding: 20px;
+            }
+            
+            .progress-fields {
+                flex-direction: row;
+                overflow-x: auto;
+                gap: 10px;
+            }
+            
+            .progress-field {
+                min-width: 120px;
+                flex-direction: column;
+                text-align: center;
+                padding: 10px;
+            }
+            
+            .progress-icon {
+                margin-bottom: 5px;
+            }
+            
+            .progress-label {
+                font-size: 0.9rem;
+            }
+            
+            .chat-messages {
+                padding: 15px;
+            }
+            
+            .chat-message {
+                max-width: 85%;
+            }
+            
+            .back-link {
+                position: static;
+                display: inline-block;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Back to Home</a>
+    
+    <div class="registration-container">
+        <!-- Progress Panel -->
+        <div class="progress-panel">
+            <div class="progress-header">
+                <div class="progress-logo">🤖</div>
+                <h1 class="progress-title">CAVA Registration</h1>
+                <p class="progress-subtitle">
+                    Your AI assistant will guide you through creating your account
+                </p>
+            </div>
+            
+            <div class="progress-fields">
+                <div class="progress-field" id="progress-first-name">
+                    <div class="progress-icon">👤</div>
+                    <div class="progress-label">First Name</div>
+                    <div class="progress-status">❌</div>
+                </div>
+                
+                <div class="progress-field" id="progress-last-name">
+                    <div class="progress-icon">👥</div>
+                    <div class="progress-label">Last Name</div>
+                    <div class="progress-status">❌</div>
+                </div>
+                
+                <div class="progress-field" id="progress-phone">
+                    <div class="progress-icon">📱</div>
+                    <div class="progress-label">WhatsApp</div>
+                    <div class="progress-status">❌</div>
+                </div>
+                
+                <div class="progress-field" id="progress-password">
+                    <div class="progress-icon">🔒</div>
+                    <div class="progress-label">Password</div>
+                    <div class="progress-status">❌</div>
+                </div>
+                
+                <div class="progress-field" id="progress-confirmed">
+                    <div class="progress-icon">✅</div>
+                    <div class="progress-label">Confirmed</div>
+                    <div class="progress-status">❌</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="progress-percentage" id="progress-percentage">0% Complete</div>
+        </div>
+        
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h2 class="chat-title">🌾 CAVA Agricultural Assistant</h2>
+                <p class="chat-subtitle">Let's create your AVA OLO account together!</p>
+            </div>
+            
+            <div class="connection-status" id="connection-status">
+                ⚠️ CAVA AI is not connected. Using fallback mode.
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-welcome" id="chat-welcome">
+                    <div class="chat-welcome-icon">🌱</div>
+                    <div class="chat-welcome-title">Welcome to CAVA Registration!</div>
+                    <div class="chat-welcome-text">
+                        I'm CAVA, your intelligent agricultural assistant.<br>
+                        I'll help you create your account through natural conversation.<br>
+                        <strong>Just tell me your name to get started!</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="chat-input-container">
+                    <textarea 
+                        class="chat-input" 
+                        id="registration-input" 
+                        placeholder="Type your message... (e.g., 'My name is Peter Horvat')"
+                        rows="1"
+                    ></textarea>
+                    <button class="chat-send-btn" id="send-btn">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Overlay -->
+    <div class="success-overlay" id="success-overlay">
+        <div class="success-content">
+            <div class="success-icon">🎉</div>
+            <h2 class="success-title">Registration Complete!</h2>
+            <p class="success-message">
+                Welcome to AVA OLO! Your account has been created successfully.<br>
+                You can now access all agricultural features and services.
+            </p>
+            <button class="success-button" onclick="window.location.href='/dashboard'">
+                🌾 Go to Dashboard
+            </button>
+        </div>
+    </div>
+    
+    <div class="version-display">{{ version }} <span id="deployment-badge" class="deployment-badge" style="margin-left: 8px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; background: #FF9800; color: white;">...</span></div>
+    
+    <script src="/static/js/constitutional-interactions.js"></script>
+    <script>
+        window.AVA_VERSION = '{{ version }}';
+        
+        // Generate unique session ID
+        const sessionId = 'cava-reg-' + Date.now() + '-' + Math.random().toString(36);
+        let registrationComplete = false;
+        
+        // Update deployment badge
+        async function updateDeploymentBadge() {
+            const badge = document.getElementById('deployment-badge');
+            if (!badge) return;
+            
+            try {
+                const response = await fetch('/api/deployment/reality-check');
+                const data = await response.json();
+                const isReal = data.reality_status === 'REAL_DEPLOYMENT';
+                
+                badge.textContent = isReal ? 'REAL ✓' : 'FAKE ✗';
+                badge.style.background = isReal ? '#4CAF50' : '#F44336';
+                badge.style.color = 'white';
+            } catch (error) {
+                badge.textContent = '?';
+                badge.style.background = '#FF9800';
+                badge.style.color = 'white';
+            }
+        }
+        
+        // Check CAVA connection
+        async function checkCavaConnection() {
+            try {
+                const response = await fetch('/api/v1/registration/test-connection');
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('connection-status');
+                if (data.success && data.cava_connected) {
+                    statusDiv.style.display = 'none';
+                } else {
+                    statusDiv.style.display = 'block';
+                    statusDiv.innerHTML = '⚠️ CAVA AI is not fully connected. Registration will use fallback mode.';
+                }
+            } catch (error) {
+                console.error('Connection check failed:', error);
+            }
+        }
+        
+        // Send registration message
+        async function sendRegistrationMessage() {
+            const input = document.getElementById('registration-input');
+            const message = input.value.trim();
+            if (!message || registrationComplete) return;
+            
+            // Display user message
+            addMessage('user', message);
+            input.value = '';
+            input.disabled = true;
+            document.getElementById('send-btn').disabled = true;
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                // Send to CAVA registration API
+                const response = await fetch('/api/v1/registration/cava', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        message: message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Hide typing indicator
+                hideTypingIndicator();
+                
+                // Display CAVA response
+                if (data.success) {
+                    addMessage('cava', data.response);
+                    
+                    // Update progress
+                    updateProgress(data.collected_fields);
+                    
+                    // Check if complete
+                    if (data.registration_complete) {
+                        registrationComplete = true;
+                        setTimeout(() => {
+                            showSuccessOverlay();
+                        }, 1500);
+                    }
+                } else {
+                    addMessage('error', data.response || 'Registration error. Please try again.');
+                }
+                
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('error', 'Connection error. Please check your internet connection and try again.');
+                console.error('Registration error:', error);
+            } finally {
+                // Re-enable input
+                input.disabled = false;
+                document.getElementById('send-btn').disabled = false;
+                input.focus();
+            }
+        }
+        
+        // Add message to chat
+        function addMessage(sender, text) {
+            const messages = document.getElementById('chat-messages');
+            const welcome = document.getElementById('chat-welcome');
+            
+            // Hide welcome message on first interaction
+            if (welcome && sender !== 'error') {
+                welcome.style.display = 'none';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            messageDiv.textContent = text;
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Show typing indicator
+        function showTypingIndicator() {
+            const messages = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            messages.appendChild(typingDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Hide typing indicator
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        // Update progress indicators
+        function updateProgress(fields) {
+            const fieldMap = {
+                'first_name': 'progress-first-name',
+                'last_name': 'progress-last-name',
+                'wa_phone_number': 'progress-phone',
+                'password': 'progress-password',
+                'password_confirmed': 'progress-confirmed'
+            };
+            
+            let completedCount = 0;
+            const totalFields = Object.keys(fieldMap).length;
+            
+            for (const [field, elementId] of Object.entries(fieldMap)) {
+                const element = document.getElementById(elementId);
+                const statusSpan = element.querySelector('.progress-status');
+                
+                if (fields[field]) {
+                    element.classList.add('collected');
+                    statusSpan.textContent = '✅';
+                    completedCount++;
+                } else {
+                    element.classList.remove('collected');
+                    statusSpan.textContent = '❌';
+                }
+            }
+            
+            // Update progress bar
+            const percentage = Math.round((completedCount / totalFields) * 100);
+            document.getElementById('progress-fill').style.width = percentage + '%';
+            document.getElementById('progress-percentage').textContent = percentage + '% Complete';
+        }
+        
+        // Show success overlay
+        function showSuccessOverlay() {
+            document.getElementById('success-overlay').style.display = 'flex';
+        }
+        
+        // Auto-resize textarea
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+        
+        // Event listeners
+        document.getElementById('registration-input').addEventListener('input', function(e) {
+            autoResize(e.target);
+        });
+        
+        document.getElementById('registration-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendRegistrationMessage();
+            }
+        });
+        
+        document.getElementById('send-btn').addEventListener('click', sendRegistrationMessage);
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDeploymentBadge();
+            checkCavaConnection();
+            document.getElementById('registration-input').focus();
+        });
+    </script>
+</body>
+</html>

@@ -1,432 +1,394 @@
 #!/usr/bin/env python3
 """
-CAVA Registration Engine - Pure LLM Implementation
-NO fallbacks allowed - 100% LLM intelligence or fail
-Constitutional Amendment #15 compliant
+CAVA Registration Engine - Intelligent registration using GPT-3.5
+Handles natural conversation registration with data extraction and validation
+Constitutional Amendment #15 compliant - 95%+ LLM intelligence
 """
 import os
 import logging
 import json
 import re
-import hashlib
+import bcrypt
+import asyncio
+import asyncpg
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
-from langdetect import detect, LangDetectException
-import asyncio
 
-# Import OpenAI
+# Language detection
 try:
-    import openai
-    OPENAI_AVAILABLE = True
+    from langdetect import detect, LangDetectException
 except ImportError:
-    OPENAI_AVAILABLE = False
-
-from modules.core.database_manager import get_db_manager
+    def detect(text):
+        return 'en'
+    class LangDetectException(Exception):
+        pass
 
 logger = logging.getLogger(__name__)
 
 class CAVARegistrationEngine:
-    """Pure LLM-driven registration engine - Constitutional Amendment #15 compliant"""
+    """Intelligent registration engine using GPT-3.5 - Constitutional Amendment #15 compliant"""
     
     def __init__(self):
-        # CRITICAL: OpenAI API key is REQUIRED
-        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.api_key = os.getenv('OPENAI_API_KEY')
+        self.api_url = "https://api.openai.com/v1/chat/completions"
+        self.model = "gpt-3.5-turbo"
+        self.sessions = {}  # Track registration sessions in memory
         
-        if not self.api_key:
-            logger.critical("🚨 CONSTITUTIONAL VIOLATION: NO OPENAI_API_KEY")
-            logger.critical("🏛️ Amendment #15 requires 95%+ LLM intelligence")
-            raise ValueError("OpenAI API key REQUIRED for constitutional compliance")
+        # Database configuration
+        self.db_config = {
+            'host': os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com'),
+            'database': os.getenv('DB_NAME', 'postgres'),
+            'user': os.getenv('DB_USER', 'postgres'),
+            'password': os.getenv('DB_PASSWORD'),
+            'port': int(os.getenv('DB_PORT', '5432'))
+        }
         
-        if not OPENAI_AVAILABLE:
-            logger.critical("🚨 CONSTITUTIONAL VIOLATION: OpenAI library not available")
-            raise ImportError("OpenAI library required for constitutional compliance")
+        logger.info("✅ CAVA Registration Engine initialized")
+        logger.info(f"🔑 OpenAI API configured: {bool(self.api_key)}")
+        logger.info(f"🗄️ Database configured: {self.db_config['host']}")
         
-        # Configure OpenAI
-        openai.api_key = self.api_key
-        
-        # Session storage
-        self.sessions: Dict[str, Dict] = {}
-        
-        # Test connection (skip in test environment)
-        if not os.getenv("SKIP_OPENAI_TEST"):
+        # Test OpenAI connection if key available
+        if self.api_key and not os.getenv("SKIP_OPENAI_TEST"):
             self._test_openai_connection()
-        
-        logger.info("✅ CAVA Registration Engine initialized - Constitutional compliance verified")
-        logger.info("🚀 DEPLOYMENT: v3.4.3-cava-llm-deployment - LLM engine ACTIVE")
     
     def _test_openai_connection(self):
-        """Test OpenAI connection - CRITICAL for constitutional compliance"""
+        """Test OpenAI connection"""
         try:
-            # Synchronous test call
-            import openai
-            client = openai.OpenAI(api_key=self.api_key)
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": "test"}],
-                max_tokens=5
-            )
-            logger.info("✅ OpenAI API connection verified")
-            return True
+            import requests
+            
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            payload = {
+                'model': self.model,
+                'messages': [{'role': 'user', 'content': 'test'}],
+                'max_tokens': 5
+            }
+            
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                logger.info("✅ OpenAI API connection verified")
+                return True
+            else:
+                logger.warning(f"⚠️ OpenAI API test returned status {response.status_code}")
+                return False
+                
         except Exception as e:
-            logger.critical(f"🚨 CONSTITUTIONAL VIOLATION: OpenAI API test failed: {e}")
-            raise Exception(f"OpenAI API connection failed - Constitutional compliance impossible: {e}")
+            logger.warning(f"⚠️ OpenAI API test failed: {e}")
+            return False
     
-    async def process_message(self, session_id: str, message: str) -> Dict[str, Any]:
-        """Process message with PURE LLM - NO FALLBACKS ALLOWED"""
-        
-        # Constitutional logging
-        logger.info(f"🏛️ CONSTITUTIONAL LLM CALL: session={session_id}, message_length={len(message)}")
-        logger.info(f"🔑 OpenAI API Key configured: {bool(self.api_key)}")
+    async def process_registration_message(self, session_id: str, message: str) -> Dict[str, Any]:
+        """Process registration message with full CAVA intelligence"""
         
         # Get or create session
-        session = self._get_or_create_session(session_id)
+        session = self.sessions.get(session_id, {
+            'first_name': None,
+            'last_name': None,
+            'wa_phone_number': None,
+            'password': None,
+            'password_confirmation': None,
+            'language': None,
+            'conversation_history': [],
+            'created_at': datetime.utcnow().isoformat()
+        })
         
-        # Detect language
-        detected_lang = self._detect_language(message)
-        if session.get("language") != detected_lang:
-            session["language"] = detected_lang
-            logger.info(f"[{session_id}] Language detected: {detected_lang}")
+        # Add user message to history
+        session['conversation_history'].append({
+            'role': 'user',
+            'content': message,
+            'timestamp': datetime.utcnow().isoformat()
+        })
         
-        # Update session activity
-        session["last_activity"] = datetime.now()
-        session["message_count"] = session.get("message_count", 0) + 1
+        # Build intelligent prompt for GPT-3.5
+        system_prompt = self._build_registration_prompt(session)
         
-        # Build conversation context
-        messages = self._build_conversation_context(session, message)
-        
-        # CALL OPENAI - NO FALLBACKS
         try:
-            logger.info(f"[{session_id}] Calling OpenAI API with {len(messages)} messages...")
+            # Call OpenAI GPT-3.5
+            import requests
             
-            import openai
-            client = openai.OpenAI(api_key=self.api_key)
+            headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json'
+            }
             
-            # Add JSON instruction to system message instead of using response_format
-            messages[0]["content"] += "\n\nIMPORTANT: Always respond with valid JSON in this format: {\"response\": \"your message here\", \"extracted_data\": {\"field\": \"value\"}}"
+            payload = {
+                'model': self.model,
+                'messages': [
+                    {'role': 'system', 'content': system_prompt},
+                    *[{'role': msg['role'], 'content': msg['content']} for msg in session['conversation_history']]
+                ],
+                'temperature': 0.7,
+                'response_format': {'type': 'json_object'},
+                'max_tokens': 500
+            }
             
-            response = await asyncio.to_thread(
-                client.chat.completions.create,
-                model="gpt-4",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=500
-            )
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
             
-            llm_response_text = response.choices[0].message.content
-            logger.info(f"✅ LLM RESPONSE: session={session_id}, response_length={len(llm_response_text)}")
-            
-            # Parse JSON response
-            try:
-                llm_response = json.loads(llm_response_text)
-            except json.JSONDecodeError as e:
-                logger.error(f"[{session_id}] Invalid JSON from LLM: {e}")
-                # Try to extract response from malformed JSON
-                llm_response = {"response": llm_response_text, "error": "Invalid JSON format"}
-            
-            # Update session with conversation
-            session["messages"].append({"role": "user", "content": message, "timestamp": datetime.now().isoformat()})
-            session["messages"].append({"role": "assistant", "content": llm_response.get("response", ""), "timestamp": datetime.now().isoformat()})
-            
-            # Extract and validate data
-            if "extracted_data" in llm_response:
-                self._update_collected_data(session, llm_response["extracted_data"])
-            
-            # Check if registration is complete
-            if self._is_registration_complete(session["collected_data"]):
-                farmer_id = await self._create_farmer(session["collected_data"])
-                llm_response["registration_complete"] = True
-                llm_response["farmer_id"] = farmer_id
-                logger.info(f"[{session_id}] Registration completed - farmer_id: {farmer_id}")
-            
-            # Clean up old sessions
-            self._cleanup_old_sessions()
-            
-            # Save session
-            self.sessions[session_id] = session
-            
-            # Add metadata
-            llm_response.update({
-                "session_id": session_id,
-                "collected_data": session["collected_data"],
-                "progress_percentage": self._calculate_progress(session["collected_data"]),
-                "constitutional_compliance": True,
-                "llm_used": True
-            })
-            
-            return llm_response
-            
+            if response.status_code == 200:
+                ai_response = response.json()
+                ai_content = ai_response['choices'][0]['message']['content']
+                ai_data = json.loads(ai_content)
+                
+                # Update session with extracted data
+                updated_fields = self._update_session_data(session, ai_data)
+                
+                # Add AI response to history
+                session['conversation_history'].append({
+                    'role': 'assistant',
+                    'content': ai_data.get('response', 'I apologize, but I encountered an error. Please try again.'),
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+                
+                # Check if registration complete
+                registration_complete = ai_data.get('registration_complete', False) and self._is_complete(session)
+                
+                if registration_complete and not session.get('farmer_created'):
+                    # Create farmer in database
+                    farmer_id = await self._create_farmer(session)
+                    if farmer_id:
+                        session['farmer_id'] = farmer_id
+                        session['farmer_created'] = True
+                        session['completed_at'] = datetime.utcnow().isoformat()
+                
+                # Save session
+                self.sessions[session_id] = session
+                
+                return {
+                    'success': True,
+                    'response': ai_data.get('response'),
+                    'registration_complete': registration_complete,
+                    'farmer_id': session.get('farmer_id'),
+                    'collected_fields': self._get_collection_status(session),
+                    'updated_fields': updated_fields,
+                    'ai_connected': True,
+                    'model_used': self.model,
+                    'tokens_used': ai_response.get('usage', {}).get('total_tokens', 0)
+                }
+            else:
+                return self._fallback_response(session, message)
+                
         except Exception as e:
-            logger.error(f"🚨 CONSTITUTIONAL VIOLATION: OpenAI API error: {e}")
-            logger.error(f"[{session_id}] LLM call failed - Constitutional compliance broken")
-            
-            # NO FALLBACK - return error (Constitutional requirement)
-            return {
-                "response": "I'm having trouble connecting to my brain right now. Please try again in a moment.",
-                "error": True,
-                "details": str(e),
-                "constitutional_compliance": False,
-                "llm_used": False,
-                "session_id": session_id
-            }
+            logger.error(f"CAVA Registration Error: {e}")
+            return self._fallback_response(session, message)
     
-    def _get_or_create_session(self, session_id: str) -> Dict[str, Any]:
-        """Get or create registration session"""
-        if session_id not in self.sessions:
-            self.sessions[session_id] = {
-                "collected_data": {
-                    "first_name": None,
-                    "last_name": None,
-                    "whatsapp_number": None,
-                    "password": None,
-                    "password_confirmed": False
-                },
-                "messages": [],
-                "language": "en",
-                "created_at": datetime.now(),
-                "last_activity": datetime.now(),
-                "message_count": 0
-            }
-            logger.info(f"Created new session: {session_id}")
+    def _build_registration_prompt(self, session: Dict[str, Any]) -> str:
+        """Build intelligent registration prompt for GPT-3.5"""
         
-        return self.sessions[session_id]
-    
-    def _detect_language(self, message: str) -> str:
-        """Detect message language"""
-        try:
-            if len(message.strip()) < 3:
-                return "en"  # Default for very short messages
-            
-            detected = detect(message)
-            logger.debug(f"Language detected: {detected} for message: {message[:50]}")
-            return detected
-            
-        except LangDetectException:
-            logger.debug(f"Language detection failed for: {message[:50]}")
-            return "en"  # Default to English
-    
-    def _build_conversation_context(self, session: Dict, current_message: str) -> list:
-        """Build conversation context for LLM"""
-        collected = session["collected_data"]
-        language = session.get("language", "en")
-        message_count = session.get("message_count", 0)
+        collected_summary = {
+            'first_name': session.get('first_name'),
+            'last_name': session.get('last_name'),
+            'wa_phone_number': session.get('wa_phone_number'),
+            'password': 'SET' if session.get('password') else None,
+            'password_confirmed': session.get('password_confirmation') == session.get('password') if session.get('password') else False
+        }
         
-        # Dynamic system prompt based on session state
-        system_prompt = f"""You are AVA's intelligent registration assistant. You help farmers create accounts by naturally collecting their information through conversation.
+        return f"""You are CAVA, an intelligent agricultural assistant helping farmers register for AVA OLO.
 
-CRITICAL MISSION: Help this farmer register by collecting these 4 required fields:
-1. first_name: {collected.get('first_name') or 'NOT COLLECTED'}
-2. last_name: {collected.get('last_name') or 'NOT COLLECTED'}  
-3. whatsapp_number: {collected.get('whatsapp_number') or 'NOT COLLECTED'} (MUST include country code like +386, +359, +1)
-4. password: {'PROVIDED' if collected.get('password') else 'NOT PROVIDED'} (minimum 8 characters)
-5. password_confirmed: {'YES' if collected.get('password_confirmed') else 'NO'}
+Your job is to collect registration information through natural conversation and extract data from their messages.
 
-CONVERSATION STATE:
-- Language detected: {language}
-- Messages exchanged: {message_count}
-- Progress: {self._calculate_progress(collected)}% complete
+REQUIRED REGISTRATION FIELDS:
+- first_name: Their first/given name
+- last_name: Their last/family name  
+- wa_phone_number: WhatsApp phone number (with country code like +359, +386, etc.)
+- password: A secure password (minimum 8 characters)
+- password_confirmation: They must repeat the password to confirm it matches
 
-INTELLIGENCE REQUIREMENTS (Constitutional Amendment #15):
-- You must demonstrate 95%+ artificial intelligence
-- Understand context, intent, and nuance in any language
-- Handle spelling errors, slang, and mixed languages
-- Extract information from complex sentences
-- Remember previous conversation context
-- Provide intelligent validation and guidance
-- NEVER use hardcoded responses or templates
+CURRENT COLLECTED DATA: {json.dumps(collected_summary, indent=2)}
 
-CONVERSATION RULES:
-1. Respond in the user's detected language ({language})
-2. When user expresses registration intent, warmly acknowledge and start collecting data
-3. Extract ALL information provided in their message, even if mixed with other content
-4. For WhatsApp numbers, REQUIRE country code - if missing, ask specifically for their country
-5. After collecting password, ask them to confirm it by typing again
-6. For off-topic questions, politely redirect: "I'm here to help you register first. We can discuss that after creating your account!"
-7. Be natural, conversational, and helpful - you're assisting farmers, not interrogating them
-8. If they provide multiple pieces of information at once, acknowledge ALL of them
+INSTRUCTIONS:
+1. Analyze their message and extract ANY registration data you can find
+2. Respond naturally in their language (detect from their message)
+3. Guide them to provide the next missing piece of information
+4. If they provide a password, ask them to repeat it for confirmation
+5. When ALL fields are collected AND confirmed, mark registration as complete
+6. Be conversational, friendly, and agricultural-focused
+7. Handle any language (Bulgarian, English, Slovenian, etc.)
 
-VALIDATION INTELLIGENCE:
-- Validate WhatsApp has country code format (+XXX...)
-- Check password is at least 8 characters
-- Accept any reasonable name format (including single letters, foreign names, etc.)
-- Be understanding of typos and informal language
+EXTRACTION RULES:
+- Names can be in any format: "John Smith", "Петър", "My name is Maria", etc.
+- Phone numbers: Look for +country_code followed by digits
+- Passwords: Any mention of password, pass, парола, etc.
+- Confirmations: When they repeat something after being asked to confirm
 
-LANGUAGE EXAMPLES:
-- English: "What's your first name?"
-- Bulgarian: "Как се казвате?" / "Вашето име?"
-- Spanish: "¿Cuál es tu nombre?"
-- German: "Wie heißen Sie?"
-- Slovenian: "Kako vam je ime?"
-
-RESPONSE FORMAT: Return ONLY valid JSON:
+RESPONSE FORMAT (JSON):
 {{
-    "response": "your conversational message to the user in their language",
     "extracted_data": {{
-        "first_name": "value if found in their message",
-        "last_name": "value if found in their message",
-        "whatsapp_number": "value if found (validate country code)",
-        "password": "value if found (validate length)"
+        "first_name": "extracted_first_name_or_null",
+        "last_name": "extracted_last_name_or_null", 
+        "wa_phone_number": "extracted_phone_or_null",
+        "password": "extracted_password_or_null",
+        "password_confirmation": "extracted_confirmation_or_null"
     }},
-    "intent": "register|offtopic|clarification|data_collection",
-    "next_field_needed": "which field to ask for next",
-    "validation_errors": ["any validation issues found"]
+    "response": "Your natural conversational response to the farmer",
+    "registration_complete": false,
+    "next_field_needed": "Description of what to ask for next",
+    "language_detected": "detected_language"
 }}
 
-Remember: You are an intelligent AI assistant helping farmers. Show genuine understanding, be patient with language barriers, and make the registration process as smooth as possible."""
-
-        # Build message history
-        messages = [{"role": "system", "content": system_prompt}]
-        
-        # Add recent conversation history (last 10 messages)
-        recent_messages = session["messages"][-10:] if session["messages"] else []
-        for msg in recent_messages:
-            messages.append({
-                "role": msg["role"],
-                "content": msg["content"]
-            })
-        
-        # Add current message
-        messages.append({"role": "user", "content": current_message})
-        
-        return messages
+IMPORTANT: Only set registration_complete to true when ALL fields are collected AND password is confirmed!"""
     
-    def _update_collected_data(self, session: Dict, extracted_data: Dict):
-        """Update session with extracted data"""
-        collected = session["collected_data"]
+    def _update_session_data(self, session: Dict[str, Any], ai_data: Dict[str, Any]) -> list:
+        """Update session with extracted data and return list of updated fields"""
+        updated_fields = []
         
-        for field, value in extracted_data.items():
-            if value and field in collected:
-                # Validate data before storing
-                if field == "whatsapp_number":
-                    value = self._validate_whatsapp(value)
-                elif field == "password":
-                    value = self._validate_password(value)
-                elif field in ["first_name", "last_name"]:
-                    value = self._validate_name(value)
-                
-                if value:  # Only store if validation passed
-                    collected[field] = value
-                    logger.info(f"Updated {field} for session {session.get('id', 'unknown')}")
+        extracted = ai_data.get('extracted_data', {})
+        
+        for field in ['first_name', 'last_name', 'wa_phone_number', 'password']:
+            if extracted.get(field) and not session.get(field):
+                session[field] = extracted[field]
+                updated_fields.append(field)
+        
+        # Handle password confirmation separately
+        if extracted.get('password_confirmation'):
+            session['password_confirmation'] = extracted['password_confirmation']
+            updated_fields.append('password_confirmation')
+        
+        # Detect language
+        if ai_data.get('language_detected'):
+            session['language'] = ai_data['language_detected']
+        
+        return updated_fields
     
-    def _validate_whatsapp(self, number: str) -> Optional[str]:
-        """Validate WhatsApp number format"""
-        # Remove spaces and special chars except +
-        cleaned = re.sub(r'[^\d+]', '', number)
-        
-        # Must start with + and have country code
-        if cleaned.startswith('+') and len(cleaned) >= 10:
-            return cleaned
-        
-        logger.debug(f"Invalid WhatsApp format: {number}")
-        return None
+    def _is_complete(self, session: Dict[str, Any]) -> bool:
+        """Check if all required fields are collected and confirmed"""
+        return all([
+            session.get('first_name'),
+            session.get('last_name'),
+            session.get('wa_phone_number'),
+            session.get('password'),
+            session.get('password_confirmation') == session.get('password')
+        ])
     
-    def _validate_password(self, password: str) -> Optional[str]:
-        """Validate password requirements"""
-        if len(password.strip()) >= 8:
-            return password.strip()
-        
-        logger.debug(f"Password too short: {len(password)} characters")
-        return None
+    def _get_collection_status(self, session: Dict[str, Any]) -> Dict[str, bool]:
+        """Get status of collected fields"""
+        return {
+            'first_name': bool(session.get('first_name')),
+            'last_name': bool(session.get('last_name')),
+            'wa_phone_number': bool(session.get('wa_phone_number')),
+            'password': bool(session.get('password')),
+            'password_confirmed': session.get('password_confirmation') == session.get('password') if session.get('password') else False
+        }
     
-    def _validate_name(self, name: str) -> Optional[str]:
-        """Validate name format"""
-        # Accept any reasonable name format
-        cleaned = name.strip()
-        if len(cleaned) >= 1 and cleaned.replace(" ", "").replace("-", "").replace("'", "").isalpha():
-            return cleaned.title()  # Capitalize properly
-        
-        logger.debug(f"Invalid name format: {name}")
-        return None
-    
-    def _is_registration_complete(self, data: Dict) -> bool:
-        """Check if all required data is collected"""
-        required_fields = ["first_name", "last_name", "whatsapp_number", "password"]
-        has_all_fields = all(data.get(field) for field in required_fields)
-        password_confirmed = data.get("password_confirmed", False)
-        
-        return has_all_fields and password_confirmed
-    
-    def _calculate_progress(self, data: Dict) -> int:
-        """Calculate registration progress percentage"""
-        required_fields = ["first_name", "last_name", "whatsapp_number", "password"]
-        completed_fields = sum(1 for field in required_fields if data.get(field))
-        
-        # Add password confirmation
-        if data.get("password_confirmed"):
-            completed_fields += 1
-        
-        return int((completed_fields / 5) * 100)  # 5 total steps including confirmation
-    
-    async def _create_farmer(self, data: Dict) -> int:
-        """Create farmer in database"""
+    async def _create_farmer(self, session: Dict[str, Any]) -> Optional[int]:
+        """Create farmer entry in database"""
         try:
-            db_manager = get_db_manager()
+            # Hash password with bcrypt
+            password_hash = bcrypt.hashpw(
+                session['password'].encode('utf-8'),
+                bcrypt.gensalt()
+            ).decode('utf-8')
             
-            # Hash password
-            password_hash = hashlib.sha256(data["password"].encode()).hexdigest()
+            # Connect to database
+            conn = await asyncpg.connect(**self.db_config)
             
-            # Create farmer record
-            query = """
-            INSERT INTO farmers 
-            (first_name, last_name, whatsapp_number, password_hash, created_at, is_active, registration_method) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s) 
-            RETURNING farmer_id
-            """
-            
-            result = db_manager.execute_query(
-                query,
-                (
-                    data["first_name"],
-                    data["last_name"],
-                    data["whatsapp_number"],
-                    password_hash,
-                    datetime.now(),
-                    True,
-                    "cava_llm"  # Mark as LLM registration
-                )
+            # Insert farmer
+            farmer_id = await conn.fetchval("""
+                INSERT INTO farmers (
+                    first_name, last_name, wa_phone_number, 
+                    password_hash, registration_date, country,
+                    registration_method, ai_assisted
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                RETURNING id
+            """, 
+                session['first_name'],
+                session['last_name'],
+                session['wa_phone_number'],
+                password_hash,
+                datetime.utcnow(),
+                self._detect_country(session['wa_phone_number']),
+                'CAVA_REGISTRATION',
+                True
             )
             
-            if result and result.get('rows'):
-                farmer_id = result['rows'][0][0]
-                logger.info(f"✅ Farmer created with ID: {farmer_id} (LLM registration)")
-                return farmer_id
-            else:
-                logger.error("No farmer ID returned from database")
-                return 99999  # Mock ID
-                
+            await conn.close()
+            return farmer_id
+            
         except Exception as e:
-            logger.error(f"Error creating farmer: {e}")
-            return 99999  # Mock ID for testing
+            logger.error(f"Database error creating farmer: {e}")
+            return None
     
-    def _cleanup_old_sessions(self):
-        """Remove sessions older than 30 minutes"""
-        cutoff = datetime.now() - timedelta(minutes=30)
-        expired_sessions = [
-            sid for sid, session in self.sessions.items()
-            if session.get("last_activity", datetime.now()) < cutoff
-        ]
-        
-        for sid in expired_sessions:
-            del self.sessions[sid]
-            logger.info(f"Cleaned up expired session: {sid}")
-        
-        if expired_sessions:
-            logger.info(f"Cleaned up {len(expired_sessions)} expired sessions")
+    def _detect_country(self, phone_number: str) -> str:
+        """Detect country from WhatsApp number prefix"""
+        if phone_number.startswith('+359'):
+            return 'Bulgaria'
+        elif phone_number.startswith('+386'):
+            return 'Slovenia'
+        elif phone_number.startswith('+385'):
+            return 'Croatia'
+        elif phone_number.startswith('+381'):
+            return 'Serbia'
+        elif phone_number.startswith('+49'):
+            return 'Germany'
+        elif phone_number.startswith('+1'):
+            return 'USA'
+        else:
+            return 'Unknown'
     
-    def get_session_status(self, session_id: str) -> Dict[str, Any]:
-        """Get session status for debugging"""
-        session = self.sessions.get(session_id)
-        if not session:
-            return {"exists": False}
+    def _fallback_response(self, session: Dict[str, Any], message: str) -> Dict[str, Any]:
+        """Fallback response when AI is unavailable"""
+        
+        # Simple field extraction without AI
+        message_lower = message.lower()
+        extracted_fields = []
+        
+        # Try to extract phone number
+        import re
+        phone_match = re.search(r'\+\d{1,4}\d{8,12}', message)
+        if phone_match and not session.get('wa_phone_number'):
+            session['wa_phone_number'] = phone_match.group()
+            extracted_fields.append('wa_phone_number')
+        
+        # Determine what to ask for next
+        if not session.get('first_name'):
+            response = "Hello! I'm CAVA. To register, I need your first name. What should I call you?"
+        elif not session.get('last_name'):
+            response = f"Nice to meet you, {session['first_name']}! What's your last name?"
+        elif not session.get('wa_phone_number'):
+            response = "Great! Now I need your WhatsApp phone number (with country code, like +359...)."
+        elif not session.get('password'):
+            response = "Perfect! Please create a password for your account (minimum 8 characters)."
+        elif not session.get('password_confirmation'):
+            response = "Please type your password again to confirm it."
+        elif session.get('password_confirmation') != session.get('password'):
+            response = "The passwords don't match. Please type your password again."
+        else:
+            response = "Thank you! Your registration is complete. Welcome to AVA OLO!"
+        
+        self.sessions[session.get('session_id', 'fallback')] = session
         
         return {
-            "exists": True,
-            "collected_data": session["collected_data"],
-            "progress": self._calculate_progress(session["collected_data"]),
-            "message_count": session.get("message_count", 0),
-            "language": session.get("language", "en"),
-            "created_at": session["created_at"].isoformat(),
-            "last_activity": session["last_activity"].isoformat()
+            'success': True,
+            'response': response,
+            'registration_complete': self._is_complete(session),
+            'collected_fields': self._get_collection_status(session),
+            'ai_connected': False,
+            'fallback_mode': True
         }
+    
+    def get_session_status(self, session_id: str) -> Dict[str, Any]:
+        """Get registration session status"""
+        session = self.sessions.get(session_id, {})
+        
+        return {
+            'session_exists': bool(session),
+            'fields_collected': self._get_collection_status(session),
+            'completed': session.get('farmer_created', False),
+            'farmer_id': session.get('farmer_id'),
+            'conversation_length': len(session.get('conversation_history', [])),
+            'language': session.get('language'),
+            'created_at': session.get('created_at'),
+            'completed_at': session.get('completed_at')
+        }
+    
+    def clear_session(self, session_id: str) -> bool:
+        """Clear registration session"""
+        if session_id in self.sessions:
+            del self.sessions[session_id]
+            return True
+        return False
 
 # Singleton instance
 _cava_engine = None

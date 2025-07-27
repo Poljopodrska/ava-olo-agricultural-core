@@ -80,6 +80,9 @@ from api.env_dashboard_routes import router as env_dashboard_router
 # Import comprehensive audit routes
 from modules.api.cava_comprehensive_audit_routes import router as cava_comprehensive_audit_router
 
+# Import CAVA registration routes
+from modules.api.cava_registration_routes import router as cava_registration_router
+
 # Import for startup
 import asyncio
 from datetime import datetime
@@ -150,6 +153,7 @@ app.include_router(code_status_router)
 app.include_router(deployment_security_router)
 app.include_router(env_dashboard_router)
 app.include_router(cava_comprehensive_audit_router)
+app.include_router(cava_registration_router)
 
 @app.on_event("startup")
 async def startup_event():

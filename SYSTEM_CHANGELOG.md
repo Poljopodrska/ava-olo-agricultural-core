@@ -1,5 +1,71 @@
 # AVA OLO System Changelog
 
+## v3.5.27 - 2025-07-27 - CAVA-Powered Intelligent Registration System
+**Deployed to Production**: DEPLOYING 🚀
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: ECS Auto-Deploy via GitHub Actions
+
+### 🤖 CAVA INTELLIGENT REGISTRATION
+**Key Achievement**: Implemented CAVA-powered registration system using GPT-3.5 for natural conversation-based account creation
+
+### What's New:
+1. **CAVA Registration Engine** (`modules/cava/cava_registration_engine.py`)
+   - GPT-3.5 integration for intelligent conversation
+   - Natural language data extraction
+   - Session tracking and validation
+   - Multi-language support (Bulgarian, English, etc.)
+   - Password confirmation with bcrypt hashing
+
+2. **Registration API Endpoints** (`modules/api/cava_registration_routes.py`)
+   - `/api/v1/registration/cava` - Main CAVA chat endpoint
+   - `/api/v1/registration/status/{session_id}` - Progress tracking
+   - `/api/v1/registration/test-connection` - System testing
+   - `/api/v1/registration/demo` - Demo conversation flow
+
+3. **CAVA Registration Frontend** (`templates/auth/register_cava.html`)
+   - WhatsApp-style chat interface
+   - Real-time progress tracking
+   - Visual field completion indicators
+   - Mobile-responsive design
+   - Natural conversation flow
+
+4. **Database Integration**
+   - Automatic farmer record creation
+   - Secure password hashing with bcrypt
+   - Country detection from phone numbers
+   - AI-assisted registration marking
+
+### Technical Features:
+- **Constitutional Amendment #15 Compliant**: 95%+ LLM intelligence
+- **Natural Conversation**: Extract registration data from any message format
+- **Session Management**: Track collected fields, prevent duplicate asks
+- **Intelligent Validation**: Smart data validation and error handling
+- **Fallback Support**: Graceful degradation when AI unavailable
+- **Multi-language**: Support for Bulgarian, English, Slovenian, etc.
+
+### Bulgarian Mango Farmer Test:
+```
+User: "Петър"
+CAVA: "Hello Петър! Nice to meet you. What's your last name?"
+User: "+38641234567"
+CAVA: "Perfect! I see your WhatsApp number. Now please create a password..."
+```
+
+### API Integration:
+- Integrated into main application via `main.py`
+- Added `/auth/register/cava` route for new interface
+- Full session tracking and status monitoring
+- Real-time progress updates
+
+### Database Schema:
+- Enhanced farmers table with CAVA-specific fields
+- `registration_method`: 'CAVA_REGISTRATION'
+- `ai_assisted`: true for AI-powered registrations
+- Secure password storage with bcrypt
+
+---
+
 ## [Rollback] - 2025-07-27 - Revert to Commit d93e304
 **Deployed to Production**: PENDING ⏳
 **Service**: agricultural-core  

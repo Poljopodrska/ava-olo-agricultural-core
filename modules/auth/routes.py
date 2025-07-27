@@ -183,8 +183,16 @@ async def admin_login(request: Request):
 
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    """Display CAVA registration chat interface"""
-    return templates.TemplateResponse("cava_registration.html", {
+    """Display traditional form registration"""
+    return templates.TemplateResponse("auth/register.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@router.get("/register/cava", response_class=HTMLResponse)
+async def cava_register_page(request: Request):
+    """Display CAVA-powered intelligent registration"""
+    return templates.TemplateResponse("auth/register_cava.html", {
         "request": request,
         "version": VERSION
     })
