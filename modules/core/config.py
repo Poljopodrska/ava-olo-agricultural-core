@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250727210000'  # v3.5.24 - GPT Integration Fix & Audit Verification
-COMMIT_HASH = "gpt-fix"  # Real-time OpenAI testing + Debug endpoints + Fixed deployment status
+DEPLOYMENT_TIMESTAMP = '20250727214500'  # v3.5.26 - CAVA Chat GPT-3.5 Integration Fix
+COMMIT_HASH = "cava-gpt-fix"  # Fixed chat status + Added /chat/message endpoint + Real GPT integration
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.5.24"
+VERSION = "v3.5.26"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

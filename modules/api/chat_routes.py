@@ -611,6 +611,66 @@ async def chat_debug():
             "timestamp": datetime.now().isoformat()
         }
 
+@router.post("/chat/message")
+async def chat_message_endpoint(request: dict):
+    """Simple chat message endpoint for dashboard - routes to CAVA engine"""
+    try:
+        # Convert simple request to ChatRequest format
+        message = request.get("content", "")
+        if not message:
+            return {
+                "success": False,
+                "response": "Please provide a message",
+                "error": "No message content"
+            }
+        
+        # Use CAVA engine for intelligent responses
+        cava_engine = get_cava_engine()
+        
+        # Ensure engine is initialized
+        if not cava_engine.initialized:
+            await cava_engine.initialize()
+        
+        # Get farmer context (simplified for dashboard)
+        farmer_context = {
+            "farmer_name": "Dashboard User",
+            "location": "Slovenia",
+            "weather": {},
+            "fields": []
+        }
+        
+        # Get GPT response
+        result = await cava_engine.chat(
+            session_id="dashboard_session",
+            message=message,
+            farmer_context=farmer_context
+        )
+        
+        if result.get("success"):
+            return {
+                "success": True,
+                "response": result["response"],
+                "ai_connected": True,
+                "model": result.get("model", "gpt-3.5-turbo"),
+                "tokens_used": result.get("tokens_used", 0)
+            }
+        else:
+            return {
+                "success": False,
+                "response": "I'm having trouble processing your message right now. Please try again.",
+                "ai_connected": False,
+                "error": result.get("error", "Unknown error")
+            }
+            
+    except Exception as e:
+        logger.error(f"Chat message error: {e}")
+        return {
+            "success": False,
+            "response": "Chat service is temporarily unavailable. Please try again later.",
+            "ai_connected": False,
+            "error": str(e)
+        }
+
 @router.post("/chat/cava-engine", response_model=ChatResponse)
 async def chat_with_cava_engine(request: ChatRequest):
     """Direct chat using new CAVA Chat Engine with GPT-3.5"""
@@ -790,19 +850,48 @@ async def test_cava_direct():
 
 @router.get("/chat/status")
 async def chat_status():
-    """Quick status check for CAVA chat system"""
+    """Quick status check for CAVA chat system with OpenAI integration"""
     try:
+        # Check OpenAI connection first
+        from modules.core.openai_config import OpenAIConfig
+        openai_connected = False
+        openai_status = "Not configured"
+        
+        if OpenAIConfig.is_available():
+            try:
+                client = OpenAIConfig.get_client()
+                if client:
+                    # Test actual connection
+                    test_response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[{"role": "user", "content": "test"}],
+                        max_tokens=5
+                    )
+                    openai_connected = True
+                    openai_status = "Connected to GPT-3.5"
+            except Exception as e:
+                openai_status = f"Connection failed: {str(e)[:50]}"
+        else:
+            openai_status = "OpenAI client not available"
+        
+        # Check database
         db_manager = DatabaseManager()
-        async with db_manager.get_connection_async() as conn:
-            # Check if table exists and get count
-            total_messages = await conn.fetchval("SELECT COUNT(*) FROM chat_messages") or 0
-            recent_messages = await conn.fetchval("""
-                SELECT COUNT(*) FROM chat_messages 
-                WHERE timestamp > NOW() - INTERVAL '1 hour'
-            """) or 0
+        try:
+            async with db_manager.get_connection_async() as conn:
+                total_messages = await conn.fetchval("SELECT COUNT(*) FROM chat_messages") or 0
+                recent_messages = await conn.fetchval("""
+                    SELECT COUNT(*) FROM chat_messages 
+                    WHERE timestamp > NOW() - INTERVAL '1 hour'
+                """) or 0
+        except:
+            total_messages = 0
+            recent_messages = 0
         
         return {
             'status': 'operational',
+            'connected': openai_connected,
+            'has_api_key': bool(os.getenv('OPENAI_API_KEY')),
+            'openai_status': openai_status,
             'cava_enabled': True,
             'total_messages_stored': total_messages,
             'recent_messages': recent_messages,
