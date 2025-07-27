@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250727220000'  # v3.5.30 - Fix CAVA Registration GPT-3.5 Connection Error
-COMMIT_HASH = "cava-reg-gpt-fix"  # Fixed GPT-3.5 connection using httpx + Better error handling + Debug endpoint
+DEPLOYMENT_TIMESTAMP = '20250727223000'  # v3.5.31 - Debug Registration Connection with Verbose Logging
+COMMIT_HASH = "cava-reg-debug"  # Added comprehensive debug logging to find actual registration error
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.5.30"
+VERSION = "v3.5.31"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

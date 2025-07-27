@@ -70,33 +70,101 @@ async def initialize_registration_session(request: dict):
 
 @router.post("/api/v1/registration/cava")
 async def cava_registration_chat(request: ChatMessageRequest):
-    """CAVA-powered registration endpoint"""
+    """CAVA-powered registration endpoint with VERBOSE DEBUGGING"""
+    print("=" * 80)
+    print("🚨 REGISTRATION ENDPOINT HIT - FULL DEBUG MODE")
+    print(f"📨 Request: session_id={request.session_id}, message='{request.message}'")
+    print("=" * 80)
+    
     try:
+        # Step 1: Check CAVA engine status
+        print("🔍 Step 1: Checking CAVA registration engine...")
+        print(f"   Engine initialized: {cava_registration is not None}")
+        print(f"   OpenAI API key configured: {bool(cava_registration.api_key)}")
+        if cava_registration.api_key:
+            print(f"   API key preview: {cava_registration.api_key[:10]}...")
+        print(f"   Model: {cava_registration.model}")
+        print(f"   API URL: {cava_registration.api_url}")
+        
+        # Step 2: Test OpenAI directly first
+        print("🔍 Step 2: Testing OpenAI connection directly...")
+        import httpx
+        test_payload = {
+            'model': cava_registration.model,
+            'messages': [{'role': 'user', 'content': 'test'}],
+            'max_tokens': 5
+        }
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                test_response = await client.post(
+                    cava_registration.api_url,
+                    headers={
+                        "Authorization": f"Bearer {cava_registration.api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json=test_payload,
+                    timeout=10.0
+                )
+                print(f"   OpenAI test status: {test_response.status_code}")
+                if test_response.status_code != 200:
+                    print(f"   OpenAI error response: {test_response.text}")
+                else:
+                    print("   ✅ OpenAI connection test PASSED")
+        except Exception as test_e:
+            print(f"   ❌ OpenAI test FAILED: {type(test_e).__name__}: {test_e}")
+        
+        # Step 3: Check session state
+        print("🔍 Step 3: Checking session state...")
+        session = cava_registration.sessions.get(request.session_id, {})
+        print(f"   Session exists: {bool(session)}")
+        print(f"   Conversation history length: {len(session.get('conversation_history', []))}")
+        
+        # Step 4: Process with CAVA (original code)
+        print("🔍 Step 4: Processing with CAVA...")
         logger.info(f"🤖 CAVA Registration: session={request.session_id}, message='{request.message}'")
         logger.info(f"🔑 OpenAI API Key configured: {bool(cava_registration.api_key)}")
         
-        # Process with CAVA
         result = await cava_registration.process_registration_message(
             request.session_id,
             request.message
         )
         
+        print(f"🔍 Step 5: CAVA processing result:")
+        print(f"   Success: {result.get('success', False)}")
+        print(f"   AI Connected: {result.get('ai_connected', 'Unknown')}")
+        print(f"   Response: {result.get('response', 'No response')[:200]}...")
+        print(f"   Error in result: {result.get('error', False)}")
+        
         logger.info(f"📊 Registration result: success={result.get('success', False)}, complete={result.get('registration_complete', False)}")
         logger.info(f"💬 CAVA response: {result.get('response', 'No response')[:100]}...")
+        
+        print("=" * 80)
+        print("✅ REGISTRATION ENDPOINT COMPLETED SUCCESSFULLY")
+        print("=" * 80)
         
         return result
         
     except Exception as e:
-        logger.error(f"❌ CAVA Registration error: {e}")
+        print("=" * 80)
+        print("❌ REGISTRATION ENDPOINT EXCEPTION")
+        print(f"Exception type: {type(e).__name__}")
+        print(f"Exception message: {str(e)}")
         import traceback
+        print("Full traceback:")
+        traceback.print_exc()
+        print("=" * 80)
+        
+        logger.error(f"❌ CAVA Registration error: {e}")
         logger.error(f"📋 Full traceback: {traceback.format_exc()}")
         
         # Return friendly error instead of HTTP exception
         return {
             "success": False,
-            "response": "I'm having a small technical issue. Let me try again - what is your name?",
+            "response": f"DEBUG ERROR: {type(e).__name__}: {str(e)}",
             "error": True,
             "error_details": str(e),
+            "error_type": type(e).__name__,
             "registration_complete": False,
             "collected_fields": {
                 "first_name": False,
@@ -203,6 +271,83 @@ async def test_registration_connection():
             "success": False,
             "error": str(e),
             "message": "CAVA registration system has issues"
+        }
+
+@router.get("/api/v1/registration/test-gpt-minimal")
+async def test_gpt_minimal():
+    """Minimal GPT test - bypass all registration logic"""
+    print("🧪 MINIMAL GPT TEST STARTING")
+    
+    try:
+        # Test 1: Check if we have an API key
+        api_key = cava_registration.api_key
+        print(f"   API key exists: {bool(api_key)}")
+        
+        if not api_key:
+            return {
+                "success": False,
+                "error": "No OpenAI API key configured",
+                "step_failed": "api_key_check"
+            }
+        
+        # Test 2: Make minimal OpenAI request
+        import httpx
+        import json
+        
+        payload = {
+            "model": "gpt-3.5-turbo",
+            "messages": [{"role": "user", "content": "Say 'test success'"}],
+            "max_tokens": 10
+        }
+        
+        print(f"   Making request to: {cava_registration.api_url}")
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                cava_registration.api_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
+                json=payload,
+                timeout=30.0
+            )
+        
+        print(f"   Response status: {response.status_code}")
+        
+        if response.status_code == 200:
+            result_json = response.json()
+            ai_response = result_json['choices'][0]['message']['content']
+            print(f"   AI response: {ai_response}")
+            
+            return {
+                "success": True,
+                "message": "GPT connection works perfectly",
+                "ai_response": ai_response,
+                "status_code": response.status_code,
+                "model": "gpt-3.5-turbo"
+            }
+        else:
+            error_text = response.text
+            print(f"   Error response: {error_text}")
+            
+            return {
+                "success": False,
+                "error": f"OpenAI returned status {response.status_code}",
+                "error_response": error_text,
+                "step_failed": "openai_request"
+            }
+    
+    except Exception as e:
+        print(f"   Exception: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        return {
+            "success": False,
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "step_failed": "exception"
         }
 
 @router.post("/api/v1/registration/demo")
