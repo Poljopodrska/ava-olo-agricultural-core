@@ -498,6 +498,42 @@ async def test_cava_engine():
     return debug_info
 
 
+@router.post("/webhook-minimal")
+async def whatsapp_webhook_minimal(request: Request):
+    """Minimal webhook that mimics the test-cava endpoint success"""
+    resp = MessagingResponse()
+    
+    try:
+        # Get message from form data
+        form_data = await request.form()
+        message_body = form_data.get('Body', 'Hello')
+        
+        # Import and use CAVA exactly like test-cava does
+        from modules.cava.chat_engine import get_cava_engine
+        cava = get_cava_engine()
+        
+        # Initialize if needed (same as test)
+        if hasattr(cava, 'initialized') and not cava.initialized:
+            await cava.initialize()
+        
+        # Call chat with minimal context (same as test)
+        result = await cava.chat(
+            session_id="whatsapp_test",
+            message=message_body,
+            farmer_context={"farmer_name": "WhatsApp User"}
+        )
+        
+        if result.get("success"):
+            resp.message(result["response"])
+        else:
+            resp.message(f"CAVA error: {result.get('error', 'Unknown')}")
+            
+    except Exception as e:
+        resp.message(f"Minimal webhook error: {str(e)}")
+    
+    return Response(content=str(resp), media_type="application/xml")
+
+
 @router.get("/debug-imports")
 async def debug_imports():
     """Debug import paths and module structure"""

@@ -71,9 +71,7 @@ from modules.api.memory_training_routes import router as memory_training_router
 # NEW: Import emergency routes
 from modules.api.emergency_routes import router as emergency_router
 
-# Import WhatsApp module
-from modules.whatsapp.routes import router as whatsapp_router
-# Import new WhatsApp webhook handler
+# Import WhatsApp webhook handler (removed old conflicting router)
 from modules.whatsapp.webhook_handler import router as whatsapp_webhook_router
 
 # Import ENV dashboard module
@@ -133,7 +131,6 @@ app.include_router(cava_chat_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
-app.include_router(whatsapp_router)
 app.include_router(whatsapp_webhook_router)
 
 # NEW: Include chat debug and behavioral audit routers
