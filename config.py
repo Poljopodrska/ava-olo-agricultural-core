@@ -49,10 +49,16 @@ API_CONFIG = {
 TWILIO_CONFIG = {
     "account_sid": os.getenv("TWILIO_ACCOUNT_SID"),
     "auth_token": os.getenv("TWILIO_AUTH_TOKEN"),
-    "whatsapp_number": os.getenv("TWILIO_WHATSAPP_NUMBER"),  # Format: whatsapp:+1234567890
+    "whatsapp_number": os.getenv("TWILIO_WHATSAPP_NUMBER", "whatsapp:+385919857451"),  # Croatian WhatsApp number
     "webhook_url": os.getenv("TWILIO_WEBHOOK_URL"),  # Public URL for webhook
     "enabled": bool(os.getenv("TWILIO_ENABLED", "false").lower() == "true")
 }
+
+# For direct access in webhook handler
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER', 'whatsapp:+385919857451')
+BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com')
 
 # Logging Configuration
 LOG_CONFIG = {

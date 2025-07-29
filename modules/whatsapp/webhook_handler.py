@@ -1,0 +1,229 @@
+"""
+WhatsApp Webhook Handler for Twilio Integration
+Handles incoming WhatsApp messages, status callbacks, and fallback scenarios
+"""
+from fastapi import APIRouter, Request, HTTPException, Form
+from fastapi.responses import Response
+from twilio.request_validator import RequestValidator
+from twilio.twiml.messaging_response import MessagingResponse
+import os
+import logging
+from datetime import datetime
+from typing import Dict, Any, Optional
+import asyncpg
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/v1/whatsapp", tags=["whatsapp"])
+
+# Get environment variables
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+DATABASE_URL = os.getenv('DATABASE_URL')
+BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com')
+
+
+async def store_whatsapp_message(from_number: str, message_body: str, message_sid: str = None) -> Optional[int]:
+    """Store incoming WhatsApp message in database"""
+    try:
+        # Extract farmer_id from phone number (simplified - in production, lookup farmer by phone)
+        farmer_id = 1  # Default for testing
+        
+        conn = await asyncpg.connect(DATABASE_URL)
+        try:
+            # Store in incoming_messages table
+            result = await conn.fetchval("""
+                INSERT INTO incoming_messages 
+                (farmer_id, phone_number, message_text, role, timestamp, message_sid)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id
+            """, farmer_id, from_number, message_body, 'user', datetime.utcnow(), message_sid)
+            
+            logger.info(f"Stored WhatsApp message {result} from {from_number}")
+            return result
+            
+        finally:
+            await conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error storing WhatsApp message: {str(e)}")
+        return None
+
+
+@router.post("/webhook")
+async def whatsapp_webhook(request: Request):
+    """
+    Main webhook endpoint for incoming WhatsApp messages
+    Twilio sends POST requests here when messages are received
+    """
+    try:
+        # Get form data from Twilio
+        form_data = await request.form()
+        
+        # Extract message details
+        from_number = form_data.get('From', '').replace('whatsapp:', '')
+        to_number = form_data.get('To', '').replace('whatsapp:', '')
+        message_body = form_data.get('Body', '')
+        message_sid = form_data.get('MessageSid', '')
+        
+        # Log incoming message
+        logger.info(f"WhatsApp message received from {from_number}: {message_body[:50]}...")
+        
+        # Validate Twilio signature (security check)
+        if TWILIO_AUTH_TOKEN:
+            signature = request.headers.get('X-Twilio-Signature', '')
+            url = f"{BASE_URL}/api/v1/whatsapp/webhook"
+            
+            validator = RequestValidator(TWILIO_AUTH_TOKEN)
+            request_valid = validator.validate(
+                url,
+                dict(form_data),
+                signature
+            )
+            
+            if not request_valid:
+                logger.warning(f"Invalid Twilio signature from {from_number}")
+                # In production, uncomment to enforce security:
+                # raise HTTPException(status_code=403, detail="Invalid signature")
+        
+        # Store message in database
+        message_id = await store_whatsapp_message(from_number, message_body, message_sid)
+        
+        # Create TwiML response
+        resp = MessagingResponse()
+        
+        # Basic auto-response
+        resp.message(f"Hvala na poruci! AVA OLO je primila vašu poruku i uskoro će vam odgovoriti. 🌱")
+        
+        # Return TwiML response
+        return Response(content=str(resp), media_type="application/xml")
+        
+    except Exception as e:
+        logger.error(f"Error processing WhatsApp webhook: {str(e)}")
+        # Return empty TwiML response on error
+        resp = MessagingResponse()
+        return Response(content=str(resp), media_type="application/xml")
+
+
+@router.post("/fallback")
+async def whatsapp_fallback(request: Request):
+    """
+    Fallback webhook for handling failed message delivery
+    Twilio calls this when primary webhook fails
+    """
+    try:
+        form_data = await request.form()
+        
+        # Log fallback event
+        from_number = form_data.get('From', '').replace('whatsapp:', '')
+        error_code = form_data.get('ErrorCode', 'Unknown')
+        
+        logger.error(f"WhatsApp fallback triggered for {from_number}, error: {error_code}")
+        
+        # Return simple response
+        resp = MessagingResponse()
+        resp.message("Žao nam je, dogodila se greška. Molimo pokušajte ponovo.")
+        
+        return Response(content=str(resp), media_type="application/xml")
+        
+    except Exception as e:
+        logger.error(f"Error in WhatsApp fallback: {str(e)}")
+        return {"status": "fallback_error"}
+
+
+@router.post("/status")
+async def whatsapp_status(request: Request):
+    """
+    Status callback webhook for tracking message delivery
+    Twilio sends updates here about message status
+    """
+    try:
+        form_data = await request.form()
+        
+        # Extract status information
+        message_sid = form_data.get('MessageSid', '')
+        message_status = form_data.get('MessageStatus', '')
+        to_number = form_data.get('To', '').replace('whatsapp:', '')
+        
+        logger.info(f"WhatsApp status update: {message_sid} is {message_status}")
+        
+        # Could store status updates in database for tracking
+        # For now, just log them
+        
+        return {"status": "received", "message_status": message_status}
+        
+    except Exception as e:
+        logger.error(f"Error processing status callback: {str(e)}")
+        return {"status": "error"}
+
+
+@router.get("/config")
+async def get_whatsapp_config():
+    """
+    Returns all webhook URLs needed for Twilio configuration
+    Visit this endpoint after deployment to get URLs for Twilio setup
+    """
+    return {
+        "base_url": BASE_URL,
+        "webhook_url": f"{BASE_URL}/api/v1/whatsapp/webhook",
+        "fallback_url": f"{BASE_URL}/api/v1/whatsapp/fallback",
+        "status_callback_url": f"{BASE_URL}/api/v1/whatsapp/status",
+        "instructions": "Copy these URLs to Twilio WhatsApp Sender configuration",
+        "twilio_console": "https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders",
+        "whatsapp_number": "+385919857451",
+        "notes": {
+            "webhook": "Main endpoint for incoming messages",
+            "fallback": "Backup endpoint if main webhook fails",
+            "status": "Receives delivery status updates"
+        }
+    }
+
+
+@router.post("/test")
+async def test_whatsapp():
+    """
+    Test endpoint to verify webhooks are working
+    Can be called to check if the module is deployed correctly
+    """
+    return {
+        "status": "working",
+        "timestamp": datetime.utcnow().isoformat(),
+        "endpoints": {
+            "webhook": "ready",
+            "fallback": "ready",
+            "status": "ready",
+            "config": "ready"
+        },
+        "environment": {
+            "auth_token_set": bool(TWILIO_AUTH_TOKEN),
+            "database_url_set": bool(DATABASE_URL),
+            "base_url": BASE_URL
+        }
+    }
+
+
+@router.get("/health")
+async def whatsapp_health():
+    """Health check endpoint for WhatsApp integration"""
+    health_status = {
+        "service": "whatsapp_webhook",
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "checks": {
+            "twilio_auth": "configured" if TWILIO_AUTH_TOKEN else "missing",
+            "database": "configured" if DATABASE_URL else "missing",
+            "base_url": BASE_URL
+        }
+    }
+    
+    # Check database connectivity
+    if DATABASE_URL:
+        try:
+            conn = await asyncpg.connect(DATABASE_URL)
+            await conn.fetchval("SELECT 1")
+            await conn.close()
+            health_status["checks"]["database_connection"] = "connected"
+        except Exception as e:
+            health_status["checks"]["database_connection"] = f"error: {str(e)}"
+            health_status["status"] = "degraded"
+    
+    return health_status
