@@ -106,6 +106,9 @@ async def whatsapp_webhook(request: Request):
     Main webhook endpoint for incoming WhatsApp messages
     Twilio sends POST requests here when messages are received
     """
+    # Create response object early for error handling
+    resp = MessagingResponse()
+    
     try:
         # Get form data from Twilio
         form_data = await request.form()
@@ -118,6 +121,10 @@ async def whatsapp_webhook(request: Request):
         
         # Log incoming message
         logger.info(f"WhatsApp message received from {from_number}: {message_body[:50]}...")
+        
+        # DEBUG: Log all received data
+        logger.info(f"DEBUG - Form data: {dict(form_data)}")
+        logger.info(f"DEBUG - From: {from_number}, To: {to_number}, Body: {message_body}")
         
         # Validate Twilio signature (security check)
         if TWILIO_AUTH_TOKEN:
@@ -182,13 +189,13 @@ async def whatsapp_webhook(request: Request):
         except Exception as cava_error:
             logger.error(f"CAVA processing error: {str(cava_error)}")
             import traceback
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            tb = traceback.format_exc()
+            logger.error(f"Full traceback: {tb}")
             
-            # Fallback response
-            cava_response = f"Thank you for your message. I'm experiencing technical difficulties. Please try again shortly."
+            # Return error details for debugging
+            cava_response = f"Error: {str(cava_error)[:100]}... Please check logs."
         
         # Create TwiML response with CAVA's intelligent response
-        resp = MessagingResponse()
         resp.message(cava_response)
         
         # Return TwiML response
@@ -196,8 +203,11 @@ async def whatsapp_webhook(request: Request):
         
     except Exception as e:
         logger.error(f"Error processing WhatsApp webhook: {str(e)}")
-        # Return empty TwiML response on error
-        resp = MessagingResponse()
+        import traceback
+        logger.error(f"Webhook error traceback: {traceback.format_exc()}")
+        
+        # Return error message instead of empty response
+        resp.message(f"System error: {str(e)[:100]}...")
         return Response(content=str(resp), media_type="application/xml")
 
 
@@ -336,3 +346,75 @@ async def test_simple_response():
         return Response(content=str(resp), media_type="application/xml")
     except Exception as e:
         return {"error": str(e)}
+
+
+@router.post("/webhook-debug")
+async def whatsapp_webhook_debug(request: Request):
+    """Debug version of webhook - returns simple response to test basic functionality"""
+    try:
+        # Get form data
+        form_data = await request.form()
+        message_body = form_data.get('Body', 'No message')
+        from_number = form_data.get('From', 'Unknown')
+        
+        # Create simple response
+        resp = MessagingResponse()
+        resp.message(f"DEBUG: I received your message '{message_body}' from {from_number}. Basic webhook is working!")
+        
+        return Response(content=str(resp), media_type="application/xml")
+        
+    except Exception as e:
+        # Even simpler fallback
+        resp = MessagingResponse()
+        resp.message(f"DEBUG ERROR: {str(e)}")
+        return Response(content=str(resp), media_type="application/xml")
+
+
+@router.get("/test-cava")
+async def test_cava_engine():
+    """Test if CAVA engine can be imported and initialized"""
+    debug_info = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "checks": {}
+    }
+    
+    # Test 1: Can we import CAVA?
+    try:
+        from modules.cava.chat_engine import get_cava_engine
+        debug_info["checks"]["import_cava"] = "success"
+    except Exception as e:
+        debug_info["checks"]["import_cava"] = f"failed: {str(e)}"
+        return debug_info
+    
+    # Test 2: Can we get CAVA instance?
+    try:
+        cava = get_cava_engine()
+        debug_info["checks"]["get_cava_instance"] = "success"
+        debug_info["checks"]["cava_initialized"] = cava.initialized
+    except Exception as e:
+        debug_info["checks"]["get_cava_instance"] = f"failed: {str(e)}"
+        return debug_info
+    
+    # Test 3: Can we initialize CAVA?
+    try:
+        if not cava.initialized:
+            await cava.initialize()
+        debug_info["checks"]["initialize_cava"] = "success"
+    except Exception as e:
+        debug_info["checks"]["initialize_cava"] = f"failed: {str(e)}"
+    
+    # Test 4: Can we call chat?
+    try:
+        result = await cava.chat(
+            session_id="test_session",
+            message="Hello, this is a test",
+            farmer_context={"farmer_name": "Test User"}
+        )
+        debug_info["checks"]["cava_chat_call"] = "success"
+        debug_info["cava_response"] = result
+    except Exception as e:
+        debug_info["checks"]["cava_chat_call"] = f"failed: {str(e)}"
+        import traceback
+        debug_info["traceback"] = traceback.format_exc()
+    
+    return debug_info
