@@ -13,8 +13,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 import asyncpg
 
-# Import CAVA chat handling
-from modules.cava.chat_engine import get_cava_engine
+# CAVA import moved inside functions to avoid circular imports
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +152,9 @@ async def whatsapp_webhook(request: Request):
         # Process message through CAVA chat engine
         try:
             logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
+            
+            # Import CAVA here to avoid circular imports
+            from modules.cava.chat_engine import get_cava_engine
             
             # Get CAVA engine instance
             cava_engine = get_cava_engine()
