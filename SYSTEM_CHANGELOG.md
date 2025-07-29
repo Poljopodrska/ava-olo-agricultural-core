@@ -1,5 +1,52 @@
 # AVA OLO System Changelog
 
+## v3.5.33 - 2025-07-29 - WhatsApp-CAVA Integration Success
+**Deployed to Production**: COMPLETED ✅
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: App Runner Auto-Deploy via GitHub Actions
+
+### 🎉 WHATSAPP INTEGRATION FULLY OPERATIONAL
+**Key Achievement**: WhatsApp messages now receive intelligent agricultural assistance from CAVA
+
+### Root Cause Identified:
+**Problem**: Two conflicting WhatsApp routers with same `/webhook` endpoint
+**Solution**: Removed old router import, disabled legacy files
+
+### What's Fixed:
+1. **Webhook Conflict Resolution**
+   - Removed `modules.whatsapp.routes` import from main.py
+   - Disabled old files: routes.py.disabled, twilio_handler.py.disabled
+   - Only using new `webhook_handler.py` with comprehensive debugging
+
+2. **CAVA Integration Working**
+   - WhatsApp messages successfully reach CAVA engine
+   - Farmers receive contextual AI responses
+   - Session management working correctly
+
+3. **Debug Endpoints Added**
+   - `/api/v1/whatsapp/test-cava` - Tests CAVA engine
+   - `/api/v1/whatsapp/debug-imports` - Shows module structure
+   - `/api/v1/whatsapp/webhook-minimal` - Minimal test webhook
+
+### Technical Changes:
+- **Router Cleanup**: Removed duplicate webhook endpoints
+- **File Structure**: Disabled conflicting modules
+- **Debugging**: Added comprehensive logging and test endpoints
+- **Error Messages**: Now show specific errors instead of generic responses
+
+### WhatsApp Success Example:
+```
+USER: "Hello AVA, I need help with my mango farm irrigation system"
+CAVA: "Hello! I'm CAVA, here to assist you with your mango farm irrigation system. 
+       Could you provide me with more details about your current irrigation setup..."
+```
+
+**WhatsApp Number**: +385919857451
+**Status**: FULLY OPERATIONAL ✅
+
+---
+
 ## v3.5.30 - 2025-07-27 - Fix CAVA Registration GPT-3.5 Connection Error
 **Deployed to Production**: DEPLOYING 🚀
 **Service**: agricultural-core  
