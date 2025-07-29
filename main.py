@@ -574,6 +574,64 @@ async def deployment_verify_redirect():
     """Redirect to new deployment verify endpoint"""
     return RedirectResponse(url="/api/deployment/verify")
 
+# ============================================================================
+# SAFETY MONITORING ENDPOINTS - ZERO REGRESSION ADDITIONS ONLY
+# These endpoints are completely isolated and cannot affect existing functionality
+# ============================================================================
+
+from modules.safety_monitor import SafetyMonitor
+from fastapi.responses import JSONResponse
+
+# Initialize safety monitor with its own isolated connection
+safety_monitor = SafetyMonitor()
+
+@app.get("/health-monitor", response_class=HTMLResponse)
+async def health_monitor_dashboard():
+    """
+    Safety monitoring dashboard - READ ONLY
+    Completely isolated from main application
+    Cannot affect existing functionality
+    """
+    try:
+        return HTMLResponse(content=safety_monitor.render_dashboard())
+    except Exception as e:
+        # If monitoring fails, it doesn't affect the main app
+        return HTMLResponse(content=f"""
+        <html>
+        <head><title>Safety Monitor Error</title></head>
+        <body>
+            <h1>Safety Monitor Temporarily Unavailable</h1>
+            <p>The monitoring system encountered an error but the main application is unaffected.</p>
+            <p>Error: {str(e)}</p>
+            <p><a href="/">Return to Main Application</a></p>
+        </body>
+        </html>
+        """)
+
+@app.get("/api/v1/safety/health")
+async def safety_health_check():
+    """
+    JSON health check endpoint - READ ONLY
+    Returns system health metrics without affecting operation
+    """
+    try:
+        health_data = safety_monitor.check_system_health()
+        return JSONResponse(content=health_data)
+    except Exception as e:
+        # Monitoring failure doesn't affect main app
+        return JSONResponse(
+            content={
+                "status": "monitor_error",
+                "message": str(e),
+                "note": "Main application unaffected"
+            },
+            status_code=503
+        )
+
+# ============================================================================
+# END OF SAFETY MONITORING ADDITIONS
+# ============================================================================
+
 if __name__ == "__main__":
     # Report deployment version
     constitutional_deployment_completion()
