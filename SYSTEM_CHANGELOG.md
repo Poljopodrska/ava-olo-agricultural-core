@@ -1,5 +1,74 @@
 # AVA OLO System Changelog
 
+## v3.5.35 - 2025-07-29 - Stripe Payment Integration with Configurable Pricing
+**Deployed to Production**: READY TO DEPLOY 🚀
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: App Runner Auto-Deploy via GitHub Actions
+
+### 💳 STRIPE PAYMENT SYSTEM IMPLEMENTED
+**Key Achievement**: Complete payment system with admin-configurable pricing and usage tracking
+
+### Features Implemented:
+1. **Database Schema**
+   - subscription_config table for dynamic pricing
+   - usage_tracking table for API/WhatsApp monitoring
+   - payment_history for transaction records
+   - config_audit_log for change tracking
+
+2. **Stripe Integration**
+   - Checkout session creation
+   - Customer management
+   - Subscription lifecycle handling
+   - Webhook processing
+
+3. **Usage Tracking Middleware**
+   - Automatic API call tracking
+   - WhatsApp message counting
+   - Subscription status enforcement
+   - Usage limit checking
+
+4. **Admin Dashboard**
+   - Real-time pricing configuration
+   - Subscription metrics viewing
+   - Configuration history
+   - No code deployment needed for price changes
+
+5. **WhatsApp Integration**
+   - Payment links in WhatsApp messages
+   - Trial expiration notifications
+   - Automatic subscription prompts
+
+### Technical Implementation:
+- **Modules Added**:
+  - `modules/stripe_integration.py` - Core Stripe functionality
+  - `modules/usage_middleware.py` - Request tracking
+  - `modules/stripe_webhook.py` - Event handling
+  - `modules/api/payment_routes.py` - Payment endpoints
+  - `modules/api/admin_routes.py` - Admin configuration
+  - `dashboards/admin-pricing.html` - Admin UI
+
+- **Database Changes**:
+  - Migration: `002_add_stripe_payments.sql`
+  - Default pricing: €25/month
+  - Default limits: 3,000 API calls, 1,000 WhatsApp messages
+
+- **Configuration**:
+  - Added Stripe environment variables
+  - Updated requirements.txt with stripe==7.8.0
+
+### Mango Farmer Test Case:
+```
+Bulgarian farmer: €25/month subscription
+Admin changes price: €25 → €30 (new subscriptions only)
+Usage tracking: 3,000 API calls tracked
+Family access: Son uses same subscription via linked account
+```
+
+**Status**: READY FOR DEPLOYMENT ✅
+
+---
+
 ## v3.5.33 - 2025-07-29 - WhatsApp-CAVA Integration Success
 **Deployed to Production**: COMPLETED ✅
 **Service**: agricultural-core  

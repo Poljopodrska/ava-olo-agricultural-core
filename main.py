@@ -74,6 +74,12 @@ from modules.api.emergency_routes import router as emergency_router
 # Import WhatsApp webhook handler (removed old conflicting router)
 from modules.whatsapp.webhook_handler import router as whatsapp_webhook_router
 
+# Import payment modules
+from modules.api.payment_routes import router as payment_router
+from modules.api.admin_routes import router as admin_payment_router
+from modules.stripe_webhook import router as stripe_webhook_router
+from modules.usage_middleware import track_usage_middleware
+
 # Import ENV dashboard module
 from api.env_dashboard_routes import router as env_dashboard_router
 
@@ -93,6 +99,11 @@ app = FastAPI(
     version=VERSION,
     description="WhatsApp-style farmer portal with weather, chat, and farm management"
 )
+
+# Add usage tracking middleware
+@app.middleware("http")
+async def usage_tracking(request: Request, call_next):
+    return await track_usage_middleware(request, call_next)
 
 # Add version badge middleware
 app.add_middleware(VersionBadgeMiddleware)
@@ -132,6 +143,11 @@ app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
 app.include_router(whatsapp_webhook_router)
+
+# Include payment routers
+app.include_router(payment_router)
+app.include_router(admin_payment_router)
+app.include_router(stripe_webhook_router)
 
 # NEW: Include chat debug and behavioral audit routers
 app.include_router(chat_debug_router)
@@ -260,6 +276,13 @@ async def startup_event():
     
     # Constitutional deployment completion
     constitutional_deployment_completion()
+
+@app.get("/subscription-success", response_class=HTMLResponse)
+async def subscription_success(request: Request):
+    """Subscription success page"""
+    return templates.TemplateResponse("subscription_success.html", {
+        "request": request
+    })
 
 @app.get("/")
 async def landing_page(request: Request):

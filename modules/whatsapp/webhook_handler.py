@@ -14,6 +14,7 @@ from typing import Dict, Any, Optional
 import asyncpg
 
 # CAVA import moved inside functions to avoid circular imports
+# Import payment functions for subscription checking
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +170,29 @@ async def whatsapp_webhook(request: Request):
             farmer = await get_or_create_farmer_by_phone(from_number)
             farmer_id = farmer['id']
             logger.info(f"Farmer retrieved/created: ID={farmer_id}, Name={farmer.get('manager_name')}")
+            
+            # Check subscription status
+            from modules.stripe_integration import has_active_subscription, create_payment_link_message
+            
+            # Handle linked accounts
+            primary_id = farmer.get('linked_to_farmer_id') or farmer_id
+            
+            if not await has_active_subscription(primary_id):
+                logger.info(f"Farmer {primary_id} does not have active subscription")
+                
+                # Check if trial expired
+                trial_end = farmer.get('trial_end_date')
+                if trial_end and trial_end < datetime.utcnow():
+                    # Trial expired, send payment link
+                    try:
+                        payment_message = await create_payment_link_message(primary_id)
+                        resp.message(payment_message)
+                        return Response(content=str(resp), media_type="application/xml")
+                    except Exception as e:
+                        logger.error(f"Error creating payment link: {str(e)}")
+                        resp.message("Your trial has expired. Please visit ava-olo.com to subscribe and continue using AVA OLO.")
+                        return Response(content=str(resp), media_type="application/xml")
+                # else: still in trial, continue normally
         except Exception as farmer_error:
             logger.error(f"Farmer lookup error: {str(farmer_error)}")
             import traceback
