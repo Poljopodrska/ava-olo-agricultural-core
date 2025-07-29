@@ -102,15 +102,22 @@ async def store_whatsapp_message(from_number: str, message_body: str, message_si
 @router.post("/webhook")
 async def whatsapp_webhook(request: Request):
     """
-    Main webhook endpoint for incoming WhatsApp messages
-    Twilio sends POST requests here when messages are received
+    Main webhook endpoint for incoming WhatsApp messages with comprehensive debugging
     """
-    # Create response object early for error handling
+    logger.info("=== WHATSAPP WEBHOOK START ===")
     resp = MessagingResponse()
     
     try:
+        # Log raw request for debugging
+        try:
+            body_bytes = await request.body()
+            logger.info(f"Raw request body: {body_bytes.decode('utf-8')}")
+        except Exception as body_error:
+            logger.error(f"Error reading body: {str(body_error)}")
+        
         # Get form data from Twilio
         form_data = await request.form()
+        logger.info(f"Parsed form data: {dict(form_data)}")
         
         # Extract message details
         from_number = form_data.get('From', '').replace('whatsapp:', '')
@@ -118,12 +125,7 @@ async def whatsapp_webhook(request: Request):
         message_body = form_data.get('Body', '')
         message_sid = form_data.get('MessageSid', '')
         
-        # Log incoming message
-        logger.info(f"WhatsApp message received from {from_number}: {message_body[:50]}...")
-        
-        # DEBUG: Log all received data
-        logger.info(f"DEBUG - Form data: {dict(form_data)}")
-        logger.info(f"DEBUG - From: {from_number}, To: {to_number}, Body: {message_body}")
+        logger.info(f"Extracted - From: {from_number}, To: {to_number}, Body: {message_body}, SID: {message_sid}")
         
         # Validate Twilio signature (security check)
         if TWILIO_AUTH_TOKEN:
@@ -142,26 +144,93 @@ async def whatsapp_webhook(request: Request):
                 # In production, uncomment to enforce security:
                 # raise HTTPException(status_code=403, detail="Invalid signature")
         
+        # Test database connection first
+        logger.info("Testing database connection...")
+        try:
+            if DATABASE_URL:
+                conn = await asyncpg.connect(DATABASE_URL)
+                await conn.fetchval("SELECT 1")
+                await conn.close()
+                logger.info("Database connection: OK")
+            else:
+                logger.error("DATABASE_URL not set!")
+                resp.message("Debug: DATABASE_URL not configured")
+                return Response(content=str(resp), media_type="application/xml")
+        except Exception as db_error:
+            logger.error(f"Database connection error: {str(db_error)}")
+            import traceback
+            logger.error(f"DB traceback: {traceback.format_exc()}")
+            resp.message(f"Debug: DB Error - {str(db_error)[:100]}")
+            return Response(content=str(resp), media_type="application/xml")
+        
         # Get or create farmer
-        farmer = await get_or_create_farmer_by_phone(from_number)
-        farmer_id = farmer['id']
+        logger.info("Getting/creating farmer...")
+        try:
+            farmer = await get_or_create_farmer_by_phone(from_number)
+            farmer_id = farmer['id']
+            logger.info(f"Farmer retrieved/created: ID={farmer_id}, Name={farmer.get('manager_name')}")
+        except Exception as farmer_error:
+            logger.error(f"Farmer lookup error: {str(farmer_error)}")
+            import traceback
+            logger.error(f"Farmer traceback: {traceback.format_exc()}")
+            resp.message(f"Debug: Farmer Error - {str(farmer_error)[:100]}")
+            return Response(content=str(resp), media_type="application/xml")
         
         # Store message in database
-        message_id = await store_whatsapp_message(from_number, message_body, message_sid, farmer_id)
+        logger.info("Storing message in database...")
+        try:
+            message_id = await store_whatsapp_message(from_number, message_body, message_sid, farmer_id)
+            logger.info(f"Message stored with ID: {message_id}")
+        except Exception as store_error:
+            logger.error(f"Message storage error: {str(store_error)}")
+            # Continue anyway
+        
+        # Test CAVA import
+        logger.info("Testing CAVA import...")
+        try:
+            from modules.cava.chat_engine import get_cava_engine
+            logger.info("CAVA import successful")
+        except Exception as import_error:
+            logger.error(f"CAVA import error: {str(import_error)}")
+            import traceback
+            logger.error(f"Import traceback: {traceback.format_exc()}")
+            
+            # Try alternative imports
+            logger.info("Trying alternative CAVA imports...")
+            try:
+                import sys
+                logger.info(f"Python path: {sys.path}")
+                logger.info(f"Current directory: {os.getcwd()}")
+                
+                # List what's in modules directory
+                modules_path = os.path.join(os.getcwd(), 'modules')
+                if os.path.exists(modules_path):
+                    logger.info(f"Modules directory contents: {os.listdir(modules_path)}")
+                    cava_path = os.path.join(modules_path, 'cava')
+                    if os.path.exists(cava_path):
+                        logger.info(f"CAVA directory contents: {os.listdir(cava_path)}")
+            except Exception as e:
+                logger.error(f"Directory listing error: {str(e)}")
+            
+            resp.message(f"Debug: CAVA Import Error - {str(import_error)[:100]}")
+            return Response(content=str(resp), media_type="application/xml")
         
         # Process message through CAVA chat engine
+        logger.info("Starting CAVA processing...")
         try:
-            logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
-            
-            # Import CAVA here to avoid circular imports
-            from modules.cava.chat_engine import get_cava_engine
-            
             # Get CAVA engine instance
+            logger.info("Getting CAVA engine instance...")
             cava_engine = get_cava_engine()
+            logger.info(f"CAVA engine obtained: {type(cava_engine)}")
             
-            # Ensure engine is initialized
-            if not cava_engine.initialized:
+            # Check initialization
+            logger.info(f"CAVA initialized: {getattr(cava_engine, 'initialized', 'No initialized attribute')}")
+            
+            # Try to initialize if needed
+            if hasattr(cava_engine, 'initialized') and not cava_engine.initialized:
+                logger.info("Initializing CAVA engine...")
                 await cava_engine.initialize()
+                logger.info("CAVA engine initialized")
             
             # Build farmer context
             farmer_context = {
@@ -170,32 +239,36 @@ async def whatsapp_webhook(request: Request):
                 "farm_name": farmer.get('farm_name', 'Farm'),
                 "location": farmer.get('city', 'Unknown'),
                 "phone": from_number,
-                "weather": {},  # Could fetch weather data here
-                "fields": []    # Could fetch farmer's fields here
+                "weather": {},
+                "fields": []
             }
+            logger.info(f"Farmer context: {farmer_context}")
             
             # Get AI response from CAVA
+            logger.info("Calling CAVA chat method...")
             result = await cava_engine.chat(
                 session_id=f"whatsapp_{from_number}",
                 message=message_body,
                 farmer_context=farmer_context
             )
+            logger.info(f"CAVA result: {result}")
             
             if result.get("success"):
                 cava_response = result["response"]
                 logger.info(f"CAVA response success: {cava_response[:100]}...")
             else:
                 logger.error(f"CAVA returned error: {result.get('error')}")
-                cava_response = "I apologize, but I'm having trouble processing your message. Please try again in a moment."
+                cava_response = f"Debug: CAVA returned error - {result.get('error', 'Unknown error')}"
                 
         except Exception as cava_error:
             logger.error(f"CAVA processing error: {str(cava_error)}")
+            logger.error(f"Error type: {type(cava_error)}")
             import traceback
             tb = traceback.format_exc()
             logger.error(f"Full traceback: {tb}")
             
-            # Return error details for debugging
-            cava_response = f"Error: {str(cava_error)[:100]}... Please check logs."
+            # Return detailed error for debugging
+            cava_response = f"Debug: CAVA Error - {str(cava_error)[:200]}"
         
         # Create TwiML response with CAVA's intelligent response
         resp.message(cava_response)
@@ -386,20 +459,23 @@ async def test_cava_engine():
         debug_info["checks"]["import_cava"] = "success"
     except Exception as e:
         debug_info["checks"]["import_cava"] = f"failed: {str(e)}"
+        import traceback
+        debug_info["import_traceback"] = traceback.format_exc()
         return debug_info
     
     # Test 2: Can we get CAVA instance?
     try:
         cava = get_cava_engine()
         debug_info["checks"]["get_cava_instance"] = "success"
-        debug_info["checks"]["cava_initialized"] = cava.initialized
+        debug_info["checks"]["cava_type"] = str(type(cava))
+        debug_info["checks"]["cava_initialized"] = getattr(cava, 'initialized', 'No initialized attribute')
     except Exception as e:
         debug_info["checks"]["get_cava_instance"] = f"failed: {str(e)}"
         return debug_info
     
     # Test 3: Can we initialize CAVA?
     try:
-        if not cava.initialized:
+        if hasattr(cava, 'initialized') and not cava.initialized:
             await cava.initialize()
         debug_info["checks"]["initialize_cava"] = "success"
     except Exception as e:
@@ -417,6 +493,67 @@ async def test_cava_engine():
     except Exception as e:
         debug_info["checks"]["cava_chat_call"] = f"failed: {str(e)}"
         import traceback
-        debug_info["traceback"] = traceback.format_exc()
+        debug_info["chat_traceback"] = traceback.format_exc()
+    
+    return debug_info
+
+
+@router.get("/debug-imports")
+async def debug_imports():
+    """Debug import paths and module structure"""
+    import sys
+    import os
+    
+    debug_info = {
+        "current_dir": os.getcwd(),
+        "python_path": sys.path[:5],  # First 5 paths
+        "modules_in_cwd": [],
+        "cava_search": []
+    }
+    
+    # List current directory
+    try:
+        debug_info["cwd_contents"] = os.listdir(os.getcwd())
+    except:
+        debug_info["cwd_contents"] = "Error listing cwd"
+    
+    # Check modules directory
+    modules_path = os.path.join(os.getcwd(), 'modules')
+    if os.path.exists(modules_path):
+        try:
+            debug_info["modules_contents"] = os.listdir(modules_path)
+            
+            # Check CAVA directory
+            cava_path = os.path.join(modules_path, 'cava')
+            if os.path.exists(cava_path):
+                debug_info["cava_contents"] = os.listdir(cava_path)
+        except Exception as e:
+            debug_info["modules_error"] = str(e)
+    
+    # Try different import methods
+    import_results = {}
+    
+    # Method 1: Direct import
+    try:
+        from modules.cava.chat_engine import get_cava_engine
+        import_results["direct_import"] = "Success"
+    except Exception as e:
+        import_results["direct_import"] = str(e)
+    
+    # Method 2: Module import
+    try:
+        import modules.cava.chat_engine
+        import_results["module_import"] = "Success"
+    except Exception as e:
+        import_results["module_import"] = str(e)
+    
+    # Method 3: Check if chat_engine exists
+    try:
+        chat_engine_path = os.path.join(os.getcwd(), 'modules', 'cava', 'chat_engine.py')
+        import_results["chat_engine_exists"] = os.path.exists(chat_engine_path)
+    except:
+        import_results["chat_engine_exists"] = "Error checking"
+    
+    debug_info["import_results"] = import_results
     
     return debug_info
