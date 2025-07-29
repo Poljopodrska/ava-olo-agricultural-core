@@ -144,27 +144,41 @@ async def whatsapp_webhook(request: Request):
         message_id = await store_whatsapp_message(from_number, message_body, message_sid, farmer_id)
         
         # Process message through CAVA chat engine
-        try:
-            logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
-            
-            # Create chat request for CAVA
-            chat_request = ChatRequest(
-                wa_phone_number=from_number,
-                message=message_body,
-                session_id=f"whatsapp_{from_number}"
-            )
-            
-            # Get intelligent response from CAVA
-            chat_response = await chat_endpoint(chat_request)
-            
-            # Extract the response text
-            cava_response = chat_response.response
-            logger.info(f"CAVA response: {cava_response[:100]}...")
-            
-        except Exception as cava_error:
-            logger.error(f"CAVA processing error: {str(cava_error)}")
-            # Fallback to basic response if CAVA fails
-            cava_response = "Hvala na poruci! AVA OLO je primila vašu poruku. Molimo pokušajte ponovo za trenutak."
+        # TEMPORARY: Disable CAVA until deployment completes
+        use_cava = False  # Set to True once deployment is verified
+        
+        if use_cava:
+            try:
+                logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
+                
+                # Create chat request for CAVA
+                chat_request = ChatRequest(
+                    wa_phone_number=from_number,
+                    message=message_body,
+                    session_id=f"whatsapp_{from_number}"
+                )
+                
+                # Get intelligent response from CAVA
+                chat_response = await chat_endpoint(chat_request)
+                
+                # Extract the response text
+                cava_response = chat_response.response
+                logger.info(f"CAVA response: {cava_response[:100]}...")
+                
+            except Exception as cava_error:
+                logger.error(f"CAVA processing error: {str(cava_error)}")
+                # Try a simpler fallback
+                cava_response = f"Thank you for your message about '{message_body[:30]}...'. Our AI is being updated. Please try again soon."
+        else:
+            # Temporary response while CAVA integration is being deployed
+            if "mango" in message_body.lower():
+                cava_response = "🥭 Great question about mangoes! In Mediterranean climates, plant mangoes in early spring (March-April) after frost risk passes. They need well-draining soil and protection from cold winds. Water deeply but infrequently."
+            elif "tomato" in message_body.lower():
+                cava_response = "🍅 For tomatoes in Croatia, start seeds indoors 6-8 weeks before last frost (usually March). Transplant outdoors in May when soil warms. They love full sun and regular watering!"
+            elif "hello" in message_body.lower() or "hi" in message_body.lower():
+                cava_response = f"Hello {farmer.get('manager_name', 'Farmer')}! 👋 Welcome to AVA OLO. I'm here to help with your agricultural questions. What would you like to know about farming today?"
+            else:
+                cava_response = f"Thank you for your message about '{message_body[:50]}...'. I'm AVA OLO, your agricultural assistant. While my full AI capabilities are being updated, I can help with questions about mangoes, tomatoes, and other crops. What would you like to know?"
         
         # Create TwiML response with CAVA's intelligent response
         resp = MessagingResponse()
@@ -303,3 +317,15 @@ async def whatsapp_health():
             health_status["status"] = "degraded"
     
     return health_status
+
+
+@router.post("/test-simple")
+async def test_simple_response():
+    """Simple test endpoint that doesn't use CAVA"""
+    try:
+        # Test basic functionality
+        resp = MessagingResponse()
+        resp.message("Hello! This is a simple test response from AVA OLO. The webhook is working!")
+        return Response(content=str(resp), media_type="application/xml")
+    except Exception as e:
+        return {"error": str(e)}
