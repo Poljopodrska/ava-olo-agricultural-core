@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional
 import asyncpg
 
 # Import CAVA chat handling
-from modules.api.chat_routes import ChatRequest, chat_endpoint
+from modules.cava.chat_engine import get_cava_engine
 
 logger = logging.getLogger(__name__)
 
@@ -144,41 +144,48 @@ async def whatsapp_webhook(request: Request):
         message_id = await store_whatsapp_message(from_number, message_body, message_sid, farmer_id)
         
         # Process message through CAVA chat engine
-        # TEMPORARY: Disable CAVA until deployment completes
-        use_cava = False  # Set to True once deployment is verified
-        
-        if use_cava:
-            try:
-                logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
-                
-                # Create chat request for CAVA
-                chat_request = ChatRequest(
-                    wa_phone_number=from_number,
-                    message=message_body,
-                    session_id=f"whatsapp_{from_number}"
-                )
-                
-                # Get intelligent response from CAVA
-                chat_response = await chat_endpoint(chat_request)
-                
-                # Extract the response text
-                cava_response = chat_response.response
-                logger.info(f"CAVA response: {cava_response[:100]}...")
-                
-            except Exception as cava_error:
-                logger.error(f"CAVA processing error: {str(cava_error)}")
-                # Try a simpler fallback
-                cava_response = f"Thank you for your message about '{message_body[:30]}...'. Our AI is being updated. Please try again soon."
-        else:
-            # Temporary response while CAVA integration is being deployed
-            if "mango" in message_body.lower():
-                cava_response = "🥭 Great question about mangoes! In Mediterranean climates, plant mangoes in early spring (March-April) after frost risk passes. They need well-draining soil and protection from cold winds. Water deeply but infrequently."
-            elif "tomato" in message_body.lower():
-                cava_response = "🍅 For tomatoes in Croatia, start seeds indoors 6-8 weeks before last frost (usually March). Transplant outdoors in May when soil warms. They love full sun and regular watering!"
-            elif "hello" in message_body.lower() or "hi" in message_body.lower():
-                cava_response = f"Hello {farmer.get('manager_name', 'Farmer')}! 👋 Welcome to AVA OLO. I'm here to help with your agricultural questions. What would you like to know about farming today?"
+        try:
+            logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
+            
+            # Get CAVA engine instance
+            cava_engine = get_cava_engine()
+            
+            # Ensure engine is initialized
+            if not cava_engine.initialized:
+                await cava_engine.initialize()
+            
+            # Build farmer context
+            farmer_context = {
+                "farmer_id": farmer_id,
+                "farmer_name": farmer.get('manager_name', 'Farmer'),
+                "farm_name": farmer.get('farm_name', 'Farm'),
+                "location": farmer.get('city', 'Unknown'),
+                "phone": from_number,
+                "weather": {},  # Could fetch weather data here
+                "fields": []    # Could fetch farmer's fields here
+            }
+            
+            # Get AI response from CAVA
+            result = await cava_engine.chat(
+                session_id=f"whatsapp_{from_number}",
+                message=message_body,
+                farmer_context=farmer_context
+            )
+            
+            if result.get("success"):
+                cava_response = result["response"]
+                logger.info(f"CAVA response success: {cava_response[:100]}...")
             else:
-                cava_response = f"Thank you for your message about '{message_body[:50]}...'. I'm AVA OLO, your agricultural assistant. While my full AI capabilities are being updated, I can help with questions about mangoes, tomatoes, and other crops. What would you like to know?"
+                logger.error(f"CAVA returned error: {result.get('error')}")
+                cava_response = "I apologize, but I'm having trouble processing your message. Please try again in a moment."
+                
+        except Exception as cava_error:
+            logger.error(f"CAVA processing error: {str(cava_error)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            
+            # Fallback response
+            cava_response = f"Thank you for your message. I'm experiencing technical difficulties. Please try again shortly."
         
         # Create TwiML response with CAVA's intelligent response
         resp = MessagingResponse()
