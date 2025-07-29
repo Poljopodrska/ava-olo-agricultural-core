@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/v1/whatsapp", tags=["whatsapp"])
 # Get environment variables
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 DATABASE_URL = os.getenv('DATABASE_URL')
-BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com')
+BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com')
 
 
 async def get_or_create_farmer_by_phone(phone_number: str) -> Dict[str, Any]:

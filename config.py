@@ -58,7 +58,7 @@ TWILIO_CONFIG = {
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
 TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER', 'whatsapp:+385919857451')
-BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com')
+BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com')
 
 # Logging Configuration
 LOG_CONFIG = {
