@@ -1,6 +1,7 @@
 """
 WhatsApp Webhook Handler for Twilio Integration
 Handles incoming WhatsApp messages, status callbacks, and fallback scenarios
+Now integrated with CAVA chat engine for intelligent responses
 """
 from fastapi import APIRouter, Request, HTTPException, Form
 from fastapi.responses import Response
@@ -12,6 +13,9 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 import asyncpg
 
+# Import CAVA chat handling
+from modules.api.chat_routes import ChatRequest, chat_endpoint
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/whatsapp", tags=["whatsapp"])
@@ -22,11 +26,58 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 BASE_URL = os.getenv('BASE_URL', 'http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com')
 
 
-async def store_whatsapp_message(from_number: str, message_body: str, message_sid: str = None) -> Optional[int]:
+async def get_or_create_farmer_by_phone(phone_number: str) -> Dict[str, Any]:
+    """Get farmer by phone number or create a new one"""
+    try:
+        conn = await asyncpg.connect(DATABASE_URL)
+        try:
+            # First try to find farmer by WhatsApp phone
+            farmer = await conn.fetchrow("""
+                SELECT id, manager_name, farm_name, city 
+                FROM farmers 
+                WHERE wa_phone_number = $1 OR phone = $1
+                LIMIT 1
+            """, phone_number)
+            
+            if farmer:
+                logger.info(f"Found existing farmer {farmer['id']} for phone {phone_number}")
+                return dict(farmer)
+            
+            # If not found, create a basic farmer record
+            logger.info(f"Creating new farmer for phone {phone_number}")
+            new_farmer_id = await conn.fetchval("""
+                INSERT INTO farmers (wa_phone_number, phone, manager_name, farm_name, city)
+                VALUES ($1, $1, 'WhatsApp User', 'Farm', 'Unknown')
+                RETURNING id
+            """, phone_number)
+            
+            return {
+                'id': new_farmer_id,
+                'manager_name': 'WhatsApp User',
+                'farm_name': 'Farm',
+                'city': 'Unknown'
+            }
+            
+        finally:
+            await conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error getting/creating farmer: {str(e)}")
+        # Return a default farmer if database fails
+        return {
+            'id': 1,
+            'manager_name': 'Unknown',
+            'farm_name': 'Unknown Farm',
+            'city': 'Unknown'
+        }
+
+
+async def store_whatsapp_message(from_number: str, message_body: str, message_sid: str = None, farmer_id: int = None) -> Optional[int]:
     """Store incoming WhatsApp message in database"""
     try:
-        # Extract farmer_id from phone number (simplified - in production, lookup farmer by phone)
-        farmer_id = 1  # Default for testing
+        # Use provided farmer_id or default
+        if not farmer_id:
+            farmer_id = 1  # Default for testing
         
         conn = await asyncpg.connect(DATABASE_URL)
         try:
@@ -85,14 +136,39 @@ async def whatsapp_webhook(request: Request):
                 # In production, uncomment to enforce security:
                 # raise HTTPException(status_code=403, detail="Invalid signature")
         
+        # Get or create farmer
+        farmer = await get_or_create_farmer_by_phone(from_number)
+        farmer_id = farmer['id']
+        
         # Store message in database
-        message_id = await store_whatsapp_message(from_number, message_body, message_sid)
+        message_id = await store_whatsapp_message(from_number, message_body, message_sid, farmer_id)
         
-        # Create TwiML response
+        # Process message through CAVA chat engine
+        try:
+            logger.info(f"Processing WhatsApp message through CAVA for farmer {farmer_id}")
+            
+            # Create chat request for CAVA
+            chat_request = ChatRequest(
+                wa_phone_number=from_number,
+                message=message_body,
+                session_id=f"whatsapp_{from_number}"
+            )
+            
+            # Get intelligent response from CAVA
+            chat_response = await chat_endpoint(chat_request)
+            
+            # Extract the response text
+            cava_response = chat_response.response
+            logger.info(f"CAVA response: {cava_response[:100]}...")
+            
+        except Exception as cava_error:
+            logger.error(f"CAVA processing error: {str(cava_error)}")
+            # Fallback to basic response if CAVA fails
+            cava_response = "Hvala na poruci! AVA OLO je primila vašu poruku. Molimo pokušajte ponovo za trenutak."
+        
+        # Create TwiML response with CAVA's intelligent response
         resp = MessagingResponse()
-        
-        # Basic auto-response
-        resp.message(f"Hvala na poruci! AVA OLO je primila vašu poruku i uskoro će vam odgovoriti. 🌱")
+        resp.message(cava_response)
         
         # Return TwiML response
         return Response(content=str(resp), media_type="application/xml")
