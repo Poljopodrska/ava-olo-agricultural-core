@@ -9,12 +9,16 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-security.txt .
+RUN pip install --no-cache-dir -r requirements-security.txt
 
 # Copy application files
 COPY agricultural_core_constitutional.py .
 COPY config.py .
+COPY config_secure.py .
+
+# Copy utilities
+COPY utils/ ./utils/
 
 # Copy design system
 COPY shared/ ./shared/
@@ -23,7 +27,7 @@ COPY shared/ ./shared/
 COPY app/templates/ ./app/templates/
 COPY app/static/ ./app/static/
 
-# Create necessary directories
+# Create necessary directories (if needed)
 RUN mkdir -p app/static app/templates
 
 # Environment variables
