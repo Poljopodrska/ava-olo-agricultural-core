@@ -1,56 +1,31 @@
-# AVA Pinecone RAG
+# 📊 AVA OLO Monitoring Dashboards
 
-This project is a farming assistant using RAG (Retrieval-Augmented Generation) with Pinecone and OpenAI.
+Constitutional monitoring and analytics dashboards for AVA OLO agricultural system.
 
-## 📂 Project Structure
+## 📜 Constitutional Documents
+All constitutional documents are maintained in the central repository:
+**https://github.com/Poljopodrska/ava-olo-shared**
 
-- 📄 .env
-- 📄 .gitignore
-- 📄 Procfile
-- 📄 README.md
-- 📄 __init__.py
-- 📁 **agent**
-  - 📄 __init__.py
-  - 📄 agent.py
-  - 📄 debug_rag.py
-  - 📄 html_rag_loader.py
-  - 📄 rag_loader.py
-  - 📄 test_rag_simple.py
-  - 📄 test_vectorstore_query.py
-- 📁 **app**
-  - 📄 app.py
-  - 📁 **templates**
-    - 📄 index.html
-- 📄 batch_index_cp_documents.py
-- 📄 db.py
-- 📁 **docs**
-  - 📄 fis_502.html
-  - 📄 fis_510.html
-  - 📄 fis_520.html
-  - 📄 fis_523.html
-  - 📄 fis_524.html
-  - 📄 fis_526.html
-  - 📄 fis_534.html
-  - 📄 fis_535.html
-  - 📄 fis_540.html
-  - 📄 fis_541.html
-  - 📄 fis_542.html
-  - 📄 fis_543.html
-  - 📄 fis_563.html
-  - 📄 fis_571.html
-  - 📄 fis_573.html
-- 📄 folder_structure.txt
-- 📄 generate_readme.py
-- 📄 main.py
-- 📄 pinecone-key.pem.txt
-- 📄 render.yaml
-- 📄 requirements.txt
-- 📄 run_uvicorn.bat
-- 📁 **scripts**
-  - 📄 .gitignore
-  - 📄 __init__.py
-  - 📄 embed_fis_to_pinecone.py
-  - 📄 embed_runner.py
-  - 📄 requirements.txt
-  - 📄 test_pinecone_render.py
-- 📁 **templates**
+This ensures consistent governance across the entire AVA OLO ecosystem.
+
+## Dashboard Components
+- Agronomic Dashboard: Expert monitoring - http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/agronomic/
+- Business Dashboard: Business analytics - http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/business/
+- Database Explorer: Data inspection - http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/database/
+- Health Monitor: System status - http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com/health/
+
+## Constitutional Compliance
+- ✅ Error Isolation: Dashboard failures don't affect core agricultural system
+- ✅ Transparency: Complete system visibility
+- ✅ Module Independence: Isolated from agricultural intelligence
+- ✅ Production-Ready: Scalable monitoring infrastructure
+
+## Users
+- Agricultural experts and agronomists
+- Business analysts and administrators
+- System administrators
+
+## Deployment
+AWS ECS service for production infrastructure (ECS has been DELETED).
+# Deployment trigger: Wed Jul 23 20:37:02 CEST 2025
+# ECR deployment verification: Wed Jul 23 21:32:55 CEST 2025

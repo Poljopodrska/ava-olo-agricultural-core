@@ -1,226 +1,198 @@
-#!/usr/bin/env python3
 """
-AVA OLO Agricultural Core Service with Constitutional Design
-Serves the main business dashboard and agricultural interfaces
+AVA OLO Agricultural Core API with WhatsApp Integration
+Version: 3.5.31
 """
+import os
+import logging
+from datetime import datetime
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-import os
-import sys
-from datetime import datetime
-import logging
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import json
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
 
-# Add parent directory to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Import configuration
+from config import get_settings
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
+# Import WhatsApp webhook handler
+from modules.whatsapp.webhook_handler import router as whatsapp_router
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Version info
-VERSION = "v2.5.0-constitutional"
-BUILD_ID = "const-design-2025"
+# Get settings
+settings = get_settings()
 
-# Initialize FastAPI app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifecycle"""
+    logger.info("Starting AVA OLO Agricultural Core API v3.5.31")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    logger.info(f"WhatsApp/Twilio enabled: {os.getenv('TWILIO_ENABLED', 'false')}")
+    
+    # Startup tasks
+    yield
+    
+    # Shutdown tasks
+    logger.info("Shutting down AVA OLO Agricultural Core API")
+
+# Create FastAPI app
 app = FastAPI(
-    title="AVA OLO Agricultural Core",
-    description="Constitutional Design System Implementation",
-    version=VERSION
+    title="AVA OLO Agricultural Core API",
+    description="Agricultural advisory system with WhatsApp integration",
+    version="3.5.31",
+    lifespan=lifespan
 )
 
-# Mount static files for design system
-app.mount("/shared", StaticFiles(directory="shared"), name="shared")
-app.mount("/static", StaticFiles(directory="app/static", html=True), name="static")
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Setup templates
-templates = Jinja2Templates(directory="app/templates")
+# Include routers
+app.include_router(whatsapp_router)
 
-# Database connection
-def get_db_connection():
-    """Get database connection"""
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com'),
-            database=os.getenv('DB_NAME', 'farmer_crm'),
-            user=os.getenv('DB_USER', 'postgres'),
-            password=os.getenv('DB_PASSWORD', 'Y<~Xzntr2r~m6-7)~4*MO(Mul>#YW'),
-            cursor_factory=RealDictCursor
-        )
-        return conn
-    except Exception as e:
-        logger.error(f"Database connection failed: {e}")
-        return None
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    """Redirect to business dashboard"""
-    return templates.TemplateResponse("business_dashboard_constitutional.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@app.get("/business-dashboard", response_class=HTMLResponse)
-async def business_dashboard(request: Request):
-    """Business Dashboard with Constitutional Design"""
-    return templates.TemplateResponse("business_dashboard_constitutional.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@app.get("/api/stats/overview")
-async def stats_overview():
-    """Get real statistics from database"""
-    conn = get_db_connection()
-    if not conn:
-        return JSONResponse(status_code=503, content={"error": "Database unavailable"})
-    
-    try:
-        with conn.cursor() as cursor:
-            # Get total farmers
-            cursor.execute("SELECT COUNT(*) as count FROM farmers")
-            farmers_count = cursor.fetchone()['count']
-            
-            # Get total hectares
-            cursor.execute("SELECT SUM(total_hectares) as total FROM farmers")
-            total_hectares = cursor.fetchone()['total'] or 0
-            
-            # Get conversation count
-            cursor.execute("SELECT COUNT(*) as count FROM ava_conversations")
-            conversations = cursor.fetchone()['count']
-            
-            return {
-                "total_farmers": farmers_count,
-                "total_hectares": float(total_hectares),
-                "total_conversations": conversations,
-                "timestamp": datetime.now().isoformat()
-            }
-    except Exception as e:
-        logger.error(f"Error fetching stats: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
-    finally:
-        conn.close()
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "service": "AVA OLO Agricultural Core",
+        "version": "3.5.31",
+        "status": "operational",
+        "whatsapp_enabled": os.getenv("TWILIO_ENABLED", "false").lower() == "true"
+    }
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "version": VERSION,
-        "build_id": BUILD_ID,
         "service": "agricultural-core",
-        "constitutional_design": True,
-        "timestamp": datetime.now().isoformat()
+        "version": "3.5.31",
+        "timestamp": datetime.utcnow().isoformat(),
+        "environment": settings.ENVIRONMENT
     }
 
-@app.get("/monitoring", response_class=HTMLResponse)
-async def monitoring_dashboard(request: Request):
-    """Monitoring Dashboard"""
-    # Create a simple monitoring page with constitutional design
-    html = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO Monitoring</title>
-        <link rel="stylesheet" href="/shared/design-system/css/design-system.css">
-        <link rel="stylesheet" href="/shared/design-system/css/typography.css">
-        <link rel="stylesheet" href="/shared/design-system/css/components.css">
-    </head>
-    <body>
-        <header class="ava-header">
-            <div class="logo">
-                <img src="/shared/design-system/assets/logo-white.svg" alt="AVA OLO">
-            </div>
-            <nav>
-                <a href="/">Home</a>
-                <a href="/business-dashboard">Business</a>
-                <a href="/monitoring">Monitoring</a>
-            </nav>
-            <div class="version-display">{VERSION}</div>
-        </header>
-        
-        <main class="container" style="padding-top: var(--space-xl);">
-            <h1>System Monitoring</h1>
-            <div class="card">
-                <h2>Real-time Metrics</h2>
-                <p>System monitoring dashboard with constitutional design.</p>
-                <div class="alert alert-success">
-                    All systems operational
-                </div>
-            </div>
-        </main>
-        
-        <script src="/shared/design-system/js/accessibility.js"></script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html)
+@app.get("/api/v1/health")
+async def api_health_check():
+    """API v1 health check"""
+    whatsapp_status = "enabled" if os.getenv("TWILIO_ENABLED", "false").lower() == "true" else "disabled"
+    
+    return {
+        "status": "healthy",
+        "service": "agricultural-core-api",
+        "version": "3.5.31",
+        "timestamp": datetime.utcnow().isoformat(),
+        "features": {
+            "whatsapp": whatsapp_status,
+            "database": "connected" if settings.DATABASE_URL else "not configured",
+            "stripe": "enabled"  # Stripe package is now included
+        }
+    }
 
-@app.get("/database-dashboard", response_class=HTMLResponse)
-async def database_dashboard(request: Request):
-    """Database Dashboard"""
-    html = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AVA OLO Database</title>
-        <link rel="stylesheet" href="/shared/design-system/css/design-system.css">
-        <link rel="stylesheet" href="/shared/design-system/css/typography.css">
-        <link rel="stylesheet" href="/shared/design-system/css/components.css">
-    </head>
-    <body>
-        <header class="ava-header">
-            <div class="logo">
-                <img src="/shared/design-system/assets/logo-white.svg" alt="AVA OLO">
-            </div>
-            <nav>
-                <a href="/">Home</a>
-                <a href="/business-dashboard">Business</a>
-                <a href="/monitoring">Monitoring</a>
-                <a href="/database-dashboard">Database</a>
-            </nav>
-            <div class="version-display">{VERSION}</div>
-        </header>
+@app.get("/api/v1/payment/subscribe")
+async def payment_subscribe(farmer_id: int):
+    """Payment subscription endpoint with Stripe"""
+    try:
+        import stripe
+        stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
         
-        <main class="container" style="padding-top: var(--space-xl);">
-            <h1>Database Explorer</h1>
-            <div class="card">
-                <h2>Farmer Database</h2>
-                <p>Explore and manage agricultural data with constitutional design.</p>
-                <button class="btn btn-primary">View Farmers</button>
-            </div>
-        </main>
+        if not stripe.api_key:
+            logger.error("Stripe API key not configured")
+            raise HTTPException(status_code=500, detail="Payment system not configured")
         
-        <script src="/shared/design-system/js/accessibility.js"></script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html)
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'product_data': {
+                        'name': 'AVA OLO Agricultural Advisory Service',
+                        'description': 'Monthly subscription for agricultural advice'
+                    },
+                    'unit_amount': 2000,  # €20.00
+                    'recurring': {
+                        'interval': 'month'
+                    }
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=f"{settings.BASE_URL}/payment/success?farmer_id={farmer_id}",
+            cancel_url=f"{settings.BASE_URL}/payment/cancel",
+            metadata={
+                'farmer_id': str(farmer_id)
+            }
+        )
+        
+        # Return redirect to Stripe checkout
+        return JSONResponse(
+            content={"checkout_url": checkout_session.url},
+            status_code=200,
+            headers={"Location": checkout_session.url}
+        )
+        
+    except Exception as e:
+        logger.error(f"Payment error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Serve logo directly
-@app.get("/logo.svg")
-async def get_logo():
-    """Serve AVA OLO logo"""
-    return FileResponse("shared/design-system/assets/logo-white.svg", media_type="image/svg+xml")
+# Error handlers
+@app.exception_handler(404)
+async def not_found_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Not Found",
+            "message": f"The requested resource {request.url.path} was not found",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
 
-# Serve favicon
-@app.get("/favicon.ico")
-async def get_favicon():
-    """Serve favicon"""
-    return FileResponse("shared/design-system/assets/favicon.svg", media_type="image/svg+xml")
+@app.exception_handler(500)
+async def internal_error_handler(request: Request, exc: Exception):
+    logger.error(f"Internal server error: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    )
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = datetime.utcnow()
+    
+    # Log request
+    logger.info(f"{request.method} {request.url.path}")
+    
+    # Process request
+    response = await call_next(request)
+    
+    # Log response
+    duration = (datetime.utcnow() - start_time).total_seconds()
+    logger.info(f"{request.method} {request.url.path} - {response.status_code} - {duration:.3f}s")
+    
+    return response
 
 if __name__ == "__main__":
-    import uvicorn
-    print(f"🌾 Starting AVA OLO Agricultural Core {VERSION}")
-    print("📐 Constitutional Design System Active")
-    print("🚀 Server running on http://localhost:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run(
+        "agricultural_core_constitutional:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,
+        log_level="info"
+    )

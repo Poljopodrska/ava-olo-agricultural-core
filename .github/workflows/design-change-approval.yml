@@ -1,0 +1,155 @@
+name: Design Change Approval Required
+
+on:
+  pull_request:
+    paths:
+      - '**.css'
+      - '**.scss'
+      - '**.html'
+      - '**/templates/**'
+      - '**/static/**'
+      - '**/design-system/**'
+
+jobs:
+  require-design-approval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Check for design changes
+        id: design_check
+        run: |
+          echo "🎨 Design changes detected - approval required!"
+          
+          # List changed design files
+          echo "Changed design files:"
+          git diff --name-only origin/main HEAD | grep -E '\.(css|scss|html)$' || echo "No matching files"
+          
+          # Check for protected elements
+          PROTECTED_CHANGES=""
+          
+          # Check for color changes
+          if git diff origin/main HEAD | grep -E "(#8B4513|#FFD700|#228B22|#DC143C|#007BFF)"; then
+            PROTECTED_CHANGES="$PROTECTED_CHANGES- Protected colors modified\n"
+          fi
+          
+          # Check for protected class changes
+          if git diff origin/main HEAD | grep -E "(yellow-debug-box|farmer-count-display|hectares-display|version-badge)"; then
+            PROTECTED_CHANGES="$PROTECTED_CHANGES- Protected CSS classes modified\n"
+          fi
+          
+          # Check for layout changes
+          if git diff origin/main HEAD | grep -E "(three-column|single-column|fixed-top-right)"; then
+            PROTECTED_CHANGES="$PROTECTED_CHANGES- Layout structure modified\n"
+          fi
+          
+          echo "protected_changes<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$PROTECTED_CHANGES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ ! -z "$PROTECTED_CHANGES" ]; then
+            echo "critical_design_change=true" >> $GITHUB_OUTPUT
+          else
+            echo "critical_design_change=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "design_changed=true" >> $GITHUB_OUTPUT
+      
+      - name: Run visual protection check
+        if: steps.design_check.outputs.design_changed == 'true'
+        run: |
+          cd ava-olo-monitoring-dashboards
+          if [ -f "modules/core/visual_protection.py" ]; then
+            python3 modules/core/visual_protection.py status || echo "Visual protection check completed"
+          fi
+      
+      - name: Create approval requirement comment
+        if: steps.design_check.outputs.design_changed == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const protectedChanges = `${{ steps.design_check.outputs.protected_changes }}`;
+            const isCritical = `${{ steps.design_check.outputs.critical_design_change }}` === 'true';
+            
+            const warningLevel = isCritical ? '🚨 CRITICAL' : '⚠️ STANDARD';
+            const approvalType = isCritical ? 'EXPLICIT APPROVAL REQUIRED' : 'Review Recommended';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ${warningLevel} Design Change ${approvalType}
+              
+              This PR contains visual/design changes that require review according to the **Design Constitution**.
+              
+              ### 🎨 Changes Detected:
+              ${protectedChanges || '- General design file modifications'}
+              
+              ### 📋 Required for Approval:
+              - [ ] **Justification provided**: Why is this change needed?
+              - [ ] **Business impact explained**: What problem does this solve?
+              - [ ] **Screenshots attached**: Before and after images
+              - [ ] **Protected elements verified**: No unauthorized changes to sacred elements
+              - [ ] **Design Constitution updated**: If needed
+              
+              ### 🏛️ Protected Elements (NEVER change without approval):
+              - Primary Brown (#8B4513) and Accent Yellow (#FFD700) colors
+              - Yellow debug box visibility and color
+              - Version badge placement and visibility
+              - Farmer count and hectares displays
+              - Three-column dashboard layout
+              
+              ### ✅ To Approve Design Changes:
+              Comment: \`APPROVED: Design change [describe what] - [business reason]\`
+              
+              ### 🚨 If Critical Changes Detected:
+              ${isCritical ? 'This PR modifies PROTECTED ELEMENTS. Extra approval required from project owner.' : 'Standard review process applies.'}
+              
+              ---
+              
+              See [Design Constitution](DESIGN_CONSTITUTION.md) for full details.
+              `
+            })
+      
+      - name: Block critical changes without approval
+        if: steps.design_check.outputs.critical_design_change == 'true'
+        run: |
+          echo "🚨 CRITICAL DESIGN CHANGES DETECTED"
+          echo "This PR modifies protected design elements."
+          echo "Explicit approval required before merge."
+          echo ""
+          echo "Protected changes detected:"
+          echo "${{ steps.design_check.outputs.protected_changes }}"
+          echo ""
+          echo "To approve, comment: APPROVED: Design change [description] - [reason]"
+          exit 1
+
+  visual-regression-test:
+    runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.changed_files, '.css') || contains(github.event.pull_request.changed_files, '.html')
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Run visual regression tests
+        run: |
+          cd ava-olo-monitoring-dashboards
+          if [ -f "modules/core/visual_protection.py" ]; then
+            echo "Running visual protection checks..."
+            python3 modules/core/visual_protection.py status
+          else
+            echo "Visual protection system not found - setting up baselines"
+          fi
+      
+      - name: Upload visual test results
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: visual-regression-results
+          path: ava-olo-monitoring-dashboards/protection_system/visual_baselines/

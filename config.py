@@ -45,6 +45,32 @@ API_CONFIG = {
     "rate_limit": int(os.getenv("API_RATE_LIMIT", "100"))
 }
 
+# WhatsApp/Twilio Configuration
+WHATSAPP_CONFIG = {
+    "twilio_enabled": os.getenv("TWILIO_ENABLED", "false").lower() == "true",
+    "twilio_account_sid": os.getenv("TWILIO_ACCOUNT_SID"),
+    "twilio_auth_token": os.getenv("TWILIO_AUTH_TOKEN"),
+    "twilio_phone_number": os.getenv("TWILIO_PHONE_NUMBER", "+38591857451"),
+    "base_url": os.getenv("BASE_URL", "http://ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com"),
+    "webhook_url": os.getenv("WEBHOOK_URL", os.getenv("BASE_URL"))
+}
+
+# Stripe Configuration
+STRIPE_CONFIG = {
+    "secret_key": os.getenv("STRIPE_SECRET_KEY"),
+    "publishable_key": os.getenv("STRIPE_PUBLISHABLE_KEY"),
+    "webhook_secret": os.getenv("STRIPE_WEBHOOK_SECRET")
+}
+
+# Application Settings
+class Settings:
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+    DATABASE_URL = DATABASE_URL
+    BASE_URL = WHATSAPP_CONFIG["base_url"]
+    
+def get_settings():
+    return Settings()
+
 # Logging Configuration
 LOG_CONFIG = {
     "level": os.getenv("LOG_LEVEL", "INFO"),

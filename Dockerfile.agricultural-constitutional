@@ -6,34 +6,31 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements-security.txt .
-RUN pip install --no-cache-dir -r requirements-security.txt
+# Copy requirements first for better caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY agricultural_core_constitutional.py .
 COPY config.py .
-COPY config_secure.py .
 
-# Copy utilities
-COPY utils/ ./utils/
+# Copy modules
+COPY modules/ ./modules/
 
-# Copy design system
-COPY shared/ ./shared/
-
-# Copy templates and static files
-COPY app/templates/ ./app/templates/
-COPY app/static/ ./app/static/
-
-# Create necessary directories (if needed)
-RUN mkdir -p app/static app/templates
+# Copy any shared resources if they exist
+RUN mkdir -p shared utils app/templates app/static
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production
 ENV PORT=8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Expose port
 EXPOSE 8080

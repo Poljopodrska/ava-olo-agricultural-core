@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Test files
+test_*.py
+*_test.py
+
+# Documentation
+*.md
+README.*
+CHANGELOG.*
+
+# Backup files
+*.backup
+*.bak
+backup_*/
+
+# Environment files (should be mounted, not baked in)
+.env
+.env.*
+
+# AWS
+aws/
+awscliv2.zip
+
+# Other
+*.sql
+*.sh
+*.bat
+deployment_trigger.txt
+auto_cache_bust_*.txt
+*_cache_bust.txt

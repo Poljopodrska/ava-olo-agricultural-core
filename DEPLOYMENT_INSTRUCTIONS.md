@@ -1,121 +1,150 @@
-# AVA OLO Constitutional Design System - Deployment Instructions
+# AVA OLO Monitoring Dashboards - Deployment Instructions
 
-## Overview
-This deployment updates both the Agricultural Core and Monitoring Dashboard services with the new constitutional design system.
+## 🚨 CRITICAL: OpenAI API Key Required
+
+**CHAT SERVICE WILL BE UNAVAILABLE** without proper OpenAI configuration. This is the **primary cause** of "unavailable" errors.
+
+## Environment Variables Required
+
+Set these environment variables in AWS ECS:
+
+```bash
+# OpenAI Configuration (CRITICAL for chat service)
+OPENAI_API_KEY=sk-your-actual-openai-key-here  # REQUIRED for chat functionality
+
+# Database Configuration
+DB_HOST=farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com
+DB_NAME=farmer_crm
+DB_USER=postgres
+DB_PASSWORD=<ACTUAL_RDS_PASSWORD_HERE>  # IMPORTANT: Use the actual RDS password!
+DB_PORT=5432
+
+# NOTE: The password shown in debug output (%3C~Xzntr2r~m6-7%29~4%2AMO%2...) 
+# decodes to something like: <~Xzntr2r~m6-7)~4*MO*...
+# This appears to be different from what was documented previously
+
+# Google Maps API
+GOOGLE_MAPS_API_KEY=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo  # CORRECT WORKING KEY!
+```
+
+## 🔑 CRITICAL: Adding OpenAI API Key to ECS
+
+**MANDATORY STEP** - The chat service will show "unavailable" without this:
+
+### Via AWS Console:
+1. Go to AWS ECS Console: https://console.aws.amazon.com/ecs/
+2. Find your task definition (e.g., `ava-agricultural-task`)
+3. Click "Create new revision"
+4. In "Environment variables" section, add:
+   - **Key**: `OPENAI_API_KEY`
+   - **Value**: `sk-proj-your-actual-key-here` (starts with `sk-`)
+5. Save and update your ECS service to use the new revision
+
+### Via AWS CLI:
+```bash
+# Update ECS task definition with OpenAI key
+aws ecs describe-task-definition --task-definition ava-agricultural-task --query 'taskDefinition' > task-def.json
+# Edit task-def.json to add OPENAI_API_KEY environment variable
+aws ecs register-task-definition --cli-input-json file://task-def.json
+aws ecs update-service --cluster your-cluster --service your-service --task-definition ava-agricultural-task:NEW_REVISION
+```
 
 ## Pre-Deployment Checklist
-- [x] Constitutional design system created in `/shared/design-system/`
-- [x] Services updated with new design: `agricultural_core_constitutional.py` and `monitoring_api_constitutional.py`
-- [x] Dockerfiles created: `Dockerfile.agricultural-constitutional` and `Dockerfile.monitoring-constitutional`
-- [x] Task definitions prepared
-- [x] Deployment scripts ready
+
+1. **🔑 OpenAI API Key**: MUST be added to ECS environment variables (see above)
+2. **Environment Variables**: Ensure all environment variables above are set in AWS ECS
+3. **RDS Security Group**: Verify the RDS security group allows connections from ECS IP range (172.31.96.0/24)
+4. **SSL Mode**: The application is configured to use SSL for RDS connections automatically
 
 ## Deployment Steps
 
-### Option 1: Full Deployment (with Docker)
-
-1. **Build and Push Docker Images**
+1. **Push to GitHub**:
    ```bash
-   # Run from a machine with Docker installed
-   chmod +x deploy-constitutional.sh
-   ./deploy-constitutional.sh
+   git add .
+   git commit -m "Ready for deployment"
+   git push origin main
    ```
 
-### Option 2: ECS Deployment Only (without Docker build)
+2. **AWS ECS**: The service should automatically deploy from the GitHub repository
 
-If Docker images are already built and pushed:
+3. **Verify Deployment**:
+   - Check `/` - Home page should load
+   - Check `/database-dashboard` - Should show farmers list
+   - Check `/farmer-registration` - Should show registration form with working Google Maps
+   - Check `/debug/database-connection` - Should show successful connection
+   - **🔑 NEW: Check `/chat-debug-audit`** - Should show "Chat Service Available" not "Unavailable"
+   - **🧠 NEW: Run behavioral audit** - Should achieve >80% score (especially Bulgarian Mango Test)
 
-1. **Make deployment script executable**
-   ```bash
-   chmod +x deploy-ecs-constitutional.sh
-   ```
+## Known Issues and Solutions
 
-2. **Run ECS deployment**
-   ```bash
-   ./deploy-ecs-constitutional.sh
-   ```
+### Issue: Database Authentication Failed
+**Solution**: 
+1. The password contains special characters that need URL encoding. The application handles this automatically.
+2. **IMPORTANT**: If you see `%3C` in the password (which is `<`), the password might be getting HTML-encoded by AWS. 
+   - Make sure to enter the password in AWS ECS exactly as: `2hpzvrg_xP~qNbz1[_NppSK$e*O1`
+   - Do NOT use quotes around the password in AWS ECS environment variables
+   - If the password still fails, try using the debug endpoint `/debug/test-password-encoding` to see what's being received
 
-### Option 3: Manual Deployment
+### Issue: Google Maps Not Loading
+**Solution**: 
+1. Verify GOOGLE_MAPS_API_KEY is set in environment
+2. Check that the API key has Maps JavaScript API enabled in Google Cloud Console
+3. The application will show a fallback message if the key is missing
 
-1. **Build Docker Images**
-   ```bash
-   # Agricultural Core
-   docker build -f Dockerfile.agricultural-constitutional -t ava-olo/agricultural-core:v2.5.0-constitutional .
-   
-   # Monitoring API
-   docker build -f Dockerfile.monitoring-constitutional -t ava-olo/monitoring-dashboards:v2.5.0-constitutional .
-   ```
+### Issue: Connection Timeout to RDS
+**Solution**:
+1. Check RDS security group has inbound rule for ECS IP range
+2. Verify RDS instance is publicly accessible if connecting from outside VPC
+3. Ensure SSL mode is set to 'require' (handled automatically)
 
-2. **Push to ECR**
-   ```bash
-   # Login to ECR
-   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 127679825789.dkr.ecr.us-east-1.amazonaws.com
-   
-   # Tag and push Agricultural Core
-   docker tag ava-olo/agricultural-core:v2.5.0-constitutional 127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/agricultural-core:latest
-   docker push 127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/agricultural-core:latest
-   
-   # Tag and push Monitoring
-   docker tag ava-olo/monitoring-dashboards:v2.5.0-constitutional 127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/monitoring-dashboards:latest
-   docker push 127679825789.dkr.ecr.us-east-1.amazonaws.com/ava-olo/monitoring-dashboards:latest
-   ```
+## Debug Endpoints
 
-3. **Register Task Definitions**
-   ```bash
-   aws ecs register-task-definition --cli-input-json file://task-definition-agricultural-constitutional.json --region us-east-1
-   aws ecs register-task-definition --cli-input-json file://task-definition-monitoring-constitutional.json --region us-east-1
-   ```
+Once deployed, you can check these endpoints:
 
-4. **Update ECS Services**
-   ```bash
-   # Force new deployment for both services
-   aws ecs update-service --cluster ava-olo-production --service agricultural-core --force-new-deployment --region us-east-1
-   aws ecs update-service --cluster ava-olo-production --service monitoring-dashboards --force-new-deployment --region us-east-1
-   ```
+- `/debug/database-connection` - Shows database connection status
+- `/api/debug/status` - Shows application status
+- `/health/database` - Database health check
 
-## Post-Deployment Verification
+## Local Development
 
-1. **Check Service Status**
-   ```bash
-   aws ecs describe-services --cluster ava-olo-production --services agricultural-core monitoring-dashboards --region us-east-1
-   ```
+For local development, you cannot connect to AWS RDS from outside the VPC. Options:
+1. Use SSH tunnel through a bastion host
+2. Use VPN connection to AWS VPC
+3. Use a local PostgreSQL instance for development
 
-2. **Test Endpoints**
-   - Business Dashboard: http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com/business-dashboard
-   - Health Check: http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com/health
-   - Monitoring: http://ava-olo-alb-65365776.us-east-1.elb.amazonaws.com/
+## Running Locally (with proper network access)
 
-3. **Verify Constitutional Design**
-   - [ ] AVA OLO logo visible (atomic structure)
-   - [ ] Olive green color scheme (#6B7D46)
-   - [ ] Version number displayed (top right)
-   - [ ] All text ≥ 18px
-   - [ ] Enter key works on forms
-   - [ ] Mobile responsive design
-
-4. **Check Database Connection**
-   - Verify farmer count shows real data (4 farmers)
-   - Not hardcoded "16" anymore
-
-## Rollback Instructions
-
-If needed, revert to previous task definition:
 ```bash
-# Rollback agricultural-core to revision 4
-aws ecs update-service --cluster ava-olo-production --service agricultural-core --task-definition ava-agricultural-task:4 --region us-east-1
+# Use the provided script
+bash run_with_env.sh
 
-# Rollback monitoring-dashboards
-aws ecs update-service --cluster ava-olo-production --service monitoring-dashboards --task-definition ava-monitoring-task:PREVIOUS_REVISION --region us-east-1
+# Or set environment variables manually
+export DB_HOST="farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com"
+export DB_NAME="farmer_crm"
+export DB_USER="postgres"
+export DB_PASSWORD='2hpzvrg_xP~qNbz1[_NppSK$e*O1'
+export DB_PORT="5432"
+export GOOGLE_MAPS_API_KEY="AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo"
+
+python3 main.py
 ```
 
-## Important Files
-- Design System: `/shared/design-system/`
-- Agricultural Core: `agricultural_core_constitutional.py`
-- Monitoring API: `monitoring_api_constitutional.py`
-- Dockerfiles: `Dockerfile.agricultural-constitutional`, `Dockerfile.monitoring-constitutional`
-- Task Definitions: `task-definition-agricultural-constitutional.json`, `task-definition-monitoring-constitutional.json`
+## Post-Deployment Testing
 
-## Support
-Check CloudWatch logs for any issues:
-- Agricultural: `/ecs/ava-agricultural`
-- Monitoring: `/ecs/ava-monitoring`
+Run `test_deployment.py` from within the AWS environment to verify all connections:
+
+```bash
+python3 test_deployment.py
+```
+
+This will test:
+- Environment variable configuration
+- Database connectivity
+- Google Maps API configuration
+
+## Important Security Notes
+
+1. Never commit credentials to version control
+2. Use AWS Secrets Manager for production credentials
+3. Rotate database passwords regularly
+4. Monitor access logs for suspicious activity
