@@ -31,21 +31,22 @@ async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
         WHERE farmer_id = %s
         ORDER BY field_name
         """
-        results = await db_manager.execute_query(query, (farmer_id,))
+        results = db_manager.execute_query(query, (farmer_id,))
         
         fields = []
-        for row in results:
-            fields.append({
-                'id': row[0],
-                'field_name': row[1],
-                'area_ha': row[2],
-                'latitude': row[3],
-                'longitude': row[4],
-                'blok_id': row[5],
-                'raba': row[6],
-                'notes': row[7],
-                'country': row[8]
-            })
+        if results and 'rows' in results:
+            for row in results['rows']:
+                fields.append({
+                    'id': row[0],
+                    'field_name': row[1],
+                    'area_ha': row[2],
+                    'latitude': row[3],
+                    'longitude': row[4],
+                    'blok_id': row[5],
+                    'raba': row[6],
+                    'notes': row[7],
+                    'country': row[8]
+                })
         
         return fields
     except Exception as e:
@@ -63,11 +64,11 @@ async def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
         FROM farmers 
         WHERE id = %s
         """
-        result = await db_manager.execute_query(query, (farmer_id,))
+        result = db_manager.execute_query(query, (farmer_id,))
         
-        if result and len(result) > 0:
-            city = result[0][0] or "Unknown"
-            country = result[0][1] or "Unknown"
+        if result and 'rows' in result and len(result['rows']) > 0:
+            city = result['rows'][0][0] or "Unknown"
+            country = result['rows'][0][1] or "Unknown"
             
             # In production, this would call a weather API
             # For now, return mock data
@@ -106,12 +107,12 @@ async def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, 
         FROM farmers 
         WHERE id = %s
         """
-        farmer_result = await db_manager.execute_query(farmer_query, (farmer_id,))
+        farmer_result = db_manager.execute_query(farmer_query, (farmer_id,))
         
-        if not farmer_result or not farmer_result[0][0]:
+        if not farmer_result or 'rows' not in farmer_result or not farmer_result['rows'] or not farmer_result['rows'][0][0]:
             return []
         
-        wa_number = farmer_result[0][0]
+        wa_number = farmer_result['rows'][0][0]
         
         # Get messages
         query = """
@@ -121,17 +122,18 @@ async def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, 
         ORDER BY timestamp DESC
         LIMIT %s
         """
-        results = await db_manager.execute_query(query, (wa_number, limit))
+        results = db_manager.execute_query(query, (wa_number, limit))
         
         messages = []
-        for row in results:
-            messages.append({
-                'id': row[0],
-                'role': row[1],
-                'content': row[2],
-                'timestamp': row[3].strftime('%Y-%m-%d %H:%M') if row[3] else '',
-                'is_farmer': row[1] == 'user'
-            })
+        if results and 'rows' in results:
+            for row in results['rows']:
+                messages.append({
+                    'id': row[0],
+                    'role': row[1],
+                    'content': row[2],
+                    'timestamp': row[3].strftime('%Y-%m-%d %H:%M') if row[3] else '',
+                    'is_farmer': row[1] == 'user'
+                })
         
         # Reverse to show oldest first
         messages.reverse()
@@ -205,7 +207,7 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
     
     try:
         # Get field stats
-        field_stats = await db_manager.execute_query("""
+        field_stats = db_manager.execute_query("""
             SELECT 
                 COUNT(*) as total_fields,
                 COALESCE(SUM(area_ha), 0) as total_area,
@@ -215,7 +217,7 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
         """, (farmer_id,))
         
         # Get crop stats  
-        crop_stats = await db_manager.execute_query("""
+        crop_stats = db_manager.execute_query("""
             SELECT 
                 COUNT(DISTINCT fc.crop_name) as crop_types,
                 COUNT(*) as total_crops
@@ -225,7 +227,7 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
         """, (farmer_id,))
         
         # Get task stats
-        task_stats = await db_manager.execute_query("""
+        task_stats = db_manager.execute_query("""
             SELECT 
                 COUNT(*) as total_tasks,
                 COUNT(*) FILTER (WHERE t.status = 'completed') as completed_tasks
@@ -237,17 +239,17 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
         
         stats = {
             'fields': {
-                'total': field_stats[0][0] if field_stats else 0,
-                'total_area': float(field_stats[0][1]) if field_stats else 0,
-                'countries': field_stats[0][2] if field_stats else 0
+                'total': field_stats['rows'][0][0] if field_stats and 'rows' in field_stats and field_stats['rows'] else 0,
+                'total_area': float(field_stats['rows'][0][1]) if field_stats and 'rows' in field_stats and field_stats['rows'] else 0,
+                'countries': field_stats['rows'][0][2] if field_stats and 'rows' in field_stats and field_stats['rows'] else 0
             },
             'crops': {
-                'types': crop_stats[0][0] if crop_stats else 0,
-                'total': crop_stats[0][1] if crop_stats else 0
+                'types': crop_stats['rows'][0][0] if crop_stats and 'rows' in crop_stats and crop_stats['rows'] else 0,
+                'total': crop_stats['rows'][0][1] if crop_stats and 'rows' in crop_stats and crop_stats['rows'] else 0
             },
             'tasks': {
-                'total': task_stats[0][0] if task_stats else 0,
-                'completed': task_stats[0][1] if task_stats else 0
+                'total': task_stats['rows'][0][0] if task_stats and 'rows' in task_stats and task_stats['rows'] else 0,
+                'completed': task_stats['rows'][0][1] if task_stats and 'rows' in task_stats and task_stats['rows'] else 0
             }
         }
         

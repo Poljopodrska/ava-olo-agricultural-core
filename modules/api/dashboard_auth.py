@@ -305,24 +305,34 @@ def get_login_form_html():
                 // Create Basic Auth header
                 const credentials = btoa(username + ':' + password);
                 
-                // Try to access the dashboard with credentials
-                fetch('/dashboards/', {
-                    method: 'GET',
+                // Try to login with credentials
+                fetch('/dashboards/login', {
+                    method: 'POST',
                     headers: {
-                        'Authorization': 'Basic ' + credentials
-                    }
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        username: username,
+                        password: password
+                    })
                 })
                 .then(response => {
                     if (response.ok) {
-                        // Success - redirect to dashboard
-                        window.location.href = '/dashboards/';
+                        return response.json();
                     } else {
-                        // Failed - show error
-                        showError('Invalid credentials. Please check your username and password.');
+                        throw new Error('Invalid credentials');
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Success - redirect to dashboard
+                        window.location.href = data.redirect || '/dashboards/';
+                    } else {
+                        showError(data.message || 'Login failed. Please try again.');
                     }
                 })
                 .catch(error => {
-                    showError('Connection error. Please try again.');
+                    showError(error.message || 'Connection error. Please try again.');
                 });
             }
             

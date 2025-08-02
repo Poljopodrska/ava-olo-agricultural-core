@@ -15,6 +15,10 @@ import secrets
 from modules.core.database_manager import get_db_manager
 from modules.core.config import VERSION
 
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/auth", tags=["authentication"])
 templates = Jinja2Templates(directory="templates")
 
@@ -74,20 +78,25 @@ async def get_farmer_by_whatsapp(whatsapp_number: str):
         WHERE (whatsapp_number = %s OR wa_phone_number = %s) 
         AND COALESCE(is_active, true) = true
         """
-        result = await db_manager.execute_query(query, (whatsapp_number, whatsapp_number))
+        result = db_manager.execute_query(query, (whatsapp_number, whatsapp_number))
         
-        if result and len(result) > 0:
+        if result and 'rows' in result and len(result['rows']) > 0:
+            row = result['rows'][0]
             return {
-                'farmer_id': result[0][0],
-                'name': result[0][1],
-                'email': result[0][2],
-                'whatsapp_number': result[0][3],
-                'password_hash': result[0][4],
-                'created_at': result[0][5],
-                'is_active': result[0][6]
+                'farmer_id': row[0],
+                'name': row[1],
+                'email': row[2],
+                'whatsapp_number': row[3],
+                'password_hash': row[4],
+                'created_at': row[5],
+                'is_active': row[6]
             }
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(f"Database error in get_farmer_by_whatsapp: {e}")
+        logger.error(f"Query was: {query}")
+        logger.error(f"Parameters: {(whatsapp_number, whatsapp_number)}")
+        import traceback
+        traceback.print_exc()
         return None
     
     return None
@@ -135,20 +144,23 @@ async def create_farmer_account(name: str, whatsapp_number: str, email: str, pas
         # Default farm name from farmer name
         default_farm_name = f"{name}'s Farm"
         
-        result = await db_manager.execute_query(
+        result = db_manager.execute_query(
             query, 
             (manager_name, manager_last_name, email, whatsapp_number, 
              whatsapp_number, password_hash, whatsapp_number, 
              default_farm_name, 'Bulgaria')
         )
         
-        if result and len(result) > 0:
-            return result[0][0]  # Return farmer_id
+        if result and 'rows' in result and len(result['rows']) > 0:
+            return result['rows'][0][0]  # Return farmer_id
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Database error creating farmer: {e}")
+        logger.error(f"Database error creating farmer: {e}")
+        logger.error(f"Query was: {query}")
+        import traceback
+        traceback.print_exc()
         # Try without the new columns in case migration hasn't run
         try:
             query_fallback = """
@@ -165,14 +177,14 @@ async def create_farmer_account(name: str, whatsapp_number: str, email: str, pas
             RETURNING id
             """
             
-            result = await db_manager.execute_query(
+            result = db_manager.execute_query(
                 query_fallback, 
                 (manager_name, manager_last_name, email, whatsapp_number, 
                  whatsapp_number, default_farm_name, 'Bulgaria')
             )
             
-            if result and len(result) > 0:
-                return result[0][0]
+            if result and 'rows' in result and len(result['rows']) > 0:
+                return result['rows'][0][0]
         except Exception as e2:
             print(f"Fallback also failed: {e2}")
             
