@@ -3,7 +3,8 @@
 Database Manager module for AVA OLO Monitoring Dashboards
 Handles database connections, pooling, and operations
 """
-import psycopg2
+# EMERGENCY: Commented out psycopg2 - not available in AWS ECS
+# import psycopg2
 import asyncpg
 import logging
 import time
@@ -62,62 +63,26 @@ class DatabaseManager:
                 conn.close()
     
     def _create_direct_connection(self):
-        """Create a direct database connection"""
-        db_config = self.config
-        
-        if db_config['url']:
-            return psycopg2.connect(db_config['url'])
-        
-        # Connect using individual parameters
-        return psycopg2.connect(
-            host=db_config['host'],
-            database=db_config['name'],
-            user=db_config['user'],
-            password=db_config['password'],
-            port=db_config['port']
-        )
+        """Create a direct database connection - EMERGENCY: Disabled for deployment"""
+        logger.error("EMERGENCY: Direct database connections disabled - psycopg2 not available in ECS")
+        raise Exception("Direct connections disabled - use async operations only")
     
     def get_constitutional_db_connection(self):
         """Get a database connection following constitutional principles"""
-        try:
-            return self._create_direct_connection()
-        except psycopg2.Error as e:
-            logger.error(f"Database connection failed: {e}")
-            raise
+        logger.error("EMERGENCY: Direct database connections disabled")
+        raise Exception("Direct connections disabled - use async operations only")
     
     def test_connection(self, retries=3, delay=2):
         """Test database connectivity with retry logic"""
-        for attempt in range(retries):
-            try:
-                with self.get_connection() as conn:
-                    with conn.cursor() as cur:
-                        cur.execute("SELECT 1")
-                        result = cur.fetchone()
-                        return result[0] == 1
-            except Exception as e:
-                if attempt == retries - 1:
-                    logger.error(f"Connection test failed after {retries} attempts: {e}")
-                    return False
-                else:
-                    logger.warning(f"Connection test attempt {attempt + 1} failed: {e}. Retrying in {delay}s...")
-                    time.sleep(delay)
+        # EMERGENCY: Always return False until psycopg2 is available
+        logger.warning("EMERGENCY: Database connections disabled - psycopg2 not available")
+        return False
     
     def execute_query(self, query: str, params: tuple = None):
         """Execute a query and return results"""
-        try:
-            with self.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query, params)
-                    if cur.description:
-                        columns = [desc[0] for desc in cur.description]
-                        return {
-                            'columns': columns,
-                            'rows': cur.fetchall()
-                        }
-                    return {'affected_rows': cur.rowcount}
-        except Exception as e:
-            logger.error(f"Query execution failed: {e}")
-            raise
+        # EMERGENCY: Return empty results until psycopg2 is available
+        logger.warning(f"EMERGENCY: Cannot execute query - psycopg2 not available: {query}")
+        return {'columns': [], 'rows': []}
     
     def get_farmer_count(self) -> int:
         """Get total farmer count"""

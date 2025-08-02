@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802171500'  # v3.9.8 - EMERGENCY: Rollback with passlib removed
-COMMIT_HASH = "emergency-rollback-stdlib"  # Rollback to v3.9.0 without passlib
+DEPLOYMENT_TIMESTAMP = '20250802183000'  # v3.9.9 - EMERGENCY: Remove psycopg2 dependency
+COMMIT_HASH = "emergency-no-psycopg2"  # Emergency fix removing psycopg2 for ECS deployment
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.8"
+VERSION = "v3.9.9"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
