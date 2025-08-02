@@ -8,7 +8,8 @@
       "WebFetch(domain:ava-olo-alb-65365776.us-east-1.elb.amazonaws.com)",
       "WebFetch(domain:ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com)",
       "WebFetch(domain:avaolo.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(python:*)"
     ],
     "deny": []
   }
