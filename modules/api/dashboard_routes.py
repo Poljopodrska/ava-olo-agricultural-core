@@ -363,27 +363,48 @@ async def execute_natural_query(request: NaturalQueryRequest):
 
 @api_router.post("/database/query/direct")
 async def execute_direct_query(request: DirectQueryRequest):
-    """Execute a direct SQL query - password protected"""
+    """Execute a direct SQL query including data modifications - password protected"""
     db_manager = get_db_manager()
     
     try:
         if not is_safe_query(request.sql_query):
             return {
                 "success": False,
-                "error": "Query contains unsafe operations. Only SELECT queries are allowed."
+                "error": "Query contains unsafe operations. Only SELECT, INSERT, UPDATE, DELETE on ava_ tables are allowed."
             }
         
         start_time = time.time()
-        results = await db_manager.execute_query(request.sql_query)
-        execution_time = int((time.time() - start_time) * 1000)
         
-        return {
-            "success": True,
-            "results": results,
-            "sql_query": request.sql_query,
-            "execution_time": execution_time,
-            "rows_returned": len(results)
-        }
+        # Determine query type for appropriate response
+        query_upper = request.sql_query.strip().upper()
+        is_modification = any(query_upper.startswith(op) for op in ['INSERT', 'UPDATE', 'DELETE'])
+        
+        if is_modification:
+            # For data modification queries, execute and return affected row count
+            affected_rows = await db_manager.execute_update(request.sql_query)
+            execution_time = int((time.time() - start_time) * 1000)
+            
+            return {
+                "success": True,
+                "sql_query": request.sql_query,
+                "execution_time": execution_time,
+                "rows_affected": affected_rows,
+                "operation_type": "modification",
+                "results": []  # No results for modification queries
+            }
+        else:
+            # For SELECT queries, return results
+            results = await db_manager.execute_query(request.sql_query)
+            execution_time = int((time.time() - start_time) * 1000)
+            
+            return {
+                "success": True,
+                "results": results,
+                "sql_query": request.sql_query,
+                "execution_time": execution_time,
+                "rows_returned": len(results),
+                "operation_type": "query"
+            }
     except Exception as e:
         logger.error(f"Direct query failed: {e}")
         return {
@@ -680,24 +701,37 @@ async def convert_natural_to_sql(question: str) -> str:
     """
 
 def is_safe_query(query: str) -> bool:
-    """Check if a SQL query is safe to execute (SELECT only)"""
+    """Check if a SQL query is safe to execute (SELECT, INSERT, UPDATE, DELETE allowed for data entry)"""
     # Remove comments and normalize whitespace
     cleaned_query = re.sub(r'--.*$', '', query, flags=re.MULTILINE)
     cleaned_query = re.sub(r'/\*.*?\*/', '', cleaned_query, flags=re.DOTALL)
     cleaned_query = ' '.join(cleaned_query.split()).upper()
     
-    # Check for unsafe operations
-    unsafe_keywords = [
-        'INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 'ALTER', 
-        'TRUNCATE', 'GRANT', 'REVOKE', 'EXEC', 'EXECUTE'
+    # Check for dangerous operations
+    dangerous_keywords = [
+        'DROP', 'CREATE', 'ALTER', 'TRUNCATE', 'GRANT', 'REVOKE', 
+        'EXEC', 'EXECUTE', 'SHUTDOWN', 'KILL'
     ]
     
-    for keyword in unsafe_keywords:
+    for keyword in dangerous_keywords:
         if keyword in cleaned_query:
             return False
     
-    # Must start with SELECT
-    if not cleaned_query.strip().startswith('SELECT'):
+    # Must start with allowed operations
+    allowed_starts = ['SELECT', 'INSERT', 'UPDATE', 'DELETE']
+    if not any(cleaned_query.strip().startswith(start) for start in allowed_starts):
         return False
+    
+    # Additional safety checks for data modification
+    if any(cleaned_query.startswith(op) for op in ['INSERT', 'UPDATE', 'DELETE']):
+        # Ensure operations are only on ava_ tables (our application tables)
+        if 'ava_' not in cleaned_query:
+            return False
+        
+        # Prevent operations on system tables
+        system_tables = ['information_schema', 'pg_', 'mysql.', 'sys.']
+        for sys_table in system_tables:
+            if sys_table in cleaned_query.lower():
+                return False
     
     return True

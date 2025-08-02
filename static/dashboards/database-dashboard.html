@@ -13,6 +13,99 @@
             margin-top: 2rem;
         }
 
+        .dashboard-tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 2rem;
+        }
+
+        .tab-button {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab-button:hover {
+            color: #374151;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .data-entry-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            margin-bottom: 2rem;
+        }
+
+        .entry-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .entry-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .entry-results {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            min-height: 200px;
+        }
+
         .sidebar {
             background: white;
             border-radius: 12px;
@@ -254,7 +347,6 @@
             </div>
             <div class="nav-links">
                 <a href="/dashboards/" class="btn btn-secondary">← Dashboard Hub</a>
-                <a href="/dashboards/business" class="btn btn-primary">Business Dashboard</a>
             </div>
         </header>
 
@@ -294,8 +386,19 @@
 
             <!-- Main Content -->
             <div class="main-content">
-                <!-- Natural Language Query -->
-                <div class="query-section">
+                <!-- Dashboard Tabs -->
+                <div class="dashboard-tabs">
+                    <button class="tab-button active" onclick="switchTab('query')" id="query-tab">
+                        🔍 Query Database
+                    </button>
+                    <button class="tab-button" onclick="switchTab('entry')" id="entry-tab">
+                        📝 Data Entry
+                    </button>
+                </div>
+                <!-- Query Tab Content -->
+                <div class="tab-content active" id="query-content">
+                    <!-- Natural Language Query -->
+                    <div class="query-section">
                     <h2 style="margin-bottom: 1rem; color: #1f2937;">🤖 Natural Language Query</h2>
                     <p style="color: #6b7280; margin-bottom: 1rem;">
                         Ask questions about your farmer data in plain English. 
@@ -362,6 +465,102 @@
 
                 <!-- Error/Success Messages -->
                 <div id="message-container"></div>
+                </div>
+
+                <!-- Data Entry Tab Content -->
+                <div class="tab-content" id="entry-content">
+                    <!-- Farmer Entry -->
+                    <div class="data-entry-section">
+                        <h2 style="margin-bottom: 1rem; color: #1f2937;">👤 Add New Farmer</h2>
+                        <form id="farmer-entry-form" class="entry-form">
+                            <div class="form-group">
+                                <label for="farmer-name">Full Name *</label>
+                                <input type="text" id="farmer-name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-email">Email</label>
+                                <input type="email" id="farmer-email" name="email">
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-phone">Phone</label>
+                                <input type="tel" id="farmer-phone" name="phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-city">City</label>
+                                <input type="text" id="farmer-city" name="city">
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-country">Country</label>
+                                <input type="text" id="farmer-country" name="country" value="Slovenia">
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-occupation">Primary Occupation</label>
+                                <select id="farmer-occupation" name="primary_occupation">
+                                    <option value="">Select occupation</option>
+                                    <option value="Mango Farming">Mango Farming</option>
+                                    <option value="Grape Growing">Grape Growing</option>
+                                    <option value="Mixed Farming">Mixed Farming</option>
+                                    <option value="Vegetable Farming">Vegetable Farming</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-hectares">Size (Hectares)</label>
+                                <input type="number" id="farmer-hectares" name="size_hectares" step="0.01">
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-address">Address</label>
+                                <textarea id="farmer-address" name="address" rows="2"></textarea>
+                            </div>
+                        </form>
+                        <div class="entry-actions">
+                            <button class="btn btn-primary" onclick="submitFarmerEntry()">
+                                💾 Add Farmer
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearFarmerForm()">
+                                🗑️ Clear Form
+                            </button>
+                        </div>
+                        <div id="farmer-entry-results" class="entry-results" style="display: none;"></div>
+                    </div>
+
+                    <!-- Direct Database Operations -->
+                    <div class="data-entry-section">
+                        <h2 style="margin-bottom: 1rem; color: #1f2937;">⚙️ Direct Database Operations</h2>
+                        <p style="color: #6b7280; margin-bottom: 1rem;">
+                            Execute INSERT, UPDATE, or DELETE operations directly on the database.
+                            <span style="color: #dc2626; font-weight: 500;">Use with caution!</span>
+                        </p>
+                        
+                        <div class="form-group">
+                            <label for="direct-sql">SQL Statement</label>
+                            <textarea 
+                                id="direct-sql" 
+                                class="query-input" 
+                                placeholder="Enter your SQL statement here...
+Examples:
+INSERT INTO ava_farmers (first_name, last_name, city) VALUES ('John', 'Doe', 'Ljubljana');
+UPDATE ava_farmers SET city = 'Maribor' WHERE id = 1;
+DELETE FROM ava_farmers WHERE id = 1;"
+                                rows="6"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="entry-actions">
+                            <button class="btn btn-primary" onclick="executeDirectSQL()">
+                                ⚡ Execute SQL
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearDirectSQL()">
+                                🗑️ Clear
+                            </button>
+                            <button class="btn btn-success" onclick="validateSQL()">
+                                ✅ Validate Only
+                            </button>
+                        </div>
+                        
+                        <div id="direct-sql-results" class="entry-results" style="display: none;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -382,5 +581,174 @@
     </div>
 
     <script src="/static/dashboards/js/database-queries.js"></script>
+    <script>
+        // Tab switching functionality
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-content').classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Farmer entry functionality
+        async function submitFarmerEntry() {
+            const form = document.getElementById('farmer-entry-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Validate required fields
+            if (!data.name) {
+                showEntryMessage('farmer-entry-results', 'error', 'Name is required');
+                return;
+            }
+            
+            try {
+                // Convert to SQL INSERT statement
+                const fields = Object.keys(data).filter(key => data[key]);
+                const values = fields.map(key => `'${data[key].replace(/'/g, "''")}'`).join(', ');
+                const sql = `INSERT INTO ava_farmers (${fields.join(', ')}) VALUES (${values})`;
+                
+                const response = await fetch('/api/v1/dashboards/database/query/direct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sql_query: sql })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showEntryMessage('farmer-entry-results', 'success', 'Farmer added successfully!');
+                    clearFarmerForm();
+                } else {
+                    showEntryMessage('farmer-entry-results', 'error', result.error || 'Failed to add farmer');
+                }
+            } catch (error) {
+                showEntryMessage('farmer-entry-results', 'error', 'Network error: ' + error.message);
+            }
+        }
+
+        function clearFarmerForm() {
+            document.getElementById('farmer-entry-form').reset();
+            document.getElementById('farmer-country').value = 'Slovenia';
+            hideEntryResults('farmer-entry-results');
+        }
+
+        // Direct SQL functionality
+        async function executeDirectSQL() {
+            const sql = document.getElementById('direct-sql').value.trim();
+            
+            if (!sql) {
+                showEntryMessage('direct-sql-results', 'error', 'Please enter a SQL statement');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/v1/dashboards/database/query/direct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sql_query: sql })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let message = `SQL executed successfully!`;
+                    if (result.operation_type === 'modification') {
+                        message += ` (${result.rows_affected || 0} rows affected)`;
+                    } else if (result.rows_returned !== undefined) {
+                        message += ` (${result.rows_returned} rows returned)`;
+                    }
+                    showEntryMessage('direct-sql-results', 'success', message);
+                    
+                    // Show results if any
+                    if (result.results && result.results.length > 0) {
+                        displaySQLResults('direct-sql-results', result.results);
+                    }
+                } else {
+                    showEntryMessage('direct-sql-results', 'error', result.error || 'SQL execution failed');
+                }
+            } catch (error) {
+                showEntryMessage('direct-sql-results', 'error', 'Network error: ' + error.message);
+            }
+        }
+
+        function clearDirectSQL() {
+            document.getElementById('direct-sql').value = '';
+            hideEntryResults('direct-sql-results');
+        }
+
+        async function validateSQL() {
+            const sql = document.getElementById('direct-sql').value.trim();
+            
+            if (!sql) {
+                showEntryMessage('direct-sql-results', 'error', 'Please enter a SQL statement');
+                return;
+            }
+            
+            // Basic validation
+            const upperSQL = sql.toUpperCase();
+            const hasUnsafeKeywords = ['DROP', 'TRUNCATE', 'ALTER'].some(keyword => upperSQL.includes(keyword));
+            
+            if (hasUnsafeKeywords) {
+                showEntryMessage('direct-sql-results', 'error', 'SQL contains potentially dangerous keywords');
+                return;
+            }
+            
+            showEntryMessage('direct-sql-results', 'success', 'SQL statement appears valid and safe');
+        }
+
+        // Helper functions
+        function showEntryMessage(containerId, type, message) {
+            const container = document.getElementById(containerId);
+            container.style.display = 'block';
+            container.className = `entry-results ${type === 'error' ? 'error-message' : 'success-message'}`;
+            container.innerHTML = `<p>${message}</p>`;
+        }
+
+        function hideEntryResults(containerId) {
+            document.getElementById(containerId).style.display = 'none';
+        }
+
+        function displaySQLResults(containerId, results) {
+            const container = document.getElementById(containerId);
+            
+            if (results.length === 0) {
+                container.innerHTML += '<p>No results returned.</p>';
+                return;
+            }
+            
+            // Create table
+            const headers = Object.keys(results[0]);
+            let tableHTML = '<div class="results-table"><table><thead><tr>';
+            headers.forEach(header => {
+                tableHTML += `<th>${header}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+            
+            results.forEach(row => {
+                tableHTML += '<tr>';
+                headers.forEach(header => {
+                    tableHTML += `<td>${row[header] || ''}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            
+            tableHTML += '</tbody></table></div>';
+            container.innerHTML += tableHTML;
+        }
+    </script>
 </body>
 </html>
