@@ -5,7 +5,7 @@ Database cleanup routes - Clean up test data
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from ..core.database_manager import get_db_manager
 
@@ -134,7 +134,7 @@ async def remove_test_farmers():
         }, status_code=500)
 
 @router.post("/cleanup-specific")
-async def cleanup_specific(farmer_ids: list[int]):
+async def cleanup_specific(farmer_ids: List[int]):
     """Remove specific farmers by ID"""
     db_manager = get_db_manager()
     
