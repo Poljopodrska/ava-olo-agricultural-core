@@ -6,7 +6,7 @@ Only checks active farmers in the farmers table
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from passlib.context import CryptContext
+# Removed passlib - using standard library only
 import re
 import logging
 from modules.core.config import VERSION
@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="templates")
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing using standard library
+import hashlib
+import secrets
 
 def validate_whatsapp_number(number: str) -> bool:
     """Validate WhatsApp number format"""
@@ -51,11 +52,24 @@ def format_whatsapp_number(number: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password against hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        if not hashed_password or '$' not in hashed_password:
+            return False
+        parts = hashed_password.split('$')
+        if len(parts) != 3 or parts[0] != 'pbkdf2_sha256':
+            return False
+        salt = parts[1]
+        key = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt.encode('utf-8'), 100000)
+        return key.hex() == parts[2]
+    except Exception as e:
+        logger.error(f"Password verification error: {e}")
+        return False
 
 def get_password_hash(password: str) -> str:
     """Generate password hash"""
-    return pwd_context.hash(password)
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+    return f"pbkdf2_sha256${salt}${key.hex()}"
 
 async def get_active_farmer_by_whatsapp(whatsapp_number: str):
     """Get ONLY active farmer from farmers table (not archived/deleted farmers)"""

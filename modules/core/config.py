@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802155000'  # v3.9.0 - Fixed registration and standardized dashboard
-COMMIT_HASH = "registration-dashboard-fix"  # Fixed phone validation and UI standardization
+DEPLOYMENT_TIMESTAMP = '20250802171500'  # v3.9.8 - EMERGENCY: Rollback with passlib removed
+COMMIT_HASH = "emergency-rollback-stdlib"  # Rollback to v3.9.0 without passlib
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.0"
+VERSION = "v3.9.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
