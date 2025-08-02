@@ -403,18 +403,14 @@ async def openai_setup_wizard():
 
 @app.get("/dashboard")
 async def dashboard(request: Request):
-    """Basic dashboard - placeholder for three-panel layout"""
-    farmer_name = request.cookies.get("farmer_name", "Farmer")
+    """Redirect to farmer dashboard for standardized experience"""
     farmer_id = request.cookies.get("farmer_id")
     
     if not farmer_id:
         return RedirectResponse(url="/auth/signin", status_code=303)
     
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "version": VERSION,
-        "farmer_name": farmer_name
-    })
+    # Redirect to farmer dashboard for standardized UI
+    return RedirectResponse(url="/farmer/dashboard", status_code=303)
 
 @app.get("/health")
 async def health_check():

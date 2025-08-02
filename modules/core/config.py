@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802154000'  # v3.8.3 - Added farmer query endpoints
-COMMIT_HASH = "farmer-query"  # Query farmers by phone number
+DEPLOYMENT_TIMESTAMP = '20250802155000'  # v3.9.0 - Fixed registration and standardized dashboard
+COMMIT_HASH = "registration-dashboard-fix"  # Fixed phone validation and UI standardization
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.8.3"
+VERSION = "v3.9.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

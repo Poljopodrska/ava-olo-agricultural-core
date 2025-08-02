@@ -157,7 +157,7 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     # Calculate totals
     total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
     
-    return templates.TemplateResponse("farmer/dashboard.html", {
+    return templates.TemplateResponse("farmer/dashboard_v2.html", {
         "request": request,
         "version": VERSION,
         "farmer": farmer,
