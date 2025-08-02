@@ -36,7 +36,14 @@ async def cleanup_vrzel():
         cursor.execute("SELECT COUNT(*) FROM farmers")
         before = cursor.fetchone()[0]
         
-        # Delete all except Vrzel (ID 4)
+        # First delete related fields
+        cursor.execute("""
+            DELETE FROM fields 
+            WHERE farmer_id != 4
+        """)
+        fields_deleted = cursor.rowcount
+        
+        # Then delete all farmers except Vrzel (ID 4)
         cursor.execute("""
             DELETE FROM farmers 
             WHERE id != 4
@@ -54,7 +61,8 @@ async def cleanup_vrzel():
             "before": before,
             "after": after,
             "deleted": deleted,
-            "message": f"Deleted {deleted} farmers, kept Blaz Vrzel"
+            "fields_deleted": fields_deleted,
+            "message": f"Deleted {deleted} farmers and {fields_deleted} fields, kept Blaz Vrzel"
         })
         
     except Exception as e:
