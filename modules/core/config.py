@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802141000'  # v3.6.3 - Database Migration Tool
-COMMIT_HASH = "db-migration-tool"  # Added migration API and web interface
+DEPLOYMENT_TIMESTAMP = '20250802142000'  # v3.6.4 - Registration Form Fix
+COMMIT_HASH = "registration-fix"  # Fixed registration with split name fields
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.6.3"
+VERSION = "v3.6.4"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

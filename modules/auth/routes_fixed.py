@@ -123,7 +123,7 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
         # Hash password
         password_hash = get_password_hash(password)
         
-        # Insert new farmer - compatible with existing table structure
+        # Insert new farmer
         query = """
         INSERT INTO farmers (
             manager_name, 
@@ -162,12 +162,8 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
         raise
     except Exception as e:
         logger.error(f"Database error creating farmer: {e}")
-        logger.error(f"Query was: {query}")
         import traceback
         traceback.print_exc()
-        # Log the error details for debugging
-        logger.error(f"Failed to insert farmer - columns may be missing")
-            
         raise HTTPException(status_code=500, detail="Failed to create farmer account")
 
 @router.get("/signin", response_class=HTMLResponse)
@@ -230,68 +226,10 @@ async def signin_submit(
     
     return response
 
-@router.post("/admin-login")
-async def admin_login(request: Request):
-    """Admin login bypass for testing"""
-    # Set session with test farmer data
-    response = JSONResponse(content={"success": True})
-    response.set_cookie(key="farmer_id", value="1", httponly=True)
-    response.set_cookie(key="farmer_name", value="Admin User", httponly=True)
-    response.set_cookie(key="is_admin", value="true", httponly=True)
-    return response
-
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     """Display traditional form registration"""
     return templates.TemplateResponse("auth/register_split.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@router.get("/register/cava", response_class=HTMLResponse)
-async def cava_register_page(request: Request):
-    """Display CAVA-powered intelligent registration"""
-    return templates.TemplateResponse("auth/register_cava.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@router.get("/register/true", response_class=HTMLResponse)
-async def true_register_page(request: Request):
-    """Display TRUE CAVA registration - pure conversation"""
-    return templates.TemplateResponse("true_cava_registration.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@router.get("/register/chat", response_class=HTMLResponse)
-async def chat_register_page(request: Request):
-    """Display simple chat registration - Step 1"""
-    return templates.TemplateResponse("register_chat.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@router.get("/register/pure", response_class=HTMLResponse)
-async def pure_chat_page(request: Request):
-    """Display PURE chat - NO validation or hardcoding"""
-    return templates.TemplateResponse("pure_chat.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@router.get("/register/llm", response_class=HTMLResponse)
-async def llm_register_page(request: Request):
-    """Display LLM registration - EXACT same as dashboard chat"""
-    return templates.TemplateResponse("register_llm.html", {
-        "request": request,
-        "version": VERSION
-    })
-
-@router.get("/register/enhanced", response_class=HTMLResponse)
-async def enhanced_register_page(request: Request):
-    """Display enhanced CAVA registration with full validation"""
-    return templates.TemplateResponse("register_enhanced.html", {
         "request": request,
         "version": VERSION
     })
@@ -424,3 +362,62 @@ async def require_auth(request: Request):
             headers={"WWW-Authenticate": "Basic"},
         )
     return farmer
+
+# Keep other endpoints for backward compatibility
+@router.post("/admin-login")
+async def admin_login(request: Request):
+    """Admin login bypass for testing"""
+    response = JSONResponse(content={"success": True})
+    response.set_cookie(key="farmer_id", value="1", httponly=True)
+    response.set_cookie(key="farmer_name", value="Admin User", httponly=True)
+    response.set_cookie(key="is_admin", value="true", httponly=True)
+    return response
+
+# Other registration variants
+@router.get("/register/cava", response_class=HTMLResponse)
+async def cava_register_page(request: Request):
+    """Display CAVA-powered intelligent registration"""
+    return templates.TemplateResponse("auth/register_cava.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@router.get("/register/true", response_class=HTMLResponse)
+async def true_register_page(request: Request):
+    """Display TRUE CAVA registration - pure conversation"""
+    return templates.TemplateResponse("true_cava_registration.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@router.get("/register/chat", response_class=HTMLResponse)
+async def chat_register_page(request: Request):
+    """Display simple chat registration - Step 1"""
+    return templates.TemplateResponse("register_chat.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@router.get("/register/pure", response_class=HTMLResponse)
+async def pure_chat_page(request: Request):
+    """Display PURE chat - NO validation or hardcoding"""
+    return templates.TemplateResponse("pure_chat.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@router.get("/register/llm", response_class=HTMLResponse)
+async def llm_register_page(request: Request):
+    """Display LLM registration - EXACT same as dashboard chat"""
+    return templates.TemplateResponse("register_llm.html", {
+        "request": request,
+        "version": VERSION
+    })
+
+@router.get("/register/enhanced", response_class=HTMLResponse)
+async def enhanced_register_page(request: Request):
+    """Display enhanced CAVA registration with full validation"""
+    return templates.TemplateResponse("register_enhanced.html", {
+        "request": request,
+        "version": VERSION
+    })
