@@ -38,13 +38,8 @@ class SaveQueryRequest(BaseModel):
 
 # Serve dashboard HTML files with authentication
 @router.get("/", response_class=HTMLResponse)
-async def dashboard_hub(request: Request):
-    """Dashboard hub landing page - password protected"""
-    # Check if user is authenticated
-    if not check_dashboard_auth(request):
-        # Return login form
-        return HTMLResponse(content=get_login_form_html())
-    
+async def dashboard_hub(username: str = Depends(authenticate_dashboard)):
+    """Dashboard hub landing page - password protected with Peter/Semillon"""
     # User is authenticated, serve the dashboard hub
     try:
         with open("static/dashboards/index.html", "r") as f:
@@ -53,7 +48,7 @@ async def dashboard_hub(request: Request):
         return HTMLResponse(content="<h1>Dashboard hub not found</h1>", status_code=404)
 
 @router.get("/database", response_class=HTMLResponse)
-async def database_dashboard(authenticated: bool = Depends(require_dashboard_auth)):
+async def database_dashboard(username: str = Depends(authenticate_dashboard)):
     """Database dashboard with natural language queries - password protected"""
     try:
         with open("static/dashboards/database-dashboard.html", "r") as f:
@@ -62,7 +57,7 @@ async def database_dashboard(authenticated: bool = Depends(require_dashboard_aut
         return HTMLResponse(content="<h1>Database dashboard not found</h1>", status_code=404)
 
 @router.get("/business", response_class=HTMLResponse)
-async def business_dashboard(authenticated: bool = Depends(require_dashboard_auth)):
+async def business_dashboard(username: str = Depends(authenticate_dashboard)):
     """Business dashboard with growth trends and charts - password protected"""
     try:
         with open("static/dashboards/business-dashboard.html", "r") as f:
@@ -71,7 +66,7 @@ async def business_dashboard(authenticated: bool = Depends(require_dashboard_aut
         return HTMLResponse(content="<h1>Business dashboard not found</h1>", status_code=404)
 
 @router.get("/health", response_class=HTMLResponse)
-async def health_dashboard(authenticated: bool = Depends(require_dashboard_auth)):
+async def health_dashboard(username: str = Depends(authenticate_dashboard)):
     """Health dashboard with system monitoring - password protected"""
     try:
         with open("static/dashboards/health-dashboard.html", "r") as f:
@@ -80,7 +75,7 @@ async def health_dashboard(authenticated: bool = Depends(require_dashboard_auth)
         return HTMLResponse(content="<h1>Health dashboard not found</h1>", status_code=404)
 
 @router.get("/cost", response_class=HTMLResponse)
-async def cost_dashboard(authenticated: bool = Depends(require_dashboard_auth)):
+async def cost_dashboard(username: str = Depends(authenticate_dashboard)):
     """Cost dashboard placeholder - password protected"""
     return HTMLResponse(content="""
     <!DOCTYPE html>
@@ -137,7 +132,7 @@ async def cost_dashboard(authenticated: bool = Depends(require_dashboard_auth)):
 # API endpoints for dashboard functionality
 
 @api_router.get("/hub/stats")
-async def get_hub_stats(authenticated: bool = Depends(require_dashboard_auth)):
+async def get_hub_stats(username: str = Depends(authenticate_dashboard)):
     """Get statistics for dashboard hub - password protected"""
     db_manager = get_db_manager()
     
@@ -180,7 +175,7 @@ async def get_hub_stats(authenticated: bool = Depends(require_dashboard_auth)):
         }
 
 @api_router.get("/database/queries/quick/{query_type}")
-async def execute_quick_query(query_type: str, authenticated: bool = Depends(require_dashboard_auth)):
+async def execute_quick_query(query_type: str, username: str = Depends(authenticate_dashboard)):
     """Execute predefined quick queries - password protected"""
     db_manager = get_db_manager()
     
@@ -270,7 +265,7 @@ async def execute_quick_query(query_type: str, authenticated: bool = Depends(req
         }
 
 @api_router.post("/database/query/natural")
-async def execute_natural_query(request: NaturalQueryRequest, authenticated: bool = Depends(require_dashboard_auth)):
+async def execute_natural_query(request: NaturalQueryRequest, username: str = Depends(authenticate_dashboard)):
     """Convert natural language to SQL and execute - password protected"""
     db_manager = get_db_manager()
     
@@ -311,7 +306,7 @@ async def execute_natural_query(request: NaturalQueryRequest, authenticated: boo
         }
 
 @api_router.post("/database/query/direct")
-async def execute_direct_query(request: DirectQueryRequest, authenticated: bool = Depends(require_dashboard_auth)):
+async def execute_direct_query(request: DirectQueryRequest, username: str = Depends(authenticate_dashboard)):
     """Execute a direct SQL query - password protected"""
     db_manager = get_db_manager()
     
@@ -341,7 +336,7 @@ async def execute_direct_query(request: DirectQueryRequest, authenticated: bool 
         }
 
 @api_router.get("/database/queries/saved")
-async def get_saved_queries(authenticated: bool = Depends(require_dashboard_auth)):
+async def get_saved_queries(username: str = Depends(authenticate_dashboard)):
     """Get all saved queries - password protected"""
     db_manager = get_db_manager()
     
@@ -366,7 +361,7 @@ async def get_saved_queries(authenticated: bool = Depends(require_dashboard_auth
         }
 
 @api_router.post("/database/queries/save")
-async def save_query(request: SaveQueryRequest, authenticated: bool = Depends(require_dashboard_auth)):
+async def save_query(request: SaveQueryRequest, username: str = Depends(authenticate_dashboard)):
     """Save a query for future use - password protected"""
     db_manager = get_db_manager()
     
@@ -388,7 +383,7 @@ async def save_query(request: SaveQueryRequest, authenticated: bool = Depends(re
         }
 
 @api_router.post("/database/queries/saved/{query_id}/use")
-async def increment_query_usage(query_id: int, authenticated: bool = Depends(require_dashboard_auth)):
+async def increment_query_usage(query_id: int, username: str = Depends(authenticate_dashboard)):
     """Increment usage count for a saved query - password protected"""
     db_manager = get_db_manager()
     
@@ -407,7 +402,7 @@ async def increment_query_usage(query_id: int, authenticated: bool = Depends(req
 # Business Dashboard API endpoints
 
 @api_router.get("/business/overview")
-async def get_business_overview(authenticated: bool = Depends(require_dashboard_auth)):
+async def get_business_overview(username: str = Depends(authenticate_dashboard)):
     """Get business dashboard overview metrics - password protected"""
     db_manager = get_db_manager()
     
@@ -448,7 +443,7 @@ async def get_business_overview(authenticated: bool = Depends(require_dashboard_
         }
 
 @api_router.get("/business/growth-trends")
-async def get_growth_trends(period: str = "30d", authenticated: bool = Depends(require_dashboard_auth)):
+async def get_growth_trends(period: str = "30d", username: str = Depends(authenticate_dashboard)):
     """Get farmer growth trends for specified period - password protected"""
     db_manager = get_db_manager()
     
@@ -502,7 +497,7 @@ async def get_growth_trends(period: str = "30d", authenticated: bool = Depends(r
         }
 
 @api_router.get("/business/activity-stream")
-async def get_activity_stream(limit: int = 50, authenticated: bool = Depends(require_dashboard_auth)):
+async def get_activity_stream(limit: int = 50, username: str = Depends(authenticate_dashboard)):
     """Get recent activity stream - password protected"""
     db_manager = get_db_manager()
     
@@ -537,7 +532,7 @@ async def get_activity_stream(limit: int = 50, authenticated: bool = Depends(req
         }
 
 @api_router.get("/business/database-changes")
-async def get_database_changes(authenticated: bool = Depends(require_dashboard_auth)):
+async def get_database_changes(username: str = Depends(authenticate_dashboard)):
     """Get recent database changes - password protected"""
     db_manager = get_db_manager()
     
