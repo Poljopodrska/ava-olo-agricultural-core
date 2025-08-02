@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802143500'  # v3.6.6 - Simple Cleanup Fix
-COMMIT_HASH = "simple-cleanup"  # Fixed cleanup endpoint
+DEPLOYMENT_TIMESTAMP = '20250802144000'  # v3.6.7 - Direct Cleanup
+COMMIT_HASH = "direct-cleanup"  # Direct DB cleanup for Vrzel
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.6.6"
+VERSION = "v3.6.7"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

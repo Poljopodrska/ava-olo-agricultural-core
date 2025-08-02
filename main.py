@@ -110,6 +110,7 @@ from modules.api.migration_routes import router as migration_router
 # Import cleanup routes
 from modules.api.database_cleanup_routes import router as cleanup_router
 from modules.api.simple_cleanup import router as simple_cleanup_router
+from modules.api.direct_cleanup import router as direct_cleanup_router
 
 # Import for startup
 import asyncio
@@ -169,6 +170,7 @@ app.include_router(db_test_router)
 app.include_router(migration_router)
 app.include_router(cleanup_router)
 app.include_router(simple_cleanup_router)
+app.include_router(direct_cleanup_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
@@ -415,6 +417,11 @@ async def health_check():
 async def run_migration_page():
     """Serve migration tool page"""
     return FileResponse("static/run-migration.html")
+
+@app.get("/cleanup-farmers")
+async def cleanup_farmers_page():
+    """Serve cleanup tool page"""
+    return FileResponse("static/cleanup-farmers.html")
 
 @app.get("/health/detailed")
 async def detailed_health_check():

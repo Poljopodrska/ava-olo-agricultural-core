@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Cleanup - AVA OLO</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #654321;
+            margin-bottom: 30px;
+        }
+        button {
+            background-color: #8B4513;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #654321;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .loading {
+            display: none;
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .farmer-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .vrzel-row {
+            background-color: #e8f5e9;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Database Cleanup Tool</h1>
+        
+        <p>This tool will help clean up test farmers from the database.</p>
+        
+        <div>
+            <button onclick="listFarmers()">📋 List All Farmers</button>
+            <button onclick="cleanupKeepVrzel()" class="danger">🗑️ Remove All Except Vrzel</button>
+        </div>
+        
+        <div class="loading">⏳ Processing...</div>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="farmerList" class="farmer-list"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status ' + type;
+            statusDiv.innerHTML = message;
+            statusDiv.style.display = 'block';
+            document.querySelector('.loading').style.display = 'none';
+        }
+        
+        async function listFarmers() {
+            document.querySelector('.loading').style.display = 'block';
+            document.getElementById('farmerList').innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/v1/cleanup/list-farmers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    let html = '<h3>📊 Current Farmers (' + data.total + ' total)</h3>';
+                    html += '<table><thead><tr><th>ID</th><th>Name</th><th>Farm</th><th>Phone</th><th>Email</th></tr></thead><tbody>';
+                    
+                    data.farmers.forEach(farmer => {
+                        const isVrzel = farmer.farm_name.toLowerCase().includes('vrzel') || 
+                                       farmer.last_name.toLowerCase().includes('vrzel');
+                        const rowClass = isVrzel ? 'vrzel-row' : '';
+                        
+                        html += `<tr class="${rowClass}">
+                            <td>${farmer.id}</td>
+                            <td>${farmer.full_name || '(no name)'}</td>
+                            <td>${farmer.farm_name || '(no farm)'}</td>
+                            <td>${farmer.phone || '(no phone)'}</td>
+                            <td>${farmer.email || '(no email)'}</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('farmerList').innerHTML = html;
+                    showStatus('Listed ' + data.total + ' farmers', 'info');
+                } else {
+                    showStatus('Error: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to list farmers: ' + error.message, 'error');
+            }
+        }
+        
+        async function cleanupKeepVrzel() {
+            if (!confirm('This will delete all farmers except Blaz Vrzel. Are you sure?')) {
+                return;
+            }
+            
+            document.querySelector('.loading').style.display = 'block';
+            
+            try {
+                // Get list of all farmers first
+                const listResponse = await fetch('/api/v1/cleanup/list-farmers');
+                const listData = await listResponse.json();
+                
+                if (!listData.success) {
+                    showStatus('Failed to get farmer list', 'error');
+                    return;
+                }
+                
+                // Find IDs to delete (all except Vrzel)
+                const idsToDelete = [];
+                listData.farmers.forEach(farmer => {
+                    const isVrzel = farmer.farm_name.toLowerCase().includes('vrzel') || 
+                                   farmer.last_name.toLowerCase().includes('vrzel');
+                    if (!isVrzel) {
+                        idsToDelete.push(farmer.id);
+                    }
+                });
+                
+                if (idsToDelete.length === 0) {
+                    showStatus('No farmers to delete - only Vrzel found', 'info');
+                    return;
+                }
+                
+                // Delete farmers one by one to avoid async issues
+                let deleted = 0;
+                for (const id of idsToDelete) {
+                    try {
+                        await fetch('/api/v1/cleanup/cleanup-specific', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify([id])
+                        });
+                        deleted++;
+                    } catch (e) {
+                        console.error('Failed to delete farmer ' + id);
+                    }
+                }
+                
+                showStatus(`✅ Cleanup complete! Deleted ${deleted} farmers. Kept Vrzel family.`, 'success');
+                
+                // Refresh the list
+                setTimeout(listFarmers, 1000);
+                
+            } catch (error) {
+                showStatus('Cleanup failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Load farmers on page load
+        window.onload = listFarmers;
+    </script>
+</body>
+</html>
