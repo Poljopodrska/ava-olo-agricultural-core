@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802145500'  # v3.7.0 - CASCADE DELETE migration
-COMMIT_HASH = "cascade-delete"  # Add CASCADE DELETE to all FKs
+DEPLOYMENT_TIMESTAMP = '20250802150000'  # v3.7.1 - Final cleanup endpoint
+COMMIT_HASH = "final-cleanup"  # Simple working cleanup
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.7.0"
+VERSION = "v3.7.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
