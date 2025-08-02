@@ -9,27 +9,73 @@ from fastapi.responses import HTMLResponse
 import logging
 from typing import Optional
 import base64
+import secrets
+import time
 
 logger = logging.getLogger(__name__)
 
-# Dashboard credentials
-DASHBOARD_USERNAME = "Peter"
-DASHBOARD_PASSWORD = "Semillon"
+# Dashboard credentials - dual user support
+DASHBOARD_USERS = {
+    "Peter": "Semillon",
+    "Tine": "Vitovska"
+}
+
+# Session storage (in production, use Redis or similar)
+sessions = {}
 
 security = HTTPBasic()
 
 def authenticate_dashboard(credentials: HTTPBasicCredentials = Depends(security)):
-    """Authenticate dashboard access with Peter/Semillon credentials"""
-    if credentials.username != DASHBOARD_USERNAME or credentials.password != DASHBOARD_PASSWORD:
+    """Authenticate dashboard access with dual-user credentials"""
+    username = credentials.username
+    password = credentials.password
+    
+    # Check if user exists and password matches
+    if username not in DASHBOARD_USERS or DASHBOARD_USERS[username] != password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Access denied - Invalid credentials",
             headers={"WWW-Authenticate": "Basic"},
         )
-    return credentials.username
+    return username
+
+def create_session(username: str) -> str:
+    """Create a new session for authenticated user"""
+    session_id = secrets.token_urlsafe(32)
+    sessions[session_id] = {
+        'username': username,
+        'created_at': time.time(),
+        'last_accessed': time.time()
+    }
+    return session_id
+
+def validate_session(session_id: str) -> Optional[str]:
+    """Validate session and return username if valid"""
+    if session_id not in sessions:
+        return None
+    
+    session = sessions[session_id]
+    current_time = time.time()
+    
+    # Session expires after 24 hours of inactivity
+    if current_time - session['last_accessed'] > 86400:
+        del sessions[session_id]
+        return None
+    
+    # Update last accessed time
+    session['last_accessed'] = current_time
+    return session['username']
 
 def check_dashboard_auth(request: Request):
-    """Check if user is authenticated for dashboard access"""
+    """Check if user is authenticated via session or Basic Auth"""
+    # First check session cookie
+    session_id = request.cookies.get("dashboard_session")
+    if session_id:
+        username = validate_session(session_id)
+        if username:
+            return username
+    
+    # Then check Basic Auth header
     auth_header = request.headers.get("Authorization")
     
     if not auth_header or not auth_header.startswith("Basic "):
@@ -41,19 +87,22 @@ def check_dashboard_auth(request: Request):
         decoded_credentials = base64.b64decode(encoded_credentials).decode("utf-8")
         username, password = decoded_credentials.split(":", 1)
         
-        return username == DASHBOARD_USERNAME and password == DASHBOARD_PASSWORD
+        # Validate credentials
+        if username in DASHBOARD_USERS and DASHBOARD_USERS[username] == password:
+            return username
     except Exception:
         return False
 
 def require_dashboard_auth(request: Request):
     """Dependency that requires dashboard authentication"""
-    if not check_dashboard_auth(request):
+    username = check_dashboard_auth(request)
+    if not username:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Dashboard access requires authentication",
             headers={"WWW-Authenticate": "Basic realm=\"Dashboard Access\""},
         )
-    return True
+    return username
 
 def get_login_form_html():
     """Return HTML login form for dashboard access"""

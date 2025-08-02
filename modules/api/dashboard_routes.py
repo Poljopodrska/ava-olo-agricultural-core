@@ -16,7 +16,7 @@ from typing import List, Dict, Any, Optional
 
 from ..core.config import VERSION, BUILD_ID
 from ..core.database_manager import get_db_manager
-# from .dashboard_auth import authenticate_dashboard  # Temporarily disabled for debugging
+from .dashboard_auth import require_dashboard_auth, check_dashboard_auth
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +38,13 @@ class SaveQueryRequest(BaseModel):
 
 # Serve dashboard HTML files with authentication
 @router.get("/", response_class=HTMLResponse)
-async def dashboard_hub():
-    """Dashboard hub landing page - temporarily without auth for debugging"""
-    # Serve the dashboard hub
+async def dashboard_hub(request: Request):
+    """Dashboard hub landing page - password protected"""
+    # Check authentication
+    if not check_dashboard_auth(request):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/dashboards/login", status_code=303)
+    
     try:
         with open("static/dashboards/index.html", "r") as f:
             return HTMLResponse(content=f.read())
@@ -48,8 +52,8 @@ async def dashboard_hub():
         return HTMLResponse(content="<h1>Dashboard hub not found</h1>", status_code=404)
 
 @router.get("/database", response_class=HTMLResponse)
-async def database_dashboard():
-    """Database dashboard with natural language queries - temporarily without auth"""
+async def database_dashboard(request: Request, username: str = Depends(require_dashboard_auth)):
+    """Database dashboard with natural language queries - password protected"""
     try:
         with open("static/dashboards/database-dashboard.html", "r") as f:
             return HTMLResponse(content=f.read())
@@ -57,7 +61,7 @@ async def database_dashboard():
         return HTMLResponse(content="<h1>Database dashboard not found</h1>", status_code=404)
 
 @router.get("/business", response_class=HTMLResponse)
-async def business_dashboard():
+async def business_dashboard(request: Request, username: str = Depends(require_dashboard_auth)):
     """Business dashboard with growth trends and charts - password protected"""
     try:
         with open("static/dashboards/business-dashboard.html", "r") as f:
@@ -66,7 +70,7 @@ async def business_dashboard():
         return HTMLResponse(content="<h1>Business dashboard not found</h1>", status_code=404)
 
 @router.get("/health", response_class=HTMLResponse)
-async def health_dashboard():
+async def health_dashboard(request: Request, username: str = Depends(require_dashboard_auth)):
     """Health dashboard with system monitoring - password protected"""
     try:
         with open("static/dashboards/health-dashboard.html", "r") as f:
@@ -74,9 +78,61 @@ async def health_dashboard():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Health dashboard not found</h1>", status_code=404)
 
+@router.get("/login", response_class=HTMLResponse)
+async def dashboard_login_page(request: Request):
+    """Dashboard login page"""
+    from .dashboard_auth import get_login_form_html
+    
+    # Check if already authenticated
+    if check_dashboard_auth(request):
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/dashboards/", status_code=303)
+    
+    return HTMLResponse(content=get_login_form_html())
+
+@router.post("/login")
+async def dashboard_login(request: Request):
+    """Process dashboard login"""
+    from fastapi.responses import JSONResponse
+    
+    # Get form data
+    form_data = await request.form()
+    username = form_data.get("username")
+    password = form_data.get("password")
+    
+    # Validate credentials
+    from .dashboard_auth import DASHBOARD_USERS, create_session
+    
+    if username not in DASHBOARD_USERS or DASHBOARD_USERS[username] != password:
+        return JSONResponse(
+            content={"success": False, "error": "Invalid credentials"},
+            status_code=401
+        )
+    
+    # Create session
+    session_id = create_session(username)
+    
+    # Set session cookie
+    response = JSONResponse(content={
+        "success": True,
+        "message": f"Welcome, {username}!",
+        "redirect": "/dashboards/"
+    })
+    
+    response.set_cookie(
+        key="dashboard_session",
+        value=session_id,
+        httponly=True,
+        secure=False,  # Set to True in production with HTTPS
+        samesite="lax",
+        max_age=86400  # 24 hours
+    )
+    
+    return response
+
 @router.get("/cost", response_class=HTMLResponse)
-async def cost_dashboard():
-    """Cost dashboard placeholder"""
+async def cost_dashboard(request: Request, username: str = Depends(require_dashboard_auth)):
+    """Cost dashboard placeholder - password protected"""
     return HTMLResponse(content="""
     <!DOCTYPE html>
     <html lang="en">

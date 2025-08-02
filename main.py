@@ -98,6 +98,9 @@ from modules.api.dashboard_chat_routes import router as dashboard_chat_router
 # Import farmer debug routes
 from modules.api.farmer_debug_routes import router as farmer_debug_router
 
+# Import farmer dashboard routes
+from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
+
 # Import for startup
 import asyncio
 from datetime import datetime
@@ -151,6 +154,7 @@ app.include_router(cava_chat_router)
 app.include_router(chat_history_router)
 app.include_router(dashboard_chat_router)
 app.include_router(farmer_debug_router)
+app.include_router(farmer_dashboard_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)

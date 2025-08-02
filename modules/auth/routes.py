@@ -61,12 +61,20 @@ async def get_farmer_by_whatsapp(whatsapp_number: str):
     db_manager = get_db_manager()
     
     try:
+        # First try with new columns
         query = """
-        SELECT farmer_id, name, email, whatsapp_number, password_hash, created_at, is_active
+        SELECT id, 
+               COALESCE(name, CONCAT_WS(' ', manager_name, manager_last_name)) as name, 
+               email, 
+               COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number, 
+               password_hash, 
+               created_at, 
+               COALESCE(is_active, true) as is_active
         FROM farmers 
-        WHERE whatsapp_number = %s AND is_active = true
+        WHERE (whatsapp_number = %s OR wa_phone_number = %s) 
+        AND COALESCE(is_active, true) = true
         """
-        result = await db_manager.execute_query(query, (whatsapp_number,))
+        result = await db_manager.execute_query(query, (whatsapp_number, whatsapp_number))
         
         if result and len(result) > 0:
             return {
@@ -100,19 +108,74 @@ async def create_farmer_account(name: str, whatsapp_number: str, email: str, pas
         # Hash password
         password_hash = get_password_hash(password)
         
-        # Insert new farmer
+        # Split name into first and last name for compatibility
+        name_parts = name.strip().split(' ', 1)
+        manager_name = name_parts[0]
+        manager_last_name = name_parts[1] if len(name_parts) > 1 else ''
+        
+        # Insert new farmer - compatible with existing table structure
         query = """
-        INSERT INTO farmers (name, email, whatsapp_number, password_hash, is_active, created_at)
-        VALUES (%s, %s, %s, %s, true, NOW())
-        RETURNING farmer_id
+        INSERT INTO farmers (
+            manager_name, 
+            manager_last_name, 
+            email, 
+            wa_phone_number, 
+            phone,
+            password_hash, 
+            is_active, 
+            created_at,
+            whatsapp_number,
+            farm_name,
+            country
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, true, NOW(), %s, %s, %s)
+        RETURNING id
         """
-        result = await db_manager.execute_query(query, (name, email, whatsapp_number, password_hash))
+        
+        # Default farm name from farmer name
+        default_farm_name = f"{name}'s Farm"
+        
+        result = await db_manager.execute_query(
+            query, 
+            (manager_name, manager_last_name, email, whatsapp_number, 
+             whatsapp_number, password_hash, whatsapp_number, 
+             default_farm_name, 'Bulgaria')
+        )
         
         if result and len(result) > 0:
             return result[0][0]  # Return farmer_id
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Database error creating farmer: {e}")
+        # Try without the new columns in case migration hasn't run
+        try:
+            query_fallback = """
+            INSERT INTO farmers (
+                manager_name, 
+                manager_last_name, 
+                email, 
+                wa_phone_number, 
+                phone,
+                farm_name,
+                country
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING id
+            """
+            
+            result = await db_manager.execute_query(
+                query_fallback, 
+                (manager_name, manager_last_name, email, whatsapp_number, 
+                 whatsapp_number, default_farm_name, 'Bulgaria')
+            )
+            
+            if result and len(result) > 0:
+                return result[0][0]
+        except Exception as e2:
+            print(f"Fallback also failed: {e2}")
+            
         raise HTTPException(status_code=500, detail="Failed to create farmer account")
     
     return None
@@ -162,10 +225,8 @@ async def signin_submit(
             "error": "Incorrect password"
         })
     
-    # Successful login - redirect to dashboard
-    # For now, redirect to a basic success page
-    # TODO: Implement proper session management
-    response = RedirectResponse(url="/dashboard", status_code=303)
+    # Successful login - redirect to farmer dashboard
+    response = RedirectResponse(url="/farmer/dashboard", status_code=303)
     response.set_cookie(key="farmer_id", value=str(farmer['farmer_id']), httponly=True)
     response.set_cookie(key="farmer_name", value=farmer['name'], httponly=True)
     
@@ -297,8 +358,8 @@ async def register_submit(
         farmer_id = await create_farmer_account(name.strip(), formatted_number, email, password)
         
         if farmer_id:
-            # Successful registration - redirect to dashboard
-            response = RedirectResponse(url="/dashboard", status_code=303)
+            # Successful registration - redirect to farmer dashboard
+            response = RedirectResponse(url="/farmer/dashboard", status_code=303)
             response.set_cookie(key="farmer_id", value=str(farmer_id), httponly=True)
             response.set_cookie(key="farmer_name", value=name.strip(), httponly=True)
             
@@ -340,9 +401,9 @@ async def get_current_farmer(request: Request) -> Optional[dict]:
     
     return None
 
-def require_auth(request: Request):
+async def require_auth(request: Request):
     """Dependency to require authentication"""
-    farmer = get_current_farmer(request)
+    farmer = await get_current_farmer(request)
     if not farmer:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

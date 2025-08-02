@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Dashboard - {{ farmer.name }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .navbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+        
+        .navbar a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .welcome-banner {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .welcome-banner h2 {
+            margin: 0 0 0.5rem 0;
+            color: #2c3e50;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-card .label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .section h3 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .weather-widget {
+            text-align: center;
+        }
+        
+        .weather-current {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 1rem 0;
+        }
+        
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .weather-forecast {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #ecf0f1;
+        }
+        
+        .forecast-day {
+            text-align: center;
+        }
+        
+        .field-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .field-item {
+            padding: 1rem;
+            border-bottom: 1px solid #ecf0f1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .field-item:last-child {
+            border-bottom: none;
+        }
+        
+        .field-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .field-area {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .messages-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .message {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        
+        .message.farmer {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        
+        .message.assistant {
+            background: #ecf0f1;
+            color: #2c3e50;
+        }
+        
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>🌾 AVA OLO Farmer Portal</h1>
+        <div class="user-info">
+            <span>Welcome, {{ farmer.name }}</span>
+            <a href="/auth/logout">Logout</a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="welcome-banner">
+            <h2>Welcome back, {{ farmer.name }}!</h2>
+            <p>Here's your personalized agricultural dashboard</p>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value">{{ total_fields }}</div>
+                    <div class="label">Total Fields</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ total_area }} ha</div>
+                    <div class="label">Total Area</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ message_count }}</div>
+                    <div class="label">Recent Messages</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-grid">
+            <div class="section">
+                <h3>🌡️ Farm Weather - {{ weather.location }}</h3>
+                <div class="weather-widget">
+                    <div class="weather-current">{{ weather.temperature }}°C</div>
+                    <div>{{ weather.conditions }}</div>
+                    
+                    <div class="weather-details">
+                        <div>
+                            <strong>Humidity:</strong> {{ weather.humidity }}%
+                        </div>
+                        <div>
+                            <strong>Wind:</strong> {{ weather.wind_speed }} km/h
+                        </div>
+                    </div>
+                    
+                    <div class="weather-forecast">
+                        {% for day in weather.forecast %}
+                        <div class="forecast-day">
+                            <div><strong>{{ day.day }}</strong></div>
+                            <div>{{ day.high }}° / {{ day.low }}°</div>
+                            <div>{{ day.conditions }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3>🌾 Your Fields</h3>
+                {% if fields %}
+                <ul class="field-list">
+                    {% for field in fields %}
+                    <li class="field-item">
+                        <div>
+                            <div class="field-name">{{ field.field_name }}</div>
+                            <div class="field-area">{{ field.area_ha }} hectares</div>
+                        </div>
+                        <div>
+                            {% if field.country %}
+                            <span>{{ field.country }}</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="empty-state">
+                    <p>No fields registered yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="section" style="margin-top: 2rem;">
+            <h3>💬 Recent Messages</h3>
+            {% if messages %}
+            <div class="messages-list">
+                {% for message in messages %}
+                <div class="message {% if message.is_farmer %}farmer{% else %}assistant{% endif %}">
+                    <div>{{ message.content }}</div>
+                    <div class="message-time">{{ message.timestamp }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>No recent messages</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // Auto-refresh weather every 5 minutes
+        setInterval(() => {
+            fetch('/farmer/api/weather')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update weather display
+                        console.log('Weather updated:', data.weather);
+                    }
+                });
+        }, 300000);
+    </script>
+</body>
+</html>
