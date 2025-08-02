@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802150000'  # v3.7.1 - Final cleanup endpoint
-COMMIT_HASH = "final-cleanup"  # Simple working cleanup
+DEPLOYMENT_TIMESTAMP = '20250802150300'  # v3.7.2 - Handle field_crops table
+COMMIT_HASH = "cleanup-crops"  # Added field_crops to cleanup
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.7.1"
+VERSION = "v3.7.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

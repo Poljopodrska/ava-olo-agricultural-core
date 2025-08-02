@@ -46,11 +46,21 @@ async def cleanup_now():
         except:
             plans_deleted = 0
         
-        # 2. Delete fields
+        # 2. Delete field_crops
+        try:
+            cursor.execute("""
+                DELETE FROM field_crops 
+                WHERE field_id IN (SELECT id FROM fields WHERE farmer_id != 4)
+            """)
+            crops_deleted = cursor.rowcount
+        except:
+            crops_deleted = 0
+        
+        # 3. Delete fields
         cursor.execute("DELETE FROM fields WHERE farmer_id != 4")
         fields_deleted = cursor.rowcount
         
-        # 3. Delete farmers
+        # 4. Delete farmers
         cursor.execute("DELETE FROM farmers WHERE id != 4")
         farmers_deleted = cursor.rowcount
         
