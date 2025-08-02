@@ -107,6 +107,9 @@ from modules.api.db_test_routes import router as db_test_router
 # Import migration routes
 from modules.api.migration_routes import router as migration_router
 
+# Import cleanup routes
+from modules.api.database_cleanup_routes import router as cleanup_router
+
 # Import for startup
 import asyncio
 from datetime import datetime
@@ -163,6 +166,7 @@ app.include_router(farmer_debug_router)
 app.include_router(farmer_dashboard_router)
 app.include_router(db_test_router)
 app.include_router(migration_router)
+app.include_router(cleanup_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
