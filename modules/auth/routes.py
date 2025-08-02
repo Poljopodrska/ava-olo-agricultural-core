@@ -11,6 +11,7 @@ from passlib.context import CryptContext
 import re
 from typing import Optional
 import secrets
+import logging
 
 from modules.core.database_manager import get_db_manager
 from modules.core.config import VERSION
