@@ -111,6 +111,7 @@ from modules.api.migration_routes import router as migration_router
 from modules.api.database_cleanup_routes import router as cleanup_router
 from modules.api.simple_cleanup import router as simple_cleanup_router
 from modules.api.direct_cleanup import router as direct_cleanup_router
+from modules.api.cascade_migration import router as cascade_router
 
 # Import for startup
 import asyncio
@@ -171,6 +172,7 @@ app.include_router(migration_router)
 app.include_router(cleanup_router)
 app.include_router(simple_cleanup_router)
 app.include_router(direct_cleanup_router)
+app.include_router(cascade_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
