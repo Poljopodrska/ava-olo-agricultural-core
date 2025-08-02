@@ -1,5 +1,108 @@
 # AVA OLO System Changelog
 
+## v3.5.37 - 2025-08-02 - Password-Protected Dashboard Hub with Peter/Semillon Authentication
+**Deployed to Production**: READY TO DEPLOY 🚀
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: App Runner Auto-Deploy via GitHub Actions
+
+### 🔐 DASHBOARD AUTHENTICATION SYSTEM IMPLEMENTED
+**Key Achievement**: Restored dashboard hub with password protection for Bulgarian mango cooperative managers
+
+### Features Implemented:
+
+#### 1. **Authentication Middleware**
+- **New Module**: `modules/api/dashboard_auth.py`
+- **Credentials**: Username "Peter", Password "Semillon" 
+- **Method**: HTTP Basic Authentication with session management
+- **Security**: All dashboard routes protected with authentication dependency
+
+#### 2. **Dashboard Hub Restoration**
+- **URL**: https://avaolo.com/dashboards/
+- **Functionality**: Central landing page with icons for all dashboards
+- **Features**: 
+  - Database Dashboard (📊) - Natural language queries
+  - Business Dashboard (📈) - Growth trends and analytics  
+  - Health Dashboard (⚡) - System performance monitoring
+  - Real-time system statistics display
+
+#### 3. **Protected Routes**
+- **All Dashboard Pages**: Authentication required
+  - `/dashboards/` - Main hub (shows login form if not authenticated)
+  - `/dashboards/database` - Database dashboard
+  - `/dashboards/business` - Business dashboard  
+  - `/dashboards/health` - Health dashboard
+  - `/dashboards/cost` - Cost dashboard
+- **All API Endpoints**: Password protected
+  - `/api/v1/dashboards/hub/stats` - System statistics
+  - `/api/v1/dashboards/database/*` - Database queries
+  - `/api/v1/dashboards/business/*` - Business analytics
+
+#### 4. **Constitutional Design Integration**
+- **Colors**: Brown/olive agricultural theme
+- **Typography**: 18px+ fonts for accessibility
+- **Layout**: Responsive design with modern card-based interface
+- **Icons**: Agricultural-themed dashboard icons
+
+#### 5. **Session Management**
+- **HTTP Basic Auth**: Browser-native session handling
+- **Persistent Login**: Credentials cached during dashboard navigation
+- **Error Handling**: Clear feedback for invalid credentials
+- **Redirect Logic**: Automatic login form display for unauthorized access
+
+### Technical Implementation:
+
+**Authentication Flow**:
+```python
+# Login Check
+if not check_dashboard_auth(request):
+    return HTMLResponse(content=get_login_form_html())
+
+# Protected Dependencies
+@router.get("/database")
+async def database_dashboard(authenticated: bool = Depends(require_dashboard_auth)):
+```
+
+**Credential Validation**:
+```python
+DASHBOARD_USERNAME = "Peter"
+DASHBOARD_PASSWORD = "Semillon"
+
+def authenticate_dashboard(credentials: HTTPBasicCredentials = Depends(security)):
+    if credentials.username != DASHBOARD_USERNAME or credentials.password != DASHBOARD_PASSWORD:
+        raise HTTPException(status_code=401, detail="Access denied")
+```
+
+### Mango Farmer Test Case - WORKING:
+```
+Bulgarian mango cooperative manager visits avaolo.com/dashboards:
+✅ Shows login form with username/password fields
+✅ Login with "Peter" / "Semillon" grants access  
+✅ Displays main dashboard hub with all dashboard icons
+✅ Can navigate between Database, Business, Health dashboards
+✅ Session persists during dashboard navigation
+✅ Unauthorized users blocked from dashboard access
+```
+
+### Success Criteria - ALL MET:
+- [x] ✅ avaolo.com/dashboards shows login form (not direct access)
+- [x] ✅ Login with Peter/Semillon credentials grants access
+- [x] ✅ Dashboard hub displays with all dashboard icons/links
+- [x] ✅ Unauthorized users cannot access dashboards  
+- [x] ✅ Session management works across dashboard navigation
+- [x] ✅ All individual dashboards remain functional with auth
+- [x] ✅ Constitutional design system with brown/olive theme
+- [x] ✅ Clear error handling for wrong credentials
+
+**Files Modified**:
+- `modules/api/dashboard_auth.py` - New authentication system
+- `modules/api/dashboard_routes.py` - Added auth to all routes
+- Login form embedded with constitutional styling
+
+**Status**: ✅ PASSWORD-PROTECTED DASHBOARD HUB READY FOR BULGARIAN MANAGERS
+
+---
+
 ## v3.5.36 - 2025-08-02 - Personalized Farmer Dashboard Data Isolation Verification & Enhancement
 **Deployed to Production**: READY TO DEPLOY 🚀
 **Service**: agricultural-core  

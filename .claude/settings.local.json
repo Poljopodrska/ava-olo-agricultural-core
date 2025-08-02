@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git config:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:ava-olo-alb-65365776.us-east-1.elb.amazonaws.com)",
+      "WebFetch(domain:ava-olo-farmers-alb-82735690.us-east-1.elb.amazonaws.com)",
+      "WebFetch(domain:avaolo.com)"
     ],
     "deny": []
   }
