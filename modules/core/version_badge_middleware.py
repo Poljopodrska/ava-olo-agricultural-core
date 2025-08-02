@@ -12,7 +12,7 @@ class VersionBadgeMiddleware:
     
     def __init__(self, app):
         self.app = app
-        self.version = "v3.5.23"
+        self.version = "v3.5.34"
         
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
