@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250727230500'  # v3.5.34 - Fix First Name Extraction 
-COMMIT_HASH = "cava-reg-first-name-fix"  # Fixed first name extraction from single word responses
+DEPLOYMENT_TIMESTAMP = '20250802134500'  # v3.5.38 - Constitutional Compliance Audit
+COMMIT_HASH = "constitutional-audit-complete"  # Constitutional compliance audit and protection system verification
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.5.34"
+VERSION = "v3.5.38"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

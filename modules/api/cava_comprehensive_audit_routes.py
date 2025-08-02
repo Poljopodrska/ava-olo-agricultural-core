@@ -416,7 +416,7 @@ async def get_comprehensive_audit() -> Dict[str, Any]:
             "metrics": metrics,
             "constitutional_compliance": constitutional_compliance,
             "timestamp": datetime.now().isoformat(),
-            "version": "v3.5.34"
+            "version": "v3.5.38"
         }
         
     except Exception as e:
