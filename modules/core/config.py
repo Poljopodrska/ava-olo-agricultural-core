@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802140100'  # v3.6.2 - Authentication Import Fix
-COMMIT_HASH = "auth-import-fix"  # Fixed missing logging import in auth routes
+DEPLOYMENT_TIMESTAMP = '20250802141000'  # v3.6.3 - Database Migration Tool
+COMMIT_HASH = "db-migration-tool"  # Added migration API and web interface
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.6.2"
+VERSION = "v3.6.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

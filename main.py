@@ -104,6 +104,9 @@ from modules.api.farmer_dashboard_routes import router as farmer_dashboard_route
 # Import database test routes
 from modules.api.db_test_routes import router as db_test_router
 
+# Import migration routes
+from modules.api.migration_routes import router as migration_router
+
 # Import for startup
 import asyncio
 from datetime import datetime
@@ -159,6 +162,7 @@ app.include_router(dashboard_chat_router)
 app.include_router(farmer_debug_router)
 app.include_router(farmer_dashboard_router)
 app.include_router(db_test_router)
+app.include_router(migration_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
@@ -400,6 +404,11 @@ async def health_check():
         "version": VERSION,
         "service": "agricultural-core"
     }
+
+@app.get("/run-migration")
+async def run_migration_page():
+    """Serve migration tool page"""
+    return FileResponse("static/run-migration.html")
 
 @app.get("/health/detailed")
 async def detailed_health_check():
