@@ -115,6 +115,7 @@ from modules.api.cascade_migration import router as cascade_router
 from modules.api.final_cleanup import router as final_cleanup_router
 from modules.api.hierarchy_implementation import router as hierarchy_router
 from modules.api.smart_cleanup import router as smart_cleanup_router
+from modules.api.robust_cleanup import router as robust_cleanup_router
 
 # Import for startup
 import asyncio
@@ -179,6 +180,7 @@ app.include_router(cascade_router)
 app.include_router(final_cleanup_router)
 app.include_router(hierarchy_router)
 app.include_router(smart_cleanup_router)
+app.include_router(robust_cleanup_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
