@@ -36,7 +36,33 @@ async def cleanup_vrzel():
         cursor.execute("SELECT COUNT(*) FROM farmers")
         before = cursor.fetchone()[0]
         
-        # First delete related fields
+        # Delete in reverse order of dependencies
+        # 1. Delete fertilizing_plans for fields that belong to farmers != 4
+        cursor.execute("""
+            DELETE FROM fertilizing_plans 
+            WHERE field_id IN (
+                SELECT id FROM fields WHERE farmer_id != 4
+            )
+        """)
+        plans_deleted = cursor.rowcount
+        
+        # 2. Delete plant_protection_plans
+        cursor.execute("""
+            DELETE FROM plant_protection_plans 
+            WHERE field_id IN (
+                SELECT id FROM fields WHERE farmer_id != 4
+            )
+        """)
+        protection_deleted = cursor.rowcount
+        
+        # 3. Delete messages for farmers != 4
+        cursor.execute("""
+            DELETE FROM messages 
+            WHERE farmer_id != 4
+        """)
+        messages_deleted = cursor.rowcount
+        
+        # 4. Delete fields for farmers != 4
         cursor.execute("""
             DELETE FROM fields 
             WHERE farmer_id != 4
@@ -61,8 +87,14 @@ async def cleanup_vrzel():
             "before": before,
             "after": after,
             "deleted": deleted,
-            "fields_deleted": fields_deleted,
-            "message": f"Deleted {deleted} farmers and {fields_deleted} fields, kept Blaz Vrzel"
+            "details": {
+                "farmers": deleted,
+                "fields": fields_deleted,
+                "messages": messages_deleted,
+                "fertilizing_plans": plans_deleted,
+                "protection_plans": protection_deleted
+            },
+            "message": f"Cleanup complete! Kept only Blaz Vrzel (ID 4)"
         })
         
     except Exception as e:

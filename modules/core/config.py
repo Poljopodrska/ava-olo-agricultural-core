@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802144500'  # v3.6.8 - Cleanup with FK handling
-COMMIT_HASH = "cleanup-with-fk"  # Handle foreign keys in cleanup
+DEPLOYMENT_TIMESTAMP = '20250802145000'  # v3.6.9 - Complete FK cascade cleanup
+COMMIT_HASH = "complete-cleanup"  # Handle all foreign key cascades
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.6.8"
+VERSION = "v3.6.9"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
