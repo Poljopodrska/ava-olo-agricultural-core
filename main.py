@@ -89,6 +89,15 @@ from modules.api.cava_comprehensive_audit_routes import router as cava_comprehen
 # Import CAVA registration routes
 from modules.api.cava_registration_routes import router as cava_registration_router
 
+# Import chat history routes
+from modules.api.chat_history_routes import router as chat_history_router
+
+# Import dashboard chat routes
+from modules.api.dashboard_chat_routes import router as dashboard_chat_router
+
+# Import farmer debug routes
+from modules.api.farmer_debug_routes import router as farmer_debug_router
+
 # Import for startup
 import asyncio
 from datetime import datetime
@@ -139,6 +148,9 @@ app.include_router(fields_router)
 # app.include_router(chat_router)  # DISABLED - conflicts with CAVA
 app.include_router(simple_registration_router)
 app.include_router(cava_chat_router)
+app.include_router(chat_history_router)
+app.include_router(dashboard_chat_router)
+app.include_router(farmer_debug_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)

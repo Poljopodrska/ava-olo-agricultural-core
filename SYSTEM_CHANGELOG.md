@@ -1,5 +1,112 @@
 # AVA OLO System Changelog
 
+## v3.5.36 - 2025-08-02 - Personalized Farmer Dashboard Data Isolation Verification & Enhancement
+**Deployed to Production**: READY TO DEPLOY 🚀
+**Service**: agricultural-core  
+**Git Action**: `git push origin main`
+**Deployment**: App Runner Auto-Deploy via GitHub Actions
+
+### 🔒 FARMER DATA ISOLATION VERIFIED & ENHANCED
+**Key Achievement**: Confirmed and improved personalized dashboard functionality with proper data filtering
+
+### Issues Identified & Fixed:
+
+#### ✅ **Authentication System - WORKING**
+- Cookie-based authentication (`farmer_id`, `farmer_name`) working correctly
+- JWT token extraction and farmer identification verified
+- Session persistence across dashboard navigation confirmed
+
+#### ✅ **Weather API - WORKING** 
+- Uses farmer location from farmers table, NOT field coordinates
+- Endpoints: `/api/weather/current-farmer`, `/api/weather/forecast-farmer`, `/api/weather/hourly-farmer`
+- Properly authenticated and filtered by farmer context
+
+#### ✅ **Fields API - WORKING**
+- Database queries properly filtered by `farmer_id` 
+- `/api/fields/farmer-fields` returns ONLY authenticated farmer's fields
+- No data leakage between farmers confirmed
+
+#### ❌ **Chat History - FIXED**
+- **Problem**: No chat message history display in dashboard
+- **Solution**: Added comprehensive chat history system
+
+### New Features Implemented:
+
+#### 1. **Chat History System**
+- **New Routes**: `modules/api/chat_history_routes.py`
+  - `/api/chat/history` - Get farmer's last 6 messages
+  - `/api/chat/farmer-context` - Get farmer context for chat
+  - `/api/chat/send-message` - Send authenticated farmer messages
+
+#### 2. **Enhanced Dashboard Chat**
+- **New Routes**: `modules/api/dashboard_chat_routes.py`
+  - `/api/v1/chat/message` - Farmer-specific chat with real context
+  - `/api/v1/chat/status` - Authenticated chat status
+- **Features**: Uses actual farmer data (name, fields, history) instead of hardcoded context
+
+#### 3. **Debug & Verification Endpoints**
+- **New Routes**: `modules/api/farmer_debug_routes.py`
+  - `/api/v1/debug/farmer-session` - Show current farmer session
+  - `/api/v1/debug/farmer-data` - Show farmer's visible data
+  - `/api/v1/debug/data-isolation-test` - Verify data separation
+  - `/api/v1/debug/weather-location-test` - Verify weather location logic
+
+#### 4. **Dashboard Enhancements**
+- Chat history automatically loads on dashboard startup
+- Displays last 6 messages for authenticated farmer
+- Messages properly filtered by farmer's WhatsApp number
+- Real-time farmer context in chat responses
+
+### Technical Implementation:
+
+**Data Isolation Verification**:
+```python
+# Fields API - farmer_id filtering
+WHERE farmer_id = %s
+
+# Chat History - WhatsApp number filtering  
+WHERE wa_phone_number = %s
+
+# Weather API - farmer location (not field coordinates)
+farmer_location = await location_service.get_farmer_location(farmer['farmer_id'])
+```
+
+**Chat Context Enhancement**:
+```python
+# Before: Hardcoded context
+farmer_context = {"farmer_name": "Dashboard User", "location": "Slovenia"}
+
+# After: Real farmer data
+farmer_context = {
+    "farmer_name": farmer_data["name"],
+    "farmer_id": farmer["farmer_id"],
+    "fields": farmer_fields,
+    "recent_messages": chat_history
+}
+```
+
+### Mango Farmer Test Case - NOW WORKING:
+```
+Bulgarian mango farmer "Peter" logs in:
+✅ Dashboard shows ONLY Peter's 3 mango fields (not other farmers)
+✅ Weather displays Sofia, Bulgaria (farmer location, not field coordinates)
+✅ Chat shows Peter's last 6 messages (filtered by his WhatsApp number)
+✅ New chat messages use Peter's real context (name, fields, history)
+✅ No data leakage - Peter cannot see other farmers' data
+```
+
+### API Endpoints Added:
+- `/api/chat/history` - Farmer chat history
+- `/api/chat/farmer-context` - Farmer context for chat
+- `/api/v1/chat/message` - Enhanced dashboard chat
+- `/api/v1/debug/farmer-session` - Session debugging
+- `/api/v1/debug/farmer-data` - Data verification
+- `/api/v1/debug/data-isolation-test` - Isolation testing
+
+**Status**: ✅ PERSONALIZED DASHBOARD FULLY VERIFIED & ENHANCED
+
+---
+
 ## v3.5.35 - 2025-07-29 - Stripe Payment Integration with Configurable Pricing
 **Deployed to Production**: READY TO DEPLOY 🚀
 **Service**: agricultural-core  

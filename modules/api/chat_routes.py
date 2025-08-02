@@ -612,8 +612,8 @@ async def chat_debug():
         }
 
 @router.post("/chat/message")
-async def chat_message_endpoint(request: dict):
-    """Simple chat message endpoint for dashboard - routes to CAVA engine"""
+async def chat_message_endpoint(request: dict, http_request: Request = None):
+    """Simple chat message endpoint for dashboard - routes to CAVA engine with farmer context"""
     try:
         # Convert simple request to ChatRequest format
         message = request.get("content", "")
@@ -624,20 +624,41 @@ async def chat_message_endpoint(request: dict):
                 "error": "No message content"
             }
         
+        # Get farmer context from session if available
+        farmer_context = {
+            "farmer_name": "Dashboard User",
+            "location": "Slovenia", 
+            "weather": {},
+            "fields": []
+        }
+        
+        # Try to get real farmer context if request is provided
+        if http_request:
+            try:
+                from modules.auth.routes import get_current_farmer
+                farmer = await get_current_farmer(http_request)
+                if farmer:
+                    # Get farmer's detailed context
+                    from modules.api.chat_history_routes import get_farmer_context_for_chat
+                    context_response = await get_farmer_context_for_chat(http_request)
+                    if context_response.get("status") == "success":
+                        context_data = context_response["data"]
+                        farmer_context = {
+                            "farmer_name": context_data["farmer"]["name"] if context_data.get("farmer") else farmer["name"],
+                            "farmer_id": farmer["farmer_id"],
+                            "location": "Slovenia",  # TODO: Get from farmer location
+                            "weather": {},  # TODO: Get current weather
+                            "fields": context_data.get("fields", [])
+                        }
+            except Exception as e:
+                print(f"Warning: Could not get farmer context: {e}")
+        
         # Use CAVA engine for intelligent responses
         cava_engine = get_cava_engine()
         
         # Ensure engine is initialized
         if not cava_engine.initialized:
             await cava_engine.initialize()
-        
-        # Get farmer context (simplified for dashboard)
-        farmer_context = {
-            "farmer_name": "Dashboard User",
-            "location": "Slovenia",
-            "weather": {},
-            "fields": []
-        }
         
         # Get GPT response
         result = await cava_engine.chat(

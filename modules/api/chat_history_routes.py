@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+"""
+Chat History Routes for Farmer Dashboard
+Provides chat message history filtering and farmer-specific data
+"""
+from fastapi import APIRouter, HTTPException, Request
+from typing import Optional, List, Dict
+from modules.core.database_manager import get_db_manager
+from modules.auth.routes import get_current_farmer
+import logging
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/chat", tags=["chat-history"])
+
+@router.get("/history")
+async def get_farmer_chat_history(request: Request, limit: int = 6):
+    """Get last N chat messages for authenticated farmer"""
+    try:
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get farmer's WhatsApp number for filtering
+        db_manager = get_db_manager()
+        
+        # First get farmer's WhatsApp number
+        farmer_query = """
+        SELECT whatsapp_number 
+        FROM farmers 
+        WHERE farmer_id = %s
+        """
+        
+        farmer_result = await db_manager.execute_query(farmer_query, (farmer['farmer_id'],))
+        
+        if not farmer_result or len(farmer_result) == 0:
+            return {
+                "status": "success",
+                "data": {
+                    "messages": [],
+                    "farmer_id": farmer['farmer_id'],
+                    "message": "No WhatsApp number found for farmer"
+                }
+            }
+        
+        wa_phone_number = farmer_result[0][0]
+        
+        # Get chat messages filtered by farmer's WhatsApp number
+        query = """
+        SELECT 
+            role,
+            content,
+            timestamp
+        FROM chat_messages
+        WHERE wa_phone_number = %s
+        ORDER BY timestamp DESC
+        LIMIT %s
+        """
+        
+        result = await db_manager.execute_query(query, (wa_phone_number, limit))
+        
+        messages = []
+        if result:
+            for row in result:
+                messages.append({
+                    "role": row[0],
+                    "content": row[1],
+                    "timestamp": row[2].isoformat() if row[2] else None
+                })
+        
+        return {
+            "status": "success",
+            "data": {
+                "messages": messages,
+                "farmer_id": farmer['farmer_id'],
+                "farmer_name": farmer['name'],
+                "wa_phone_number": wa_phone_number,
+                "total_messages": len(messages)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting chat history: {e}")
+        # Return empty history instead of failing
+        return {
+            "status": "success",
+            "data": {
+                "messages": [],
+                "farmer_id": farmer.get('farmer_id') if farmer else None,
+                "message": "Error retrieving chat history"
+            }
+        }
+
+@router.get("/farmer-context")
+async def get_farmer_context_for_chat(request: Request):
+    """Get farmer context for personalized chat responses"""
+    try:
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        db_manager = get_db_manager()
+        
+        # Get farmer details
+        farmer_query = """
+        SELECT 
+            farmer_id,
+            name,
+            email,
+            whatsapp_number,
+            created_at
+        FROM farmers 
+        WHERE farmer_id = %s
+        """
+        
+        farmer_result = await db_manager.execute_query(farmer_query, (farmer['farmer_id'],))
+        
+        farmer_data = None
+        if farmer_result and len(farmer_result) > 0:
+            row = farmer_result[0]
+            farmer_data = {
+                "farmer_id": row[0],
+                "name": row[1],
+                "email": row[2],
+                "whatsapp_number": row[3],
+                "created_at": row[4].isoformat() if row[4] else None
+            }
+        
+        # Get farmer's fields
+        fields_query = """
+        SELECT 
+            field_id,
+            name,
+            size_hectares,
+            crop_type,
+            status
+        FROM fields
+        WHERE farmer_id = %s
+        ORDER BY name
+        """
+        
+        fields_result = await db_manager.execute_query(fields_query, (farmer['farmer_id'],))
+        
+        fields = []
+        if fields_result:
+            for row in fields_result:
+                fields.append({
+                    "id": row[0],
+                    "name": row[1] or f"Field {row[0]}",
+                    "hectares": float(row[2]) if row[2] else 0,
+                    "crop": row[3] or "Not planted",
+                    "status": row[4] or "active"
+                })
+        
+        return {
+            "status": "success",
+            "data": {
+                "farmer": farmer_data,
+                "fields": fields,
+                "summary": {
+                    "total_fields": len(fields),
+                    "total_hectares": sum(f['hectares'] for f in fields)
+                }
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting farmer context: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving farmer context")
+
+@router.post("/send-message")
+async def send_farmer_message(request: Request):
+    """Send a message as authenticated farmer and get AI response"""
+    try:
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get request body
+        body = await request.json()
+        message = body.get("content", "").strip()
+        
+        if not message:
+            raise HTTPException(status_code=400, detail="Message content required")
+        
+        # Get farmer's WhatsApp number
+        db_manager = get_db_manager()
+        farmer_query = """
+        SELECT whatsapp_number 
+        FROM farmers 
+        WHERE farmer_id = %s
+        """
+        
+        farmer_result = await db_manager.execute_query(farmer_query, (farmer['farmer_id'],))
+        
+        if not farmer_result or len(farmer_result) == 0:
+            raise HTTPException(status_code=404, detail="Farmer WhatsApp number not found")
+        
+        wa_phone_number = farmer_result[0][0]
+        
+        # Import chat functionality
+        from modules.api.chat_routes import chat_message_endpoint
+        
+        # Call the existing chat endpoint with farmer context
+        chat_request = {
+            "content": message,
+            "wa_phone_number": wa_phone_number,
+            "farmer_id": farmer['farmer_id']
+        }
+        
+        response = await chat_message_endpoint(chat_request)
+        
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending farmer message: {e}")
+        raise HTTPException(status_code=500, detail="Error sending message")

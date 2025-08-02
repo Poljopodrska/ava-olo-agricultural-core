@@ -1017,10 +1017,49 @@
             }
         }
 
+        // Load chat history on startup
+        async function loadChatHistory() {
+            try {
+                const response = await fetch('/api/chat/history?limit=6');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayChatHistory(data.data.messages);
+                }
+            } catch (error) {
+                console.error('Chat history error:', error);
+            }
+        }
+        
+        function displayChatHistory(messages) {
+            const chatMessages = document.getElementById('chat-messages');
+            const welcomeDiv = document.getElementById('chat-welcome');
+            
+            if (messages.length === 0) return;
+            
+            // Hide welcome message if we have history
+            if (welcomeDiv) {
+                welcomeDiv.style.display = 'none';
+            }
+            
+            // Clear existing messages
+            chatMessages.innerHTML = '';
+            
+            // Display last 6 messages
+            messages.reverse().forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${msg.role}`;
+                messageDiv.textContent = msg.content;
+                chatMessages.appendChild(messageDiv);
+            });
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
         // Load all data on page load
         window.addEventListener('load', function() {
             loadWeatherData();
             loadFieldsData();
+            loadChatHistory();
             checkChatConnection();
             updateDeploymentBadge();
         });
