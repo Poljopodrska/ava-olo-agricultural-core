@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802150300'  # v3.7.2 - Handle field_crops table
-COMMIT_HASH = "cleanup-crops"  # Added field_crops to cleanup
+DEPLOYMENT_TIMESTAMP = '20250802151500'  # v3.8.0 - Precise database hierarchy
+COMMIT_HASH = "hierarchy-implementation"  # 18 farmer tables CASCADE, 15 knowledge protected
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.7.2"
+VERSION = "v3.8.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

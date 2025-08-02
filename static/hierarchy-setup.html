@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Hierarchy Setup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .warning-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        .btn-info {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-info:hover {
+            background: #0b7dda;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .results {
+            margin-top: 20px;
+            display: none;
+        }
+        .table-container {
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f2f2f2;
+            font-weight: bold;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Database Hierarchy Setup</h1>
+        
+        <div class="info-box">
+            <h3>Precise Database Hierarchy Implementation</h3>
+            <p><strong>18 Farmer-Specific Tables:</strong> Will CASCADE DELETE with farmer removal</p>
+            <p><strong>15 Knowledge Tables:</strong> Protected from deletion (crop data, fertilizers, etc.)</p>
+            <p><strong>Current Issue:</strong> Need to delete 21 farmers, keeping only Blaz Vrzel (ID 4)</p>
+        </div>
+
+        <div class="warning-box">
+            <strong>Warning:</strong> This will archive and delete all farmers except Blaz Vrzel. 
+            All farmer-specific data will be preserved in archive tables before deletion.
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="setupCompleteHierarchy()">
+                Setup Complete Hierarchy & Cleanup
+            </button>
+            <button class="btn-info" onclick="checkKnowledgeTables()">
+                Check Knowledge Tables
+            </button>
+            <button class="btn-info" onclick="checkArchiveSummary()">
+                Archive Summary
+            </button>
+        </div>
+
+        <h3>Individual Steps (Advanced)</h3>
+        <div class="button-group">
+            <button class="btn-info" onclick="createArchiveTables()">
+                1. Create Archive Tables
+            </button>
+            <button class="btn-info" onclick="configureCascadeDeletes()">
+                2. Configure CASCADE
+            </button>
+            <button class="btn-info" onclick="createArchiveFunction()">
+                3. Create Archive Function
+            </button>
+            <button class="btn-danger" onclick="executeCleanup()">
+                4. Execute Cleanup
+            </button>
+        </div>
+
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Processing... This may take a moment.</p>
+        </div>
+
+        <div class="status" id="status"></div>
+        <div class="results" id="results"></div>
+    </div>
+
+    <script>
+        function showLoading() {
+            document.querySelector('.loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading').style.display = 'none';
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.className = 'status ' + type;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+
+        function showResults(data) {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Results</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            results.style.display = 'block';
+        }
+
+        async function setupCompleteHierarchy() {
+            if (!confirm('This will set up the complete hierarchy system and delete all farmers except Blaz Vrzel. Continue?')) {
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/setup-complete-hierarchy', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                hideLoading();
+                if (data.success) {
+                    showStatus('Complete hierarchy system implemented successfully!', 'success');
+                    showResults(data);
+                } else {
+                    showStatus('Error: ' + (data.error || 'Unknown error'), 'error');
+                    showResults(data);
+                }
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function createArchiveTables() {
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/create-archive-tables', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                hideLoading();
+                if (data.success) {
+                    showStatus('Archive tables created successfully!', 'success');
+                } else {
+                    showStatus('Error: ' + (data.error || 'Some tables failed'), 'error');
+                }
+                showResults(data);
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function configureCascadeDeletes() {
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/configure-cascade-deletes', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                hideLoading();
+                if (data.success) {
+                    showStatus('CASCADE DELETE configured successfully!', 'success');
+                } else {
+                    showStatus('Error: ' + (data.error || 'Some constraints failed'), 'error');
+                }
+                showResults(data);
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function createArchiveFunction() {
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/create-archive-function', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                hideLoading();
+                if (data.success) {
+                    showStatus('Archive function created successfully!', 'success');
+                } else {
+                    showStatus('Error: ' + (data.error || 'Function creation failed'), 'error');
+                }
+                showResults(data);
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function executeCleanup() {
+            if (!confirm('This will delete all farmers except Blaz Vrzel. Are you sure?')) {
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/execute-cleanup', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                hideLoading();
+                if (data.success) {
+                    showStatus(`Cleanup complete! Deleted ${data.farmers_deleted} farmers. Only Blaz Vrzel remains.`, 'success');
+                } else {
+                    showStatus('Error: ' + (data.error || 'Cleanup failed'), 'error');
+                }
+                showResults(data);
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function checkKnowledgeTables() {
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/knowledge-tables');
+                const data = await response.json();
+                
+                hideLoading();
+                showStatus('Knowledge tables loaded', 'info');
+                showResults(data);
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function checkArchiveSummary() {
+            showLoading();
+            try {
+                const response = await fetch('/api/v1/hierarchy/archive-summary');
+                const data = await response.json();
+                
+                hideLoading();
+                showStatus('Archive summary loaded', 'info');
+                showResults(data);
+            } catch (error) {
+                hideLoading();
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

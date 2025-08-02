@@ -113,6 +113,7 @@ from modules.api.simple_cleanup import router as simple_cleanup_router
 from modules.api.direct_cleanup import router as direct_cleanup_router
 from modules.api.cascade_migration import router as cascade_router
 from modules.api.final_cleanup import router as final_cleanup_router
+from modules.api.hierarchy_implementation import router as hierarchy_router
 
 # Import for startup
 import asyncio
@@ -175,6 +176,7 @@ app.include_router(simple_cleanup_router)
 app.include_router(direct_cleanup_router)
 app.include_router(cascade_router)
 app.include_router(final_cleanup_router)
+app.include_router(hierarchy_router)
 app.include_router(cava_audit_router)
 app.include_router(cava_setup_router)
 app.include_router(cava_debug_router)
@@ -426,6 +428,11 @@ async def run_migration_page():
 async def cleanup_farmers_page():
     """Serve cleanup tool page"""
     return FileResponse("static/cleanup-farmers.html")
+
+@app.get("/hierarchy-setup")
+async def hierarchy_setup_page():
+    """Serve database hierarchy setup page"""
+    return FileResponse("static/hierarchy-setup.html")
 
 @app.get("/health/detailed")
 async def detailed_health_check():
