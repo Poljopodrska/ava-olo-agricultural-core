@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v3.9.45
-Adding WhatsApp integration with Twilio (22 routers total)
+AVA OLO Agricultural Core v4.0.0
+Production release with all 22 routers
 """
 import uvicorn
 import sys
@@ -16,16 +16,16 @@ from fastapi.templating import Jinja2Templates
 # Set up logger
 logger = logging.getLogger(__name__)
 
-# Import configuration
+# Configuration
 from modules.core.config import VERSION, BUILD_ID, constitutional_deployment_completion, config
 from modules.api.health_routes import router as health_router
 
-# Import startup modules (we know these work)
+# Startup modules
 from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import working routers from v3.9.38 (16 routers)
+# Core routers
 from modules.api.deployment_routes import router as deployment_router, audit_router
 from modules.api.database_routes import router as database_router, agricultural_router, debug_router
 from modules.api.business_routes import router as business_router
@@ -38,20 +38,18 @@ from modules.api.code_status import router as code_status_router
 from modules.auth.routes import router as auth_router
 from modules.weather.routes import router as weather_router
 
-# Import CAVA routers (we know these work now)
+# CAVA routers
 from modules.cava.routes import router as cava_router
 from modules.cava.fields import router as fields_router
 
-# Import simple registration router
+# Registration router
 from modules.cava.simple_registration import router as simple_registration_router
 
-# Add chat router for v3.9.43
+# Chat routers
 from modules.api.chat_routes import router as chat_router
-
-# Add chat history router for v3.9.44
 from modules.api.chat_history_routes import router as chat_history_router
 
-# Add WhatsApp router for v3.9.45
+# WhatsApp integration
 from modules.whatsapp.webhook_handler import router as whatsapp_router
 
 # Create FastAPI app
@@ -66,11 +64,11 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "total_routers_included": 0,
-    "phase": "v3.9.45",
+    "phase": "production",
     "error": None
 }
 
-# Add basic root endpoint
+# Root endpoint
 @app.get("/")
 async def root():
     return {
@@ -79,12 +77,12 @@ async def root():
         "startup_status": STARTUP_STATUS
     }
 
-# Add health endpoint for load balancer
+# Health endpoint
 @app.get("/health")
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Include all working routers from v3.9.38
+# Include all routers
 app.include_router(health_router)
 app.include_router(deployment_router)
 app.include_router(audit_router)
@@ -104,26 +102,26 @@ app.include_router(weather_router)
 app.include_router(cava_router)
 app.include_router(fields_router)
 app.include_router(simple_registration_router)
-app.include_router(chat_router)  # New for v3.9.43
-app.include_router(chat_history_router)  # New for v3.9.44
-app.include_router(whatsapp_router)  # New for v3.9.45
+app.include_router(chat_router)
+app.include_router(chat_history_router)
+app.include_router(whatsapp_router)
 STARTUP_STATUS["total_routers_included"] = 22
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup for v3.9.45 with 22 routers"""
+    """Core startup for production with 22 routers"""
     global STARTUP_STATUS
-    logger.info(f"Starting v3.9.45 with 22 routers - {VERSION}")
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 22 routers")
     
-    # Run validation (we know this works)
+    # Run validation
     try:
         validation_report = await StartupValidator.validate_and_fix()
         STARTUP_STATUS["validation_result"] = validation_report.get("system_ready", False)
     except Exception as e:
         STARTUP_STATUS["error"] = f"Validation: {str(e)}"
     
-    # Test database (we know this works)
+    # Test database
     try:
         db_manager = get_db_manager()
         if db_manager.test_connection(retries=5, delay=3):
@@ -131,14 +129,14 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Database: {str(e)}"
     
-    # Start monitoring (we know this works)
+    # Start monitoring
     try:
         asyncio.create_task(StartupValidator.continuous_health_check())
         STARTUP_STATUS["monitoring_started"] = True
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core system with 22 routers ready (v3.9.45)")
+    logger.info("AVA OLO Agricultural Core ready - v4.0.0 Production")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
