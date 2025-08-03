@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803154000'  # v4.0.7 - Rewrite basic auth middleware with enhanced debugging
-COMMIT_HASH = "rewrite-auth-middleware"  # Complete rewrite of auth middleware with verbose logging
+DEPLOYMENT_TIMESTAMP = '20250803155000'  # v4.0.8 - CRITICAL: Fix auth using dependency injection
+COMMIT_HASH = "fix-auth-dependency"  # Replace broken middleware with working dependency injection
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.0.7"
+VERSION = "v4.0.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

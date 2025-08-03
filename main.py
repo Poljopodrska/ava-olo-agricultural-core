@@ -88,14 +88,18 @@ async def root(request: Request):
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Debug endpoint to test auth
+# Import auth dependency
+from modules.core.auth_dependency import get_current_user
+
+# Debug endpoint to test auth - NOW PROTECTED
 @app.get("/debug/auth-test")
-async def auth_test(request: Request):
-    """Debug endpoint to test if auth is working"""
+async def auth_test(request: Request, username: str = Depends(get_current_user)):
+    """Debug endpoint to test if auth is working - REQUIRES AUTHENTICATION"""
     auth_header = request.headers.get("Authorization", "None")
     return {
-        "message": "This should require auth",
+        "message": "Authentication successful!",
         "auth_header_present": bool(auth_header != "None"),
+        "authenticated_user": username,
         "path": str(request.url.path),
         "version": VERSION
     }
