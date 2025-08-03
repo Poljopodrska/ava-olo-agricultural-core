@@ -98,7 +98,10 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
             return response
         
         except Exception as e:
-            # Log the error and allow the request to continue for debugging
+            # Log the error and DENY access for security
             print(f"Basic auth middleware error: {e}")
-            response = await call_next(request)
-            return response
+            return Response(
+                content="Authentication system error",
+                status_code=500,
+                headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
+            )

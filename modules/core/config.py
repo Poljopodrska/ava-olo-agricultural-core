@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803152000'  # v4.0.4 - Fix basic auth middleware syntax and credentials
-COMMIT_HASH = "fix-basic-auth-v2"  # Fixed syntax errors and corrected Vitovska username
+DEPLOYMENT_TIMESTAMP = '20250803152500'  # v4.0.5 - CRITICAL: Fix basic auth bypass vulnerability
+COMMIT_HASH = "fix-auth-bypass"  # Fixed critical authentication bypass in exception handler
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.0.4"
+VERSION = "v4.0.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
