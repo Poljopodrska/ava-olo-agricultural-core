@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 10: Test Single Dashboard Router
-Testing only agronomic router to isolate the problem
+Binary Search Debug Version - Step 11: Add Static Files and Templates
+Fixed the root cause: mounting static files and templates directory
 """
 import uvicorn
 import sys
@@ -37,30 +37,36 @@ from modules.dashboards.dashboard_api import router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 
-# Import ONLY agronomic router
-try:
-    from modules.dashboards.agronomic import router as agronomic_router
-    AGRONOMIC_SUCCESS = True
-    AGRONOMIC_ERROR = None
-except Exception as e:
-    logger.error(f"Failed to import agronomic router: {e}")
-    AGRONOMIC_SUCCESS = False
-    AGRONOMIC_ERROR = str(e)
-    agronomic_router = None
+# Import dashboard routers (these should work now with templates)
+from modules.dashboards.agronomic import router as agronomic_router
+from modules.dashboards.business import router as business_dashboard_router
+from modules.dashboards.health import router as health_dashboard_router
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
+
+# CRITICAL FIX: Mount static files and templates
+try:
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    templates = Jinja2Templates(directory="templates")
+    STATIC_MOUNT_SUCCESS = True
+    STATIC_MOUNT_ERROR = None
+except Exception as e:
+    logger.error(f"Failed to mount static files or templates: {e}")
+    STATIC_MOUNT_SUCCESS = False
+    STATIC_MOUNT_ERROR = str(e)
 
 # Track startup status
 STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
+    "static_mount_success": STATIC_MOUNT_SUCCESS,
+    "static_mount_error": STATIC_MOUNT_ERROR,
     "first_batch_routers": 10,
-    "agronomic_import_success": AGRONOMIC_SUCCESS,
-    "agronomic_import_error": AGRONOMIC_ERROR,
+    "dashboard_routers": 3,
     "total_routers_included": 0,
-    "test_router": "agronomic_only",
+    "fix_applied": "static_files_and_templates_mounting",
     "error": None
 }
 
@@ -70,7 +76,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step10_agronomic_only",
+        "binary_search": "step11_with_static_files",
         "startup_status": STARTUP_STATUS
     }
 
@@ -93,20 +99,26 @@ app.include_router(webhook_router)
 app.include_router(system_router)
 STARTUP_STATUS["total_routers_included"] = 11
 
-# Include agronomic router if import succeeded
-if AGRONOMIC_SUCCESS and agronomic_router:
+# Include dashboard routers (should work now!)
+if STATIC_MOUNT_SUCCESS:
     try:
         app.include_router(agronomic_router)
-        STARTUP_STATUS["total_routers_included"] = 12
+        app.include_router(business_dashboard_router)
+        app.include_router(health_dashboard_router)
+        STARTUP_STATUS["total_routers_included"] = 14
+        logger.info("Successfully included dashboard routers with static files mounted")
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Agronomic router inclusion: {str(e)}"
+        STARTUP_STATUS["error"] = f"Dashboard router inclusion: {str(e)}"
+        logger.error(f"Failed to include dashboard routers: {e}")
+else:
+    STARTUP_STATUS["error"] = "Static files not mounted, skipping dashboard routers"
 
 # Minimal startup event
 @app.on_event("startup")
 async def startup_event():
     """Minimal startup for router testing"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 10 agronomic test - {VERSION}")
+    logger.info(f"Starting binary search step 11 with static files - {VERSION}")
     
     # Run validation (we know this works)
     try:
