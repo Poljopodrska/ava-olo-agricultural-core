@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803094500'  # v3.9.29 - Binary search step 15: add batch 1
-COMMIT_HASH = "add-batch1"  # Adding 5 core service routers to working base
+DEPLOYMENT_TIMESTAMP = '20250803095000'  # v3.9.30 - Binary search step 16: add CAVA/chat
+COMMIT_HASH = "add-cava"  # Adding CAVA/chat routers for farmer registration
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.29"
+VERSION = "v3.9.30"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
