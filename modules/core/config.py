@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803133000'  # v3.9.36 - Revert to exact v3.9.30 code
-COMMIT_HASH = "revert-to-v3930"  # Exact copy of working v3.9.30
+DEPLOYMENT_TIMESTAMP = '20250803134000'  # v3.9.37 - Revert to v3.9.29 (last working)
+COMMIT_HASH = "revert-to-v3929"  # Exact copy of last confirmed working version
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.36"
+VERSION = "v3.9.37"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
