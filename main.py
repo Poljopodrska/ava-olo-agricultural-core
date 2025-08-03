@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.0.1
-Fixed production release with 19 working routers
+AVA OLO Agricultural Core v4.0.2
+Production release with basic auth protection and 20 routers
 """
 import uvicorn
 import sys
 import os
 import logging
 import asyncio
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
 # Set up logger
 logger = logging.getLogger(__name__)
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 # Configuration
 from modules.core.config import VERSION, BUILD_ID, constitutional_deployment_completion, config
@@ -37,6 +40,7 @@ from modules.api.debug_deployment import router as debug_deployment_router
 from modules.api.code_status import router as code_status_router
 from modules.auth.routes import router as auth_router
 from modules.weather.routes import router as weather_router
+from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
 
 # CAVA routers
 from modules.cava.routes import router as cava_router
@@ -48,8 +52,14 @@ from modules.api.chat_history_routes import router as chat_history_router
 # WhatsApp integration
 from modules.whatsapp.webhook_handler import router as whatsapp_router
 
+# Basic auth middleware
+from modules.core.basic_auth import BasicAuthMiddleware
+
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
+
+# Add basic auth middleware
+app.add_middleware(BasicAuthMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -64,14 +74,14 @@ STARTUP_STATUS = {
     "error": None
 }
 
-# Root endpoint
-@app.get("/")
-async def root():
-    return {
-        "status": "running", 
-        "version": VERSION, 
-        "startup_status": STARTUP_STATUS
-    }
+# Root endpoint - Landing page
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Landing page with Sign In / New to AVA OLO options"""
+    return templates.TemplateResponse("landing.html", {
+        "request": request,
+        "version": VERSION
+    })
 
 # Health endpoint
 @app.get("/health")
@@ -95,18 +105,19 @@ app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
+app.include_router(farmer_dashboard_router)
 app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
-STARTUP_STATUS["total_routers_included"] = 19
+STARTUP_STATUS["total_routers_included"] = 20
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup for production with 19 routers"""
+    """Core startup for production with 20 routers and basic auth"""
     global STARTUP_STATUS
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 19 routers")
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 20 routers and basic auth protection")
     
     # Run validation
     try:
@@ -130,7 +141,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("AVA OLO Agricultural Core ready - v4.0.1 Production")
+    logger.info("AVA OLO Agricultural Core ready - v4.0.2 Production with Basic Auth")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
