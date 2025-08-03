@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803141000'  # v3.9.44 - Add chat history router
-COMMIT_HASH = "add-chat-history-router"  # Adding chat history router (21 routers total)
+DEPLOYMENT_TIMESTAMP = '20250803141200'  # v3.9.45 - Add WhatsApp integration
+COMMIT_HASH = "add-whatsapp-integration"  # Adding WhatsApp integration with Twilio (22 routers total)
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.44"
+VERSION = "v3.9.45"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
