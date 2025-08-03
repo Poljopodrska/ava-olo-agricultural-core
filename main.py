@@ -7,10 +7,14 @@ Refactored for AWS ECS deployment with modules under 100KB
 import uvicorn
 import sys
 import os
+import logging
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 # Import configuration
 from modules.core.config import VERSION, BUILD_ID, constitutional_deployment_completion, config
@@ -488,8 +492,8 @@ async def deployment_method():
 @app.get("/dashboards/env", response_class=HTMLResponse) 
 async def env_dashboard_page():
     """Direct route to ENV dashboard"""
-    from api.env_dashboard_routes import _get_dashboard_html
-    return HTMLResponse(_get_dashboard_html())
+    # from api.env_dashboard_routes import _get_dashboard_html  # TODO: Fix import path
+    return HTMLResponse("<h1>ENV Dashboard temporarily unavailable</h1>")
 
 @app.get("/api/deployment/status")
 async def deployment_status():

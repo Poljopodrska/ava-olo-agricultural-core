@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803080000'  # v3.9.11 - Fix import errors causing container crashes
-COMMIT_HASH = "fix-import-errors"  # Fixed bad import paths in main.py
+DEPLOYMENT_TIMESTAMP = '20250803080300'  # v3.9.12 - Fix critical startup errors
+COMMIT_HASH = "fix-critical-startup"  # Fixed import error and missing logger
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.11"
+VERSION = "v3.9.12"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
