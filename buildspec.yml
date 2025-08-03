@@ -23,8 +23,12 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building Docker image...
-      # Force rebuild to ensure latest code
-      - docker build --no-cache -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      # Set required build arguments for Dockerfile
+      - export GITHUB_SHA=$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - export GITHUB_REF="refs/heads/main"
+      - export BUILD_TIME=$(date +%s)
+      # Force rebuild to ensure latest code with build args
+      - docker build --no-cache --build-arg GITHUB_SHA=$GITHUB_SHA --build-arg GITHUB_REF=$GITHUB_REF --build-arg BUILD_TIME=$BUILD_TIME --build-arg CACHEBUST=$BUILD_TIME -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:latest
       
