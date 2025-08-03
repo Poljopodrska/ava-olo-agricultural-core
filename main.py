@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v3.9.43
-Adding chat_routes router (20 routers total)
+AVA OLO Agricultural Core v3.9.44
+Adding chat_history_router (21 routers total)
 """
 import uvicorn
 import sys
@@ -48,6 +48,9 @@ from modules.cava.simple_registration import router as simple_registration_route
 # Add chat router for v3.9.43
 from modules.api.chat_routes import router as chat_router
 
+# Add chat history router for v3.9.44
+from modules.api.chat_history_routes import router as chat_history_router
+
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
 
@@ -60,7 +63,7 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "total_routers_included": 0,
-    "phase": "v3.9.43",
+    "phase": "v3.9.44",
     "error": None
 }
 
@@ -99,14 +102,15 @@ app.include_router(cava_router)
 app.include_router(fields_router)
 app.include_router(simple_registration_router)
 app.include_router(chat_router)  # New for v3.9.43
-STARTUP_STATUS["total_routers_included"] = 20
+app.include_router(chat_history_router)  # New for v3.9.44
+STARTUP_STATUS["total_routers_included"] = 21
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup for v3.9.43 with 20 routers"""
+    """Core startup for v3.9.44 with 21 routers"""
     global STARTUP_STATUS
-    logger.info(f"Starting v3.9.43 with 20 routers - {VERSION}")
+    logger.info(f"Starting v3.9.44 with 21 routers - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -130,7 +134,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core system with 20 routers ready (v3.9.43)")
+    logger.info("Core system with 21 routers ready (v3.9.44)")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
