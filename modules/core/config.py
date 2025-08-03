@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250802183000'  # v3.9.9 - EMERGENCY: Remove psycopg2 dependency
-COMMIT_HASH = "emergency-no-psycopg2"  # Emergency fix removing psycopg2 for ECS deployment
+DEPLOYMENT_TIMESTAMP = '20250802195000'  # v3.9.10 - Restore proper database functionality
+COMMIT_HASH = "restore-full-functionality"  # Fixed database commits and restored psycopg2
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.9"
+VERSION = "v3.9.10"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
