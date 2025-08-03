@@ -30,6 +30,11 @@ app.include_router(health_router)
 async def root():
     return {"status": "running", "version": VERSION, "binary_search": "step1_minimal"}
 
+# Add health endpoint for load balancer
+@app.get("/health")
+async def health():
+    return {"status": "healthy", "version": VERSION}
+
 # Minimal startup
 @app.on_event("startup")
 async def startup_event():

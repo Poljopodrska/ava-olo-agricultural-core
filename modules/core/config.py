@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803081000'  # v3.9.13 - Binary search step 1: minimal core
-COMMIT_HASH = "binary-search-minimal"  # Only health endpoint to isolate crash
+DEPLOYMENT_TIMESTAMP = '20250803083000'  # v3.9.15 - Fix health endpoint for load balancer
+COMMIT_HASH = "fix-health-endpoint"  # Added /health endpoint at root for AWS ALB
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.13"
+VERSION = "v3.9.15"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
