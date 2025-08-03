@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803085500'  # v3.9.19 - Binary search step 5: continuous monitoring
-COMMIT_HASH = "test-monitoring"  # Testing continuous health check task
+DEPLOYMENT_TIMESTAMP = '20250803090000'  # v3.9.20 - Binary search step 6: first router batch
+COMMIT_HASH = "test-routers1"  # Testing first 10 router imports
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.19"
+VERSION = "v3.9.20"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

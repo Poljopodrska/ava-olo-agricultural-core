@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 5: Add Continuous Monitoring
-Testing the continuous health check task
+Binary Search Debug Version - Step 6: Add First Batch of Routers
+Testing the first 10 router imports
 """
 import uvicorn
 import sys
@@ -25,17 +25,44 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
+# Import first batch of routers (10)
+try:
+    from modules.core.deployment import router as deployment_router
+    from modules.core.audit import router as audit_router
+    from modules.api.database_routes import router as database_router
+    from modules.core.agricultural import router as agricultural_router
+    from modules.core.debug import router as debug_router
+    from modules.api.business_routes import router as business_router
+    from modules.api.dashboard_routes import router as dashboard_router
+    from modules.dashboards.dashboard_api import router as dashboard_api_router
+    from modules.api.deployment_webhook import router as webhook_router
+    from modules.api.system_routes import router as system_router
+    ROUTER_IMPORTS_SUCCESS = True
+except Exception as e:
+    logger.error(f"Failed to import routers: {e}")
+    ROUTER_IMPORTS_SUCCESS = False
+    # Create dummy routers if imports fail
+    deployment_router = None
+    audit_router = None
+    database_router = None
+    agricultural_router = None
+    debug_router = None
+    business_router = None
+    dashboard_router = None
+    dashboard_api_router = None
+    webhook_router = None
+    system_router = None
+
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
-
-# Add ONLY health router
-app.include_router(health_router)
 
 # Track startup status
 STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
+    "router_imports": ROUTER_IMPORTS_SUCCESS,
+    "routers_included": 0,
     "error": None
 }
 
@@ -45,7 +72,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step5_continuous_monitoring",
+        "binary_search": "step6_routers_batch1",
         "startup_status": STARTUP_STATUS
     }
 
@@ -54,12 +81,65 @@ async def root():
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Test continuous monitoring
+# Include routers if imports succeeded
+if ROUTER_IMPORTS_SUCCESS:
+    try:
+        app.include_router(health_router)
+        STARTUP_STATUS["routers_included"] += 1
+        
+        if deployment_router:
+            app.include_router(deployment_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if audit_router:
+            app.include_router(audit_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if database_router:
+            app.include_router(database_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if agricultural_router:
+            app.include_router(agricultural_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if debug_router:
+            app.include_router(debug_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if business_router:
+            app.include_router(business_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if dashboard_router:
+            app.include_router(dashboard_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if dashboard_api_router:
+            app.include_router(dashboard_api_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if webhook_router:
+            app.include_router(webhook_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+        if system_router:
+            app.include_router(system_router)
+            STARTUP_STATUS["routers_included"] += 1
+            
+    except Exception as e:
+        STARTUP_STATUS["error"] = f"Router inclusion: {str(e)}"
+else:
+    # Just include health router
+    app.include_router(health_router)
+    STARTUP_STATUS["routers_included"] = 1
+
+# Minimal startup event
 @app.on_event("startup")
 async def startup_event():
-    """Test continuous monitoring"""
+    """Minimal startup for router testing"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 5 monitoring test - {VERSION}")
+    logger.info(f"Starting binary search step 6 router test - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -76,14 +156,11 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Database: {str(e)}"
     
-    # NOW test the continuous health monitoring
+    # Start monitoring (we know this works)
     try:
-        logger.info("Starting continuous health monitoring...")
         asyncio.create_task(StartupValidator.continuous_health_check())
         STARTUP_STATUS["monitoring_started"] = True
-        logger.info("Started continuous health monitoring (checks every 5 minutes)")
     except Exception as e:
-        logger.error(f"Failed to start monitoring: {e}")
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
     constitutional_deployment_completion()
