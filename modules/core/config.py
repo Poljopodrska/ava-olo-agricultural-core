@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803135000'  # v3.9.38 - Fix missing auth functions
-COMMIT_HASH = "fix-auth-functions"  # Added get_current_farmer and require_auth
+DEPLOYMENT_TIMESTAMP = '20250803140000'  # v3.9.39 - Test CAVA router only
+COMMIT_HASH = "test-cava-only"  # Testing if CAVA router works with auth fixed
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.38"
+VERSION = "v3.9.39"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

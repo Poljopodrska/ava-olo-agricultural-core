@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 15: Add Batch 1 Core Service Routers
-Adding 5 more routers to the working base of 11 routers
+Binary Search Debug Version - Step 22: Add CAVA Router Only
+Testing if CAVA router works now that auth is fixed
 """
 import uvicorn
 import sys
@@ -25,27 +25,28 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import working routers from v3.9.28
+# Import working routers from v3.9.38 (16 routers)
 from modules.api.deployment_routes import router as deployment_router, audit_router
 from modules.api.database_routes import router as database_router, agricultural_router, debug_router
 from modules.api.business_routes import router as business_router
 from modules.api.dashboard_routes import router as dashboard_router, api_router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
+from modules.api.debug_services import router as debug_services_router
+from modules.api.debug_deployment import router as debug_deployment_router
+from modules.api.code_status import router as code_status_router
+from modules.auth.routes import router as auth_router
+from modules.weather.routes import router as weather_router
 
-# ADD BATCH 1: Core Service Routers (5 new)
+# TEST: Add only CAVA router
 try:
-    from modules.api.debug_services import router as debug_services_router
-    from modules.api.debug_deployment import router as debug_deployment_router
-    from modules.api.code_status import router as code_status_router
-    from modules.auth.routes import router as auth_router
-    from modules.weather.routes import router as weather_router
-    BATCH1_SUCCESS = True
-    BATCH1_ERROR = None
+    from modules.cava.routes import router as cava_router
+    CAVA_SUCCESS = True
+    CAVA_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import Batch 1 routers: {e}")
-    BATCH1_SUCCESS = False
-    BATCH1_ERROR = str(e)
+    logger.error(f"Failed to import CAVA router: {e}")
+    CAVA_SUCCESS = False
+    CAVA_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
@@ -58,11 +59,11 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "base_routers": 11,
-    "batch1_success": BATCH1_SUCCESS,
-    "batch1_error": BATCH1_ERROR,
+    "base_routers": 16,
+    "cava_success": CAVA_SUCCESS,
+    "cava_error": CAVA_ERROR,
     "total_routers_included": 0,
-    "phase": "adding_batch1_core_services",
+    "phase": "testing_cava_router_only",
     "error": None
 }
 
@@ -72,7 +73,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step15_add_batch1",
+        "binary_search": "step22_add_cava_only",
         "startup_status": STARTUP_STATUS
     }
 
@@ -81,7 +82,7 @@ async def root():
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Include working routers from v3.9.28
+# Include all working routers from v3.9.38
 app.include_router(health_router)
 app.include_router(deployment_router)
 app.include_router(audit_router)
@@ -93,28 +94,29 @@ app.include_router(dashboard_router)
 app.include_router(dashboard_api_router)
 app.include_router(webhook_router)
 app.include_router(system_router)
-STARTUP_STATUS["total_routers_included"] = 11
+app.include_router(debug_services_router)
+app.include_router(debug_deployment_router)
+app.include_router(code_status_router)
+app.include_router(auth_router)
+app.include_router(weather_router)
+STARTUP_STATUS["total_routers_included"] = 16
 
-# Include Batch 1 routers if imports succeeded
-if BATCH1_SUCCESS:
+# Include CAVA router if import succeeded
+if CAVA_SUCCESS:
     try:
-        app.include_router(debug_services_router)
-        app.include_router(debug_deployment_router)
-        app.include_router(code_status_router)
-        app.include_router(auth_router)
-        app.include_router(weather_router)
-        STARTUP_STATUS["total_routers_included"] = 16
-        logger.info("Successfully included Batch 1: 5 core service routers")
+        app.include_router(cava_router)
+        STARTUP_STATUS["total_routers_included"] = 17
+        logger.info("Successfully included CAVA router")
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Batch 1 router inclusion: {str(e)}"
-        logger.error(f"Failed to include Batch 1 routers: {e}")
+        STARTUP_STATUS["error"] = f"CAVA router inclusion: {str(e)}"
+        logger.error(f"Failed to include CAVA router: {e}")
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup with Batch 1 additions"""
+    """Core startup testing CAVA router"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 11 base + 5 Batch 1 routers - {VERSION}")
+    logger.info(f"Starting with 16 base + CAVA router test - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -138,6 +140,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
+    logger.info("Core system with CAVA router ready")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
