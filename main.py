@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 9: Test Half of Dashboard Routers
-Testing only first 3 dashboard routers to narrow down the problem
+Binary Search Debug Version - Step 10: Test Single Dashboard Router
+Testing only agronomic router to isolate the problem
 """
 import uvicorn
 import sys
@@ -37,17 +37,16 @@ from modules.dashboards.dashboard_api import router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 
-# Import ONLY first 3 dashboard routers
+# Import ONLY agronomic router
 try:
     from modules.dashboards.agronomic import router as agronomic_router
-    from modules.dashboards.business import router as business_dashboard_router
-    from modules.dashboards.health import router as health_dashboard_router
-    DASHBOARD_HALF_SUCCESS = True
-    DASHBOARD_HALF_ERROR = None
+    AGRONOMIC_SUCCESS = True
+    AGRONOMIC_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import first half of dashboard routers: {e}")
-    DASHBOARD_HALF_SUCCESS = False
-    DASHBOARD_HALF_ERROR = str(e)
+    logger.error(f"Failed to import agronomic router: {e}")
+    AGRONOMIC_SUCCESS = False
+    AGRONOMIC_ERROR = str(e)
+    agronomic_router = None
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
@@ -58,10 +57,10 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "first_batch_routers": 10,
-    "dashboard_half_success": DASHBOARD_HALF_SUCCESS,
-    "dashboard_half_error": DASHBOARD_HALF_ERROR,
+    "agronomic_import_success": AGRONOMIC_SUCCESS,
+    "agronomic_import_error": AGRONOMIC_ERROR,
     "total_routers_included": 0,
-    "test_group": "A_dashboards_first_half",
+    "test_router": "agronomic_only",
     "error": None
 }
 
@@ -71,7 +70,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step9_dashboards_first_half",
+        "binary_search": "step10_agronomic_only",
         "startup_status": STARTUP_STATUS
     }
 
@@ -94,22 +93,20 @@ app.include_router(webhook_router)
 app.include_router(system_router)
 STARTUP_STATUS["total_routers_included"] = 11
 
-# Include first half of dashboard routers if imports succeeded
-if DASHBOARD_HALF_SUCCESS:
+# Include agronomic router if import succeeded
+if AGRONOMIC_SUCCESS and agronomic_router:
     try:
         app.include_router(agronomic_router)
-        app.include_router(business_dashboard_router)
-        app.include_router(health_dashboard_router)
-        STARTUP_STATUS["total_routers_included"] = 14
+        STARTUP_STATUS["total_routers_included"] = 12
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Dashboard half router inclusion: {str(e)}"
+        STARTUP_STATUS["error"] = f"Agronomic router inclusion: {str(e)}"
 
 # Minimal startup event
 @app.on_event("startup")
 async def startup_event():
     """Minimal startup for router testing"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 9 dashboard half test - {VERSION}")
+    logger.info(f"Starting binary search step 10 agronomic test - {VERSION}")
     
     # Run validation (we know this works)
     try:
