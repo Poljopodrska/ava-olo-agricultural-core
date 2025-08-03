@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 7: Add Second Batch of Routers
-Testing the next 15 router imports (total 25)
+Binary Search Debug Version - Step 8: Test Dashboard Routers Only
+Testing only the 7 dashboard routers from batch 2
 """
 import uvicorn
 import sys
@@ -37,29 +37,20 @@ from modules.dashboards.dashboard_api import router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 
-# Import second batch of routers (15 more)
+# Import ONLY dashboard routers from second batch (Group A - 7 routers)
 try:
-    from modules.api.debug_services import router as debug_services_router
-    from modules.api.debug_deployment import router as debug_deployment_router
-    from modules.api.code_status import router as code_status_router
     from modules.dashboards.agronomic import router as agronomic_router
     from modules.dashboards.business import router as business_dashboard_router
     from modules.dashboards.health import router as health_dashboard_router
     from modules.dashboards.database import router as database_dashboard_router
     from modules.dashboards.deployment import router as deployment_dashboard_router, api_router as deployment_api_router
     from modules.dashboards.feature_status import router as feature_status_router
-    from modules.auth.routes import router as auth_router
-    from modules.weather.routes import router as weather_router
-    from modules.cava.routes import router as cava_router
-    from modules.fields.routes import router as fields_router
-    from modules.chat.simple_registration import router as simple_registration_router
-    from modules.api.chat_routes import router as cava_chat_router
-    SECOND_BATCH_SUCCESS = True
-    SECOND_BATCH_ERROR = None
+    DASHBOARD_IMPORTS_SUCCESS = True
+    DASHBOARD_IMPORTS_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import second batch of routers: {e}")
-    SECOND_BATCH_SUCCESS = False
-    SECOND_BATCH_ERROR = str(e)
+    logger.error(f"Failed to import dashboard routers: {e}")
+    DASHBOARD_IMPORTS_SUCCESS = False
+    DASHBOARD_IMPORTS_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
@@ -70,9 +61,10 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "first_batch_routers": 10,
-    "second_batch_success": SECOND_BATCH_SUCCESS,
-    "second_batch_error": SECOND_BATCH_ERROR,
+    "dashboard_imports_success": DASHBOARD_IMPORTS_SUCCESS,
+    "dashboard_imports_error": DASHBOARD_IMPORTS_ERROR,
     "total_routers_included": 0,
+    "test_group": "A_dashboards_only",
     "error": None
 }
 
@@ -82,7 +74,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step7_routers_batch2",
+        "binary_search": "step8_dashboards_only",
         "startup_status": STARTUP_STATUS
     }
 
@@ -105,12 +97,9 @@ app.include_router(webhook_router)
 app.include_router(system_router)
 STARTUP_STATUS["total_routers_included"] = 11
 
-# Include second batch if imports succeeded
-if SECOND_BATCH_SUCCESS:
+# Include dashboard routers if imports succeeded
+if DASHBOARD_IMPORTS_SUCCESS:
     try:
-        app.include_router(debug_services_router)
-        app.include_router(debug_deployment_router)
-        app.include_router(code_status_router)
         app.include_router(agronomic_router)
         app.include_router(business_dashboard_router)
         app.include_router(health_dashboard_router)
@@ -118,22 +107,16 @@ if SECOND_BATCH_SUCCESS:
         app.include_router(deployment_dashboard_router)
         app.include_router(deployment_api_router)
         app.include_router(feature_status_router)
-        app.include_router(auth_router)
-        app.include_router(weather_router)
-        app.include_router(cava_router)
-        app.include_router(fields_router)
-        app.include_router(simple_registration_router)
-        app.include_router(cava_chat_router)
-        STARTUP_STATUS["total_routers_included"] = 27
+        STARTUP_STATUS["total_routers_included"] = 18
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Router inclusion batch 2: {str(e)}"
+        STARTUP_STATUS["error"] = f"Dashboard router inclusion: {str(e)}"
 
 # Minimal startup event
 @app.on_event("startup")
 async def startup_event():
     """Minimal startup for router testing"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 7 router test - {VERSION}")
+    logger.info(f"Starting binary search step 8 dashboard test - {VERSION}")
     
     # Run validation (we know this works)
     try:
