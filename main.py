@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 13: Test Group 1 Routers Only
-Testing only the routers that worked in v3.9.20
+Binary Search Debug Version - Step 14: Fix Import Paths
+Using correct import paths from main_backup_original.py
 """
 import uvicorn
 import sys
@@ -25,17 +25,20 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import ONLY Group 1 routers (known to work from v3.9.20)
-from modules.core.deployment import router as deployment_router
-from modules.core.audit import router as audit_router
-from modules.api.database_routes import router as database_router
-from modules.core.agricultural import router as agricultural_router
-from modules.core.debug import router as debug_router
-from modules.api.business_routes import router as business_router
-from modules.api.dashboard_routes import router as dashboard_router
-from modules.dashboards.dashboard_api import router as dashboard_api_router
-from modules.api.deployment_webhook import router as webhook_router
-from modules.api.system_routes import router as system_router
+# Import routers with CORRECT paths from main_backup_original.py
+try:
+    from modules.api.deployment_routes import router as deployment_router, audit_router
+    from modules.api.database_routes import router as database_router, agricultural_router, debug_router
+    from modules.api.business_routes import router as business_router
+    from modules.api.dashboard_routes import router as dashboard_router, api_router as dashboard_api_router
+    from modules.api.deployment_webhook import router as webhook_router
+    from modules.api.system_routes import router as system_router
+    ROUTER_IMPORTS_SUCCESS = True
+    ROUTER_IMPORTS_ERROR = None
+except Exception as e:
+    logger.error(f"Failed to import routers with correct paths: {e}")
+    ROUTER_IMPORTS_SUCCESS = False
+    ROUTER_IMPORTS_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
@@ -48,10 +51,10 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "group1_routers": 11,
-    "group2_routers_excluded": 4,
-    "test_group": "group1_known_working",
-    "total_routers_included": 0,
+    "router_imports_success": ROUTER_IMPORTS_SUCCESS,
+    "router_imports_error": ROUTER_IMPORTS_ERROR,
+    "routers_included": 0,
+    "fix_applied": "correct_import_paths",
     "error": None
 }
 
@@ -61,7 +64,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step13_group1_only",
+        "binary_search": "step14_correct_imports",
         "startup_status": STARTUP_STATUS
     }
 
@@ -70,26 +73,36 @@ async def root():
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Include ONLY Group 1 routers (known working)
-app.include_router(health_router)
-app.include_router(deployment_router)
-app.include_router(audit_router)
-app.include_router(database_router)
-app.include_router(agricultural_router)
-app.include_router(debug_router)
-app.include_router(business_router)
-app.include_router(dashboard_router)
-app.include_router(dashboard_api_router)
-app.include_router(webhook_router)
-app.include_router(system_router)
-STARTUP_STATUS["total_routers_included"] = 11
+# Include routers only if imports succeeded
+if ROUTER_IMPORTS_SUCCESS:
+    try:
+        app.include_router(health_router)
+        app.include_router(deployment_router)
+        app.include_router(audit_router)
+        app.include_router(database_router)
+        app.include_router(agricultural_router)
+        app.include_router(debug_router)
+        app.include_router(business_router)
+        app.include_router(dashboard_router)
+        app.include_router(dashboard_api_router)
+        app.include_router(webhook_router)
+        app.include_router(system_router)
+        STARTUP_STATUS["routers_included"] = 11
+        logger.info("Successfully included 11 routers with correct import paths")
+    except Exception as e:
+        STARTUP_STATUS["error"] = f"Router inclusion: {str(e)}"
+        logger.error(f"Failed to include routers: {e}")
+else:
+    # Just include health router if imports failed
+    app.include_router(health_router)
+    STARTUP_STATUS["routers_included"] = 1
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup with Group 1 routers only"""
+    """Core startup with corrected import paths"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 13 - Group 1 routers only - {VERSION}")
+    logger.info(f"Starting binary search step 14 - corrected imports - {VERSION}")
     
     # Run validation (we know this works)
     try:

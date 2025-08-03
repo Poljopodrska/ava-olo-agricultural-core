@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803093500'  # v3.9.27 - Binary search step 13: group 1 routers only
-COMMIT_HASH = "test-group1"  # Testing only Group 1 routers (known working from v3.9.20)
+DEPLOYMENT_TIMESTAMP = '20250803094000'  # v3.9.28 - Binary search step 14: fix import paths
+COMMIT_HASH = "fix-imports"  # FIXED: Corrected router import paths from original
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.27"
+VERSION = "v3.9.28"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
