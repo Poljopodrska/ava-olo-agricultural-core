@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 24: Add Simple Registration Router
-Adding simple_registration_router to CAVA functionality
+AVA OLO Agricultural Core v3.9.43
+Adding chat_routes router (20 routers total)
 """
 import uvicorn
 import sys
@@ -42,15 +42,11 @@ from modules.weather.routes import router as weather_router
 from modules.cava.routes import router as cava_router
 from modules.cava.fields import router as fields_router
 
-# TEST: Add simple registration router
-try:
-    from modules.cava.simple_registration import router as simple_registration_router
-    SIMPLE_REG_SUCCESS = True
-    SIMPLE_REG_ERROR = None
-except Exception as e:
-    logger.error(f"Failed to import simple registration router: {e}")
-    SIMPLE_REG_SUCCESS = False
-    SIMPLE_REG_ERROR = str(e)
+# Import simple registration router
+from modules.cava.simple_registration import router as simple_registration_router
+
+# Add chat router for v3.9.43
+from modules.api.chat_routes import router as chat_router
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
@@ -63,13 +59,8 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "base_routers": 16,
-    "cava_success": True,  # We know CAVA works
-    "fields_success": True,  # We know fields works
-    "simple_reg_success": SIMPLE_REG_SUCCESS,
-    "simple_reg_error": SIMPLE_REG_ERROR,
     "total_routers_included": 0,
-    "phase": "testing_simple_registration_router",
+    "phase": "v3.9.43",
     "error": None
 }
 
@@ -79,7 +70,6 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step24_add_simple_registration",
         "startup_status": STARTUP_STATUS
     }
 
@@ -105,26 +95,18 @@ app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
-app.include_router(cava_router)  # We know CAVA works
-app.include_router(fields_router)  # We know fields works
-STARTUP_STATUS["total_routers_included"] = 18
-
-# Include simple registration router if import succeeded
-if SIMPLE_REG_SUCCESS:
-    try:
-        app.include_router(simple_registration_router)
-        STARTUP_STATUS["total_routers_included"] = 19
-        logger.info("Successfully included simple registration router")
-    except Exception as e:
-        STARTUP_STATUS["error"] = f"Simple registration router inclusion: {str(e)}"
-        logger.error(f"Failed to include simple registration router: {e}")
+app.include_router(cava_router)
+app.include_router(fields_router)
+app.include_router(simple_registration_router)
+app.include_router(chat_router)  # New for v3.9.43
+STARTUP_STATUS["total_routers_included"] = 20
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup testing simple registration router"""
+    """Core startup for v3.9.43 with 20 routers"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 18 base + simple registration router test - {VERSION}")
+    logger.info(f"Starting v3.9.43 with 20 routers - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -148,7 +130,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core system with CAVA + fields + simple registration routers ready")
+    logger.info("Core system with 20 routers ready (v3.9.43)")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
