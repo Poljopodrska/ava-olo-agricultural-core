@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803120000'  # v3.9.31 - Binary search step 17: add WhatsApp webhook
-COMMIT_HASH = "add-whatsapp"  # Adding WhatsApp webhook for farmer communication
+DEPLOYMENT_TIMESTAMP = '20250803124500'  # v3.9.32 - Binary search step 18: fixed WhatsApp webhook
+COMMIT_HASH = "fix-whatsapp"  # Fixed WhatsApp webhook with safer Twilio imports
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.31"
+VERSION = "v3.9.32"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

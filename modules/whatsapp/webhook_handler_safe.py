@@ -17,6 +17,8 @@ try:
     from twilio.twiml.messaging_response import MessagingResponse
     TWILIO_AVAILABLE = True
 except ImportError:
+    logger = logging.getLogger(__name__)
+    logger.error("Twilio library not available - WhatsApp webhook will have limited functionality")
     TWILIO_AVAILABLE = False
     # Create dummy classes to prevent import errors
     class RequestValidator:
@@ -35,10 +37,6 @@ except ImportError:
             return f'<?xml version="1.0" encoding="UTF-8"?><Response><Message><Body>{self.body}</Body></Message></Response>'
 
 logger = logging.getLogger(__name__)
-
-# Log Twilio availability status
-if not TWILIO_AVAILABLE:
-    logger.error("Twilio library not available - WhatsApp webhook will have limited functionality")
 
 router = APIRouter(prefix="/api/v1/whatsapp", tags=["whatsapp"])
 

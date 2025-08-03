@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 17: Add WhatsApp Webhook
-Adding critical WhatsApp webhook router for farmer communication
+Binary Search Debug Version - Step 18: Fixed WhatsApp Webhook
+Fixed WhatsApp webhook handler with safer Twilio imports
 """
 import uvicorn
 import sys
@@ -43,7 +43,7 @@ from modules.chat.simple_registration import router as simple_registration_route
 from modules.api.chat_routes import router as cava_chat_router
 from modules.api.chat_history_routes import router as chat_history_router
 
-# ADD WhatsApp webhook router - CRITICAL for farmer communication
+# ADD Fixed WhatsApp webhook router - CRITICAL for farmer communication
 try:
     from modules.whatsapp.webhook_handler import router as whatsapp_webhook_router
     WHATSAPP_SUCCESS = True
@@ -68,9 +68,10 @@ STARTUP_STATUS = {
     "whatsapp_success": WHATSAPP_SUCCESS,
     "whatsapp_error": WHATSAPP_ERROR,
     "total_routers_included": 0,
-    "phase": "adding_whatsapp_webhook",
+    "phase": "adding_fixed_whatsapp_webhook",
     "functionality": "farmer_communication_via_whatsapp",
     "critical_feature": "whatsapp_integration",
+    "fix_applied": "safer_twilio_imports",
     "error": None
 }
 
@@ -80,7 +81,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step17_add_whatsapp",
+        "binary_search": "step18_fixed_whatsapp",
         "startup_status": STARTUP_STATUS
     }
 
@@ -126,9 +127,9 @@ if WHATSAPP_SUCCESS:
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup with WhatsApp webhook functionality"""
+    """Core startup with fixed WhatsApp webhook functionality"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 21 base + 1 WhatsApp webhook router - {VERSION}")
+    logger.info(f"Starting with 21 base + 1 fixed WhatsApp webhook router - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -152,7 +153,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core farmer portal with WhatsApp integration ready")
+    logger.info("Core farmer portal with fixed WhatsApp integration ready")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
