@@ -332,3 +332,27 @@ async def logout():
     response.delete_cookie(key="farmer_name")
     response.delete_cookie(key="is_admin")
     return response
+
+async def get_current_farmer(request: Request) -> Optional[dict]:
+    """Get current logged-in farmer from cookies"""
+    farmer_id = request.cookies.get("farmer_id")
+    farmer_name = request.cookies.get("farmer_name")
+    
+    if farmer_id and farmer_name:
+        return {
+            "farmer_id": int(farmer_id),
+            "name": farmer_name
+        }
+    
+    return None
+
+async def require_auth(request: Request):
+    """Dependency to require authentication"""
+    farmer = await get_current_farmer(request)
+    if not farmer:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return farmer

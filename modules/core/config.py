@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803134000'  # v3.9.37 - Revert to v3.9.29 (last working)
-COMMIT_HASH = "revert-to-v3929"  # Exact copy of last confirmed working version
+DEPLOYMENT_TIMESTAMP = '20250803135000'  # v3.9.38 - Fix missing auth functions
+COMMIT_HASH = "fix-auth-functions"  # Added get_current_farmer and require_auth
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.37"
+VERSION = "v3.9.38"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
