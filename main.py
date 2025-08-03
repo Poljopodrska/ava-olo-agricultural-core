@@ -28,7 +28,7 @@ from modules.api.system_routes import router as system_router
 from modules.api.debug_services import router as debug_services_router
 from modules.api.debug_deployment import router as debug_deployment_router
 from modules.api.code_status import router as code_status_router
-from api.deployment_security_routes import router as deployment_security_router
+# from api.deployment_security_routes import router as deployment_security_router  # TODO: Fix import path
 
 # Import dashboard modules
 from modules.dashboards.agronomic import router as agronomic_router
@@ -81,7 +81,7 @@ from modules.stripe_webhook import router as stripe_webhook_router
 from modules.usage_middleware import track_usage_middleware
 
 # Import ENV dashboard module
-from api.env_dashboard_routes import router as env_dashboard_router
+# from api.env_dashboard_routes import router as env_dashboard_router  # TODO: Fix import path
 
 # Import comprehensive audit routes
 from modules.api.cava_comprehensive_audit_routes import router as cava_comprehensive_audit_router
@@ -212,8 +212,8 @@ app.include_router(system_router)
 app.include_router(debug_services_router)
 app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
-app.include_router(deployment_security_router)
-app.include_router(env_dashboard_router)
+# app.include_router(deployment_security_router)  # TODO: Fix import path
+# app.include_router(env_dashboard_router)  # TODO: Fix import path
 app.include_router(cava_comprehensive_audit_router)
 app.include_router(cava_registration_router)
 
