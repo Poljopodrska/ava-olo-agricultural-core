@@ -88,6 +88,18 @@ async def root(request: Request):
 async def health():
     return {"status": "healthy", "version": VERSION}
 
+# Debug endpoint to test auth
+@app.get("/debug/auth-test")
+async def auth_test(request: Request):
+    """Debug endpoint to test if auth is working"""
+    auth_header = request.headers.get("Authorization", "None")
+    return {
+        "message": "This should require auth",
+        "auth_header_present": bool(auth_header != "None"),
+        "path": str(request.url.path),
+        "version": VERSION
+    }
+
 # Include all routers
 app.include_router(health_router)
 app.include_router(deployment_router)

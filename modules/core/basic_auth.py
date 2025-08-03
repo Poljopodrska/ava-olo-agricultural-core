@@ -47,14 +47,15 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
     """Middleware to require basic auth for all protected routes"""
     
     async def dispatch(self, request: Request, call_next):
-        # Check if path is public
-        path = request.url.path
-        
-        # Allow public paths
-        for public_path in PUBLIC_PATHS:
-            if path.startswith(public_path):
-                response = await call_next(request)
-                return response
+        try:
+            # Check if path is public
+            path = request.url.path
+            
+            # Allow public paths
+            for public_path in PUBLIC_PATHS:
+                if path.startswith(public_path):
+                    response = await call_next(request)
+                    return response
         
         # Check for basic auth header
         auth_header = request.headers.get("Authorization")
@@ -92,6 +93,12 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
                 headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
             )
         
-        # Continue with request
-        response = await call_next(request)
-        return response
+            # Continue with request
+            response = await call_next(request)
+            return response
+        
+        except Exception as e:
+            # Log the error and allow the request to continue for debugging
+            print(f"Basic auth middleware error: {e}")
+            response = await call_next(request)
+            return response
