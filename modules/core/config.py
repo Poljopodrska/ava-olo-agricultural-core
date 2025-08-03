@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803125000'  # v3.9.33 - Fix Docker build args
-COMMIT_HASH = "fix-docker-build"  # Fixed Docker build by passing GITHUB_SHA
+DEPLOYMENT_TIMESTAMP = '20250803130000'  # v3.9.34 - Temporarily remove WhatsApp
+COMMIT_HASH = "no-whatsapp"  # Temporarily disabled WhatsApp to restore service
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.33"
+VERSION = "v3.9.34"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

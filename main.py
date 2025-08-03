@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 18: Fixed WhatsApp Webhook
-Fixed WhatsApp webhook handler with safer Twilio imports
+Binary Search Debug Version - Step 19: Remove WhatsApp Temporarily
+Reverting to v3.9.30 configuration (21 routers) to restore service
 """
 import uvicorn
 import sys
@@ -43,16 +43,6 @@ from modules.chat.simple_registration import router as simple_registration_route
 from modules.api.chat_routes import router as cava_chat_router
 from modules.api.chat_history_routes import router as chat_history_router
 
-# ADD Fixed WhatsApp webhook router - CRITICAL for farmer communication
-try:
-    from modules.whatsapp.webhook_handler import router as whatsapp_webhook_router
-    WHATSAPP_SUCCESS = True
-    WHATSAPP_ERROR = None
-except Exception as e:
-    logger.error(f"Failed to import WhatsApp webhook router: {e}")
-    WHATSAPP_SUCCESS = False
-    WHATSAPP_ERROR = str(e)
-
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
 
@@ -64,14 +54,10 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "base_routers": 21,
-    "whatsapp_success": WHATSAPP_SUCCESS,
-    "whatsapp_error": WHATSAPP_ERROR,
-    "total_routers_included": 0,
-    "phase": "adding_fixed_whatsapp_webhook",
-    "functionality": "farmer_communication_via_whatsapp",
-    "critical_feature": "whatsapp_integration",
-    "fix_applied": "safer_twilio_imports",
+    "total_routers": 21,
+    "phase": "temporary_no_whatsapp",
+    "functionality": "core_services_without_whatsapp",
+    "note": "WhatsApp temporarily disabled due to import issues",
     "error": None
 }
 
@@ -81,7 +67,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step18_fixed_whatsapp",
+        "binary_search": "step19_no_whatsapp",
         "startup_status": STARTUP_STATUS
     }
 
@@ -112,24 +98,13 @@ app.include_router(fields_router)
 app.include_router(simple_registration_router)
 app.include_router(cava_chat_router)
 app.include_router(chat_history_router)
-STARTUP_STATUS["total_routers_included"] = 21
-
-# Include WhatsApp webhook router if import succeeded
-if WHATSAPP_SUCCESS:
-    try:
-        app.include_router(whatsapp_webhook_router)
-        STARTUP_STATUS["total_routers_included"] = 22
-        logger.info("Successfully included WhatsApp webhook router - farmer communication enabled")
-    except Exception as e:
-        STARTUP_STATUS["error"] = f"WhatsApp router inclusion: {str(e)}"
-        logger.error(f"Failed to include WhatsApp router: {e}")
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup with fixed WhatsApp webhook functionality"""
+    """Core startup without WhatsApp"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 21 base + 1 fixed WhatsApp webhook router - {VERSION}")
+    logger.info(f"Starting with 21 routers (WhatsApp temporarily disabled) - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -153,7 +128,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core farmer portal with fixed WhatsApp integration ready")
+    logger.info("Core farmer portal ready (WhatsApp temporarily disabled)")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
