@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803141400'  # v4.0.0 - Production release
-COMMIT_HASH = "production-release"  # Production release with all 22 routers
+DEPLOYMENT_TIMESTAMP = '20250803142500'  # v4.0.1 - Fixed production release
+COMMIT_HASH = "production-fix"  # Fixed production release with 19 working routers
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.0.0"
+VERSION = "v4.0.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.0.0
-Production release with all 22 routers
+AVA OLO Agricultural Core v4.0.1
+Fixed production release with 19 working routers
 """
 import uvicorn
 import sys
@@ -40,10 +40,6 @@ from modules.weather.routes import router as weather_router
 
 # CAVA routers
 from modules.cava.routes import router as cava_router
-from modules.cava.fields import router as fields_router
-
-# Registration router
-from modules.cava.simple_registration import router as simple_registration_router
 
 # Chat routers
 from modules.api.chat_routes import router as chat_router
@@ -100,19 +96,17 @@ app.include_router(code_status_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
 app.include_router(cava_router)
-app.include_router(fields_router)
-app.include_router(simple_registration_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
-STARTUP_STATUS["total_routers_included"] = 22
+STARTUP_STATUS["total_routers_included"] = 19
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup for production with 22 routers"""
+    """Core startup for production with 19 routers"""
     global STARTUP_STATUS
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 22 routers")
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 19 routers")
     
     # Run validation
     try:
@@ -136,7 +130,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("AVA OLO Agricultural Core ready - v4.0.0 Production")
+    logger.info("AVA OLO Agricultural Core ready - v4.0.1 Production")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
