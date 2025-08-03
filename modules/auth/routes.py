@@ -3,9 +3,10 @@
 Authentication routes - v2 with proper validation
 Only checks active farmers in the farmers table
 """
-from fastapi import APIRouter, Request, Form, HTTPException
+from fastapi import APIRouter, Request, Form, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from typing import Optional
 # Removed passlib - using standard library only
 import re
 import logging
