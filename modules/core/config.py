@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803084500'  # v3.9.17 - Binary search step 3: test startup logic
-COMMIT_HASH = "test-startup-logic"  # Testing actual startup validation execution
+DEPLOYMENT_TIMESTAMP = '20250803085000'  # v3.9.18 - Binary search step 4: database operations
+COMMIT_HASH = "test-database-ops"  # Testing database connection and migrations
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.17"
+VERSION = "v3.9.18"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
