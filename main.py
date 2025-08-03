@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 4: Add Database Operations
-Testing database manager and migrations
+Binary Search Debug Version - Step 5: Add Continuous Monitoring
+Testing the continuous health check task
 """
 import uvicorn
 import sys
@@ -23,8 +23,6 @@ from modules.api.health_routes import router as health_router
 # Import startup modules (we know these work)
 from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
-
-# ADD DATABASE MANAGER
 from modules.core.database_manager import get_db_manager
 
 # Create FastAPI app
@@ -37,7 +35,7 @@ app.include_router(health_router)
 STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
-    "migration_test": None,
+    "monitoring_started": False,
     "error": None
 }
 
@@ -47,7 +45,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step4_database_ops",
+        "binary_search": "step5_continuous_monitoring",
         "startup_status": STARTUP_STATUS
     }
 
@@ -56,12 +54,12 @@ async def root():
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Test database operations
+# Test continuous monitoring
 @app.on_event("startup")
 async def startup_event():
-    """Test database operations"""
+    """Test continuous monitoring"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 4 database test - {VERSION}")
+    logger.info(f"Starting binary search step 5 monitoring test - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -70,31 +68,23 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Validation: {str(e)}"
     
-    # Test database connection with retry logic (from original)
+    # Test database (we know this works)
     try:
-        logger.info("Testing database connection...")
         db_manager = get_db_manager()
         if db_manager.test_connection(retries=5, delay=3):
             STARTUP_STATUS["db_test"] = "success"
-            logger.info("Database connection established")
-        else:
-            STARTUP_STATUS["db_test"] = "failed"
     except Exception as e:
-        logger.error(f"Database test failed: {e}")
         STARTUP_STATUS["error"] = f"Database: {str(e)}"
     
-    # Test migrations
+    # NOW test the continuous health monitoring
     try:
-        logger.info("Testing database migrations...")
-        from modules.core.migration_runner import run_startup_migrations
-        migration_result = run_startup_migrations()
-        STARTUP_STATUS["migration_test"] = migration_result
-        logger.info(f"Migration result: {migration_result}")
+        logger.info("Starting continuous health monitoring...")
+        asyncio.create_task(StartupValidator.continuous_health_check())
+        STARTUP_STATUS["monitoring_started"] = True
+        logger.info("Started continuous health monitoring (checks every 5 minutes)")
     except Exception as e:
-        logger.error(f"Migration test failed: {e}")
-        STARTUP_STATUS["error"] = f"Migration: {str(e)}"
-    
-    # Do NOT start continuous health check yet
+        logger.error(f"Failed to start monitoring: {e}")
+        STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
     constitutional_deployment_completion()
 
