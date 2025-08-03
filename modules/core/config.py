@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803130000'  # v3.9.34 - Temporarily remove WhatsApp
-COMMIT_HASH = "no-whatsapp"  # Temporarily disabled WhatsApp to restore service
+DEPLOYMENT_TIMESTAMP = '20250803132000'  # v3.9.35 - Disabled WhatsApp module file
+COMMIT_HASH = "disable-whatsapp-file"  # Renamed webhook_handler.py to prevent import
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.34"
+VERSION = "v3.9.35"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
