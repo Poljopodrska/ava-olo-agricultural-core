@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 6: Add First Batch of Routers
-Testing the first 10 router imports
+Binary Search Debug Version - Step 7: Add Second Batch of Routers
+Testing the next 15 router imports (total 25)
 """
 import uvicorn
 import sys
@@ -25,33 +25,41 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import first batch of routers (10)
+# Import first batch of routers (10) - we know these work
+from modules.core.deployment import router as deployment_router
+from modules.core.audit import router as audit_router
+from modules.api.database_routes import router as database_router
+from modules.core.agricultural import router as agricultural_router
+from modules.core.debug import router as debug_router
+from modules.api.business_routes import router as business_router
+from modules.api.dashboard_routes import router as dashboard_router
+from modules.dashboards.dashboard_api import router as dashboard_api_router
+from modules.api.deployment_webhook import router as webhook_router
+from modules.api.system_routes import router as system_router
+
+# Import second batch of routers (15 more)
 try:
-    from modules.core.deployment import router as deployment_router
-    from modules.core.audit import router as audit_router
-    from modules.api.database_routes import router as database_router
-    from modules.core.agricultural import router as agricultural_router
-    from modules.core.debug import router as debug_router
-    from modules.api.business_routes import router as business_router
-    from modules.api.dashboard_routes import router as dashboard_router
-    from modules.dashboards.dashboard_api import router as dashboard_api_router
-    from modules.api.deployment_webhook import router as webhook_router
-    from modules.api.system_routes import router as system_router
-    ROUTER_IMPORTS_SUCCESS = True
+    from modules.api.debug_services import router as debug_services_router
+    from modules.api.debug_deployment import router as debug_deployment_router
+    from modules.api.code_status import router as code_status_router
+    from modules.dashboards.agronomic import router as agronomic_router
+    from modules.dashboards.business import router as business_dashboard_router
+    from modules.dashboards.health import router as health_dashboard_router
+    from modules.dashboards.database import router as database_dashboard_router
+    from modules.dashboards.deployment import router as deployment_dashboard_router, api_router as deployment_api_router
+    from modules.dashboards.feature_status import router as feature_status_router
+    from modules.auth.routes import router as auth_router
+    from modules.weather.routes import router as weather_router
+    from modules.cava.routes import router as cava_router
+    from modules.fields.routes import router as fields_router
+    from modules.chat.simple_registration import router as simple_registration_router
+    from modules.api.chat_routes import router as cava_chat_router
+    SECOND_BATCH_SUCCESS = True
+    SECOND_BATCH_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import routers: {e}")
-    ROUTER_IMPORTS_SUCCESS = False
-    # Create dummy routers if imports fail
-    deployment_router = None
-    audit_router = None
-    database_router = None
-    agricultural_router = None
-    debug_router = None
-    business_router = None
-    dashboard_router = None
-    dashboard_api_router = None
-    webhook_router = None
-    system_router = None
+    logger.error(f"Failed to import second batch of routers: {e}")
+    SECOND_BATCH_SUCCESS = False
+    SECOND_BATCH_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
@@ -61,8 +69,10 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "router_imports": ROUTER_IMPORTS_SUCCESS,
-    "routers_included": 0,
+    "first_batch_routers": 10,
+    "second_batch_success": SECOND_BATCH_SUCCESS,
+    "second_batch_error": SECOND_BATCH_ERROR,
+    "total_routers_included": 0,
     "error": None
 }
 
@@ -72,7 +82,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step6_routers_batch1",
+        "binary_search": "step7_routers_batch2",
         "startup_status": STARTUP_STATUS
     }
 
@@ -81,65 +91,49 @@ async def root():
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Include routers if imports succeeded
-if ROUTER_IMPORTS_SUCCESS:
+# Include first batch of routers (we know these work)
+app.include_router(health_router)
+app.include_router(deployment_router)
+app.include_router(audit_router)
+app.include_router(database_router)
+app.include_router(agricultural_router)
+app.include_router(debug_router)
+app.include_router(business_router)
+app.include_router(dashboard_router)
+app.include_router(dashboard_api_router)
+app.include_router(webhook_router)
+app.include_router(system_router)
+STARTUP_STATUS["total_routers_included"] = 11
+
+# Include second batch if imports succeeded
+if SECOND_BATCH_SUCCESS:
     try:
-        app.include_router(health_router)
-        STARTUP_STATUS["routers_included"] += 1
-        
-        if deployment_router:
-            app.include_router(deployment_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if audit_router:
-            app.include_router(audit_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if database_router:
-            app.include_router(database_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if agricultural_router:
-            app.include_router(agricultural_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if debug_router:
-            app.include_router(debug_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if business_router:
-            app.include_router(business_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if dashboard_router:
-            app.include_router(dashboard_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if dashboard_api_router:
-            app.include_router(dashboard_api_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if webhook_router:
-            app.include_router(webhook_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
-        if system_router:
-            app.include_router(system_router)
-            STARTUP_STATUS["routers_included"] += 1
-            
+        app.include_router(debug_services_router)
+        app.include_router(debug_deployment_router)
+        app.include_router(code_status_router)
+        app.include_router(agronomic_router)
+        app.include_router(business_dashboard_router)
+        app.include_router(health_dashboard_router)
+        app.include_router(database_dashboard_router)
+        app.include_router(deployment_dashboard_router)
+        app.include_router(deployment_api_router)
+        app.include_router(feature_status_router)
+        app.include_router(auth_router)
+        app.include_router(weather_router)
+        app.include_router(cava_router)
+        app.include_router(fields_router)
+        app.include_router(simple_registration_router)
+        app.include_router(cava_chat_router)
+        STARTUP_STATUS["total_routers_included"] = 27
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Router inclusion: {str(e)}"
-else:
-    # Just include health router
-    app.include_router(health_router)
-    STARTUP_STATUS["routers_included"] = 1
+        STARTUP_STATUS["error"] = f"Router inclusion batch 2: {str(e)}"
 
 # Minimal startup event
 @app.on_event("startup")
 async def startup_event():
     """Minimal startup for router testing"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 6 router test - {VERSION}")
+    logger.info(f"Starting binary search step 7 router test - {VERSION}")
     
     # Run validation (we know this works)
     try:
