@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803142000'  # v3.9.41 - Add fields router
-COMMIT_HASH = "add-fields-router"  # Adding fields router to CAVA functionality
+DEPLOYMENT_TIMESTAMP = '20250803143000'  # v3.9.42 - Add simple registration router
+COMMIT_HASH = "add-simple-registration"  # Adding simple registration router
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.41"
+VERSION = "v3.9.42"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

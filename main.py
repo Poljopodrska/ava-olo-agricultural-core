@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 23: Add Fields Router
-Adding fields_router since CAVA router is working
+Binary Search Debug Version - Step 24: Add Simple Registration Router
+Adding simple_registration_router to CAVA functionality
 """
 import uvicorn
 import sys
@@ -38,18 +38,19 @@ from modules.api.code_status import router as code_status_router
 from modules.auth.routes import router as auth_router
 from modules.weather.routes import router as weather_router
 
-# Import CAVA router (we know this works now)
+# Import CAVA routers (we know these work now)
 from modules.cava.routes import router as cava_router
+from modules.cava.fields import router as fields_router
 
-# TEST: Add fields router
+# TEST: Add simple registration router
 try:
-    from modules.cava.fields import router as fields_router
-    FIELDS_SUCCESS = True
-    FIELDS_ERROR = None
+    from modules.cava.simple_registration import router as simple_registration_router
+    SIMPLE_REG_SUCCESS = True
+    SIMPLE_REG_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import fields router: {e}")
-    FIELDS_SUCCESS = False
-    FIELDS_ERROR = str(e)
+    logger.error(f"Failed to import simple registration router: {e}")
+    SIMPLE_REG_SUCCESS = False
+    SIMPLE_REG_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
@@ -63,11 +64,12 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "base_routers": 16,
-    "cava_success": True,  # We know CAVA works now
-    "fields_success": FIELDS_SUCCESS,
-    "fields_error": FIELDS_ERROR,
+    "cava_success": True,  # We know CAVA works
+    "fields_success": True,  # We know fields works
+    "simple_reg_success": SIMPLE_REG_SUCCESS,
+    "simple_reg_error": SIMPLE_REG_ERROR,
     "total_routers_included": 0,
-    "phase": "testing_fields_router",
+    "phase": "testing_simple_registration_router",
     "error": None
 }
 
@@ -77,7 +79,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step23_add_fields_router",
+        "binary_search": "step24_add_simple_registration",
         "startup_status": STARTUP_STATUS
     }
 
@@ -103,25 +105,26 @@ app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
-app.include_router(cava_router)  # We know CAVA works now
-STARTUP_STATUS["total_routers_included"] = 17
+app.include_router(cava_router)  # We know CAVA works
+app.include_router(fields_router)  # We know fields works
+STARTUP_STATUS["total_routers_included"] = 18
 
-# Include fields router if import succeeded
-if FIELDS_SUCCESS:
+# Include simple registration router if import succeeded
+if SIMPLE_REG_SUCCESS:
     try:
-        app.include_router(fields_router)
-        STARTUP_STATUS["total_routers_included"] = 18
-        logger.info("Successfully included fields router")
+        app.include_router(simple_registration_router)
+        STARTUP_STATUS["total_routers_included"] = 19
+        logger.info("Successfully included simple registration router")
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Fields router inclusion: {str(e)}"
-        logger.error(f"Failed to include fields router: {e}")
+        STARTUP_STATUS["error"] = f"Simple registration router inclusion: {str(e)}"
+        logger.error(f"Failed to include simple registration router: {e}")
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup testing fields router"""
+    """Core startup testing simple registration router"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 17 base + fields router test - {VERSION}")
+    logger.info(f"Starting with 18 base + simple registration router test - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -145,7 +148,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core system with CAVA + fields routers ready")
+    logger.info("Core system with CAVA + fields + simple registration routers ready")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
