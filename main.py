@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 11: Add Static Files and Templates
-Fixed the root cause: mounting static files and templates directory
+Binary Search Debug Version - Step 12: Remove Dashboard Routers Entirely
+Focus on core functionality only - dashboards handled by separate service
 """
 import uvicorn
 import sys
@@ -25,7 +25,7 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import first batch of routers (10) - we know these work
+# Import ONLY core routers (NO dashboard routers)
 from modules.core.deployment import router as deployment_router
 from modules.core.audit import router as audit_router
 from modules.api.database_routes import router as database_router
@@ -37,36 +37,28 @@ from modules.dashboards.dashboard_api import router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 
-# Import dashboard routers (these should work now with templates)
-from modules.dashboards.agronomic import router as agronomic_router
-from modules.dashboards.business import router as business_dashboard_router
-from modules.dashboards.health import router as health_dashboard_router
+# Add Group B routers (core functionality, not dashboards)
+from modules.api.debug_services import router as debug_services_router
+from modules.api.debug_deployment import router as debug_deployment_router
+from modules.api.code_status import router as code_status_router
+from modules.auth.routes import router as auth_router
+from modules.weather.routes import router as weather_router
 
 # Create FastAPI app
-app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
+app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
 
-# CRITICAL FIX: Mount static files and templates
-try:
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-    templates = Jinja2Templates(directory="templates")
-    STATIC_MOUNT_SUCCESS = True
-    STATIC_MOUNT_ERROR = None
-except Exception as e:
-    logger.error(f"Failed to mount static files or templates: {e}")
-    STATIC_MOUNT_SUCCESS = False
-    STATIC_MOUNT_ERROR = str(e)
+# Mount static files (for any non-dashboard UI needs)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Track startup status
 STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "static_mount_success": STATIC_MOUNT_SUCCESS,
-    "static_mount_error": STATIC_MOUNT_ERROR,
-    "first_batch_routers": 10,
-    "dashboard_routers": 3,
+    "core_routers": 15,
+    "dashboard_routers_removed": True,
+    "architecture": "core_only_no_dashboards",
     "total_routers_included": 0,
-    "fix_applied": "static_files_and_templates_mounting",
     "error": None
 }
 
@@ -76,16 +68,17 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step11_with_static_files",
+        "service": "agricultural-core",
+        "architecture": "core_functionality_only",
         "startup_status": STARTUP_STATUS
     }
 
 # Add health endpoint for load balancer
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "version": VERSION}
+    return {"status": "healthy", "version": VERSION, "service": "agricultural-core"}
 
-# Include first batch of routers (we know these work)
+# Include ONLY core routers (NO dashboard routers)
 app.include_router(health_router)
 app.include_router(deployment_router)
 app.include_router(audit_router)
@@ -97,28 +90,19 @@ app.include_router(dashboard_router)
 app.include_router(dashboard_api_router)
 app.include_router(webhook_router)
 app.include_router(system_router)
-STARTUP_STATUS["total_routers_included"] = 11
+app.include_router(debug_services_router)
+app.include_router(debug_deployment_router)
+app.include_router(code_status_router)
+app.include_router(auth_router)
+app.include_router(weather_router)
+STARTUP_STATUS["total_routers_included"] = 15
 
-# Include dashboard routers (should work now!)
-if STATIC_MOUNT_SUCCESS:
-    try:
-        app.include_router(agronomic_router)
-        app.include_router(business_dashboard_router)
-        app.include_router(health_dashboard_router)
-        STARTUP_STATUS["total_routers_included"] = 14
-        logger.info("Successfully included dashboard routers with static files mounted")
-    except Exception as e:
-        STARTUP_STATUS["error"] = f"Dashboard router inclusion: {str(e)}"
-        logger.error(f"Failed to include dashboard routers: {e}")
-else:
-    STARTUP_STATUS["error"] = "Static files not mounted, skipping dashboard routers"
-
-# Minimal startup event
+# Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Minimal startup for router testing"""
+    """Core startup without dashboard dependencies"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 11 with static files - {VERSION}")
+    logger.info(f"Starting agricultural-core service (no dashboards) - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -142,6 +126,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
+    logger.info("Agricultural-core service started successfully (dashboards in separate service)")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":

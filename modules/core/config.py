@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803092500'  # v3.9.25 - Binary search step 11: static files fix
-COMMIT_HASH = "fix-static"  # FIXED: Added static files and templates mounting
+DEPLOYMENT_TIMESTAMP = '20250803093000'  # v3.9.26 - Binary search step 12: remove dashboards
+COMMIT_HASH = "core-only"  # ARCHITECTURE: Remove dashboard routers, focus on core
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.25"
+VERSION = "v3.9.26"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
