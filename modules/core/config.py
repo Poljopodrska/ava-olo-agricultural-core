@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250803091000'  # v3.9.22 - Binary search step 8: dashboard routers only
-COMMIT_HASH = "test-dashboards"  # Testing only 7 dashboard routers from batch 2
+DEPLOYMENT_TIMESTAMP = '20250803091500'  # v3.9.23 - Binary search step 9: first half dashboards
+COMMIT_HASH = "test-dash-half"  # Testing only first 3 dashboard routers
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v3.9.22"
+VERSION = "v3.9.23"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 8: Test Dashboard Routers Only
-Testing only the 7 dashboard routers from batch 2
+Binary Search Debug Version - Step 9: Test Half of Dashboard Routers
+Testing only first 3 dashboard routers to narrow down the problem
 """
 import uvicorn
 import sys
@@ -37,20 +37,17 @@ from modules.dashboards.dashboard_api import router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 
-# Import ONLY dashboard routers from second batch (Group A - 7 routers)
+# Import ONLY first 3 dashboard routers
 try:
     from modules.dashboards.agronomic import router as agronomic_router
     from modules.dashboards.business import router as business_dashboard_router
     from modules.dashboards.health import router as health_dashboard_router
-    from modules.dashboards.database import router as database_dashboard_router
-    from modules.dashboards.deployment import router as deployment_dashboard_router, api_router as deployment_api_router
-    from modules.dashboards.feature_status import router as feature_status_router
-    DASHBOARD_IMPORTS_SUCCESS = True
-    DASHBOARD_IMPORTS_ERROR = None
+    DASHBOARD_HALF_SUCCESS = True
+    DASHBOARD_HALF_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import dashboard routers: {e}")
-    DASHBOARD_IMPORTS_SUCCESS = False
-    DASHBOARD_IMPORTS_ERROR = str(e)
+    logger.error(f"Failed to import first half of dashboard routers: {e}")
+    DASHBOARD_HALF_SUCCESS = False
+    DASHBOARD_HALF_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Monitoring Dashboards", version=VERSION)
@@ -61,10 +58,10 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "first_batch_routers": 10,
-    "dashboard_imports_success": DASHBOARD_IMPORTS_SUCCESS,
-    "dashboard_imports_error": DASHBOARD_IMPORTS_ERROR,
+    "dashboard_half_success": DASHBOARD_HALF_SUCCESS,
+    "dashboard_half_error": DASHBOARD_HALF_ERROR,
     "total_routers_included": 0,
-    "test_group": "A_dashboards_only",
+    "test_group": "A_dashboards_first_half",
     "error": None
 }
 
@@ -74,7 +71,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step8_dashboards_only",
+        "binary_search": "step9_dashboards_first_half",
         "startup_status": STARTUP_STATUS
     }
 
@@ -97,26 +94,22 @@ app.include_router(webhook_router)
 app.include_router(system_router)
 STARTUP_STATUS["total_routers_included"] = 11
 
-# Include dashboard routers if imports succeeded
-if DASHBOARD_IMPORTS_SUCCESS:
+# Include first half of dashboard routers if imports succeeded
+if DASHBOARD_HALF_SUCCESS:
     try:
         app.include_router(agronomic_router)
         app.include_router(business_dashboard_router)
         app.include_router(health_dashboard_router)
-        app.include_router(database_dashboard_router)
-        app.include_router(deployment_dashboard_router)
-        app.include_router(deployment_api_router)
-        app.include_router(feature_status_router)
-        STARTUP_STATUS["total_routers_included"] = 18
+        STARTUP_STATUS["total_routers_included"] = 14
     except Exception as e:
-        STARTUP_STATUS["error"] = f"Dashboard router inclusion: {str(e)}"
+        STARTUP_STATUS["error"] = f"Dashboard half router inclusion: {str(e)}"
 
 # Minimal startup event
 @app.on_event("startup")
 async def startup_event():
     """Minimal startup for router testing"""
     global STARTUP_STATUS
-    logger.info(f"Starting binary search step 8 dashboard test - {VERSION}")
+    logger.info(f"Starting binary search step 9 dashboard half test - {VERSION}")
     
     # Run validation (we know this works)
     try:
