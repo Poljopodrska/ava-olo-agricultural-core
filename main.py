@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 22: Add CAVA Router Only
-Testing if CAVA router works now that auth is fixed
+Binary Search Debug Version - Step 23: Add Fields Router
+Adding fields_router since CAVA router is working
 """
 import uvicorn
 import sys
@@ -38,15 +38,18 @@ from modules.api.code_status import router as code_status_router
 from modules.auth.routes import router as auth_router
 from modules.weather.routes import router as weather_router
 
-# TEST: Add only CAVA router
+# Import CAVA router (we know this works now)
+from modules.cava.routes import router as cava_router
+
+# TEST: Add fields router
 try:
-    from modules.cava.routes import router as cava_router
-    CAVA_SUCCESS = True
-    CAVA_ERROR = None
+    from modules.cava.fields import router as fields_router
+    FIELDS_SUCCESS = True
+    FIELDS_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import CAVA router: {e}")
-    CAVA_SUCCESS = False
-    CAVA_ERROR = str(e)
+    logger.error(f"Failed to import fields router: {e}")
+    FIELDS_SUCCESS = False
+    FIELDS_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
@@ -60,10 +63,11 @@ STARTUP_STATUS = {
     "db_test": None,
     "monitoring_started": False,
     "base_routers": 16,
-    "cava_success": CAVA_SUCCESS,
-    "cava_error": CAVA_ERROR,
+    "cava_success": True,  # We know CAVA works now
+    "fields_success": FIELDS_SUCCESS,
+    "fields_error": FIELDS_ERROR,
     "total_routers_included": 0,
-    "phase": "testing_cava_router_only",
+    "phase": "testing_fields_router",
     "error": None
 }
 
@@ -73,7 +77,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step22_add_cava_only",
+        "binary_search": "step23_add_fields_router",
         "startup_status": STARTUP_STATUS
     }
 
@@ -99,24 +103,25 @@ app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
-STARTUP_STATUS["total_routers_included"] = 16
+app.include_router(cava_router)  # We know CAVA works now
+STARTUP_STATUS["total_routers_included"] = 17
 
-# Include CAVA router if import succeeded
-if CAVA_SUCCESS:
+# Include fields router if import succeeded
+if FIELDS_SUCCESS:
     try:
-        app.include_router(cava_router)
-        STARTUP_STATUS["total_routers_included"] = 17
-        logger.info("Successfully included CAVA router")
+        app.include_router(fields_router)
+        STARTUP_STATUS["total_routers_included"] = 18
+        logger.info("Successfully included fields router")
     except Exception as e:
-        STARTUP_STATUS["error"] = f"CAVA router inclusion: {str(e)}"
-        logger.error(f"Failed to include CAVA router: {e}")
+        STARTUP_STATUS["error"] = f"Fields router inclusion: {str(e)}"
+        logger.error(f"Failed to include fields router: {e}")
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup testing CAVA router"""
+    """Core startup testing fields router"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 16 base + CAVA router test - {VERSION}")
+    logger.info(f"Starting with 17 base + fields router test - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -140,7 +145,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core system with CAVA router ready")
+    logger.info("Core system with CAVA + fields routers ready")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
