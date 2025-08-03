@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, PlainTextResponse
 import base64
 
 # Security
@@ -47,25 +47,30 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
     """Middleware to require basic auth for all protected routes"""
     
     async def dispatch(self, request: Request, call_next):
-        # Check if path is public first
+        # ALWAYS print to verify middleware is being called
         path = request.url.path
-        print(f"[AUTH] Checking path: {path}")
+        print(f"[AUTH MIDDLEWARE] Processing request to: {path}")
         
-        # Allow public paths
+        # Check if path is public
+        is_public = False
         for public_path in PUBLIC_PATHS:
             if path.startswith(public_path):
-                print(f"[AUTH] Path {path} is public, allowing")
-                response = await call_next(request)
-                return response
+                is_public = True
+                print(f"[AUTH MIDDLEWARE] Path {path} matches public path {public_path} - ALLOWING")
+                break
+        
+        if is_public:
+            response = await call_next(request)
+            return response
         
         # Path is protected - require authentication
-        print(f"[AUTH] Path {path} is protected, checking auth")
+        print(f"[AUTH MIDDLEWARE] Path {path} is PROTECTED - checking authentication")
         auth_header = request.headers.get("Authorization")
+        print(f"[AUTH MIDDLEWARE] Authorization header: {auth_header}")
         
         if not auth_header or not auth_header.startswith("Basic "):
-            print(f"[AUTH] No valid auth header, denying access")
-            # Return 401 with WWW-Authenticate header
-            return Response(
+            print(f"[AUTH MIDDLEWARE] NO VALID AUTH - BLOCKING REQUEST")
+            return PlainTextResponse(
                 content="Authentication required",
                 status_code=401,
                 headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
@@ -73,33 +78,31 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
         
         try:
             # Decode basic auth
-            print(f"[AUTH] Decoding auth header")
             encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
             decoded = base64.b64decode(encoded_credentials).decode("utf-8")
             username, password = decoded.split(":", 1)
+            print(f"[AUTH MIDDLEWARE] Checking credentials for user: {username}")
             
             # Verify credentials
             credentials = HTTPBasicCredentials(username=username, password=password)
             if not verify_credentials(credentials):
-                print(f"[AUTH] Invalid credentials for user {username}")
-                return Response(
+                print(f"[AUTH MIDDLEWARE] INVALID CREDENTIALS for {username} - BLOCKING")
+                return PlainTextResponse(
                     content="Invalid credentials",
                     status_code=401,
                     headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
                 )
             
-            # Add username to request state for logging
-            print(f"[AUTH] Valid credentials for user {username}, allowing access")
+            # Success
+            print(f"[AUTH MIDDLEWARE] VALID CREDENTIALS for {username} - ALLOWING")
             request.state.basic_auth_user = username
-            
-            # Continue with request
             response = await call_next(request)
             return response
             
         except Exception as e:
-            print(f"[AUTH] Error decoding credentials: {e}")
-            return Response(
-                content="Invalid authentication format",
+            print(f"[AUTH MIDDLEWARE] ERROR processing auth: {e} - BLOCKING")
+            return PlainTextResponse(
+                content="Authentication error",
                 status_code=401,
                 headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
             )
