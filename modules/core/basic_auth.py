@@ -16,7 +16,7 @@ security = HTTPBasic()
 # Hardcoded users for basic auth
 BASIC_AUTH_USERS = {
     "Peter": "Semillon",
-    "Tine": "Viovska"
+    "Tine": "Vitovska"
 }
 
 # Public paths that don't require auth
@@ -56,43 +56,43 @@ class BasicAuthMiddleware(BaseHTTPMiddleware):
                 if path.startswith(public_path):
                     response = await call_next(request)
                     return response
-        
-        # Check for basic auth header
-        auth_header = request.headers.get("Authorization")
-        
-        if not auth_header or not auth_header.startswith("Basic "):
-            # Return 401 with WWW-Authenticate header
-            return Response(
-                content="Authentication required",
-                status_code=401,
-                headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
-            )
-        
-        try:
-            # Decode basic auth
-            encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
-            decoded = base64.b64decode(encoded_credentials).decode("utf-8")
-            username, password = decoded.split(":", 1)
             
-            # Verify credentials
-            credentials = HTTPBasicCredentials(username=username, password=password)
-            if not verify_credentials(credentials):
+            # Check for basic auth header
+            auth_header = request.headers.get("Authorization")
+            
+            if not auth_header or not auth_header.startswith("Basic "):
+                # Return 401 with WWW-Authenticate header
                 return Response(
-                    content="Invalid credentials",
+                    content="Authentication required",
                     status_code=401,
                     headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
                 )
             
-            # Add username to request state for logging
-            request.state.basic_auth_user = username
+            try:
+                # Decode basic auth
+                encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
+                decoded = base64.b64decode(encoded_credentials).decode("utf-8")
+                username, password = decoded.split(":", 1)
+                
+                # Verify credentials
+                credentials = HTTPBasicCredentials(username=username, password=password)
+                if not verify_credentials(credentials):
+                    return Response(
+                        content="Invalid credentials",
+                        status_code=401,
+                        headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
+                    )
+                
+                # Add username to request state for logging
+                request.state.basic_auth_user = username
+                
+            except Exception:
+                return Response(
+                    content="Invalid authentication format",
+                    status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
+                )
             
-        except Exception:
-            return Response(
-                content="Invalid authentication format",
-                status_code=401,
-                headers={"WWW-Authenticate": 'Basic realm="AVA OLO Protected Area"'}
-            )
-        
             # Continue with request
             response = await call_next(request)
             return response
