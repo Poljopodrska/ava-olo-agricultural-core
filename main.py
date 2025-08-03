@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 16: Add CAVA/Chat Routers
-Adding 5 CAVA/chat routers for farmer registration and chat functionality
+Binary Search Debug Version - Step 17: Add WhatsApp Webhook
+Adding critical WhatsApp webhook router for farmer communication
 """
 import uvicorn
 import sys
@@ -25,7 +25,7 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import working routers from v3.9.29 (16 routers)
+# Import working routers from v3.9.30 (21 routers)
 from modules.api.deployment_routes import router as deployment_router, audit_router
 from modules.api.database_routes import router as database_router, agricultural_router, debug_router
 from modules.api.business_routes import router as business_router
@@ -37,20 +37,21 @@ from modules.api.debug_deployment import router as debug_deployment_router
 from modules.api.code_status import router as code_status_router
 from modules.auth.routes import router as auth_router
 from modules.weather.routes import router as weather_router
+from modules.cava.routes import router as cava_router
+from modules.fields.routes import router as fields_router
+from modules.chat.simple_registration import router as simple_registration_router
+from modules.api.chat_routes import router as cava_chat_router
+from modules.api.chat_history_routes import router as chat_history_router
 
-# ADD BATCH 2: CAVA/Chat Routers (5 new) - Critical for farmer functionality
+# ADD WhatsApp webhook router - CRITICAL for farmer communication
 try:
-    from modules.cava.routes import router as cava_router
-    from modules.fields.routes import router as fields_router
-    from modules.chat.simple_registration import router as simple_registration_router
-    from modules.api.chat_routes import router as cava_chat_router
-    from modules.api.chat_history_routes import router as chat_history_router
-    CAVA_SUCCESS = True
-    CAVA_ERROR = None
+    from modules.whatsapp.webhook_handler import router as whatsapp_webhook_router
+    WHATSAPP_SUCCESS = True
+    WHATSAPP_ERROR = None
 except Exception as e:
-    logger.error(f"Failed to import CAVA/chat routers: {e}")
-    CAVA_SUCCESS = False
-    CAVA_ERROR = str(e)
+    logger.error(f"Failed to import WhatsApp webhook router: {e}")
+    WHATSAPP_SUCCESS = False
+    WHATSAPP_ERROR = str(e)
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
@@ -63,12 +64,13 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "base_routers": 16,
-    "cava_success": CAVA_SUCCESS,
-    "cava_error": CAVA_ERROR,
+    "base_routers": 21,
+    "whatsapp_success": WHATSAPP_SUCCESS,
+    "whatsapp_error": WHATSAPP_ERROR,
     "total_routers_included": 0,
-    "phase": "adding_cava_chat_routers",
-    "functionality": "farmer_registration_and_chat",
+    "phase": "adding_whatsapp_webhook",
+    "functionality": "farmer_communication_via_whatsapp",
+    "critical_feature": "whatsapp_integration",
     "error": None
 }
 
@@ -78,7 +80,7 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "binary_search": "step16_add_cava",
+        "binary_search": "step17_add_whatsapp",
         "startup_status": STARTUP_STATUS
     }
 
@@ -87,7 +89,7 @@ async def root():
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Include all working routers from v3.9.29
+# Include all working routers from v3.9.30
 app.include_router(health_router)
 app.include_router(deployment_router)
 app.include_router(audit_router)
@@ -104,28 +106,29 @@ app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(auth_router)
 app.include_router(weather_router)
-STARTUP_STATUS["total_routers_included"] = 16
+app.include_router(cava_router)
+app.include_router(fields_router)
+app.include_router(simple_registration_router)
+app.include_router(cava_chat_router)
+app.include_router(chat_history_router)
+STARTUP_STATUS["total_routers_included"] = 21
 
-# Include CAVA/chat routers if imports succeeded
-if CAVA_SUCCESS:
+# Include WhatsApp webhook router if import succeeded
+if WHATSAPP_SUCCESS:
     try:
-        app.include_router(cava_router)
-        app.include_router(fields_router)
-        app.include_router(simple_registration_router)
-        app.include_router(cava_chat_router)
-        app.include_router(chat_history_router)
-        STARTUP_STATUS["total_routers_included"] = 21
-        logger.info("Successfully included CAVA/chat routers - farmer registration enabled")
+        app.include_router(whatsapp_webhook_router)
+        STARTUP_STATUS["total_routers_included"] = 22
+        logger.info("Successfully included WhatsApp webhook router - farmer communication enabled")
     except Exception as e:
-        STARTUP_STATUS["error"] = f"CAVA router inclusion: {str(e)}"
-        logger.error(f"Failed to include CAVA routers: {e}")
+        STARTUP_STATUS["error"] = f"WhatsApp router inclusion: {str(e)}"
+        logger.error(f"Failed to include WhatsApp router: {e}")
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup with CAVA/chat functionality"""
+    """Core startup with WhatsApp webhook functionality"""
     global STARTUP_STATUS
-    logger.info(f"Starting with 16 base + 5 CAVA/chat routers - {VERSION}")
+    logger.info(f"Starting with 21 base + 1 WhatsApp webhook router - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -149,7 +152,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Core farmer portal with registration and chat ready")
+    logger.info("Core farmer portal with WhatsApp integration ready")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
