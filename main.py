@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Binary Search Debug Version - Step 12: Remove Dashboard Routers Entirely
-Focus on core functionality only - dashboards handled by separate service
+Binary Search Debug Version - Step 13: Test Group 1 Routers Only
+Testing only the routers that worked in v3.9.20
 """
 import uvicorn
 import sys
@@ -25,7 +25,7 @@ from modules.core.startup_validator import StartupValidator
 from modules.core.api_key_manager import APIKeyManager
 from modules.core.database_manager import get_db_manager
 
-# Import ONLY core routers (NO dashboard routers)
+# Import ONLY Group 1 routers (known to work from v3.9.20)
 from modules.core.deployment import router as deployment_router
 from modules.core.audit import router as audit_router
 from modules.api.database_routes import router as database_router
@@ -37,17 +37,10 @@ from modules.dashboards.dashboard_api import router as dashboard_api_router
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 
-# Add Group B routers (core functionality, not dashboards)
-from modules.api.debug_services import router as debug_services_router
-from modules.api.debug_deployment import router as debug_deployment_router
-from modules.api.code_status import router as code_status_router
-from modules.auth.routes import router as auth_router
-from modules.weather.routes import router as weather_router
-
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
 
-# Mount static files (for any non-dashboard UI needs)
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Track startup status
@@ -55,9 +48,9 @@ STARTUP_STATUS = {
     "validation_result": None,
     "db_test": None,
     "monitoring_started": False,
-    "core_routers": 15,
-    "dashboard_routers_removed": True,
-    "architecture": "core_only_no_dashboards",
+    "group1_routers": 11,
+    "group2_routers_excluded": 4,
+    "test_group": "group1_known_working",
     "total_routers_included": 0,
     "error": None
 }
@@ -68,17 +61,16 @@ async def root():
     return {
         "status": "running", 
         "version": VERSION, 
-        "service": "agricultural-core",
-        "architecture": "core_functionality_only",
+        "binary_search": "step13_group1_only",
         "startup_status": STARTUP_STATUS
     }
 
 # Add health endpoint for load balancer
 @app.get("/health")
 async def health():
-    return {"status": "healthy", "version": VERSION, "service": "agricultural-core"}
+    return {"status": "healthy", "version": VERSION}
 
-# Include ONLY core routers (NO dashboard routers)
+# Include ONLY Group 1 routers (known working)
 app.include_router(health_router)
 app.include_router(deployment_router)
 app.include_router(audit_router)
@@ -90,19 +82,14 @@ app.include_router(dashboard_router)
 app.include_router(dashboard_api_router)
 app.include_router(webhook_router)
 app.include_router(system_router)
-app.include_router(debug_services_router)
-app.include_router(debug_deployment_router)
-app.include_router(code_status_router)
-app.include_router(auth_router)
-app.include_router(weather_router)
-STARTUP_STATUS["total_routers_included"] = 15
+STARTUP_STATUS["total_routers_included"] = 11
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup without dashboard dependencies"""
+    """Core startup with Group 1 routers only"""
     global STARTUP_STATUS
-    logger.info(f"Starting agricultural-core service (no dashboards) - {VERSION}")
+    logger.info(f"Starting binary search step 13 - Group 1 routers only - {VERSION}")
     
     # Run validation (we know this works)
     try:
@@ -126,7 +113,6 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("Agricultural-core service started successfully (dashboards in separate service)")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
