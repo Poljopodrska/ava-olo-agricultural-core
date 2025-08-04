@@ -201,12 +201,21 @@ async def signin_submit(
 ):
     """Process sign-in form submission"""
     
+    # Get language detection for error pages
+    from modules.core.language_service import get_language_service
+    language_service = get_language_service()
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    detected_language = await language_service.detect_language_from_ip(client_ip)
+    translations = get_translations(detected_language)
+    
     # Validate WhatsApp number
     if not validate_whatsapp_number(whatsapp_number):
         return templates.TemplateResponse("auth/signin.html", {
             "request": request,
             "version": VERSION,
-            "error": "Please enter a valid WhatsApp number (e.g., +359123456789)"
+            "error": "Please enter a valid WhatsApp number (e.g., +359123456789)",
+            "language": detected_language,
+            "t": translations
         })
     
     # Format WhatsApp number
@@ -219,7 +228,9 @@ async def signin_submit(
         return templates.TemplateResponse("auth/signin.html", {
             "request": request,
             "version": VERSION,
-            "error": "No account found with this WhatsApp number"
+            "error": "No account found with this WhatsApp number",
+            "language": detected_language,
+            "t": translations
         })
     
     # Check if password_hash exists
@@ -227,7 +238,9 @@ async def signin_submit(
         return templates.TemplateResponse("auth/signin.html", {
             "request": request,
             "version": VERSION,
-            "error": "Account not set up for password login. Please register again."
+            "error": "Account not set up for password login. Please register again.",
+            "language": detected_language,
+            "t": translations
         })
     
     # Verify password
@@ -235,7 +248,9 @@ async def signin_submit(
         return templates.TemplateResponse("auth/signin.html", {
             "request": request,
             "version": VERSION,
-            "error": "Incorrect password"
+            "error": "Incorrect password",
+            "language": detected_language,
+            "t": translations
         })
     
     # Successful login - redirect to farmer dashboard
@@ -278,19 +293,30 @@ async def register_submit(
 ):
     """Process registration form submission"""
     
+    # Get language detection for error pages
+    from modules.core.language_service import get_language_service
+    language_service = get_language_service()
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    detected_language = await language_service.detect_language_from_ip(client_ip)
+    translations = get_translations(detected_language)
+    
     # Validate required fields
     if not first_name.strip():
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "First name is required"
+            "error": "First name is required",
+            "language": detected_language,
+            "t": translations
         })
     
     if not last_name.strip():
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "Last name is required"
+            "error": "Last name is required",
+            "language": detected_language,
+            "t": translations
         })
     
     # Validate WhatsApp number
@@ -298,7 +324,9 @@ async def register_submit(
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "Please enter a valid WhatsApp number (e.g., +359123456789)"
+            "error": "Please enter a valid WhatsApp number (e.g., +359123456789)",
+            "language": detected_language,
+            "t": translations
         })
     
     # Validate email format
@@ -307,7 +335,9 @@ async def register_submit(
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "Please enter a valid email address"
+            "error": "Please enter a valid email address",
+            "language": detected_language,
+            "t": translations
         })
     
     # Validate password
@@ -315,7 +345,9 @@ async def register_submit(
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "Password must be at least 8 characters long"
+            "error": "Password must be at least 8 characters long",
+            "language": detected_language,
+            "t": translations
         })
     
     # Validate password confirmation
@@ -323,7 +355,9 @@ async def register_submit(
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "Passwords do not match"
+            "error": "Passwords do not match",
+            "language": detected_language,
+            "t": translations
         })
     
     # Format WhatsApp number
@@ -353,14 +387,18 @@ async def register_submit(
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": e.detail
+            "error": e.detail,
+            "language": detected_language,
+            "t": translations
         })
     except Exception as e:
         logger.error(f"Registration error: {e}")
         return templates.TemplateResponse("auth/register_split.html", {
             "request": request,
             "version": VERSION,
-            "error": "An error occurred while creating your account. Please try again."
+            "error": "An error occurred while creating your account. Please try again.",
+            "language": detected_language,
+            "t": translations
         })
 
 @router.get("/logout")
