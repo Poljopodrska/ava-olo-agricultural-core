@@ -1,5 +1,68 @@
 # AVA OLO System Changelog
 
+## v4.4.0 - 2025-08-04 - Multi-Language System Implementation
+**Status**: DEPLOYED ✅
+**Service**: agricultural-core
+**Feature**: Complete multi-language support with IP detection and WhatsApp country codes
+
+### 🌍 MULTI-LANGUAGE FEATURES:
+- **IP-Based Landing Page Detection**: Automatic language based on visitor's country
+- **WhatsApp Country Code Mapping**: +359→Bulgarian, +386→Slovenian, +385→Croatian
+- **Persistent Language Preferences**: Stores language_preference in farmers table
+- **FAVA/CAVA Language Support**: All responses in farmer's detected language
+- **Language Change Recognition**: "speak English please" → permanent language switch
+
+### 📱 COUNTRY CODE MAPPINGS:
+- +359 → Bulgarian (bg)
+- +386 → Slovenian (sl)
+- +385 → Croatian (hr)
+- +43 → German (de)
+- +39 → Italian (it)
+- +1 → English (en)
+- +44 → English (en)
+
+### 🔧 TECHNICAL IMPLEMENTATION:
+1. **Language Service** (`modules/core/language_service.py`):
+   - WhatsApp country code detection
+   - IP geolocation via ip-api.com
+   - Language change request parsing
+   - Database preference management
+
+2. **FAVA Integration**:
+   - Dynamic language placeholders in prompt
+   - Language passed to all FAVA calls
+   - Responses generated in farmer's language
+
+3. **Database Changes**:
+   - Added `language_preference` column to farmers table
+   - Default language is English ('en')
+
+### ✅ TESTED SCENARIOS:
+- Bulgarian mango farmer (+359) gets Bulgarian responses
+- Language change request "speak English" switches permanently
+- IP detection for landing page language
+- All country code mappings verified
+
+---
+
+## v4.3.2 - 2025-08-04 - FAVA Database Intent Recognition Fix
+**Status**: DEPLOYED ✅
+**Service**: agricultural-core
+**Fix**: FAVA now recognizes "I want to enter my first vineyard, called Belouca, 3,2 ha"
+
+### 🐛 ISSUE FIXED:
+- **Problem**: FAVA was asking follow-up questions instead of saving fields
+- **Solution**: Added STRONG DATABASE INTENT patterns to prompt
+- **Result**: Immediate SQL generation for clear storage requests
+
+### ✅ VERIFIED BEHAVIORS:
+- "I want to enter..." → INSERT SQL generated
+- "I want to add..." → INSERT SQL generated
+- "I want to save..." → INSERT SQL generated
+- Handles INSERT RETURNING correctly
+
+---
+
 ## v4.3.0 - 2025-08-04 - FAVA Farmer-Aware Intelligence via Pure LLM
 **Status**: FAVA IMPLEMENTATION COMPLETE ✅
 **Service**: agricultural-core

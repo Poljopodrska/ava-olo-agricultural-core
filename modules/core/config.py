@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804180000'  # v4.3.2 - FAVA database intent fix
-COMMIT_HASH = "fava-belouca-fix"  # Fixed "I want to enter" recognition
+DEPLOYMENT_TIMESTAMP = '20250804181700'  # v4.4.0 - Multi-language system
+COMMIT_HASH = "multi-language-support"  # IP detection + WhatsApp country codes
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.3.2"
+VERSION = "v4.4.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

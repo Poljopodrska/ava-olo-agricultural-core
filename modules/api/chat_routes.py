@@ -761,12 +761,27 @@ async def chat_with_cava_engine(request: ChatRequest):
         fava_response = None
         if farmer_id:
             try:
+                from modules.core.language_service import get_language_service
+                language_service = get_language_service()
                 fava_engine = get_fava_engine()
+                
                 async with db_manager.get_connection_async() as conn:
+                    # Get farmer's language preference
+                    farmer_language = await language_service.get_farmer_language(farmer_id, conn)
+                    
+                    # Check if message contains language change request
+                    is_change, new_language = language_service.detect_language_change_request(message)
+                    if is_change and new_language:
+                        # Update language preference
+                        await language_service.update_farmer_language(farmer_id, new_language, conn)
+                        farmer_language = new_language
+                        logger.info(f"Language changed to {new_language} for farmer {farmer_id}")
+                    
                     fava_response = await fava_engine.process_farmer_message(
                         farmer_id=farmer_id,
                         message=message,
-                        db_connection=conn
+                        db_connection=conn,
+                        language_code=farmer_language
                     )
                     
                     # Execute database action if FAVA suggests one

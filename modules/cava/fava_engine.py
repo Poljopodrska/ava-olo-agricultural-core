@@ -60,7 +60,8 @@ RESPONSE FORMAT (JSON):
         self, 
         farmer_id: int, 
         message: str,
-        db_connection: Any
+        db_connection: Any,
+        language_code: str = 'en'
     ) -> Dict:
         """
         Process farmer message with pure LLM intelligence
@@ -70,7 +71,7 @@ RESPONSE FORMAT (JSON):
         farmer_context = await self._load_farmer_context(farmer_id, db_connection)
         
         # Step 2: Build dynamic prompt (string concatenation ONLY)
-        full_prompt = self._build_full_prompt(farmer_context, message)
+        full_prompt = self._build_full_prompt(farmer_context, message, language_code)
         
         # Step 3: Single LLM call (NO business logic)
         llm_response = await self._call_llm(full_prompt)
@@ -133,11 +134,22 @@ RESPONSE FORMAT (JSON):
         
         return context
     
-    def _build_full_prompt(self, farmer_context: Dict, message: str) -> str:
+    def _build_full_prompt(self, farmer_context: Dict, message: str, language_code: str = 'en') -> str:
         """
         Build complete prompt with static template + dynamic context
         Pure string concatenation - NO logic
         """
+        # Get language name from language service
+        from modules.core.language_service import get_language_service
+        language_service = get_language_service()
+        language_name = language_service.get_language_name(language_code)
+        
+        # Replace language placeholders in prompt
+        prompt_with_language = self.static_prompt.replace(
+            '{farmer_language}', language_code
+        ).replace(
+            '{language_name}', language_name
+        )
         # Format farmer context as readable text
         context_text = f"""
 DATABASE SCHEMA FOR SQL GENERATION:
@@ -174,7 +186,7 @@ Fields ({len(farmer_context['fields'])} total):
             context_text += f"- {role}: {msg.get('content', '')[:100]}...\n"
         
         # Combine everything
-        full_prompt = f"""{self.static_prompt}
+        full_prompt = f"""{prompt_with_language}
 
 {context_text}
 
