@@ -298,27 +298,27 @@ async def execute_quick_query(query_type: str):
         },
         "list-farmers": {
             "sql": """
-                SELECT farmer_id, manager_name, manager_last_name, location, occupation, 
+                SELECT id, manager_name, manager_last_name, city, farm_name, 
                        created_at
                 FROM farmers 
                 WHERE is_active = true
-                ORDER BY farmer_id DESC LIMIT 50
+                ORDER BY id DESC LIMIT 50
             """,
             "description": "List all farmers"
         },
-        "farmers-by-occupation": {
+        "farmers-by-city": {
             "sql": """
-                SELECT occupation, COUNT(*) as count 
+                SELECT city, COUNT(*) as count 
                 FROM farmers 
                 WHERE is_active = true 
-                GROUP BY occupation 
+                GROUP BY city 
                 ORDER BY count DESC
             """,
-            "description": "Farmers grouped by occupation"
+            "description": "Farmers grouped by city"
         },
         "recent-registrations": {
             "sql": """
-                SELECT farmer_id, manager_name, manager_last_name, location, 
+                SELECT id, manager_name, manager_last_name, city, 
                        email, created_at
                 FROM farmers 
                 ORDER BY created_at DESC 
@@ -328,14 +328,14 @@ async def execute_quick_query(query_type: str):
         },
         "top-cities": {
             "sql": """
-                SELECT location, COUNT(*) as farmer_count 
+                SELECT city, COUNT(*) as farmer_count 
                 FROM farmers 
                 WHERE is_active = true 
-                GROUP BY location 
+                GROUP BY city 
                 ORDER BY farmer_count DESC 
                 LIMIT 10
             """,
-            "description": "Top locations by farmer count"
+            "description": "Top cities by farmer count"
         },
         "farmer-growth": {
             "sql": """
@@ -703,47 +703,47 @@ def convert_natural_to_sql(question: str) -> str:
     
     # Simple pattern matching for common queries
     if "count" in question_lower and "farmer" in question_lower:
-        if "occupation" in question_lower or "job" in question_lower:
+        if "city" in question_lower or "location" in question_lower:
             return """
-                SELECT occupation, COUNT(*) as count 
+                SELECT city, COUNT(*) as count 
                 FROM farmers 
                 WHERE is_active = true 
-                GROUP BY occupation 
+                GROUP BY city 
                 ORDER BY count DESC
             """
         else:
             return "SELECT COUNT(*) as total_farmers FROM farmers WHERE is_active = true"
     
-    if "vineyard" in question_lower or "grape" in question_lower:
+    if "vineyard" in question_lower or "grape" in question_lower or "wine" in question_lower:
         return """
-            SELECT farmer_id, manager_name, manager_last_name, location, area_hectares
+            SELECT id, manager_name, manager_last_name, city, farm_name
             FROM farmers 
             WHERE is_active = true 
-            AND (occupation ILIKE '%vineyard%' OR occupation ILIKE '%grape%')
-            ORDER BY area_hectares DESC
+            AND (farm_name ILIKE '%vineyard%' OR farm_name ILIKE '%grape%' OR farm_name ILIKE '%wine%')
+            ORDER BY id DESC
         """
     
-    if "hectares" in question_lower and ("most" in question_lower or "largest" in question_lower):
+    if "email" in question_lower:
         return """
-            SELECT manager_name, manager_last_name, location, area_hectares, occupation
+            SELECT id, manager_name, manager_last_name, email
             FROM farmers 
-            WHERE is_active = true
-            ORDER BY area_hectares DESC
-            LIMIT 10
+            WHERE is_active = true AND email IS NOT NULL
+            ORDER BY id DESC
+            LIMIT 20
         """
     
     if "city" in question_lower or "cities" in question_lower:
         return """
-            SELECT location, COUNT(*) as farmer_count
+            SELECT city, COUNT(*) as farmer_count
             FROM farmers 
             WHERE is_active = true
-            GROUP BY location 
+            GROUP BY city 
             ORDER BY farmer_count DESC
         """
     
     if "recent" in question_lower or "latest" in question_lower:
         return """
-            SELECT manager_name, manager_last_name, location, occupation, created_at
+            SELECT id, manager_name, manager_last_name, city, created_at
             FROM farmers 
             WHERE is_active = true
             ORDER BY created_at DESC
@@ -752,10 +752,10 @@ def convert_natural_to_sql(question: str) -> str:
     
     # If no pattern matches, return a safe default query
     return """
-        SELECT farmer_id, manager_name, manager_last_name, location, occupation
+        SELECT id, manager_name, manager_last_name, city, email
         FROM farmers 
         WHERE is_active = true
-        ORDER BY farmer_id DESC
+        ORDER BY id DESC
         LIMIT 50
     """
 
