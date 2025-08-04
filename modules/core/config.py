@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804193500'  # v4.4.13 - CRITICAL FIX: Template path issue in auth routes
-COMMIT_HASH = "fix-template-path"  # Use absolute path for templates in auth routes
+DEPLOYMENT_TIMESTAMP = '20250804194000'  # v4.4.14 - FINAL FIX: Jinja2 template syntax error in signin.html
+COMMIT_HASH = "fix-jinja-syntax"  # Fixed escaped quotes causing template rendering failure
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.13"
+VERSION = "v4.4.14"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
