@@ -6,6 +6,17 @@ Provides UI translations for all supported languages
 
 TRANSLATIONS = {
     'en': {
+        # Landing Page
+        'landing_title': 'AVA OLO',
+        'landing_subtitle': 'Intelligent Agricultural Assistant',
+        'sign_in_with_whatsapp': 'Sign In with WhatsApp',
+        'new_with_ava': 'New with AVA OLO',
+        'access_dashboard': 'Access your dashboard with:',
+        'feature_weather': 'Real-time weather monitoring',
+        'feature_cava': 'CAVA AI agricultural assistant',
+        'feature_tools': 'Farm management tools',
+        'feature_tracking': 'Field & crop tracking',
+        
         # Sign In Page
         'sign_in_title': 'Sign In',
         'sign_in_subtitle': 'Welcome back to AVA OLO',
@@ -44,6 +55,17 @@ TRANSLATIONS = {
     },
     
     'sl': {  # Slovenian
+        # Landing Page
+        'landing_title': 'AVA OLO',
+        'landing_subtitle': 'Inteligentni kmetijski asistent',
+        'sign_in_with_whatsapp': 'Prijavite se z WhatsApp',
+        'new_with_ava': 'Novi pri AVA OLO',
+        'access_dashboard': 'Dostopajte do svoje nadzorne plošče z:',
+        'feature_weather': 'Spremljanje vremena v realnem času',
+        'feature_cava': 'CAVA AI kmetijski asistent',
+        'feature_tools': 'Orodja za upravljanje kmetije',
+        'feature_tracking': 'Sledenje poljem in pridelkom',
+        
         # Sign In Page
         'sign_in_title': 'Prijava',
         'sign_in_subtitle': 'Dobrodošli nazaj v AVA OLO',
@@ -82,6 +104,17 @@ TRANSLATIONS = {
     },
     
     'bg': {  # Bulgarian
+        # Landing Page
+        'landing_title': 'AVA OLO',
+        'landing_subtitle': 'Интелигентен земеделски асистент',
+        'sign_in_with_whatsapp': 'Влезте с WhatsApp',
+        'new_with_ava': 'Нов в AVA OLO',
+        'access_dashboard': 'Достъп до вашето табло с:',
+        'feature_weather': 'Наблюдение на времето в реално време',
+        'feature_cava': 'CAVA AI земеделски асистент',
+        'feature_tools': 'Инструменти за управление на фермата',
+        'feature_tracking': 'Проследяване на полета и култури',
+        
         # Sign In Page
         'sign_in_title': 'Вход',
         'sign_in_subtitle': 'Добре дошли отново в AVA OLO',
@@ -120,6 +153,17 @@ TRANSLATIONS = {
     },
     
     'hr': {  # Croatian
+        # Landing Page
+        'landing_title': 'AVA OLO',
+        'landing_subtitle': 'Inteligentni poljoprivredni asistent',
+        'sign_in_with_whatsapp': 'Prijavite se s WhatsApp',
+        'new_with_ava': 'Novi u AVA OLO',
+        'access_dashboard': 'Pristupite svojoj kontrolnoj ploči s:',
+        'feature_weather': 'Praćenje vremena u stvarnom vremenu',
+        'feature_cava': 'CAVA AI poljoprivredni asistent',
+        'feature_tools': 'Alati za upravljanje farmom',
+        'feature_tracking': 'Praćenje polja i usjeva',
+        
         # Sign In Page
         'sign_in_title': 'Prijava',
         'sign_in_subtitle': 'Dobrodošli natrag u AVA OLO',
@@ -158,6 +202,17 @@ TRANSLATIONS = {
     },
     
     'de': {  # German
+        # Landing Page
+        'landing_title': 'AVA OLO',
+        'landing_subtitle': 'Intelligenter Landwirtschaftsassistent',
+        'sign_in_with_whatsapp': 'Mit WhatsApp anmelden',
+        'new_with_ava': 'Neu bei AVA OLO',
+        'access_dashboard': 'Zugriff auf Ihr Dashboard mit:',
+        'feature_weather': 'Echtzeit-Wetterüberwachung',
+        'feature_cava': 'CAVA KI-Landwirtschaftsassistent',
+        'feature_tools': 'Farm-Management-Tools',
+        'feature_tracking': 'Feld- und Ernteverfolgung',
+        
         # Sign In Page
         'sign_in_title': 'Anmelden',
         'sign_in_subtitle': 'Willkommen zurück bei AVA OLO',
@@ -196,6 +251,17 @@ TRANSLATIONS = {
     },
     
     'it': {  # Italian
+        # Landing Page
+        'landing_title': 'AVA OLO',
+        'landing_subtitle': 'Assistente agricolo intelligente',
+        'sign_in_with_whatsapp': 'Accedi con WhatsApp',
+        'new_with_ava': 'Nuovo su AVA OLO',
+        'access_dashboard': 'Accedi alla tua dashboard con:',
+        'feature_weather': 'Monitoraggio meteo in tempo reale',
+        'feature_cava': 'CAVA assistente agricolo AI',
+        'feature_tools': 'Strumenti di gestione agricola',
+        'feature_tracking': 'Tracciamento campi e colture',
+        
         # Sign In Page
         'sign_in_title': 'Accedi',
         'sign_in_subtitle': 'Bentornato su AVA OLO',

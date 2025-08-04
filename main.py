@@ -78,9 +78,24 @@ STARTUP_STATUS = {
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Landing page with Sign In / New to AVA OLO options"""
+    # Detect language from IP address
+    from modules.core.language_service import get_language_service
+    from modules.core.translations import get_translations
+    
+    language_service = get_language_service()
+    
+    # Get client IP
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    detected_language = await language_service.detect_language_from_ip(client_ip)
+    
+    # Get translations for the detected language
+    translations = get_translations(detected_language)
+    
     return templates.TemplateResponse("landing.html", {
         "request": request,
-        "version": VERSION
+        "version": VERSION,
+        "language": detected_language,
+        "t": translations
     })
 
 # Health endpoint

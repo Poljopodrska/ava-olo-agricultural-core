@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804184000'  # v4.4.4 - Fix language detection and field display
-COMMIT_HASH = "language-field-fixes"  # Fixed auth language and field SQL
+DEPLOYMENT_TIMESTAMP = '20250804184500'  # v4.4.5 - Fix landing page language detection
+COMMIT_HASH = "landing-page-language"  # Added language detection to home page
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.4"
+VERSION = "v4.4.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

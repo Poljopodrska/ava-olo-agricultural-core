@@ -139,28 +139,28 @@
     <div class="landing-container">
         <div class="landing-card">
             <div class="brand-logo">🌾</div>
-            <h1 class="brand-title">AVA OLO</h1>
+            <h1 class="brand-title">{{ t.landing_title if t else 'AVA OLO' }}</h1>
             <p class="brand-subtitle">
-                Intelligent Agricultural Assistant<br>
+                {{ t.landing_subtitle if t else 'Intelligent Agricultural Assistant' }}<br>
                 for Bulgarian Mango Cooperative
             </p>
             
             <div class="cta-buttons">
                 <a href="/auth/signin" class="cta-button whatsapp-style">
-                    📱 Sign In with WhatsApp
+                    📱 {{ t.sign_in_with_whatsapp if t else 'Sign In with WhatsApp' }}
                 </a>
                 
                 <a href="/auth/register" class="cta-button primary">
-                    🌱 New with AVA OLO
+                    🌱 {{ t.new_with_ava if t else 'New with AVA OLO' }}
                 </a>
             </div>
             
             <div class="features-preview">
-                <strong>Access your dashboard with:</strong><br>
-                • Real-time weather monitoring<br>
-                • CAVA AI agricultural assistant<br>
-                • Farm management tools<br>
-                • Field & crop tracking
+                <strong>{{ t.access_dashboard if t else 'Access your dashboard with:' }}</strong><br>
+                • {{ t.feature_weather if t else 'Real-time weather monitoring' }}<br>
+                • {{ t.feature_cava if t else 'CAVA AI agricultural assistant' }}<br>
+                • {{ t.feature_tools if t else 'Farm management tools' }}<br>
+                • {{ t.feature_tracking if t else 'Field & crop tracking' }}
             </div>
         </div>
     </div>
