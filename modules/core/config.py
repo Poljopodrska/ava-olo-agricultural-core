@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804072500'  # v4.1.4 - Fix dashboard data format
-COMMIT_HASH = "dashboard-format-fix"  # Convert DB results to frontend format
+DEPLOYMENT_TIMESTAMP = '20250804073500'  # v4.1.5 - Fix data entry forms
+COMMIT_HASH = "data-entry-fix"  # Fix farmer entry with correct fields
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.4"
+VERSION = "v4.1.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

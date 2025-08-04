@@ -474,43 +474,32 @@
                         <h2 style="margin-bottom: 1rem; color: #1f2937;">👤 Add New Farmer</h2>
                         <form id="farmer-entry-form" class="entry-form">
                             <div class="form-group">
-                                <label for="farmer-name">Full Name *</label>
-                                <input type="text" id="farmer-name" name="name" required>
+                                <label for="farmer-first-name">First Name *</label>
+                                <input type="text" id="farmer-first-name" name="manager_name" required>
                             </div>
                             <div class="form-group">
-                                <label for="farmer-email">Email</label>
+                                <label for="farmer-last-name">Last Name *</label>
+                                <input type="text" id="farmer-last-name" name="manager_last_name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-phone">Phone Number *</label>
+                                <input type="tel" id="farmer-phone" name="phone" required placeholder="+386XXXXXXXX">
+                            </div>
+                            <div class="form-group">
+                                <label for="farmer-email">Email (optional)</label>
                                 <input type="email" id="farmer-email" name="email">
                             </div>
                             <div class="form-group">
-                                <label for="farmer-phone">Phone</label>
-                                <input type="tel" id="farmer-phone" name="phone">
-                            </div>
-                            <div class="form-group">
-                                <label for="farmer-city">City</label>
+                                <label for="farmer-city">City (optional)</label>
                                 <input type="text" id="farmer-city" name="city">
                             </div>
                             <div class="form-group">
-                                <label for="farmer-country">Country</label>
+                                <label for="farmer-country">Country (optional)</label>
                                 <input type="text" id="farmer-country" name="country" value="Slovenia">
                             </div>
                             <div class="form-group">
-                                <label for="farmer-occupation">Primary Occupation</label>
-                                <select id="farmer-occupation" name="primary_occupation">
-                                    <option value="">Select occupation</option>
-                                    <option value="Mango Farming">Mango Farming</option>
-                                    <option value="Grape Growing">Grape Growing</option>
-                                    <option value="Mixed Farming">Mixed Farming</option>
-                                    <option value="Vegetable Farming">Vegetable Farming</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="farmer-hectares">Size (Hectares)</label>
-                                <input type="number" id="farmer-hectares" name="size_hectares" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label for="farmer-address">Address</label>
-                                <textarea id="farmer-address" name="address" rows="2"></textarea>
+                                <label for="farmer-farm-name">Farm Name (optional)</label>
+                                <input type="text" id="farmer-farm-name" name="farm_name">
                             </div>
                         </form>
                         <div class="entry-actions">
@@ -539,9 +528,9 @@
                                 class="query-input" 
                                 placeholder="Enter your SQL statement here...
 Examples:
-INSERT INTO ava_farmers (first_name, last_name, city) VALUES ('John', 'Doe', 'Ljubljana');
-UPDATE ava_farmers SET city = 'Maribor' WHERE id = 1;
-DELETE FROM ava_farmers WHERE id = 1;"
+INSERT INTO farmers (manager_name, manager_last_name, phone, city) VALUES ('John', 'Doe', '+38640123456', 'Ljubljana');
+UPDATE farmers SET city = 'Maribor' WHERE id = 1;
+DELETE FROM farmers WHERE id = 1;"
                                 rows="6"
                             ></textarea>
                         </div>
@@ -606,16 +595,33 @@ DELETE FROM ava_farmers WHERE id = 1;"
             const data = Object.fromEntries(formData.entries());
             
             // Validate required fields
-            if (!data.name) {
-                showEntryMessage('farmer-entry-results', 'error', 'Name is required');
+            if (!data.manager_name || !data.manager_last_name || !data.phone) {
+                showEntryMessage('farmer-entry-results', 'error', 'First Name, Last Name, and Phone Number are required');
                 return;
             }
             
             try {
+                // Add default values for required database fields
+                data.is_active = true;
+                
+                // If farm_name is not provided, create a default one
+                if (!data.farm_name) {
+                    data.farm_name = `${data.manager_name} ${data.manager_last_name}'s Farm`;
+                }
+                
+                // Also set WhatsApp number same as phone if not provided
+                data.wa_phone_number = data.phone;
+                data.whatsapp_number = data.phone;
+                
                 // Convert to SQL INSERT statement
-                const fields = Object.keys(data).filter(key => data[key]);
-                const values = fields.map(key => `'${data[key].replace(/'/g, "''")}'`).join(', ');
-                const sql = `INSERT INTO ava_farmers (${fields.join(', ')}) VALUES (${values})`;
+                const fields = Object.keys(data).filter(key => data[key] !== '' && data[key] !== undefined);
+                const values = fields.map(key => {
+                    if (typeof data[key] === 'boolean') {
+                        return data[key] ? 'true' : 'false';
+                    }
+                    return `'${String(data[key]).replace(/'/g, "''")}'`;
+                }).join(', ');
+                const sql = `INSERT INTO farmers (${fields.join(', ')}) VALUES (${values})`;
                 
                 const response = await fetch('/api/v1/dashboards/database/query/direct', {
                     method: 'POST',
