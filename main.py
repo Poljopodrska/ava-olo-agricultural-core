@@ -52,14 +52,14 @@ from modules.api.chat_history_routes import router as chat_history_router
 # WhatsApp integration
 from modules.whatsapp.webhook_handler import router as whatsapp_router
 
-# Basic auth middleware
-from modules.core.basic_auth import BasicAuthMiddleware
+# Global authentication middleware
+from modules.core.global_auth import GlobalAuthMiddleware
 
 # Create FastAPI app
 app = FastAPI(title="AVA OLO Agricultural Core", version=VERSION)
 
-# Add basic auth middleware
-app.add_middleware(BasicAuthMiddleware)
+# Add global authentication middleware - this MUST protect everything
+app.add_middleware(GlobalAuthMiddleware)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -88,18 +88,16 @@ async def root(request: Request):
 async def health():
     return {"status": "healthy", "version": VERSION}
 
-# Import auth dependency
-from modules.core.auth_dependency import get_current_user
-
-# Debug endpoint to test auth - NOW PROTECTED
+# Debug endpoint to test auth - protected by global middleware
 @app.get("/debug/auth-test")
-async def auth_test(request: Request, username: str = Depends(get_current_user)):
-    """Debug endpoint to test if auth is working - REQUIRES AUTHENTICATION"""
+async def auth_test(request: Request):
+    """Debug endpoint to test if auth is working - protected by global middleware"""
     auth_header = request.headers.get("Authorization", "None")
+    authenticated_user = getattr(request.state, 'authenticated_user', 'Unknown')
     return {
         "message": "Authentication successful!",
         "auth_header_present": bool(auth_header != "None"),
-        "authenticated_user": username,
+        "authenticated_user": authenticated_user,
         "path": str(request.url.path),
         "version": VERSION
     }
