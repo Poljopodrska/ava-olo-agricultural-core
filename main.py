@@ -83,8 +83,16 @@ async def root(request: Request):
     # Detect language from IP address
     language_service = get_language_service()
     
-    # Get client IP
-    client_ip = request.client.host if request.client else "127.0.0.1"
+    # Get client IP - check for forwarded headers first (for deployment behind proxy)
+    client_ip = request.headers.get("X-Forwarded-For")
+    if client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    elif request.client:
+        client_ip = request.client.host
+    else:
+        client_ip = "127.0.0.1"
+    
+    logger.info(f"Landing page accessed from IP: {client_ip}")
     detected_language = await language_service.detect_language_from_ip(client_ip)
     
     # Get translations for the detected language

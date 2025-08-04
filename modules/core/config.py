@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804185000'  # v4.4.6 - Fix import issues in auth routes
-COMMIT_HASH = "auth-import-fix"  # Fixed module imports causing 404
+DEPLOYMENT_TIMESTAMP = '20250804185500'  # v4.4.7 - Fix IP detection for proxied deployment
+COMMIT_HASH = "proxy-ip-detection"  # X-Forwarded-For header support
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.6"
+VERSION = "v4.4.7"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
