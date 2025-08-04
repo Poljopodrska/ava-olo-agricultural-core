@@ -300,6 +300,31 @@ TRANSLATIONS = {
     }
 }
 
-def get_translations(language_code: str = 'en') -> dict:
+class TranslationDict:
+    """Wrapper to allow both dict and attribute access to translations"""
+    def __init__(self, translations):
+        self._translations = translations
+    
+    def __getattr__(self, key):
+        """Allow attribute-style access (t.key)"""
+        return self._translations.get(key, f'[{key}]')
+    
+    def __getitem__(self, key):
+        """Allow dict-style access (t['key'])"""
+        return self._translations.get(key, f'[{key}]')
+    
+    def get(self, key, default=None):
+        """Dict-like get method"""
+        return self._translations.get(key, default)
+    
+    def __bool__(self):
+        """Return True if translations exist"""
+        return bool(self._translations)
+    
+    def __repr__(self):
+        return f"TranslationDict({list(self._translations.keys())[:5]}...)"
+
+def get_translations(language_code: str = 'en'):
     """Get translations for a specific language"""
-    return TRANSLATIONS.get(language_code, TRANSLATIONS['en'])
+    trans_dict = TRANSLATIONS.get(language_code, TRANSLATIONS['en'])
+    return TranslationDict(trans_dict)
