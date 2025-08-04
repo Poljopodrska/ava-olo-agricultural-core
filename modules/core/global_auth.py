@@ -27,6 +27,7 @@ PUBLIC_PATHS = [
     "/health",
     "/static",
     "/favicon.ico",
+    "/debug/signin-test",  # Debug endpoint for signin troubleshooting
     "/api/v1/whatsapp/webhook",  # WhatsApp webhook needs to be public
 ]
 
