@@ -1078,6 +1078,12 @@
         // Refresh weather every 10 minutes
         setInterval(loadWeatherData, 600000);
         
+        // Google Maps variables
+        let map;
+        let drawingManager;
+        let currentPolygon = null;
+        let fieldCoordinates = [];
+        
         // Add Field Modal Functions
         function openAddFieldModal() {
             document.getElementById('add-field-modal').classList.add('active');
@@ -1086,18 +1092,174 @@
         function closeAddFieldModal() {
             document.getElementById('add-field-modal').classList.remove('active');
             document.getElementById('add-field-form').reset();
+            document.getElementById('field-coordinates-display').innerHTML = '';
         }
+        
+        // Map Modal Functions
+        function openMapDrawing() {
+            document.getElementById('map-modal').classList.add('active');
+            if (!map) {
+                loadGoogleMaps();
+            }
+        }
+        
+        function closeMapModal() {
+            document.getElementById('map-modal').classList.remove('active');
+            if (currentPolygon && !fieldCoordinates.length) {
+                currentPolygon.setMap(null);
+                currentPolygon = null;
+            }
+        }
+        
+        function loadGoogleMaps() {
+            // Check if Google Maps is already loaded
+            if (typeof google !== 'undefined' && google.maps) {
+                initializeMap();
+                return;
+            }
+            
+            // Load Google Maps API
+            const script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo&libraries=drawing,geometry&callback=initializeMap';
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+        }
+        
+        function initializeMap() {
+            // Initialize map centered on Slovenia (can be changed based on farmer location)
+            map = new google.maps.Map(document.getElementById('field-map'), {
+                center: { lat: 46.1512, lng: 14.9955 }, // Ljubljana, Slovenia
+                zoom: 13,
+                mapTypeId: 'satellite', // Satellite view for better field identification
+                mapTypeControl: true,
+                mapTypeControlOptions: {
+                    mapTypeIds: ['roadmap', 'satellite', 'hybrid']
+                }
+            });
+            
+            // Initialize drawing manager
+            drawingManager = new google.maps.drawing.DrawingManager({
+                drawingMode: google.maps.drawing.OverlayType.POLYGON,
+                drawingControl: true,
+                drawingControlOptions: {
+                    position: google.maps.ControlPosition.TOP_CENTER,
+                    drawingModes: [google.maps.drawing.OverlayType.POLYGON]
+                },
+                polygonOptions: {
+                    fillColor: '#27ae60',
+                    fillOpacity: 0.35,
+                    strokeColor: '#27ae60',
+                    strokeWeight: 3,
+                    editable: true,
+                    draggable: true
+                }
+            });
+            
+            drawingManager.setMap(map);
+            
+            // Add listener for polygon complete
+            google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
+                // Remove previous polygon if exists
+                if (currentPolygon) {
+                    currentPolygon.setMap(null);
+                }
+                
+                currentPolygon = polygon;
+                drawingManager.setDrawingMode(null);
+                
+                // Calculate area
+                const area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+                const areaInHectares = (area / 10000).toFixed(2);
+                
+                document.getElementById('area-display').style.display = 'block';
+                document.getElementById('calculated-area').textContent = areaInHectares + ' ha';
+                document.getElementById('save-coordinates-btn').disabled = false;
+                
+                // Update area when polygon is edited
+                google.maps.event.addListener(polygon.getPath(), 'set_at', updateArea);
+                google.maps.event.addListener(polygon.getPath(), 'insert_at', updateArea);
+                google.maps.event.addListener(polygon.getPath(), 'remove_at', updateArea);
+            });
+        }
+        
+        function updateArea() {
+            if (currentPolygon) {
+                const area = google.maps.geometry.spherical.computeArea(currentPolygon.getPath());
+                const areaInHectares = (area / 10000).toFixed(2);
+                document.getElementById('calculated-area').textContent = areaInHectares + ' ha';
+            }
+        }
+        
+        function saveFieldCoordinates() {
+            if (!currentPolygon) return;
+            
+            // Get polygon coordinates
+            const path = currentPolygon.getPath();
+            fieldCoordinates = [];
+            
+            for (let i = 0; i < path.getLength(); i++) {
+                const latLng = path.getAt(i);
+                fieldCoordinates.push({
+                    lat: latLng.lat(),
+                    lng: latLng.lng()
+                });
+            }
+            
+            // Calculate center point
+            const bounds = new google.maps.LatLngBounds();
+            fieldCoordinates.forEach(coord => {
+                bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
+            });
+            const center = bounds.getCenter();
+            
+            // Store coordinates in hidden field
+            document.getElementById('field-coordinates').value = JSON.stringify({
+                coordinates: fieldCoordinates,
+                center: { lat: center.lat(), lng: center.lng() },
+                area: document.getElementById('calculated-area').textContent
+            });
+            
+            // Update display
+            document.getElementById('field-coordinates-display').innerHTML = 
+                `✅ Field boundaries saved (${fieldCoordinates.length} points, ${document.getElementById('calculated-area').textContent})`;
+            
+            // Update area field if it exists
+            const areaInput = document.querySelector('input[name="area_ha"]');
+            if (areaInput) {
+                const areaValue = parseFloat(document.getElementById('calculated-area').textContent);
+                areaInput.value = areaValue;
+            }
+            
+            closeMapModal();
+        }
+        
+        // Make initializeMap globally accessible for Google Maps callback
+        window.initializeMap = initializeMap;
         
         async function saveField() {
             const form = document.getElementById('add-field-form');
             const formData = new FormData(form);
+            
+            const coordinatesData = document.getElementById('field-coordinates').value;
+            let parsedCoordinates = null;
+            if (coordinatesData) {
+                try {
+                    parsedCoordinates = JSON.parse(coordinatesData);
+                } catch (e) {
+                    console.error('Failed to parse coordinates:', e);
+                }
+            }
             
             const fieldData = {
                 field_name: formData.get('field_name'),
                 area_ha: parseFloat(formData.get('area_ha')),
                 crop_type: formData.get('crop_type'),
                 variety: formData.get('variety'),
-                country: formData.get('country') || '{{ farmer.country }}'
+                country: formData.get('country') || '{{ farmer.country }}',
+                coordinates: parsedCoordinates ? parsedCoordinates.coordinates : null,
+                center_lat: parsedCoordinates ? parsedCoordinates.center.lat : null,
+                center_lng: parsedCoordinates ? parsedCoordinates.center.lng : null
             };
             
             try {
@@ -1127,6 +1289,42 @@
             }
         }
     </script>
+    
+    <!-- Map Drawing Modal -->
+    <div id="map-modal" class="field-modal">
+        <div class="field-modal-content" style="max-width: 90%; width: 1200px;">
+            <div class="field-modal-header">
+                <div class="field-modal-title">Draw Field Boundaries</div>
+                <div class="field-modal-subtitle">Click on the map to draw your field boundaries. Double-click to complete.</div>
+            </div>
+            
+            <div id="map-container" style="position: relative;">
+                <div id="field-map" style="height: 500px; width: 100%; border: 2px solid #27ae60; border-radius: 8px;"></div>
+                
+                <div style="position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                    <div style="font-weight: 600; margin-bottom: 5px;">Instructions:</div>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
+                        <li>Click to add points</li>
+                        <li>Double-click to complete</li>
+                        <li>Drag points to adjust</li>
+                    </ul>
+                </div>
+                
+                <div id="area-display" style="position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none;">
+                    <div style="font-weight: 600;">Area: <span id="calculated-area" style="color: #27ae60;">0 ha</span></div>
+                </div>
+            </div>
+            
+            <div class="field-modal-actions">
+                <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeMapModal()">
+                    Cancel
+                </button>
+                <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="saveFieldCoordinates()" id="save-coordinates-btn" disabled>
+                    Save Field Boundaries
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Add Field Modal -->
     <div id="add-field-modal" class="field-modal">
@@ -1166,6 +1364,15 @@
                 <div class="field-form-group">
                     <label class="field-form-label">Variety</label>
                     <input type="text" name="variety" class="field-form-input" placeholder="e.g., Winter Wheat Premium">
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Field Location (Optional)</label>
+                    <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="openMapDrawing()" style="width: 100%;">
+                        📍 Draw Field on Map
+                    </button>
+                    <input type="hidden" name="field_coordinates" id="field-coordinates">
+                    <div id="field-coordinates-display" style="margin-top: 8px; color: #27ae60; font-size: 0.85rem;"></div>
                 </div>
                 
                 <div class="field-modal-actions">

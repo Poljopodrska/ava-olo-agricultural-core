@@ -296,17 +296,49 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
                 "error": "Field name and area are required"
             }, status_code=400)
         
-        # Insert the new field
-        insert_query = """
-        INSERT INTO fields (farmer_id, field_name, area_ha, country, created_at, updated_at)
-        VALUES (%s, %s, %s, %s, NOW(), NOW())
-        RETURNING id
-        """
+        # Insert the new field with coordinates if provided
+        if data.get('center_lat') and data.get('center_lng'):
+            insert_query = """
+            INSERT INTO fields (farmer_id, field_name, area_ha, latitude, longitude, country, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            RETURNING id
+            """
+            result = db_manager.execute_query(
+                insert_query,
+                (farmer_id, data['field_name'], data['area_ha'], 
+                 data['center_lat'], data['center_lng'],
+                 data.get('country', farmer.get('country')))
+            )
+        else:
+            insert_query = """
+            INSERT INTO fields (farmer_id, field_name, area_ha, country, created_at, updated_at)
+            VALUES (%s, %s, %s, %s, NOW(), NOW())
+            RETURNING id
+            """
+            result = db_manager.execute_query(
+                insert_query,
+                (farmer_id, data['field_name'], data['area_ha'], data.get('country', farmer.get('country')))
+            )
         
-        result = db_manager.execute_query(
-            insert_query,
-            (farmer_id, data['field_name'], data['area_ha'], data.get('country', farmer.get('country')))
-        )
+        # Store polygon coordinates if provided
+        if data.get('coordinates') and result and 'rows' in result and result['rows']:
+            field_id = result['rows'][0][0]
+            try:
+                # Store coordinates as JSON in a separate table or field
+                import json
+                coordinates_json = json.dumps(data['coordinates'])
+                
+                # Check if field_boundaries table exists, if not store in notes column
+                boundary_query = """
+                UPDATE fields 
+                SET notes = %s
+                WHERE id = %s
+                """
+                db_manager.execute_query(boundary_query, (f"COORDINATES:{coordinates_json}", field_id))
+            except Exception as e:
+                logger.warning(f"Could not store field coordinates: {e}")
+        
+        result = result  # Keep the original result for further processing
         
         if result and 'rows' in result and result['rows']:
             field_id = result['rows'][0][0]
