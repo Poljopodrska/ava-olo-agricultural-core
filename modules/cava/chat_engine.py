@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-CAVA Chat Engine - OpenAI GPT-3.5 Integration
+CAVA Chat Engine - OpenAI GPT-3.5 Integration with WhatsApp Optimization
 Implements intelligent agricultural conversations with GPT-3.5
 Constitutional Amendment #15 Compliant - 95%+ LLM-generated intelligence
+WhatsApp-style responses for natural farmer conversations
 """
 import os
 import logging
@@ -11,6 +12,7 @@ import httpx
 import json
 from datetime import datetime
 import asyncio
+from .conversation_optimizer import get_optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -116,16 +118,18 @@ Your expertise includes:
 - Market timing and crop rotation strategies
 - Organic farming methods
 
-Communication style:
-- Be conversational, friendly, and genuinely interested in their success
-- Provide specific, actionable advice tailored to their situation
-- Ask clarifying questions to better understand their challenges
-- Reference their specific fields, crops, and local conditions
-- Use farming terminology naturally
-- Share relevant agricultural insights and tips
-- Be encouraging and supportive of their farming efforts
+Communication style (WhatsApp conversation):
+- Write like texting with a knowledgeable farmer friend
+- Keep responses SHORT and CRISP (1-3 sentences ideal)
+- Use simple, everyday language - no long explanations
+- Be direct and to-the-point with advice
+- Natural conversation flow - like real WhatsApp messages
+- If complex topic, break into multiple short messages
+- Use occasional emojis naturally (but not too many)
+- Skip formal greetings - jump straight to the answer
+- Example: Instead of "Based on optimal agricultural practices and considering soil conditions..." say "Apply 40kg/ha nitrogen when soil hits 8°C 🌱"
 
-Remember: You are CAVA, the intelligent heart of AVA OLO, dedicated to helping farmers succeed through advanced agricultural knowledge and personalized advice."""
+Remember: You're chatting on WhatsApp, not writing a manual. Short, helpful, friendly messages!"""
         
         return prompt
     
@@ -172,8 +176,8 @@ Remember: You are CAVA, the intelligent heart of AVA OLO, dedicated to helping f
                     json={
                         "model": self.model,
                         "messages": messages,
-                        "temperature": 0.8,
-                        "max_tokens": 500,
+                        "temperature": 0.7,  # Balanced creativity
+                        "max_tokens": 200,   # Shorter responses for WhatsApp style
                         "presence_penalty": 0.6,  # Encourage variety
                         "frequency_penalty": 0.3   # Reduce repetition
                     },
@@ -184,19 +188,39 @@ Remember: You are CAVA, the intelligent heart of AVA OLO, dedicated to helping f
                     result = response.json()
                     ai_response = result['choices'][0]['message']['content']
                     
-                    # Update conversation history
+                    # Apply WhatsApp optimization
+                    optimizer = get_optimizer()
+                    optimized_messages = optimizer.optimize_response(
+                        ai_response, 
+                        context={
+                            'farmer': farmer_context.get('farmer_name', 'Farmer'),
+                            'topic': message[:50]  # First 50 chars as topic hint
+                        }
+                    )
+                    
+                    # Join messages with WhatsApp-style breaks for multi-message responses
+                    final_response = '\n\n'.join(optimized_messages)
+                    
+                    # Update conversation history with original response
                     self.conversations[session_id].append({"role": "user", "content": message})
                     self.conversations[session_id].append({"role": "assistant", "content": ai_response})
                     
-                    # Track token usage for monitoring
+                    # Track token usage and response metrics
                     usage = result.get('usage', {})
                     
+                    # Log WhatsApp optimization metrics
+                    logger.info(f"WhatsApp Response: {len(ai_response)} → {len(final_response)} chars, "
+                               f"{len(optimized_messages)} message(s)")
+                    
                     return {
-                        "response": ai_response,
+                        "response": final_response,
                         "session_id": session_id,
                         "model": self.model,
                         "tokens_used": usage.get('total_tokens', 0),
-                        "success": True
+                        "success": True,
+                        "whatsapp_optimized": True,
+                        "message_count": len(optimized_messages),
+                        "avg_message_length": len(final_response) / len(optimized_messages) if optimized_messages else 0
                     }
                 else:
                     error_msg = f"OpenAI API error: {response.status_code}"

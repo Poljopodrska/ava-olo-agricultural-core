@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804090000'  # v4.1.9 - Restore CAVA chat from July 30
-COMMIT_HASH = "restore-cava-chat"  # Restore working CAVA chat interface
+DEPLOYMENT_TIMESTAMP = '20250804140000'  # v4.2.0 - WhatsApp-style conversation optimization
+COMMIT_HASH = "whatsapp-optimization"  # Natural farmer chat conversations
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.9"
+VERSION = "v4.2.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

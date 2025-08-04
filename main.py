@@ -32,7 +32,7 @@ from modules.core.database_manager import get_db_manager
 from modules.api.deployment_routes import router as deployment_router, audit_router
 from modules.api.database_routes import router as database_router, agricultural_router, debug_router
 from modules.api.business_routes import router as business_router
-from modules.api.dashboard_routes import router as dashboard_router, api_router as dashboard_api_router
+# Dashboard routes moved to monitoring-dashboards service
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
 from modules.api.debug_services import router as debug_services_router
@@ -110,8 +110,7 @@ app.include_router(database_router)
 app.include_router(agricultural_router)
 app.include_router(debug_router)
 app.include_router(business_router)
-app.include_router(dashboard_router)
-app.include_router(dashboard_api_router)
+# Dashboard routers moved to monitoring-dashboards service
 app.include_router(webhook_router)
 app.include_router(system_router)
 app.include_router(debug_services_router)
