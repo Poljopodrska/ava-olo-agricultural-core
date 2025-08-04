@@ -360,8 +360,12 @@ async def execute_quick_query(query_type: str):
         result = db_manager.execute_query(query_info["sql"])
         execution_time = int((time.time() - start_time) * 1000)
         
+        # Convert rows to results format expected by frontend
+        results = convert_rows_to_results(result.get('columns', []), result.get('rows', []))
+        
         return {
             "success": True,
+            "results": results,
             "columns": result.get('columns', []),
             "rows": result.get('rows', []),
             "sql_query": query_info["sql"].strip(),
@@ -403,8 +407,12 @@ async def execute_natural_query(request: NaturalQueryRequest):
         result = db_manager.execute_query(sql_query)
         execution_time = int((time.time() - start_time) * 1000)
         
+        # Convert rows to results format expected by frontend
+        results = convert_rows_to_results(result.get('columns', []), result.get('rows', []))
+        
         return {
             "success": True,
+            "results": results,
             "columns": result.get('columns', []),
             "rows": result.get('rows', []),
             "sql_query": sql_query,
@@ -455,8 +463,12 @@ async def execute_direct_query(request: DirectQueryRequest):
             result = db_manager.execute_query(request.sql_query)
             execution_time = int((time.time() - start_time) * 1000)
             
+            # Convert rows to results format expected by frontend
+            results = convert_rows_to_results(result.get('columns', []), result.get('rows', []))
+            
             return {
                 "success": True,
+                "results": results,
                 "columns": result.get('columns', []),
                 "rows": result.get('rows', []),
                 "sql_query": request.sql_query,
@@ -693,6 +705,20 @@ async def get_database_changes():
         }
 
 # Helper functions
+
+def convert_rows_to_results(columns: List[str], rows: List[List[Any]]) -> List[Dict[str, Any]]:
+    """Convert database rows to list of dictionaries expected by frontend"""
+    if not columns or not rows:
+        return []
+    
+    results = []
+    for row in rows:
+        result_dict = {}
+        for i, col in enumerate(columns):
+            result_dict[col] = row[i] if i < len(row) else None
+        results.append(result_dict)
+    
+    return results
 
 def convert_natural_to_sql(question: str) -> str:
     """
