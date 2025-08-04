@@ -277,21 +277,50 @@
             <div class="section">
                 <h3>🌾 Your Fields</h3>
                 {% if fields %}
-                <ul class="field-list">
+                <div class="field-list">
                     {% for field in fields %}
-                    <li class="field-item">
-                        <div>
-                            <div class="field-name">{{ field.field_name }}</div>
-                            <div class="field-area">{{ field.area_ha }} hectares</div>
+                    <div class="field-item" style="padding: 1rem; border-bottom: 1px solid #ecf0f1; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
+                            <div style="flex: 1;">
+                                <div class="field-name" style="font-weight: 600; color: #2c3e50; font-size: 1.1rem; margin-bottom: 0.5rem;">
+                                    {{ field.field_name }}
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; font-size: 0.9rem;">
+                                    <div>
+                                        <span style="color: #7f8c8d;">Surface:</span>
+                                        <strong style="color: #27ae60;">{{ field.area_ha }} ha</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #7f8c8d;">Crop:</span>
+                                        <strong>{{ field.crop_type|default:"Not planted" }}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #7f8c8d;">Variety:</span>
+                                        <strong>{{ field.variety|default:"-" }}</strong>
+                                    </div>
+                                    <div>
+                                        <span style="color: #7f8c8d;">Planted:</span>
+                                        <strong>{{ field.planting_date|default:"-" }}</strong>
+                                    </div>
+                                </div>
+                                {% if field.last_task %}
+                                <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                                    <div style="font-size: 0.85rem; color: #7f8c8d;">Last Task:</div>
+                                    <div style="font-size: 0.9rem;">
+                                        <strong>{{ field.last_task.task_type }}</strong> - 
+                                        {{ field.last_task.date_performed }}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: #95a5a6;">
+                                    No tasks recorded yet
+                                </div>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div>
-                            {% if field.country %}
-                            <span>{{ field.country }}</span>
-                            {% endif %}
-                        </div>
-                    </li>
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
                 {% else %}
                 <div class="empty-state">
                     <p>No fields registered yet</p>

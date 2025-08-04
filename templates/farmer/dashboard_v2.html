@@ -592,17 +592,30 @@
                             <div class="field-name">{{ field.field_name }}</div>
                             <div class="field-info">
                                 <div class="field-info-item">
+                                    <span class="field-info-label">Surface:</span>
+                                    <span style="color: #27ae60; font-weight: 600;">{{ field.area_ha }} ha</span>
+                                </div>
+                                <div class="field-info-item">
                                     <span class="field-info-label">Crop:</span>
-                                    <span>{{ field.crop or 'Not specified' }}</span>
+                                    <span>{{ field.crop_type or 'Not planted' }}</span>
                                 </div>
                                 <div class="field-info-item">
-                                    <span class="field-info-label">Size:</span>
-                                    <span>{{ field.area_ha }} ha</span>
+                                    <span class="field-info-label">Variety:</span>
+                                    <span>{{ field.variety or '-' }}</span>
                                 </div>
-                                <div class="field-info-item">
-                                    <span class="field-info-label">Location:</span>
-                                    <span>{{ field.country or farmer.country }}</span>
+                                {% if field.last_task %}
+                                <div class="field-info-item" style="grid-column: 1 / -1; padding-top: 8px; border-top: 1px solid #f0f0f0; margin-top: 8px;">
+                                    <span class="field-info-label">Last Task:</span>
+                                    <span style="color: #2c3e50;">
+                                        <strong>{{ field.last_task.task_type }}</strong> 
+                                        <small style="color: #7f8c8d;">({{ field.last_task.date_performed }})</small>
+                                    </span>
                                 </div>
+                                {% else %}
+                                <div class="field-info-item" style="grid-column: 1 / -1; padding-top: 8px; color: #95a5a6; font-size: 0.85rem;">
+                                    No tasks recorded yet
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         {% endfor %}

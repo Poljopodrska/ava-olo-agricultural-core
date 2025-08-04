@@ -20,23 +20,53 @@ router = APIRouter(prefix="/farmer", tags=["farmer-dashboard"])
 templates = Jinja2Templates(directory="templates")
 
 async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
-    """Get all fields for a specific farmer"""
+    """Get all fields for a specific farmer with crop and last task info"""
     db_manager = get_db_manager()
     
     try:
+        # Get fields with crop information and last task
         query = """
-        SELECT id, field_name, area_ha, latitude, longitude, 
-               blok_id, raba, notes, country
-        FROM fields 
-        WHERE farmer_id = %s
-        ORDER BY field_name
+        SELECT 
+            f.id, 
+            f.field_name, 
+            f.area_ha, 
+            f.latitude, 
+            f.longitude, 
+            f.blok_id, 
+            f.raba, 
+            f.notes, 
+            f.country,
+            -- Get current crop info (most recent planting)
+            fc.crop_type,
+            fc.variety,
+            fc.planting_date,
+            -- Get last task info
+            lt.task_type,
+            lt.date_performed
+        FROM fields f
+        LEFT JOIN LATERAL (
+            SELECT crop_type, variety, planting_date
+            FROM field_crops
+            WHERE field_id = f.id
+            ORDER BY planting_date DESC
+            LIMIT 1
+        ) fc ON true
+        LEFT JOIN LATERAL (
+            SELECT task_type, date_performed
+            FROM tasks
+            WHERE field_id = f.id
+            ORDER BY date_performed DESC
+            LIMIT 1
+        ) lt ON true
+        WHERE f.farmer_id = %s
+        ORDER BY f.field_name
         """
         results = db_manager.execute_query(query, (farmer_id,))
         
         fields = []
         if results and 'rows' in results:
             for row in results['rows']:
-                fields.append({
+                field_data = {
                     'id': row[0],
                     'field_name': row[1],
                     'area_ha': row[2],
@@ -45,8 +75,22 @@ async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
                     'blok_id': row[5],
                     'raba': row[6],
                     'notes': row[7],
-                    'country': row[8]
-                })
+                    'country': row[8],
+                    'crop_type': row[9],
+                    'variety': row[10],
+                    'planting_date': row[11].strftime('%Y-%m-%d') if row[11] else None
+                }
+                
+                # Add last task if exists
+                if row[12]:  # task_type exists
+                    field_data['last_task'] = {
+                        'task_type': row[12],
+                        'date_performed': row[13].strftime('%Y-%m-%d') if row[13] else None
+                    }
+                else:
+                    field_data['last_task'] = None
+                
+                fields.append(field_data)
         
         return fields
     except Exception as e:

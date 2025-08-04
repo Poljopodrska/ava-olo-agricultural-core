@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804181700'  # v4.4.0 - Multi-language system
-COMMIT_HASH = "multi-language-support"  # IP detection + WhatsApp country codes
+DEPLOYMENT_TIMESTAMP = '20250804182500'  # v4.4.1 - Dashboard field display improvements
+COMMIT_HASH = "dashboard-field-display"  # Shows surface, crop, variety, last task
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.0"
+VERSION = "v4.4.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
