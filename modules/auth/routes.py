@@ -176,30 +176,46 @@ async def pure_chat_page(request: Request):
 @router.get("/signin", response_class=HTMLResponse)
 async def signin_page(request: Request):
     """Display sign-in page with language detection"""
-    # Detect language from IP address
-    language_service = get_language_service()
-    
-    # Get client IP - check for forwarded headers first (for deployment behind proxy)
-    client_ip = request.headers.get("X-Forwarded-For")
-    if client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-    elif request.client:
-        client_ip = request.client.host
-    else:
-        client_ip = "127.0.0.1"
-    
-    logger.info(f"Auth page accessed from IP: {client_ip}")
-    detected_language = await language_service.detect_language_from_ip(client_ip)
-    
-    # Get translations for the detected language
-    translations = get_translations(detected_language)
-    
-    return templates.TemplateResponse("auth/signin.html", {
-        "request": request,
-        "version": VERSION,
-        "language": detected_language,
-        "t": translations
-    })
+    try:
+        # Detect language from IP address
+        language_service = get_language_service()
+        
+        # Get client IP - check for forwarded headers first (for deployment behind proxy)
+        client_ip = request.headers.get("X-Forwarded-For")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        elif request.client:
+            client_ip = request.client.host
+        else:
+            client_ip = "127.0.0.1"
+        
+        logger.info(f"Signin page accessed from IP: {client_ip}")
+        
+        # Try to detect language, but don't fail if it doesn't work
+        try:
+            detected_language = await language_service.detect_language_from_ip(client_ip)
+        except Exception as e:
+            logger.warning(f"Language detection failed for IP {client_ip}: {e}")
+            detected_language = 'en'  # Default to English
+        
+        # Get translations for the detected language
+        translations = get_translations(detected_language)
+        
+        return templates.TemplateResponse("auth/signin.html", {
+            "request": request,
+            "version": VERSION,
+            "language": detected_language,
+            "t": translations
+        })
+    except Exception as e:
+        logger.error(f"Error in signin_page: {e}")
+        # Return a basic English version if all else fails
+        return templates.TemplateResponse("auth/signin.html", {
+            "request": request,
+            "version": VERSION,
+            "language": "en",
+            "t": get_translations("en")
+        })
 
 @router.post("/signin")
 async def signin_submit(
@@ -276,30 +292,46 @@ async def signin_submit(
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
     """Display traditional form registration with language detection"""
-    # Detect language from IP address
-    language_service = get_language_service()
-    
-    # Get client IP - check for forwarded headers first (for deployment behind proxy)
-    client_ip = request.headers.get("X-Forwarded-For")
-    if client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-    elif request.client:
-        client_ip = request.client.host
-    else:
-        client_ip = "127.0.0.1"
-    
-    logger.info(f"Auth page accessed from IP: {client_ip}")
-    detected_language = await language_service.detect_language_from_ip(client_ip)
-    
-    # Get translations for the detected language
-    translations = get_translations(detected_language)
-    
-    return templates.TemplateResponse("auth/register_split.html", {
-        "request": request,
-        "version": VERSION,
-        "language": detected_language,
-        "t": translations
-    })
+    try:
+        # Detect language from IP address
+        language_service = get_language_service()
+        
+        # Get client IP - check for forwarded headers first (for deployment behind proxy)
+        client_ip = request.headers.get("X-Forwarded-For")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        elif request.client:
+            client_ip = request.client.host
+        else:
+            client_ip = "127.0.0.1"
+        
+        logger.info(f"Register page accessed from IP: {client_ip}")
+        
+        # Try to detect language, but don't fail if it doesn't work
+        try:
+            detected_language = await language_service.detect_language_from_ip(client_ip)
+        except Exception as e:
+            logger.warning(f"Language detection failed for IP {client_ip}: {e}")
+            detected_language = 'en'  # Default to English
+        
+        # Get translations for the detected language
+        translations = get_translations(detected_language)
+        
+        return templates.TemplateResponse("auth/register_split.html", {
+            "request": request,
+            "version": VERSION,
+            "language": detected_language,
+            "t": translations
+        })
+    except Exception as e:
+        logger.error(f"Error in register_page: {e}")
+        # Return a basic English version if all else fails
+        return templates.TemplateResponse("auth/register_split.html", {
+            "request": request,
+            "version": VERSION,
+            "language": "en",
+            "t": get_translations("en")
+        })
 
 @router.post("/register")
 async def register_submit(

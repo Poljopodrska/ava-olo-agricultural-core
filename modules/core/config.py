@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804185500'  # v4.4.7 - Fix IP detection for proxied deployment
-COMMIT_HASH = "proxy-ip-detection"  # X-Forwarded-For header support
+DEPLOYMENT_TIMESTAMP = '20250804190000'  # v4.4.8 - Fix Internal Server Error and register translations
+COMMIT_HASH = "fix-auth-errors"  # Error handling and translation fixes
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.7"
+VERSION = "v4.4.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

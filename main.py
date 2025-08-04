@@ -80,30 +80,46 @@ STARTUP_STATUS = {
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Landing page with Sign In / New to AVA OLO options"""
-    # Detect language from IP address
-    language_service = get_language_service()
-    
-    # Get client IP - check for forwarded headers first (for deployment behind proxy)
-    client_ip = request.headers.get("X-Forwarded-For")
-    if client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-    elif request.client:
-        client_ip = request.client.host
-    else:
-        client_ip = "127.0.0.1"
-    
-    logger.info(f"Landing page accessed from IP: {client_ip}")
-    detected_language = await language_service.detect_language_from_ip(client_ip)
-    
-    # Get translations for the detected language
-    translations = get_translations(detected_language)
-    
-    return templates.TemplateResponse("landing.html", {
-        "request": request,
-        "version": VERSION,
-        "language": detected_language,
-        "t": translations
-    })
+    try:
+        # Detect language from IP address
+        language_service = get_language_service()
+        
+        # Get client IP - check for forwarded headers first (for deployment behind proxy)
+        client_ip = request.headers.get("X-Forwarded-For")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        elif request.client:
+            client_ip = request.client.host
+        else:
+            client_ip = "127.0.0.1"
+        
+        logger.info(f"Landing page accessed from IP: {client_ip}")
+        
+        # Try to detect language, but don't fail if it doesn't work
+        try:
+            detected_language = await language_service.detect_language_from_ip(client_ip)
+        except Exception as e:
+            logger.warning(f"Language detection failed for IP {client_ip}: {e}")
+            detected_language = 'en'  # Default to English
+        
+        # Get translations for the detected language
+        translations = get_translations(detected_language)
+        
+        return templates.TemplateResponse("landing.html", {
+            "request": request,
+            "version": VERSION,
+            "language": detected_language,
+            "t": translations
+        })
+    except Exception as e:
+        logger.error(f"Error in landing page: {e}")
+        # Return a basic English version if all else fails
+        return templates.TemplateResponse("landing.html", {
+            "request": request,
+            "version": VERSION,
+            "language": "en",
+            "t": get_translations("en")
+        })
 
 # Health endpoint
 @app.get("/health")

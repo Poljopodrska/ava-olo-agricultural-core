@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-version" content="{{ version }}">
-    <title>New Farmer Registration - AVA OLO</title>
+    <title>{{ t.register_title if t else 'New Farmer Registration' }} - AVA OLO</title>
     <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
     <style>
         .auth-container {
@@ -243,10 +243,10 @@
         <div class="auth-card">
             <div class="auth-header">
                 <div class="auth-logo">🌱</div>
-                <h1 class="auth-title">New with AVA OLO</h1>
+                <h1 class="auth-title">{{ t.new_with_ava if t else 'New with AVA OLO' }}</h1>
                 <p class="auth-subtitle">
-                    Join the Bulgarian Mango Cooperative<br>
-                    and access your intelligent agricultural assistant
+                    {{ t.register_subtitle if t else 'Join the Bulgarian Mango Cooperative' }}<br>
+                    {{ t.access_dashboard if t and t.access_dashboard else 'and access your intelligent agricultural assistant' }}
                 </p>
             </div>
             
@@ -259,26 +259,26 @@
             <form method="post" class="auth-form" id="registerForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="first_name" class="form-label">First Name</label>
+                        <label for="first_name" class="form-label">{{ t.first_name_label if t else 'First Name' }}</label>
                         <input 
                             type="text" 
                             id="first_name" 
                             name="first_name" 
                             class="form-input"
-                            placeholder="Enter your first name"
+                            placeholder="{{ t.first_name_placeholder if t else 'Enter your first name' }}"
                             required
                             autocomplete="given-name"
                         >
                     </div>
                     
                     <div class="form-group">
-                        <label for="last_name" class="form-label">Last Name</label>
+                        <label for="last_name" class="form-label">{{ t.last_name_label if t else 'Last Name' }}</label>
                         <input 
                             type="text" 
                             id="last_name" 
                             name="last_name" 
                             class="form-input"
-                            placeholder="Enter your last name"
+                            placeholder="{{ t.last_name_placeholder if t else 'Enter your last name' }}"
                             required
                             autocomplete="family-name"
                         >
@@ -286,7 +286,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="whatsapp_number" class="form-label">WhatsApp Number</label>
+                    <label for="whatsapp_number" class="form-label">{{ t.whatsapp_label if t else 'WhatsApp Number' }}</label>
                     <div class="whatsapp-input">
                         <div class="whatsapp-prefix">+</div>
                         <input 
@@ -305,13 +305,13 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="email" class="form-label">Email Address</label>
+                    <label for="email" class="form-label">{{ t.email_label if t else 'Email Address' }}</label>
                     <input 
                         type="email" 
                         id="email" 
                         name="email" 
                         class="form-input"
-                        placeholder="your.email@example.com"
+                        placeholder="{{ t.email_placeholder if t else 'your.email@example.com' }}"
                         required
                         autocomplete="email"
                     >
@@ -319,26 +319,26 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label">{{ t.password_label if t else 'Password' }}</label>
                         <input 
                             type="password" 
                             id="password" 
                             name="password" 
                             class="form-input"
-                            placeholder="Create password"
+                            placeholder="{{ t.password_placeholder if t else 'Create password' }}"
                             required
                             autocomplete="new-password"
                         >
                     </div>
                     
                     <div class="form-group">
-                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <label for="confirm_password" class="form-label">{{ t.confirm_password_label if t else 'Confirm Password' }}</label>
                         <input 
                             type="password" 
                             id="confirm_password" 
                             name="confirm_password" 
                             class="form-input"
-                            placeholder="Confirm password"
+                            placeholder="{{ t.confirm_password_placeholder if t else 'Confirm password' }}"
                             required
                             autocomplete="new-password"
                         >
@@ -354,12 +354,12 @@
                 </div>
                 
                 <button type="submit" class="auth-button">
-                    🌾 Create My Account
+                    🌾 {{ t.register_button if t else 'Create My Account' }}
                 </button>
             </form>
             
             <div class="auth-links">
-                <p>Already have an account? <a href="/auth/signin" class="auth-link">Sign In Here</a></p>
+                <p>{{ t.have_account if t else 'Already have an account?' }} <a href="/auth/signin" class="auth-link">{{ t.signin_link if t else 'Sign In Here' }}</a></p>
             </div>
         </div>
     </div>
