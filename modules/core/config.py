@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804050500'  # v4.1.0 - CRITICAL: Implement proper global authentication
-COMMIT_HASH = "global-auth-fix"  # Global middleware that actually protects ALL routes
+DEPLOYMENT_TIMESTAMP = '20250804051500'  # v4.1.1 - CRITICAL: Fix farmer registration database commit
+COMMIT_HASH = "registration-commit-fix"  # Fix INSERT with RETURNING not committing
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.0"
+VERSION = "v4.1.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

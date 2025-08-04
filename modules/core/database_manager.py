@@ -108,14 +108,24 @@ class DatabaseManager:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(query, params)
+                    
+                    # Check if this is a data modification query
+                    is_modification = query.strip().upper().startswith(('INSERT', 'UPDATE', 'DELETE'))
+                    
                     if cur.description:
                         columns = [desc[0] for desc in cur.description]
+                        rows = cur.fetchall()
+                        
+                        # CRITICAL FIX: Commit for INSERT/UPDATE/DELETE even with RETURNING clause
+                        if is_modification:
+                            conn.commit()
+                        
                         return {
                             'columns': columns,
-                            'rows': cur.fetchall()
+                            'rows': rows
                         }
                     else:
-                        # CRITICAL FIX: Commit for INSERT/UPDATE/DELETE
+                        # Commit for INSERT/UPDATE/DELETE without RETURNING
                         conn.commit()
                         return {'affected_rows': cur.rowcount}
         except Exception as e:
