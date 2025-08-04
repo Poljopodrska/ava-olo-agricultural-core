@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804193000'  # v4.4.12 - Add minimal signin test to isolate template issue
-COMMIT_HASH = "minimal-signin-test"  # Test template rendering with minimal context
+DEPLOYMENT_TIMESTAMP = '20250804193500'  # v4.4.13 - CRITICAL FIX: Template path issue in auth routes
+COMMIT_HASH = "fix-template-path"  # Use absolute path for templates in auth routes
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.12"
+VERSION = "v4.4.13"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

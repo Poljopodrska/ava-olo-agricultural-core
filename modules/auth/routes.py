@@ -18,7 +18,11 @@ from modules.core.language_service import get_language_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-templates = Jinja2Templates(directory="templates")
+
+# Use absolute path for templates to avoid working directory issues
+import os
+template_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "templates")
+templates = Jinja2Templates(directory=template_dir)
 
 # Password hashing using standard library
 import hashlib
