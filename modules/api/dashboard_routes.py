@@ -250,22 +250,22 @@ async def get_hub_stats():
     
     try:
         # Get basic farmer stats
-        farmer_count_result = await db_manager.execute_query(
-            "SELECT COUNT(*) as count FROM ava_farmers WHERE subscription_status = 'active'"
+        farmer_count_result = db_manager.execute_query(
+            "SELECT COUNT(*) as count FROM farmers WHERE is_active = true"
         )
-        farmer_count = farmer_count_result[0]['count'] if farmer_count_result else 0
+        farmer_count = farmer_count_result['rows'][0][0] if farmer_count_result.get('rows') else 0
         
         # Get total hectares
-        hectares_result = await db_manager.execute_query(
-            "SELECT SUM(size_hectares) as total FROM ava_farmers WHERE subscription_status = 'active'"
+        hectares_result = db_manager.execute_query(
+            "SELECT COALESCE(SUM(area_hectares), 0) as total FROM fields"
         )
-        total_hectares = hectares_result[0]['total'] if hectares_result and hectares_result[0]['total'] else 0
+        total_hectares = float(hectares_result['rows'][0][0]) if hectares_result.get('rows') else 0.0
         
-        # Get today's activities
-        today_activities_result = await db_manager.execute_query(
-            "SELECT COUNT(*) as count FROM ava_activity_log WHERE DATE(created_at) = CURRENT_DATE"
+        # Get today's activities count (using farmers table for now)
+        today_activities_result = db_manager.execute_query(
+            "SELECT COUNT(*) as count FROM farmers WHERE DATE(created_at) = CURRENT_DATE"
         )
-        today_activities = today_activities_result[0]['count'] if today_activities_result else 0
+        today_activities = today_activities_result['rows'][0][0] if today_activities_result.get('rows') else 0
         
         return {
             "success": True,
@@ -293,57 +293,56 @@ async def execute_quick_query(query_type: str):
     
     quick_queries = {
         "count-farmers": {
-            "sql": "SELECT COUNT(*) as total_farmers FROM ava_farmers WHERE subscription_status = 'active'",
+            "sql": "SELECT COUNT(*) as total_farmers FROM farmers WHERE is_active = true",
             "description": "Count total active farmers"
         },
         "list-farmers": {
             "sql": """
-                SELECT id, first_name, last_name, city, primary_occupation, 
-                       size_hectares, created_at
-                FROM ava_farmers 
-                WHERE subscription_status = 'active'
-                ORDER BY id DESC LIMIT 50
+                SELECT farmer_id, manager_name, manager_last_name, location, occupation, 
+                       created_at
+                FROM farmers 
+                WHERE is_active = true
+                ORDER BY farmer_id DESC LIMIT 50
             """,
             "description": "List all farmers"
         },
         "farmers-by-occupation": {
             "sql": """
-                SELECT primary_occupation, COUNT(*) as count 
-                FROM ava_farmers 
-                WHERE subscription_status = 'active' 
-                GROUP BY primary_occupation 
+                SELECT occupation, COUNT(*) as count 
+                FROM farmers 
+                WHERE is_active = true 
+                GROUP BY occupation 
                 ORDER BY count DESC
             """,
             "description": "Farmers grouped by occupation"
         },
-        "recent-activities": {
+        "recent-registrations": {
             "sql": """
-                SELECT a.*, f.first_name, f.last_name 
-                FROM ava_activity_log a 
-                LEFT JOIN ava_farmers f ON a.farmer_id = f.id 
-                ORDER BY a.created_at DESC 
+                SELECT farmer_id, manager_name, manager_last_name, location, 
+                       email, created_at
+                FROM farmers 
+                ORDER BY created_at DESC 
                 LIMIT 20
             """,
-            "description": "Recent farmer activities"
+            "description": "Recent farmer registrations"
         },
         "top-cities": {
             "sql": """
-                SELECT city, COUNT(*) as farmer_count 
-                FROM ava_farmers 
-                WHERE subscription_status = 'active' 
-                GROUP BY city 
+                SELECT location, COUNT(*) as farmer_count 
+                FROM farmers 
+                WHERE is_active = true 
+                GROUP BY location 
                 ORDER BY farmer_count DESC 
                 LIMIT 10
             """,
-            "description": "Top cities by farmer count"
+            "description": "Top locations by farmer count"
         },
         "farmer-growth": {
             "sql": """
                 SELECT DATE(created_at) as registration_date, 
-                       COUNT(*) as new_farmers,
-                       SUM(size_hectares) as total_hectares_added
-                FROM ava_farmers 
-                WHERE created_at >= NOW() - INTERVAL '30 days'
+                       COUNT(*) as new_farmers
+                FROM farmers 
+                WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
                 GROUP BY DATE(created_at)
                 ORDER BY registration_date DESC
             """,
@@ -358,16 +357,17 @@ async def execute_quick_query(query_type: str):
     start_time = time.time()
     
     try:
-        results = await db_manager.execute_query(query_info["sql"])
+        result = db_manager.execute_query(query_info["sql"])
         execution_time = int((time.time() - start_time) * 1000)
         
         return {
             "success": True,
-            "results": results,
+            "columns": result.get('columns', []),
+            "rows": result.get('rows', []),
             "sql_query": query_info["sql"].strip(),
             "description": query_info["description"],
             "execution_time": execution_time,
-            "rows_returned": len(results)
+            "rows_returned": len(result.get('rows', []))
         }
     except Exception as e:
         logger.error(f"Quick query failed: {e}")
@@ -384,7 +384,7 @@ async def execute_natural_query(request: NaturalQueryRequest):
     try:
         # Simple natural language to SQL conversion
         # In a real implementation, this would use an LLM service
-        sql_query = await convert_natural_to_sql(request.question)
+        sql_query = convert_natural_to_sql(request.question)
         
         if not sql_query:
             return {
@@ -400,15 +400,16 @@ async def execute_natural_query(request: NaturalQueryRequest):
             }
         
         start_time = time.time()
-        results = await db_manager.execute_query(sql_query)
+        result = db_manager.execute_query(sql_query)
         execution_time = int((time.time() - start_time) * 1000)
         
         return {
             "success": True,
-            "results": results,
+            "columns": result.get('columns', []),
+            "rows": result.get('rows', []),
             "sql_query": sql_query,
             "execution_time": execution_time,
-            "rows_returned": len(results)
+            "rows_returned": len(result.get('rows', []))
         }
     except Exception as e:
         logger.error(f"Natural query failed: {e}")
@@ -437,7 +438,8 @@ async def execute_direct_query(request: DirectQueryRequest):
         
         if is_modification:
             # For data modification queries, execute and return affected row count
-            affected_rows = await db_manager.execute_update(request.sql_query)
+            result = db_manager.execute_query(request.sql_query)
+            affected_rows = result.get('affected_rows', 0)
             execution_time = int((time.time() - start_time) * 1000)
             
             return {
@@ -450,15 +452,16 @@ async def execute_direct_query(request: DirectQueryRequest):
             }
         else:
             # For SELECT queries, return results
-            results = await db_manager.execute_query(request.sql_query)
+            result = db_manager.execute_query(request.sql_query)
             execution_time = int((time.time() - start_time) * 1000)
             
             return {
                 "success": True,
-                "results": results,
+                "columns": result.get('columns', []),
+                "rows": result.get('rows', []),
                 "sql_query": request.sql_query,
                 "execution_time": execution_time,
-                "rows_returned": len(results),
+                "rows_returned": len(result.get('rows', [])),
                 "operation_type": "query"
             }
     except Exception as e:
@@ -474,7 +477,7 @@ async def get_saved_queries():
     db_manager = get_db_manager()
     
     try:
-        results = await db_manager.execute_query("""
+        results = db_manager.execute_query("""
             SELECT id, query_name, sql_query, created_by, created_at, 
                    last_used_at, use_count, is_public
             FROM ava_saved_queries 
@@ -499,7 +502,7 @@ async def save_query(request: SaveQueryRequest):
     db_manager = get_db_manager()
     
     try:
-        await db_manager.execute_query("""
+        db_manager.execute_query("""
             INSERT INTO ava_saved_queries (query_name, sql_query, created_by, is_public)
             VALUES (%s, %s, %s, %s)
         """, (request.query_name, request.sql_query, 'dashboard_user', request.is_public))
@@ -521,7 +524,7 @@ async def increment_query_usage(query_id: int):
     db_manager = get_db_manager()
     
     try:
-        await db_manager.execute_query("""
+        db_manager.execute_query("""
             UPDATE ava_saved_queries 
             SET use_count = use_count + 1, last_used_at = NOW()
             WHERE id = %s
@@ -541,7 +544,7 @@ async def get_business_overview():
     
     try:
         # Total farmers by occupation
-        occupation_stats = await db_manager.execute_query("""
+        occupation_stats = db_manager.execute_query("""
             SELECT 
                 primary_occupation,
                 COUNT(*) as farmer_count,
@@ -553,7 +556,7 @@ async def get_business_overview():
         """)
         
         # Total counts
-        totals = await db_manager.execute_query("""
+        totals = db_manager.execute_query("""
             SELECT 
                 COUNT(*) as total_farmers,
                 SUM(size_hectares) as total_hectares,
@@ -593,7 +596,7 @@ async def get_growth_trends(period: str = "30d"):
     
     try:
         # New farmer registrations
-        new_farmers = await db_manager.execute_query(f"""
+        new_farmers = db_manager.execute_query(f"""
             SELECT 
                 TO_CHAR(created_at, '{date_format}') as period,
                 COUNT(*) as new_farmers,
@@ -605,7 +608,7 @@ async def get_growth_trends(period: str = "30d"):
         """)
         
         # Unsubscribed farmers
-        unsubscribed = await db_manager.execute_query(f"""
+        unsubscribed = db_manager.execute_query(f"""
             SELECT 
                 TO_CHAR(unsubscribed_at, '{date_format}') as period,
                 COUNT(*) as unsubscribed_farmers
@@ -635,7 +638,7 @@ async def get_activity_stream(limit: int = 50):
     db_manager = get_db_manager()
     
     try:
-        activities = await db_manager.execute_query("""
+        activities = db_manager.execute_query("""
             SELECT 
                 a.id,
                 a.activity_type,
@@ -670,7 +673,7 @@ async def get_database_changes():
     db_manager = get_db_manager()
     
     try:
-        changes = await db_manager.execute_query("""
+        changes = db_manager.execute_query("""
             SELECT * FROM recent_database_changes
             ORDER BY change_time DESC
             LIMIT 50
@@ -691,7 +694,7 @@ async def get_database_changes():
 
 # Helper functions
 
-async def convert_natural_to_sql(question: str) -> str:
+def convert_natural_to_sql(question: str) -> str:
     """
     Convert natural language question to SQL query.
     This is a simplified implementation. In production, this would use an LLM service.
@@ -702,57 +705,57 @@ async def convert_natural_to_sql(question: str) -> str:
     if "count" in question_lower and "farmer" in question_lower:
         if "occupation" in question_lower or "job" in question_lower:
             return """
-                SELECT primary_occupation, COUNT(*) as count 
-                FROM ava_farmers 
-                WHERE subscription_status = 'active' 
-                GROUP BY primary_occupation 
+                SELECT occupation, COUNT(*) as count 
+                FROM farmers 
+                WHERE is_active = true 
+                GROUP BY occupation 
                 ORDER BY count DESC
             """
         else:
-            return "SELECT COUNT(*) as total_farmers FROM ava_farmers WHERE subscription_status = 'active'"
+            return "SELECT COUNT(*) as total_farmers FROM farmers WHERE is_active = true"
     
     if "vineyard" in question_lower or "grape" in question_lower:
         return """
-            SELECT id, first_name, last_name, city, size_hectares
-            FROM ava_farmers 
-            WHERE subscription_status = 'active' 
-            AND (primary_occupation = 'vineyard_farming' OR crop_type ILIKE '%grape%')
-            ORDER BY size_hectares DESC
+            SELECT farmer_id, manager_name, manager_last_name, location, area_hectares
+            FROM farmers 
+            WHERE is_active = true 
+            AND (occupation ILIKE '%vineyard%' OR occupation ILIKE '%grape%')
+            ORDER BY area_hectares DESC
         """
     
     if "hectares" in question_lower and ("most" in question_lower or "largest" in question_lower):
         return """
-            SELECT first_name, last_name, city, size_hectares, primary_occupation
-            FROM ava_farmers 
-            WHERE subscription_status = 'active'
-            ORDER BY size_hectares DESC
+            SELECT manager_name, manager_last_name, location, area_hectares, occupation
+            FROM farmers 
+            WHERE is_active = true
+            ORDER BY area_hectares DESC
             LIMIT 10
         """
     
     if "city" in question_lower or "cities" in question_lower:
         return """
-            SELECT city, COUNT(*) as farmer_count, SUM(size_hectares) as total_hectares
-            FROM ava_farmers 
-            WHERE subscription_status = 'active'
-            GROUP BY city 
+            SELECT location, COUNT(*) as farmer_count
+            FROM farmers 
+            WHERE is_active = true
+            GROUP BY location 
             ORDER BY farmer_count DESC
         """
     
     if "recent" in question_lower or "latest" in question_lower:
         return """
-            SELECT first_name, last_name, city, primary_occupation, created_at
-            FROM ava_farmers 
-            WHERE subscription_status = 'active'
+            SELECT manager_name, manager_last_name, location, occupation, created_at
+            FROM farmers 
+            WHERE is_active = true
             ORDER BY created_at DESC
             LIMIT 20
         """
     
     # If no pattern matches, return a safe default query
     return """
-        SELECT id, first_name, last_name, city, primary_occupation, size_hectares
-        FROM ava_farmers 
-        WHERE subscription_status = 'active'
-        ORDER BY id DESC
+        SELECT farmer_id, manager_name, manager_last_name, location, occupation
+        FROM farmers 
+        WHERE is_active = true
+        ORDER BY farmer_id DESC
         LIMIT 50
     """
 
@@ -780,8 +783,15 @@ def is_safe_query(query: str) -> bool:
     
     # Additional safety checks for data modification
     if any(cleaned_query.startswith(op) for op in ['INSERT', 'UPDATE', 'DELETE']):
-        # Ensure operations are only on ava_ tables (our application tables)
-        if 'ava_' not in cleaned_query:
+        # Ensure operations are only on our application tables
+        allowed_tables = ['farmers', 'fields', 'tasks', 'activity_log']
+        table_found = False
+        for table in allowed_tables:
+            if table.upper() in cleaned_query:
+                table_found = True
+                break
+        
+        if not table_found:
             return False
         
         # Prevent operations on system tables

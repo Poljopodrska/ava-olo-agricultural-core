@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804051500'  # v4.1.1 - CRITICAL: Fix farmer registration database commit
-COMMIT_HASH = "registration-commit-fix"  # Fix INSERT with RETURNING not committing
+DEPLOYMENT_TIMESTAMP = '20250804070000'  # v4.1.2 - Fix database dashboard queries
+COMMIT_HASH = "dashboard-query-fix"  # Fix async/sync issues and table names
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.1"
+VERSION = "v4.1.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
