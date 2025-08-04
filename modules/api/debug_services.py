@@ -315,3 +315,164 @@ async def debug_services_detailed(request: Request):
             "ENVIRONMENT": os.getenv("ENVIRONMENT", "development")
         }
     }
+
+@router.get("/api/v1/debug/check-edi-kante")
+async def check_edi_kante_fields():
+    """Debug endpoint to check if Edi Kante has fields in database"""
+    
+    try:
+        db_manager = get_db_manager()
+        
+        # Step 1: Search for Edi Kante in farmers table
+        search_query = """
+        SELECT id, manager_name, manager_last_name, farm_name, email, 
+               phone, wa_phone_number, created_at, city, country
+        FROM farmers 
+        WHERE LOWER(manager_name) LIKE '%edi%' 
+           OR LOWER(manager_last_name) LIKE '%kante%'
+           OR LOWER(farm_name) LIKE '%edi%'
+           OR LOWER(farm_name) LIKE '%kante%'
+        ORDER BY created_at DESC
+        """
+        
+        farmer_result = db_manager.execute_query(search_query)
+        
+        if not farmer_result or 'rows' not in farmer_result or len(farmer_result['rows']) == 0:
+            # Get some sample farmers for reference
+            sample_query = """
+            SELECT manager_name, manager_last_name, farm_name, city, created_at
+            FROM farmers 
+            ORDER BY created_at DESC 
+            LIMIT 10
+            """
+            sample_result = db_manager.execute_query(sample_query)
+            
+            total_query = "SELECT COUNT(*) FROM farmers"
+            total_result = db_manager.execute_query(total_query)
+            total_farmers = total_result['rows'][0][0] if total_result and 'rows' in total_result else 0
+            
+            return {
+                "timestamp": datetime.now().isoformat(),
+                "edi_kante_found": False,
+                "assessment": "FARMER NOT FOUND - FAVA registration failing",
+                "total_farmers": total_farmers,
+                "recent_farmers": [
+                    {
+                        "name": f"{row[0] or ''} {row[1] or ''}".strip(),
+                        "farm": row[2] or "No farm name",
+                        "city": row[3] or "No city",
+                        "created": str(row[4]) if row[4] else "No date"
+                    } for row in sample_result['rows']
+                ] if sample_result and 'rows' in sample_result else [],
+                "recommendation": "Check FAVA farmer registration process - Edi Kante not in database"
+            }
+        
+        # Found farmer(s) - get their details
+        farmers_found = []
+        all_fields = []
+        
+        for row in farmer_result['rows']:
+            farmer_id = row[0]
+            name = f"{row[1] or ''} {row[2] or ''}".strip()
+            farm_name = row[3] or 'No farm name'
+            city = row[8] or 'No city'
+            country = row[9] or 'No country'
+            
+            farmer_info = {
+                "farmer_id": farmer_id,
+                "name": name,
+                "farm_name": farm_name,
+                "location": f"{city}, {country}",
+                "created": str(row[7]) if row[7] else "No date"
+            }
+            
+            # Step 2: Get fields for this farmer
+            fields_query = """
+            SELECT id, field_name, area_ha, latitude, longitude, 
+                   created_at, blok_id, raba
+            FROM fields 
+            WHERE farmer_id = %s
+            ORDER BY created_at DESC
+            """
+            
+            fields_result = db_manager.execute_query(fields_query, (farmer_id,))
+            
+            farmer_fields = []
+            if fields_result and 'rows' in fields_result:
+                for field_row in fields_result['rows']:
+                    field_info = {
+                        "field_id": field_row[0],
+                        "field_name": field_row[1] or 'Unnamed field',
+                        "area_ha": float(field_row[2]) if field_row[2] else 0,
+                        "coordinates": {
+                            "lat": float(field_row[3]) if field_row[3] else None,
+                            "lon": float(field_row[4]) if field_row[4] else None
+                        },
+                        "created": str(field_row[5]) if field_row[5] else "No date",
+                        "block_id": field_row[6],
+                        "land_use": field_row[7]
+                    }
+                    
+                    # Step 3: Get crops for this field
+                    crops_query = """
+                    SELECT crop_name, variety, planting_date, status
+                    FROM field_crops 
+                    WHERE field_id = %s
+                    ORDER BY planting_date DESC
+                    """
+                    
+                    crops_result = db_manager.execute_query(crops_query, (field_row[0],))
+                    
+                    field_crops = []
+                    if crops_result and 'rows' in crops_result:
+                        for crop_row in crops_result['rows']:
+                            field_crops.append({
+                                "crop_name": crop_row[0] or 'Unknown crop',
+                                "variety": crop_row[1] or 'No variety',
+                                "planting_date": str(crop_row[2]) if crop_row[2] else "No date",
+                                "status": crop_row[3] or 'No status'
+                            })
+                    
+                    field_info["crops"] = field_crops
+                    farmer_fields.append(field_info)
+                    all_fields.append(field_info)
+            
+            farmer_info["fields"] = farmer_fields
+            farmer_info["field_count"] = len(farmer_fields)
+            farmers_found.append(farmer_info)
+        
+        # Assessment
+        total_fields = len(all_fields)
+        total_area = sum(f['area_ha'] for f in all_fields)
+        
+        if total_fields > 0:
+            assessment = "SUCCESS - Edi Kante found WITH fields"
+            recommendation = "FAVA is working correctly. If fields not showing in dashboard, check frontend display code."
+        else:
+            assessment = "PARTIAL - Edi Kante found but NO fields"
+            recommendation = "FAVA registers farmers but fails to save field data. Check field entry process."
+        
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "edi_kante_found": True,
+            "farmers_found": len(farmers_found),
+            "total_fields": total_fields,
+            "total_area_ha": round(total_area, 2),
+            "assessment": assessment,
+            "recommendation": recommendation,
+            "farmers": farmers_found,
+            "summary": {
+                "farmer_registration": "✅ Working" if len(farmers_found) > 0 else "❌ Failed",
+                "field_entry": "✅ Working" if total_fields > 0 else "❌ Failed",
+                "crop_data": "✅ Present" if any(len(f.get('crops', [])) > 0 for f in all_fields) else "❌ Missing"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking Edi Kante: {e}")
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e),
+            "assessment": "ERROR - Database query failed",
+            "recommendation": "Check database connectivity and query syntax"
+        }

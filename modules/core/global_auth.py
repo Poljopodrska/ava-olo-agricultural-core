@@ -29,6 +29,7 @@ PUBLIC_PATHS = [
     "/favicon.ico",
     "/debug/signin-test",  # Debug endpoint for signin troubleshooting
     "/debug/minimal-signin",  # Minimal signin test
+    "/api/v1/debug/check-edi-kante",  # Edi Kante fields check endpoint
     "/api/v1/whatsapp/webhook",  # WhatsApp webhook needs to be public
 ]
 
