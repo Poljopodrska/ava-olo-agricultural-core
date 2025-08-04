@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804194000'  # v4.4.14 - FINAL FIX: Jinja2 template syntax error in signin.html
-COMMIT_HASH = "fix-jinja-syntax"  # Fixed escaped quotes causing template rendering failure
+DEPLOYMENT_TIMESTAMP = '20250804201500'  # v4.7.0 - Task Management System Implementation
+COMMIT_HASH = "task-management-system"  # Complete task management with materials and field history
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.14"
+VERSION = "v4.7.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -1,0 +1,773 @@
+<!-- Task Management Add-on for dashboard_v2.html -->
+<!-- This file contains the HTML snippets to be added to the farmer dashboard -->
+
+<!-- Additional CSS to add to the <style> section -->
+<style>
+    /* Tasks Button Styles */
+    .tasks-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 10px;
+    }
+    
+    .tasks-btn:hover {
+        background: #2980b9;
+        transform: translateY(-1px);
+    }
+    
+    /* Task Modal Styles */
+    .task-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .task-modal.active {
+        display: flex;
+    }
+    
+    .task-modal-content {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        width: 90%;
+        max-width: 700px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    
+    /* Task List Styles */
+    .task-list {
+        margin-top: 20px;
+    }
+    
+    .task-item {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+    }
+    
+    .task-item:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .task-item.completed {
+        background: #f0f9ff;
+        border-color: #27ae60;
+    }
+    
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .task-name {
+        font-weight: bold;
+        font-size: 1.1rem;
+        color: #2c3e50;
+    }
+    
+    .task-status {
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .task-status.planned {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .task-status.in_progress {
+        background: #cce5ff;
+        color: #004085;
+    }
+    
+    .task-status.completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .task-details {
+        color: #666;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .task-actions {
+        margin-top: 12px;
+        display: flex;
+        gap: 10px;
+    }
+    
+    .task-action-btn {
+        padding: 6px 12px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+    }
+    
+    .task-action-btn:hover {
+        background: #f8f9fa;
+        border-color: #007bff;
+        color: #007bff;
+    }
+    
+    .task-action-btn.complete {
+        background: #27ae60;
+        color: white;
+        border-color: #27ae60;
+    }
+    
+    .task-action-btn.complete:hover {
+        background: #229954;
+    }
+    
+    /* Material Selection Styles */
+    .material-selection {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .material-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .material-item:last-child {
+        border-bottom: none;
+    }
+    
+    .dose-rate-input {
+        width: 100px;
+        padding: 4px 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    /* Task Tabs */
+    .task-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .task-tab {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.2s;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+    }
+    
+    .task-tab.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+    }
+    
+    .task-tab:hover {
+        color: #2980b9;
+    }
+    
+    /* Field History Styles */
+    .history-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .history-timeline::before {
+        content: '';
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e0e0e0;
+    }
+    
+    .history-item {
+        position: relative;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+    }
+    
+    .history-item::before {
+        content: '';
+        position: absolute;
+        left: -25px;
+        top: 20px;
+        width: 12px;
+        height: 12px;
+        background: #3498db;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    
+    .history-date {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .history-activity {
+        color: #666;
+        margin-bottom: 8px;
+    }
+    
+    .history-materials {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 10px;
+    }
+</style>
+
+<!-- Button to add in the farm panel header (next to Add Field button) -->
+<button class="tasks-btn" onclick="openTasksModal()">
+    📋 Tasks
+</button>
+
+<!-- Tasks Modal -->
+<div id="tasks-modal" class="task-modal">
+    <div class="task-modal-content">
+        <div class="field-modal-header">
+            <h2 class="field-modal-title">Task Management</h2>
+            <p class="field-modal-subtitle">Plan and track your agricultural tasks</p>
+        </div>
+        
+        <div class="task-tabs">
+            <button class="task-tab active" onclick="switchTaskTab('upcoming')">Upcoming Tasks</button>
+            <button class="task-tab" onclick="switchTaskTab('completed')">Completed</button>
+            <button class="task-tab" onclick="switchTaskTab('create')">Create Task</button>
+            <button class="task-tab" onclick="switchTaskTab('history')">Field History</button>
+        </div>
+        
+        <!-- Upcoming Tasks Tab -->
+        <div id="upcoming-tasks-tab" class="task-tab-content">
+            <div class="task-list" id="upcoming-tasks-list">
+                <!-- Tasks will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Completed Tasks Tab -->
+        <div id="completed-tasks-tab" class="task-tab-content" style="display: none;">
+            <div class="task-list" id="completed-tasks-list">
+                <!-- Completed tasks will be loaded here -->
+            </div>
+        </div>
+        
+        <!-- Create Task Tab -->
+        <div id="create-task-tab" class="task-tab-content" style="display: none;">
+            <form id="create-task-form">
+                <div class="field-form-group">
+                    <label class="field-form-label">Task Name</label>
+                    <input type="text" id="task-name" class="field-form-input" placeholder="e.g., Apply Fertilizer" required>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Task Type</label>
+                    <select id="task-type" class="field-form-select">
+                        <option value="planting">Planting</option>
+                        <option value="fertilizing">Fertilizing</option>
+                        <option value="spraying">Spraying</option>
+                        <option value="harvesting">Harvesting</option>
+                        <option value="tillage">Tillage</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Planned Date</label>
+                    <input type="date" id="task-date" class="field-form-input" required>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Select Fields</label>
+                    <div id="field-selection">
+                        <!-- Field checkboxes will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">
+                        <input type="checkbox" id="include-materials" onchange="toggleMaterialsSection()">
+                        Include Materials/Products
+                    </label>
+                </div>
+                
+                <div id="materials-section" class="material-selection" style="display: none;">
+                    <h4>Select Materials</h4>
+                    <div id="materials-list">
+                        <!-- Materials will be loaded here -->
+                    </div>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Notes</label>
+                    <textarea id="task-notes" class="field-form-input" rows="3" placeholder="Additional notes..."></textarea>
+                </div>
+                
+                <div class="field-modal-actions">
+                    <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="clearTaskForm()">
+                        Clear
+                    </button>
+                    <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="createTask()">
+                        Create Task
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Field History Tab -->
+        <div id="history-tab" class="task-tab-content" style="display: none;">
+            <div class="field-form-group">
+                <label class="field-form-label">Select Field</label>
+                <select id="history-field-select" class="field-form-select" onchange="loadFieldHistory()">
+                    <option value="">Choose a field...</option>
+                    <!-- Fields will be loaded here -->
+                </select>
+            </div>
+            
+            <div class="field-form-group">
+                <label class="field-form-label">Year</label>
+                <select id="history-year-select" class="field-form-select" onchange="loadFieldHistory()">
+                    <option value="">All Years</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+            </div>
+            
+            <div class="history-timeline" id="field-history">
+                <!-- History will be loaded here -->
+            </div>
+        </div>
+        
+        <div class="field-modal-actions">
+            <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeTasksModal()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for Task Management -->
+<script>
+// Task Management Functions
+let currentTaskTab = 'upcoming';
+let availableMaterials = [];
+
+function openTasksModal() {
+    document.getElementById('tasks-modal').classList.add('active');
+    loadUpcomingTasks();
+    loadFieldsForSelection();
+    loadMaterials();
+}
+
+function closeTasksModal() {
+    document.getElementById('tasks-modal').classList.remove('active');
+}
+
+function switchTaskTab(tab) {
+    currentTaskTab = tab;
+    
+    // Update tab buttons
+    document.querySelectorAll('.task-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Hide all tab contents
+    document.querySelectorAll('.task-tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Show selected tab
+    switch(tab) {
+        case 'upcoming':
+            document.getElementById('upcoming-tasks-tab').style.display = 'block';
+            loadUpcomingTasks();
+            break;
+        case 'completed':
+            document.getElementById('completed-tasks-tab').style.display = 'block';
+            loadCompletedTasks();
+            break;
+        case 'create':
+            document.getElementById('create-task-tab').style.display = 'block';
+            break;
+        case 'history':
+            document.getElementById('history-tab').style.display = 'block';
+            loadFieldsForHistory();
+            break;
+    }
+}
+
+async function loadUpcomingTasks() {
+    try {
+        const response = await fetch('/api/tasks/list?status=planned');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTasks(data.tasks, 'upcoming-tasks-list');
+        }
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+    }
+}
+
+async function loadCompletedTasks() {
+    try {
+        const response = await fetch('/api/tasks/list?status=completed&limit=20');
+        const data = await response.json();
+        
+        if (data.success) {
+            displayTasks(data.tasks, 'completed-tasks-list');
+        }
+    } catch (error) {
+        console.error('Error loading completed tasks:', error);
+    }
+}
+
+function displayTasks(tasks, containerId) {
+    const container = document.getElementById(containerId);
+    
+    if (tasks.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">No tasks found</p>';
+        return;
+    }
+    
+    let html = '';
+    tasks.forEach(task => {
+        const statusClass = task.status.toLowerCase().replace('_', '');
+        html += `
+            <div class="task-item ${statusClass}">
+                <div class="task-header">
+                    <span class="task-name">${task.task_name}</span>
+                    <span class="task-status ${statusClass}">${task.status.replace('_', ' ')}</span>
+                </div>
+                <div class="task-details">
+                    <strong>Type:</strong> ${task.task_type}<br>
+                    <strong>Fields:</strong> ${task.field_names}<br>
+                    <strong>Area:</strong> ${task.total_area} ha<br>
+                    <strong>Date:</strong> ${task.planned_date || task.completed_date || 'Not set'}
+                    ${task.notes ? `<br><strong>Notes:</strong> ${task.notes}` : ''}
+                </div>
+                ${task.status === 'planned' ? `
+                    <div class="task-actions">
+                        <button class="task-action-btn complete" onclick="completeTask(${task.id})">
+                            ✓ Mark Complete
+                        </button>
+                        <button class="task-action-btn" onclick="editTask(${task.id})">
+                            Edit
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+async function loadFieldsForSelection() {
+    try {
+        const response = await fetch('/api/fields');
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById('field-selection');
+            let html = '';
+            
+            data.fields.forEach(field => {
+                html += `
+                    <label style="display: block; margin: 5px 0;">
+                        <input type="checkbox" name="field_ids" value="${field.id}">
+                        ${field.field_name} (${field.area_ha} ha)
+                        ${field.crop_type ? ` - ${field.crop_type}` : ''}
+                    </label>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading fields:', error);
+    }
+}
+
+async function loadMaterials() {
+    try {
+        const response = await fetch('/api/tasks/materials');
+        const data = await response.json();
+        
+        if (data.success) {
+            availableMaterials = data.materials;
+        }
+    } catch (error) {
+        console.error('Error loading materials:', error);
+    }
+}
+
+function toggleMaterialsSection() {
+    const section = document.getElementById('materials-section');
+    const checkbox = document.getElementById('include-materials');
+    
+    if (checkbox.checked) {
+        section.style.display = 'block';
+        displayMaterials();
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+function displayMaterials() {
+    const container = document.getElementById('materials-list');
+    let html = '';
+    
+    availableMaterials.forEach(material => {
+        html += `
+            <div class="material-item">
+                <label>
+                    <input type="checkbox" name="material_ids" value="${material.id}" 
+                           onchange="toggleDoseRate(${material.id})">
+                    ${material.material_name} (${material.material_type})
+                </label>
+                <div id="dose-${material.id}" style="display: none;">
+                    <input type="number" class="dose-rate-input" 
+                           id="dose-rate-${material.id}" 
+                           placeholder="Dose rate">
+                    <span>${material.unit}/ha</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function toggleDoseRate(materialId) {
+    const checkbox = document.querySelector(`input[name="material_ids"][value="${materialId}"]`);
+    const doseDiv = document.getElementById(`dose-${materialId}`);
+    
+    if (checkbox.checked) {
+        doseDiv.style.display = 'block';
+    } else {
+        doseDiv.style.display = 'none';
+    }
+}
+
+async function createTask() {
+    const taskName = document.getElementById('task-name').value;
+    const taskType = document.getElementById('task-type').value;
+    const taskDate = document.getElementById('task-date').value;
+    const taskNotes = document.getElementById('task-notes').value;
+    
+    // Get selected fields
+    const fieldCheckboxes = document.querySelectorAll('input[name="field_ids"]:checked');
+    const fieldIds = Array.from(fieldCheckboxes).map(cb => parseInt(cb.value));
+    
+    if (!taskName || fieldIds.length === 0) {
+        alert('Please enter a task name and select at least one field');
+        return;
+    }
+    
+    // Get selected materials if any
+    const materials = [];
+    if (document.getElementById('include-materials').checked) {
+        const materialCheckboxes = document.querySelectorAll('input[name="material_ids"]:checked');
+        materialCheckboxes.forEach(cb => {
+            const materialId = cb.value;
+            const doseRate = document.getElementById(`dose-rate-${materialId}`).value;
+            
+            materials.push({
+                material_id: parseInt(materialId),
+                dose_rate: parseFloat(doseRate) || 0,
+                unit: availableMaterials.find(m => m.id == materialId)?.unit || 'kg'
+            });
+        });
+    }
+    
+    const taskData = {
+        task_name: taskName,
+        task_type: taskType,
+        planned_date: taskDate,
+        field_ids: fieldIds,
+        materials: materials,
+        notes: taskNotes
+    };
+    
+    try {
+        const response = await fetch('/api/tasks/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(taskData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Task created successfully!');
+            clearTaskForm();
+            switchTaskTab('upcoming');
+        } else {
+            alert('Error creating task: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+        alert('Failed to create task');
+    }
+}
+
+function clearTaskForm() {
+    document.getElementById('create-task-form').reset();
+    document.getElementById('materials-section').style.display = 'none';
+}
+
+async function completeTask(taskId) {
+    const notes = prompt('Any completion notes? (optional)');
+    
+    try {
+        const response = await fetch(`/api/tasks/${taskId}/complete`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                completed_date: new Date().toISOString().split('T')[0],
+                completion_notes: notes
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Task marked as complete!');
+            loadUpcomingTasks();
+        } else {
+            alert('Error completing task: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error completing task:', error);
+    }
+}
+
+async function loadFieldsForHistory() {
+    try {
+        const response = await fetch('/api/fields');
+        const data = await response.json();
+        
+        if (data.success) {
+            const select = document.getElementById('history-field-select');
+            let html = '<option value="">Choose a field...</option>';
+            
+            data.fields.forEach(field => {
+                html += `<option value="${field.id}">${field.field_name}</option>`;
+            });
+            
+            select.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Error loading fields:', error);
+    }
+}
+
+async function loadFieldHistory() {
+    const fieldId = document.getElementById('history-field-select').value;
+    const year = document.getElementById('history-year-select').value;
+    
+    if (!fieldId) return;
+    
+    try {
+        let url = `/api/tasks/field-history/${fieldId}`;
+        if (year) {
+            url += `?year=${year}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayFieldHistory(data.history);
+        }
+    } catch (error) {
+        console.error('Error loading field history:', error);
+    }
+}
+
+function displayFieldHistory(history) {
+    const container = document.getElementById('field-history');
+    
+    if (history.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">No history found for this field</p>';
+        return;
+    }
+    
+    let html = '';
+    history.forEach(item => {
+        html += `
+            <div class="history-item">
+                <div class="history-date">${item.activity_date}</div>
+                <div class="history-activity">
+                    <strong>${item.activity_type}</strong> - ${item.description || item.task_name || 'No description'}
+                </div>
+                ${item.materials_used && item.materials_used.length > 0 ? `
+                    <div class="history-materials">
+                        <strong>Materials Used:</strong><br>
+                        ${item.materials_used.map(m => 
+                            `${m.material}: ${m.quantity} ${m.unit} (${m.cost ? `$${m.cost}` : 'N/A'})`
+                        ).join('<br>')}
+                    </div>
+                ` : ''}
+                ${item.cost ? `<div><strong>Total Cost:</strong> $${item.cost}</div>` : ''}
+                ${item.notes ? `<div><strong>Notes:</strong> ${item.notes}</div>` : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// Close modal when clicking outside
+document.getElementById('tasks-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeTasksModal();
+    }
+});
+</script>
