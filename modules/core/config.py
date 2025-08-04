@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804084500'  # v4.1.8 - Fix special characters in dashboard
-COMMIT_HASH = "fix-special-chars-dashboard"  # Fix display of names with special characters
+DEPLOYMENT_TIMESTAMP = '20250804090000'  # v4.1.9 - Restore CAVA chat from July 30
+COMMIT_HASH = "restore-cava-chat"  # Restore working CAVA chat interface
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.8"
+VERSION = "v4.1.9"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

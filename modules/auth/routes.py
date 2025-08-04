@@ -163,6 +163,14 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
         logger.error(f"Database error creating farmer: {e}")
         raise HTTPException(status_code=500, detail="Failed to create farmer account")
 
+@router.get("/chat", response_class=HTMLResponse)
+async def pure_chat_page(request: Request):
+    """Pure chat interface with CAVA"""
+    return templates.TemplateResponse("pure_chat.html", {
+        "request": request,
+        "version": VERSION
+    })
+
 @router.get("/signin", response_class=HTMLResponse)
 async def signin_page(request: Request):
     """Display sign-in page"""
