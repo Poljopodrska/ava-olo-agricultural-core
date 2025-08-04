@@ -276,7 +276,7 @@ class DatabaseDashboard {
                                 ${showDelete ? `
                                     <td style="text-align: center;">
                                         <button class="btn btn-danger btn-sm" onclick="dashboard.confirmDelete('farmers', ${row.id || row.farmer_id}, '${(row.manager_name || row.first_name || '')} ${(row.manager_last_name || row.last_name || '')}')">
-                                            🗑️ Delete
+                                            🔒 Deactivate
                                         </button>
                                     </td>
                                 ` : ''}
@@ -293,42 +293,42 @@ class DatabaseDashboard {
 
     async confirmDelete(table, id, displayName) {
         // Create confirmation dialog
-        const confirmed = confirm(`⚠️ WARNING: Are you sure you want to delete this record?\n\nTable: ${table}\nID: ${id}\nName: ${displayName}\n\nThis action cannot be undone!`);
+        const confirmed = confirm(`⚠️ WARNING: Are you sure you want to deactivate this farmer?\n\nTable: ${table}\nID: ${id}\nName: ${displayName}\n\nThe farmer will be marked as inactive.`);
         
         if (!confirmed) {
             return;
         }
         
         // Second confirmation for extra safety
-        const reallyConfirmed = confirm(`🔴 FINAL CONFIRMATION\n\nYou are about to permanently delete:\n${displayName} (ID: ${id})\n\nAre you absolutely sure?`);
+        const reallyConfirmed = confirm(`🔴 FINAL CONFIRMATION\n\nYou are about to deactivate:\n${displayName} (ID: ${id})\n\nAre you absolutely sure?`);
         
         if (!reallyConfirmed) {
             return;
         }
         
-        // Execute delete
+        // Execute deactivation (set is_active = false instead of deleting)
         this.showLoading(true);
         try {
-            const deleteQuery = `DELETE FROM ${table} WHERE id = ${id}`;
+            const deactivateQuery = `UPDATE ${table} SET is_active = false WHERE id = ${id}`;
             const response = await fetch('/api/v1/dashboards/database/query/direct', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ sql_query: deleteQuery })
+                body: JSON.stringify({ sql_query: deactivateQuery })
             });
             
             const result = await response.json();
             
             if (result.success) {
-                this.showSuccess(`Record deleted successfully (ID: ${id})`);
-                // Refresh the current query after delete
+                this.showSuccess(`Farmer deactivated successfully (ID: ${id})`);
+                // Refresh the current query after deactivation
                 const lastQueryBtn = document.querySelector('.quick-query-btn.active');
                 if (lastQueryBtn) {
                     lastQueryBtn.click();
                 }
             } else {
-                this.showError(`Failed to delete record: ${result.error || 'Unknown error'}`);
+                this.showError(`Failed to deactivate farmer: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
             this.showError(`Delete failed: ${error.message}`);

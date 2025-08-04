@@ -299,9 +299,9 @@ async def execute_quick_query(query_type: str):
         "list-farmers": {
             "sql": """
                 SELECT id, manager_name, manager_last_name, city, farm_name, 
-                       created_at
+                       phone, is_active, created_at
                 FROM farmers 
-                WHERE is_active = true
+                WHERE is_active = true OR is_active IS NULL
                 ORDER BY id DESC LIMIT 50
             """,
             "description": "List all farmers"

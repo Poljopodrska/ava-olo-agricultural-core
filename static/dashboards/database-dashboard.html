@@ -533,21 +533,21 @@
                         <div id="farmer-entry-results" class="entry-results" style="display: none;"></div>
                     </div>
 
-                    <!-- Delete Records Section -->
+                    <!-- Deactivate Records Section -->
                     <div class="data-entry-section">
-                        <h2 style="margin-bottom: 1rem; color: #1f2937;">🗑️ Delete Records</h2>
+                        <h2 style="margin-bottom: 1rem; color: #1f2937;">🔒 Deactivate Farmers</h2>
                         <p style="color: #6b7280; margin-bottom: 1rem;">
-                            Delete records from the database. <span style="color: #dc2626; font-weight: 500;">This action cannot be undone!</span>
+                            Deactivate farmers by marking them as inactive. <span style="color: #dc2626; font-weight: 500;">They can be reactivated later if needed.</span>
                         </p>
                         
                         <div class="form-group">
-                            <label for="delete-farmer-id">Enter Farmer ID to Delete</label>
+                            <label for="delete-farmer-id">Enter Farmer ID to Deactivate</label>
                             <input type="number" id="delete-farmer-id" placeholder="Enter farmer ID">
                         </div>
                         
                         <div class="entry-actions">
                             <button class="btn btn-danger" onclick="deleteFarmerById()">
-                                🗑️ Delete Farmer
+                                🔒 Deactivate Farmer
                             </button>
                             <button class="btn btn-secondary" onclick="document.getElementById('delete-farmer-id').value = ''">
                                 Clear
@@ -557,7 +557,7 @@
                         <div id="delete-results" class="entry-results" style="display: none;"></div>
                         
                         <p style="color: #6b7280; margin-top: 1rem; font-size: 0.9rem;">
-                            💡 <strong>Tip:</strong> You can also delete records directly from query results by clicking the delete button next to each row.
+                            💡 <strong>Tip:</strong> You can also deactivate farmers directly from query results by clicking the deactivate button next to each row.
                         </p>
                     </div>
 
@@ -776,7 +776,7 @@ DELETE FROM farmers WHERE id = 1;"
             document.getElementById(containerId).style.display = 'none';
         }
 
-        // Delete farmer by ID function
+        // Deactivate farmer by ID function
         async function deleteFarmerById() {
             const farmerId = document.getElementById('delete-farmer-id').value.trim();
             
@@ -786,39 +786,39 @@ DELETE FROM farmers WHERE id = 1;"
             }
             
             // First confirmation
-            const confirmed = confirm(`⚠️ WARNING: Are you sure you want to delete farmer with ID ${farmerId}?\n\nThis action cannot be undone!`);
+            const confirmed = confirm(`⚠️ WARNING: Are you sure you want to deactivate farmer with ID ${farmerId}?\n\nThe farmer will be marked as inactive.`);
             
             if (!confirmed) {
                 return;
             }
             
             // Second confirmation for extra safety
-            const reallyConfirmed = confirm(`🔴 FINAL CONFIRMATION\n\nYou are about to permanently delete farmer ID: ${farmerId}\n\nAre you absolutely sure?`);
+            const reallyConfirmed = confirm(`🔴 FINAL CONFIRMATION\n\nYou are about to deactivate farmer ID: ${farmerId}\n\nAre you absolutely sure?`);
             
             if (!reallyConfirmed) {
                 return;
             }
             
             try {
-                const deleteQuery = `DELETE FROM farmers WHERE id = ${farmerId}`;
+                const deactivateQuery = `UPDATE farmers SET is_active = false WHERE id = ${farmerId}`;
                 const response = await fetch('/api/v1/dashboards/database/query/direct', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ sql_query: deleteQuery })
+                    body: JSON.stringify({ sql_query: deactivateQuery })
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    showEntryMessage('delete-results', 'success', `Farmer with ID ${farmerId} deleted successfully!`);
+                    showEntryMessage('delete-results', 'success', `Farmer with ID ${farmerId} deactivated successfully!`);
                     document.getElementById('delete-farmer-id').value = '';
                 } else {
-                    showEntryMessage('delete-results', 'error', `Failed to delete farmer: ${result.error || 'Unknown error'}`);
+                    showEntryMessage('delete-results', 'error', `Failed to deactivate farmer: ${result.error || 'Unknown error'}`);
                 }
             } catch (error) {
-                showEntryMessage('delete-results', 'error', `Delete failed: ${error.message}`);
+                showEntryMessage('delete-results', 'error', `Deactivation failed: ${error.message}`);
             }
         }
 

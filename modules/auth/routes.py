@@ -77,7 +77,7 @@ async def get_active_farmer_by_whatsapp(whatsapp_number: str):
     db_manager = get_db_manager()
     
     try:
-        # Only search in farmers table, not archived farmers
+        # Only search ACTIVE farmers in farmers table
         query = """
         SELECT id, 
                manager_name,
@@ -88,9 +88,10 @@ async def get_active_farmer_by_whatsapp(whatsapp_number: str):
                created_at, 
                COALESCE(is_active, true) as is_active
         FROM farmers 
-        WHERE (whatsapp_number = %s OR wa_phone_number = %s)
+        WHERE (whatsapp_number = %s OR wa_phone_number = %s OR phone = %s)
+              AND (is_active = true OR is_active IS NULL)
         """
-        result = db_manager.execute_query(query, (whatsapp_number, whatsapp_number))
+        result = db_manager.execute_query(query, (whatsapp_number, whatsapp_number, whatsapp_number))
         
         if result and 'rows' in result and len(result['rows']) > 0:
             row = result['rows'][0]
@@ -120,9 +121,11 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
         # Check if farmer already exists IN THE ACTIVE FARMERS TABLE ONLY
         existing_farmer = await get_active_farmer_by_whatsapp(whatsapp_number)
         if existing_farmer:
+            # Provide helpful message with existing farmer info
+            existing_name = existing_farmer.get('name', 'Unknown')
             raise HTTPException(
                 status_code=400, 
-                detail="Farmer with this WhatsApp number already exists"
+                detail=f"This WhatsApp number is already registered to {existing_name}. Please use Sign In instead, or contact support if you need help accessing your account."
             )
         
         # Hash password
