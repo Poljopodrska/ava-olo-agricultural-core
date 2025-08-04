@@ -19,7 +19,7 @@ TRANSLATIONS = {
         
         # Sign In Page
         'sign_in_title': 'Sign In',
-        'sign_in_subtitle': 'Welcome back to AVA OLO',
+        'sign_in_subtitle': 'Agricultural Virtual Assistant Optimizing Land Operations',
         'whatsapp_label': 'WhatsApp Number',
         'whatsapp_placeholder': 'e.g., +359888123456',
         'password_label': 'Password',
@@ -31,7 +31,7 @@ TRANSLATIONS = {
         
         # Register Page
         'register_title': 'Create Account',
-        'register_subtitle': 'Join AVA OLO Farmer Portal',
+        'register_subtitle': 'Agricultural Virtual Assistant Optimizing Land Operations',
         'first_name_label': 'First Name',
         'first_name_placeholder': 'Enter your first name',
         'last_name_label': 'Last Name',
@@ -43,6 +43,26 @@ TRANSLATIONS = {
         'register_button': 'Create Account',
         'have_account': 'Already have an account?',
         'signin_link': 'Sign in here',
+        
+        # Dashboard
+        'dashboard_weather': 'Weather',
+        'dashboard_chat': 'AVA Assistant',
+        'dashboard_fields': 'Fields',
+        'dashboard_messages': 'Messages',
+        'dashboard_welcome_chat': 'Welcome to AVA!',
+        'dashboard_chat_subtitle': 'Your agricultural assistant is here to help',
+        'dashboard_ask_placeholder': 'Ask AVA about your farm...',
+        'dashboard_send': 'Send',
+        'dashboard_weather_unavailable': 'Weather data temporarily unavailable',
+        'dashboard_24h_forecast': '24-Hour Forecast',
+        'dashboard_5day_forecast': '5-Day Forecast',
+        'dashboard_add_field': 'Add Field',
+        'dashboard_no_fields': 'No fields added yet',
+        'dashboard_field_area': 'Area',
+        'dashboard_field_crop': 'Crop',
+        'dashboard_field_last_task': 'Last Task',
+        'dashboard_total_area': 'Total Area',
+        'dashboard_total_fields': 'Total Fields',
         
         # Common
         'error_invalid_whatsapp': 'Please enter a valid WhatsApp number',
@@ -92,6 +112,26 @@ TRANSLATIONS = {
         'register_button': 'Ustvari račun',
         'have_account': 'Že imate račun?',
         'signin_link': 'Prijavite se tukaj',
+        
+        # Dashboard
+        'dashboard_weather': 'Vreme',
+        'dashboard_chat': 'AVA Asistent',
+        'dashboard_fields': 'Polja',
+        'dashboard_messages': 'Sporočila',
+        'dashboard_welcome_chat': 'Dobrodošli v AVA!',
+        'dashboard_chat_subtitle': 'Vaš kmetijski asistent je tukaj, da vam pomaga',
+        'dashboard_ask_placeholder': 'Vprašajte AVA o vaši kmetiji...',
+        'dashboard_send': 'Pošlji',
+        'dashboard_weather_unavailable': 'Vremenski podatki trenutno niso na voljo',
+        'dashboard_24h_forecast': '24-urna napoved',
+        'dashboard_5day_forecast': '5-dnevna napoved',
+        'dashboard_add_field': 'Dodaj polje',
+        'dashboard_no_fields': 'Še ni dodanih polj',
+        'dashboard_field_area': 'Površina',
+        'dashboard_field_crop': 'Pridelek',
+        'dashboard_field_last_task': 'Zadnje opravilo',
+        'dashboard_total_area': 'Skupna površina',
+        'dashboard_total_fields': 'Skupno polj',
         
         # Common
         'error_invalid_whatsapp': 'Prosimo, vnesite veljavno WhatsApp številko',

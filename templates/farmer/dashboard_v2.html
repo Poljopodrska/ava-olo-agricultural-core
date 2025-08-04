@@ -465,6 +465,129 @@
             font-size: 0.9rem;
         }
         
+        /* Add Field Button */
+        .add-field-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .add-field-btn:hover {
+            background: #229954;
+        }
+        
+        /* Field Modal */
+        .field-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .field-modal.active {
+            display: flex;
+        }
+        
+        .field-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .field-modal-header {
+            margin-bottom: 20px;
+        }
+        
+        .field-modal-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .field-modal-subtitle {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .field-form-group {
+            margin-bottom: 16px;
+        }
+        
+        .field-form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 0.9rem;
+        }
+        
+        .field-form-input,
+        .field-form-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        
+        .field-form-input:focus,
+        .field-form-select:focus {
+            outline: none;
+            border-color: #27ae60;
+            box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+        }
+        
+        .field-modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            justify-content: flex-end;
+        }
+        
+        .field-modal-btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        
+        .field-modal-btn-primary {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .field-modal-btn-primary:hover {
+            background: #229954;
+        }
+        
+        .field-modal-btn-secondary {
+            background: #ecf0f1;
+            color: #34495e;
+        }
+        
+        .field-modal-btn-secondary:hover {
+            background: #d5dbdd;
+        }
+        
         /* Mobile Responsive */
         @media (max-width: 1024px) {
             .dashboard-container {
@@ -513,7 +636,7 @@
         <div class="panel weather-panel">
             <div class="panel-header">
                 <div>
-                    <div class="panel-title">🌤️ Weather</div>
+                    <div class="panel-title">🌤️ {{ t.dashboard_weather if t else 'Weather' }}</div>
                     <div class="panel-subtitle" id="weather-location">{{ farmer.city }}, {{ farmer.country }}</div>
                 </div>
             </div>
@@ -522,14 +645,14 @@
                     <span id="weather-location-text">{{ farmer.city }}, {{ farmer.country }}</span>
                 </div>
                 <div class="hourly-forecast-main" id="hourly-forecast">
-                    <div class="hourly-title">24-Hour Forecast</div>
+                    <div class="hourly-title">{{ t.dashboard_24h_forecast if t else '24-Hour Forecast' }}</div>
                     <div class="loading">
                         <div class="spinner"></div>
                         Loading hourly forecast...
                     </div>
                 </div>
                 <div class="weather-forecast" id="weather-forecast">
-                    <div class="forecast-title">5-Day Forecast</div>
+                    <div class="forecast-title">{{ t.dashboard_5day_forecast if t else '5-Day Forecast' }}</div>
                     <div class="loading">
                         <div class="spinner"></div>
                         Loading forecast...
@@ -542,7 +665,7 @@
         <div class="panel chat-panel">
             <div class="panel-header">
                 <div>
-                    <div class="panel-title">🤖 CAVA Assistant</div>
+                    <div class="panel-title">🤖 {{ t.dashboard_chat if t else 'AVA Assistant' }}</div>
                     <div class="panel-subtitle">Agricultural AI Helper</div>
                 </div>
                 <div class="user-info">
@@ -555,9 +678,9 @@
                 <div class="chat-messages" id="chat-messages">
                     <div class="chat-welcome" id="chat-welcome">
                         <div class="chat-welcome-icon">🌾</div>
-                        <div class="chat-welcome-title">Welcome to CAVA!</div>
+                        <div class="chat-welcome-title">{{ t.dashboard_welcome_chat if t else 'Welcome to AVA!' }}</div>
                         <div class="chat-welcome-text">
-                            Your intelligent agricultural assistant is here to help.<br>
+                            {{ t.dashboard_chat_subtitle if t else 'Your agricultural assistant is here to help' }}<br>
                             Ask questions about your crops, weather, or farming techniques.
                         </div>
                     </div>
@@ -567,7 +690,7 @@
                         <input 
                             type="text" 
                             class="chat-input" 
-                            placeholder="Ask CAVA about your farm..."
+                            placeholder="{{ t.dashboard_ask_placeholder if t else 'Ask AVA about your farm...' }}"
                             id="chat-input"
                         >
                         <button class="chat-send-btn" id="send-btn">→</button>
@@ -583,6 +706,9 @@
                     <div class="panel-title">🌾 My Farm</div>
                     <div class="panel-subtitle">Dashboard</div>
                 </div>
+                <button class="add-field-btn" onclick="openAddFieldModal()">
+                    + {{ t.dashboard_add_field if t else 'Add Field' }}
+                </button>
             </div>
             <div class="panel-content">
                 <div class="fields-list" id="field-list">
@@ -675,14 +801,14 @@
             hourlyDiv.innerHTML = `
                 <div class="hourly-title">24-Hour Forecast</div>
                 <div style="color: var(--ava-brown-muted); padding: 20px; text-align: center;">
-                    Weather data temporarily unavailable
+                    {{ t.dashboard_weather_unavailable if t else 'Weather data temporarily unavailable' }}
                 </div>
             `;
             
             forecastDiv.innerHTML = `
                 <div class="forecast-title">5-Day Forecast</div>
                 <div style="color: var(--ava-brown-muted); padding: 20px; text-align: center;">
-                    Weather data temporarily unavailable
+                    {{ t.dashboard_weather_unavailable if t else 'Weather data temporarily unavailable' }}
                 </div>
             `;
         }
@@ -951,6 +1077,107 @@
         
         // Refresh weather every 10 minutes
         setInterval(loadWeatherData, 600000);
+        
+        // Add Field Modal Functions
+        function openAddFieldModal() {
+            document.getElementById('add-field-modal').classList.add('active');
+        }
+        
+        function closeAddFieldModal() {
+            document.getElementById('add-field-modal').classList.remove('active');
+            document.getElementById('add-field-form').reset();
+        }
+        
+        async function saveField() {
+            const form = document.getElementById('add-field-form');
+            const formData = new FormData(form);
+            
+            const fieldData = {
+                field_name: formData.get('field_name'),
+                area_ha: parseFloat(formData.get('area_ha')),
+                crop_type: formData.get('crop_type'),
+                variety: formData.get('variety'),
+                country: formData.get('country') || '{{ farmer.country }}'
+            };
+            
+            try {
+                const response = await fetch('/farmer/api/fields/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(fieldData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        alert('Field added successfully!');
+                        closeAddFieldModal();
+                        location.reload(); // Reload to show new field
+                    } else {
+                        alert('Error: ' + (result.error || 'Failed to add field'));
+                    }
+                } else {
+                    alert('Failed to add field. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error adding field:', error);
+                alert('Failed to add field. Please check your connection.');
+            }
+        }
     </script>
+    
+    <!-- Add Field Modal -->
+    <div id="add-field-modal" class="field-modal">
+        <div class="field-modal-content">
+            <div class="field-modal-header">
+                <div class="field-modal-title">Add New Field</div>
+                <div class="field-modal-subtitle">Enter field information to add to your farm</div>
+            </div>
+            
+            <form id="add-field-form">
+                <div class="field-form-group">
+                    <label class="field-form-label">Field Name *</label>
+                    <input type="text" name="field_name" class="field-form-input" placeholder="e.g., North Field" required>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Area (hectares) *</label>
+                    <input type="number" name="area_ha" class="field-form-input" placeholder="e.g., 5.5" step="0.1" required>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Current Crop</label>
+                    <select name="crop_type" class="field-form-select">
+                        <option value="">No crop planted</option>
+                        <option value="Wheat">Wheat</option>
+                        <option value="Corn">Corn</option>
+                        <option value="Barley">Barley</option>
+                        <option value="Soybean">Soybean</option>
+                        <option value="Rapeseed">Rapeseed</option>
+                        <option value="Sunflower">Sunflower</option>
+                        <option value="Potato">Potato</option>
+                        <option value="Sugar Beet">Sugar Beet</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Variety</label>
+                    <input type="text" name="variety" class="field-form-input" placeholder="e.g., Winter Wheat Premium">
+                </div>
+                
+                <div class="field-modal-actions">
+                    <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeAddFieldModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="saveField()">
+                        Add Field
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>

@@ -201,6 +201,42 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     # Calculate totals
     total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
     
+    # Get farmer's country for language detection
+    db_manager = get_db_manager()
+    country_result = db_manager.execute_query(
+        "SELECT country FROM farmers WHERE id = %s", 
+        (farmer_id,)
+    )
+    
+    country_code = 'EN'  # Default to English
+    if country_result and 'rows' in country_result and country_result['rows']:
+        country = country_result['rows'][0][0]
+        if country:
+            # Map country to language code
+            country_to_lang = {
+                'slovenia': 'SI',
+                'slovenija': 'SI',
+                'italy': 'IT',
+                'italia': 'IT',
+                'france': 'FR',
+                'germany': 'DE',
+                'deutschland': 'DE',
+                'croatia': 'HR',
+                'hrvatska': 'HR',
+                'austria': 'AT',
+                'österreich': 'AT'
+            }
+            country_lower = country.lower()
+            country_code = country_to_lang.get(country_lower, 'EN')
+    
+    # Get translations for the detected language
+    from ..core.translations import get_translations, TranslationDict
+    translations = get_translations(country_code)
+    
+    # Wrap translations in TranslationDict for template attribute access
+    if isinstance(translations, dict):
+        translations = TranslationDict(translations)
+    
     return templates.TemplateResponse("farmer/dashboard_v2.html", {
         "request": request,
         "version": VERSION,
@@ -210,7 +246,9 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
         "total_area": round(total_area, 2),
         "weather": weather,
         "messages": messages,
-        "message_count": len(messages)
+        "message_count": len(messages),
+        "country_code": country_code,
+        "t": translations  # Add translations to template context
     })
 
 @router.get("/api/fields", response_class=JSONResponse)
@@ -241,6 +279,66 @@ async def api_farmer_messages(farmer: dict = Depends(require_auth), limit: int =
         "messages": messages,
         "count": len(messages)
     })
+
+@router.post("/api/fields/add", response_class=JSONResponse)
+async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
+    """API endpoint to add a new field for the farmer"""
+    
+    try:
+        data = await request.json()
+        farmer_id = farmer['farmer_id']
+        db_manager = get_db_manager()
+        
+        # Validate required fields
+        if not data.get('field_name') or not data.get('area_ha'):
+            return JSONResponse(content={
+                "success": False,
+                "error": "Field name and area are required"
+            }, status_code=400)
+        
+        # Insert the new field
+        insert_query = """
+        INSERT INTO fields (farmer_id, field_name, area_ha, country, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, NOW(), NOW())
+        RETURNING id
+        """
+        
+        result = db_manager.execute_query(
+            insert_query,
+            (farmer_id, data['field_name'], data['area_ha'], data.get('country', farmer.get('country')))
+        )
+        
+        if result and 'rows' in result and result['rows']:
+            field_id = result['rows'][0][0]
+            
+            # If crop type is provided, add crop information
+            if data.get('crop_type'):
+                crop_query = """
+                INSERT INTO field_crops (field_id, crop_type, variety, planting_date, status)
+                VALUES (%s, %s, %s, CURRENT_DATE, 'active')
+                """
+                db_manager.execute_query(
+                    crop_query,
+                    (field_id, data['crop_type'], data.get('variety', ''))
+                )
+            
+            return JSONResponse(content={
+                "success": True,
+                "field_id": field_id,
+                "message": "Field added successfully"
+            })
+        else:
+            return JSONResponse(content={
+                "success": False,
+                "error": "Failed to add field to database"
+            }, status_code=500)
+            
+    except Exception as e:
+        logger.error(f"Error adding field: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "error": f"Failed to add field: {str(e)}"
+        }, status_code=500)
 
 @router.get("/api/stats", response_class=JSONResponse)
 async def api_farmer_stats(farmer: dict = Depends(require_auth)):

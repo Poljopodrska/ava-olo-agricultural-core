@@ -204,8 +204,46 @@ async def chat_endpoint(request: ChatRequest):
         conversation_facts = context.get('conversation_facts', {})
         stored_facts = context.get('stored_facts', [])
         
+        # Get farmer's language preference based on country
+        language_code = 'en'  # Default to English
+        try:
+            db_manager = DatabaseManager()
+            # Find farmer by WhatsApp number
+            farmer_query = """
+            SELECT country FROM farmers 
+            WHERE whatsapp_number = %s OR wa_phone_number = %s
+            LIMIT 1
+            """
+            farmer_result = db_manager.execute_query(farmer_query, (wa_phone_number, wa_phone_number))
+            
+            if farmer_result and 'rows' in farmer_result and farmer_result['rows']:
+                country = farmer_result['rows'][0][0]
+                if country:
+                    # Map country to language
+                    country_to_lang = {
+                        'slovenia': 'sl', 'slovenija': 'sl',
+                        'italy': 'it', 'italia': 'it',
+                        'france': 'fr', 'germany': 'de', 'deutschland': 'de',
+                        'croatia': 'hr', 'hrvatska': 'hr',
+                        'austria': 'de', 'österreich': 'de'
+                    }
+                    language_code = country_to_lang.get(country.lower(), 'en')
+                    print(f"🌍 Detected language: {language_code} for country: {country}")
+        except Exception as e:
+            print(f"⚠️ Could not detect language: {e}")
+        
         # Use memory enforcer to create aggressive prompt
         system_content = memory_enforcer.create_memory_demonstration_prompt(critical_facts, message)
+        
+        # Add language instruction to system prompt
+        if language_code != 'en':
+            language_names = {
+                'sl': 'Slovenian (Slovenščina)',
+                'it': 'Italian', 'fr': 'French', 'de': 'German',
+                'hr': 'Croatian', 'bg': 'Bulgarian'
+            }
+            lang_name = language_names.get(language_code, 'local language')
+            system_content = f"IMPORTANT: Respond in {lang_name}. The farmer speaks {lang_name}.\n\n{system_content}"
         
         messages = [
             {"role": "system", "content": system_content}
