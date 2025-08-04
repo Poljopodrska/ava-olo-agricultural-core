@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804140000'  # v4.2.0 - WhatsApp-style conversation optimization
-COMMIT_HASH = "whatsapp-optimization"  # Natural farmer chat conversations
+DEPLOYMENT_TIMESTAMP = '20250804150000'  # v4.3.0 - FAVA farmer-aware intelligence
+COMMIT_HASH = "fava-pure-llm"  # Farmer-specific context via GPT-3.5
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.2.0"
+VERSION = "v4.3.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

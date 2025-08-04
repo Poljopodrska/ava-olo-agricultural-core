@@ -17,6 +17,7 @@ from modules.cava.conversation_memory import CAVAMemory
 from modules.cava.fact_extractor import FactExtractor
 from modules.cava.memory_enforcer import MemoryEnforcer
 from modules.cava.chat_engine import get_cava_engine, initialize_cava
+from modules.cava.fava_engine import get_fava_engine
 from modules.core.database_manager import DatabaseManager
 
 logger = logging.getLogger(__name__)
@@ -725,38 +726,81 @@ async def chat_with_cava_engine(request: ChatRequest):
         }
         
         # Try to get farmer details
+        farmer_id = None
         try:
             async with db_manager.get_connection_async() as conn:
                 # Get farmer info
                 farmer_result = await conn.fetchrow(
-                    "SELECT first_name, last_name, location FROM farmers WHERE wa_phone_number = $1",
+                    "SELECT id, first_name, last_name, location, manager_name, manager_last_name FROM farmers WHERE wa_phone_number = $1 OR phone = $1",
                     wa_phone_number
                 )
                 if farmer_result:
-                    farmer_context["farmer_name"] = f"{farmer_result['first_name']} {farmer_result['last_name']}"
+                    farmer_id = farmer_result['id']
+                    fname = farmer_result['manager_name'] or farmer_result['first_name'] or ''
+                    lname = farmer_result['manager_last_name'] or farmer_result['last_name'] or ''
+                    farmer_context["farmer_name"] = f"{fname} {lname}".strip()
                     farmer_context["location"] = farmer_result['location'] or "Slovenia"
                 
                 # Get fields
-                fields_result = await conn.fetch(
-                    "SELECT field_name, crop, hectares FROM fields WHERE farmer_phone = $1",
-                    wa_phone_number
-                )
-                farmer_context["fields"] = [
-                    {"name": f["field_name"], "crop": f["crop"], "hectares": f["hectares"]}
-                    for f in fields_result
-                ]
+                if farmer_id:
+                    fields_result = await conn.fetch(
+                        "SELECT field_name, crop, hectares FROM fields WHERE farmer_id = $1",
+                        farmer_id
+                    )
+                    farmer_context["fields"] = [
+                        {"name": f["field_name"], "crop": f["crop"], "hectares": f["hectares"]}
+                        for f in fields_result
+                    ]
         except Exception as e:
             logger.warning(f"Could not fetch farmer context: {e}")
         
         # Store user message
         await store_message(wa_phone_number, 'user', message)
         
-        # Get CAVA response
-        result = await cava_engine.chat(
-            session_id=wa_phone_number,
-            message=message,
-            farmer_context=farmer_context
-        )
+        # FAVA INTEGRATION: Process message through FAVA for farmer-aware intelligence
+        fava_response = None
+        if farmer_id:
+            try:
+                fava_engine = get_fava_engine()
+                async with db_manager.get_connection_async() as conn:
+                    fava_response = await fava_engine.process_farmer_message(
+                        farmer_id=farmer_id,
+                        message=message,
+                        db_connection=conn
+                    )
+                    
+                    # Execute database action if FAVA suggests one
+                    if fava_response.get('sql_query') and not fava_response.get('needs_confirmation'):
+                        try:
+                            await conn.execute(fava_response['sql_query'])
+                            logger.info(f"FAVA executed SQL: {fava_response['sql_query'][:100]}...")
+                        except Exception as sql_error:
+                            logger.error(f"FAVA SQL execution failed: {sql_error}")
+                            
+            except Exception as fava_error:
+                logger.error(f"FAVA processing error: {fava_error}")
+        
+        # Use FAVA response if available, otherwise fall back to CAVA
+        if fava_response and fava_response.get('response'):
+            # FAVA provided farmer-aware response
+            result = {
+                "response": fava_response['response'],
+                "success": True,
+                "model": "gpt-3.5-turbo-fava",
+                "whatsapp_optimized": True,
+                "context_used": fava_response.get('context_used', [])
+            }
+            
+            # Add confirmation prompt if needed
+            if fava_response.get('needs_confirmation'):
+                result['response'] += f"\n\n{fava_response['confirmation_question']}"
+        else:
+            # Fall back to standard CAVA response
+            result = await cava_engine.chat(
+                session_id=wa_phone_number,
+                message=message,
+                farmer_context=farmer_context
+            )
         
         if result.get("success"):
             # Store assistant response
@@ -775,7 +819,10 @@ async def chat_with_cava_engine(request: ChatRequest):
                 context_summary=f"Talking to {farmer_context['farmer_name']} about {', '.join(f['crop'] for f in farmer_context['fields'][:3])}",
                 messages_in_context=len(cava_engine.get_session_history(wa_phone_number)),
                 memory_indicators={
-                    "engine": "cava_chat_engine",
+                    "engine": "fava+cava" if fava_response else "cava_chat_engine",
+                    "fava_active": bool(fava_response),
+                    "farmer_id": farmer_id,
+                    "context_used": result.get("context_used", []) if fava_response else [],
                     "tokens_used": result.get("tokens_used", 0),
                     "status": cava_engine.get_status()
                 }
