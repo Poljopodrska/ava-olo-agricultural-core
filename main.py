@@ -140,6 +140,91 @@ async def auth_test(request: Request):
         "version": VERSION
     }
 
+# Debug endpoint to test signin components
+@app.get("/debug/signin-test")
+async def signin_debug(request: Request):
+    """Debug signin components to find the error"""
+    import os
+    import traceback
+    
+    debug_results = {
+        "version": VERSION,
+        "timestamp": str(request.headers.get("date", "unknown")),
+        "tests": {}
+    }
+    
+    # Test 1: Check template file
+    try:
+        template_path = "templates/auth/signin.html"
+        exists = os.path.exists(template_path)
+        if exists:
+            size = os.path.getsize(template_path)
+            debug_results["tests"]["template_file"] = {"status": "OK", "size": size}
+        else:
+            debug_results["tests"]["template_file"] = {"status": "MISSING"}
+    except Exception as e:
+        debug_results["tests"]["template_file"] = {"status": "ERROR", "error": str(e)}
+    
+    # Test 2: Check language service
+    try:
+        from modules.core.language_service import get_language_service
+        lang_service = get_language_service()
+        debug_results["tests"]["language_service"] = {"status": "OK", "type": str(type(lang_service))}
+    except Exception as e:
+        debug_results["tests"]["language_service"] = {"status": "ERROR", "error": str(e)}
+    
+    # Test 3: Check translations
+    try:
+        from modules.core.translations import get_translations
+        t = get_translations('en')
+        debug_results["tests"]["translations"] = {
+            "status": "OK", 
+            "type": str(type(t)),
+            "has_sign_in_title": hasattr(t, 'sign_in_title'),
+            "sign_in_title": getattr(t, 'sign_in_title', 'MISSING')
+        }
+    except Exception as e:
+        debug_results["tests"]["translations"] = {"status": "ERROR", "error": str(e)}
+    
+    # Test 4: Try to simulate signin_page logic
+    try:
+        from modules.core.language_service import get_language_service
+        from modules.core.translations import get_translations
+        
+        language_service = get_language_service()
+        client_ip = "127.0.0.1"
+        
+        # Try language detection
+        try:
+            detected_language = await language_service.detect_language_from_ip(client_ip)
+        except:
+            detected_language = 'en'
+            
+        translations = get_translations(detected_language)
+        
+        # Prepare template context
+        context = {
+            "request": request,
+            "version": VERSION,
+            "language": detected_language,
+            "t": translations
+        }
+        
+        debug_results["tests"]["signin_logic"] = {
+            "status": "OK",
+            "detected_language": detected_language,
+            "context_keys": list(context.keys())
+        }
+        
+    except Exception as e:
+        debug_results["tests"]["signin_logic"] = {
+            "status": "ERROR", 
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+    
+    return debug_results
+
 # Include all routers
 app.include_router(health_router)
 app.include_router(deployment_router)

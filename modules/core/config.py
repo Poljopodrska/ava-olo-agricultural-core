@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804191000'  # v4.4.9 - Fix translations dict/attribute access issue
-COMMIT_HASH = "fix-translations-access"  # Fixed Internal Server Error caused by template attribute access
+DEPLOYMENT_TIMESTAMP = '20250804192000'  # v4.4.10 - Add debug endpoint to diagnose signin issue
+COMMIT_HASH = "add-signin-debug"  # Debug endpoint to find actual signin error from live server
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.9"
+VERSION = "v4.4.10"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
