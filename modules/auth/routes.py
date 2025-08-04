@@ -13,6 +13,7 @@ import logging
 from modules.core.config import VERSION
 from modules.core.database_manager import get_db_manager
 from modules.core.translations import get_translations
+from modules.core.language_service import get_language_service
 
 logger = logging.getLogger(__name__)
 
@@ -176,7 +177,6 @@ async def pure_chat_page(request: Request):
 async def signin_page(request: Request):
     """Display sign-in page with language detection"""
     # Detect language from IP address
-    from modules.core.language_service import get_language_service
     language_service = get_language_service()
     
     # Get client IP
@@ -202,7 +202,6 @@ async def signin_submit(
     """Process sign-in form submission"""
     
     # Get language detection for error pages
-    from modules.core.language_service import get_language_service
     language_service = get_language_service()
     client_ip = request.client.host if request.client else "127.0.0.1"
     detected_language = await language_service.detect_language_from_ip(client_ip)
@@ -264,7 +263,6 @@ async def signin_submit(
 async def register_page(request: Request):
     """Display traditional form registration with language detection"""
     # Detect language from IP address
-    from modules.core.language_service import get_language_service
     language_service = get_language_service()
     
     # Get client IP
@@ -294,7 +292,6 @@ async def register_submit(
     """Process registration form submission"""
     
     # Get language detection for error pages
-    from modules.core.language_service import get_language_service
     language_service = get_language_service()
     client_ip = request.client.host if request.client else "127.0.0.1"
     detected_language = await language_service.detect_language_from_ip(client_ip)

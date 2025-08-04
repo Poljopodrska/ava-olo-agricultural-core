@@ -21,6 +21,8 @@ templates = Jinja2Templates(directory="templates")
 
 # Configuration
 from modules.core.config import VERSION, BUILD_ID, constitutional_deployment_completion, config
+from modules.core.language_service import get_language_service
+from modules.core.translations import get_translations
 from modules.api.health_routes import router as health_router
 
 # Startup modules
@@ -79,9 +81,6 @@ STARTUP_STATUS = {
 async def root(request: Request):
     """Landing page with Sign In / New to AVA OLO options"""
     # Detect language from IP address
-    from modules.core.language_service import get_language_service
-    from modules.core.translations import get_translations
-    
     language_service = get_language_service()
     
     # Get client IP
