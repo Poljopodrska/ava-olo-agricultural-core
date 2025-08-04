@@ -772,10 +772,40 @@ async def chat_with_cava_engine(request: ChatRequest):
                     # Execute database action if FAVA suggests one
                     if fava_response.get('sql_query') and not fava_response.get('needs_confirmation'):
                         try:
-                            await conn.execute(fava_response['sql_query'])
-                            logger.info(f"FAVA executed SQL: {fava_response['sql_query'][:100]}...")
+                            sql_query = fava_response['sql_query']
+                            
+                            # Handle different SQL operations
+                            if fava_response.get('database_action') == 'INSERT':
+                                if 'RETURNING' in sql_query.upper():
+                                    # Use fetchrow for INSERT RETURNING
+                                    result = await conn.fetchrow(sql_query)
+                                    if result:
+                                        logger.info(f"FAVA INSERT executed with ID: {result[0]}")
+                                else:
+                                    await conn.execute(sql_query)
+                                    logger.info(f"FAVA INSERT executed")
+                            elif fava_response.get('database_action') == 'UPDATE':
+                                await conn.execute(sql_query)
+                                logger.info(f"FAVA UPDATE executed")
+                            elif fava_response.get('database_action') == 'DELETE':
+                                await conn.execute(sql_query)
+                                logger.info(f"FAVA DELETE executed")
+                            else:
+                                # For SELECT or other queries
+                                results = await conn.fetch(sql_query)
+                                logger.info(f"FAVA query executed, returned {len(results)} rows")
+                                
+                            logger.info(f"FAVA executed SQL: {sql_query[:100]}...")
+                            
+                            # Update response to confirm database save
+                            if fava_response.get('database_action') in ['INSERT', 'UPDATE', 'DELETE']:
+                                # Success is already confirmed in the response
+                                pass
+                                
                         except Exception as sql_error:
                             logger.error(f"FAVA SQL execution failed: {sql_error}")
+                            # Update response to indicate failure
+                            fava_response['response'] = f"I couldn't save that information. Error: {str(sql_error)[:100]}"
                             
             except Exception as fava_error:
                 logger.error(f"FAVA processing error: {fava_error}")

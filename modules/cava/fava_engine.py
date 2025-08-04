@@ -140,6 +140,11 @@ RESPONSE FORMAT (JSON):
         """
         # Format farmer context as readable text
         context_text = f"""
+DATABASE SCHEMA FOR SQL GENERATION:
+- fields table: id (SERIAL), farmer_id (INT), field_name (VARCHAR), area_ha (FLOAT)
+- field_crops table: id (SERIAL), field_id (INT), crop_type (VARCHAR), variety (VARCHAR), planting_date (DATE)
+- tasks table: id (SERIAL), field_id (INT), task_type (VARCHAR), date_performed (DATE)
+
 CURRENT FARMER CONTEXT:
 
 Farmer Details:
@@ -153,7 +158,7 @@ Fields ({len(farmer_context['fields'])} total):
 """
         
         for field in farmer_context['fields']:
-            context_text += f"- {field.get('field_name', 'Unknown')}: {field.get('area_ha', 0)} hectares\n"
+            context_text += f"- {field.get('field_name', 'Unknown')} (ID: {field.get('id', '?')}): {field.get('area_ha', 0)} hectares\n"
         
         context_text += f"\nCrops ({len(farmer_context['crops'])} active):\n"
         for crop in farmer_context['crops']:
