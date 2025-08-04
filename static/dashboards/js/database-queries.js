@@ -253,6 +253,11 @@ class DatabaseDashboard {
         document.getElementById('query-cost').textContent = 'Low';
         document.getElementById('query-stats').style.display = 'flex';
 
+        // Check if this is a farmers table query to add delete buttons
+        const isFarmersQuery = sqlQuery && sqlQuery.toLowerCase().includes('farmers');
+        const hasId = results[0] && (results[0].id !== undefined || results[0].farmer_id !== undefined);
+        const showDelete = isFarmersQuery && hasId;
+
         // Create table
         const columns = Object.keys(results[0]);
         const tableHTML = `
@@ -261,12 +266,20 @@ class DatabaseDashboard {
                     <thead>
                         <tr>
                             ${columns.map(col => `<th>${this.formatColumnName(col)}</th>`).join('')}
+                            ${showDelete ? '<th style="text-align: center;">Actions</th>' : ''}
                         </tr>
                     </thead>
                     <tbody>
                         ${results.map(row => `
                             <tr>
                                 ${columns.map(col => `<td>${this.formatCellValue(row[col])}</td>`).join('')}
+                                ${showDelete ? `
+                                    <td style="text-align: center;">
+                                        <button class="btn btn-danger btn-sm" onclick="dashboard.confirmDelete('farmers', ${row.id || row.farmer_id}, '${(row.manager_name || row.first_name || '')} ${(row.manager_last_name || row.last_name || '')}')">
+                                            🗑️ Delete
+                                        </button>
+                                    </td>
+                                ` : ''}
                             </tr>
                         `).join('')}
                     </tbody>
@@ -276,6 +289,52 @@ class DatabaseDashboard {
         
         container.innerHTML = tableHTML;
         section.style.display = 'block';
+    }
+
+    async confirmDelete(table, id, displayName) {
+        // Create confirmation dialog
+        const confirmed = confirm(`⚠️ WARNING: Are you sure you want to delete this record?\n\nTable: ${table}\nID: ${id}\nName: ${displayName}\n\nThis action cannot be undone!`);
+        
+        if (!confirmed) {
+            return;
+        }
+        
+        // Second confirmation for extra safety
+        const reallyConfirmed = confirm(`🔴 FINAL CONFIRMATION\n\nYou are about to permanently delete:\n${displayName} (ID: ${id})\n\nAre you absolutely sure?`);
+        
+        if (!reallyConfirmed) {
+            return;
+        }
+        
+        // Execute delete
+        this.showLoading(true);
+        try {
+            const deleteQuery = `DELETE FROM ${table} WHERE id = ${id}`;
+            const response = await fetch('/api/v1/dashboards/database/query/direct', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sql_query: deleteQuery })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showSuccess(`Record deleted successfully (ID: ${id})`);
+                // Refresh the current query after delete
+                const lastQueryBtn = document.querySelector('.quick-query-btn.active');
+                if (lastQueryBtn) {
+                    lastQueryBtn.click();
+                }
+            } else {
+                this.showError(`Failed to delete record: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            this.showError(`Delete failed: ${error.message}`);
+        } finally {
+            this.showLoading(false);
+        }
     }
 
     formatColumnName(name) {

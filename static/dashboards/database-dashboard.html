@@ -321,6 +321,26 @@
             color: #374151;
         }
 
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .btn-danger.btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
         @media (max-width: 768px) {
             .main-grid {
                 grid-template-columns: 1fr;
@@ -511,6 +531,34 @@
                             </button>
                         </div>
                         <div id="farmer-entry-results" class="entry-results" style="display: none;"></div>
+                    </div>
+
+                    <!-- Delete Records Section -->
+                    <div class="data-entry-section">
+                        <h2 style="margin-bottom: 1rem; color: #1f2937;">🗑️ Delete Records</h2>
+                        <p style="color: #6b7280; margin-bottom: 1rem;">
+                            Delete records from the database. <span style="color: #dc2626; font-weight: 500;">This action cannot be undone!</span>
+                        </p>
+                        
+                        <div class="form-group">
+                            <label for="delete-farmer-id">Enter Farmer ID to Delete</label>
+                            <input type="number" id="delete-farmer-id" placeholder="Enter farmer ID">
+                        </div>
+                        
+                        <div class="entry-actions">
+                            <button class="btn btn-danger" onclick="deleteFarmerById()">
+                                🗑️ Delete Farmer
+                            </button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('delete-farmer-id').value = ''">
+                                Clear
+                            </button>
+                        </div>
+                        
+                        <div id="delete-results" class="entry-results" style="display: none;"></div>
+                        
+                        <p style="color: #6b7280; margin-top: 1rem; font-size: 0.9rem;">
+                            💡 <strong>Tip:</strong> You can also delete records directly from query results by clicking the delete button next to each row.
+                        </p>
                     </div>
 
                     <!-- Direct Database Operations -->
@@ -726,6 +774,52 @@ DELETE FROM farmers WHERE id = 1;"
 
         function hideEntryResults(containerId) {
             document.getElementById(containerId).style.display = 'none';
+        }
+
+        // Delete farmer by ID function
+        async function deleteFarmerById() {
+            const farmerId = document.getElementById('delete-farmer-id').value.trim();
+            
+            if (!farmerId) {
+                showEntryMessage('delete-results', 'error', 'Please enter a farmer ID');
+                return;
+            }
+            
+            // First confirmation
+            const confirmed = confirm(`⚠️ WARNING: Are you sure you want to delete farmer with ID ${farmerId}?\n\nThis action cannot be undone!`);
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Second confirmation for extra safety
+            const reallyConfirmed = confirm(`🔴 FINAL CONFIRMATION\n\nYou are about to permanently delete farmer ID: ${farmerId}\n\nAre you absolutely sure?`);
+            
+            if (!reallyConfirmed) {
+                return;
+            }
+            
+            try {
+                const deleteQuery = `DELETE FROM farmers WHERE id = ${farmerId}`;
+                const response = await fetch('/api/v1/dashboards/database/query/direct', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sql_query: deleteQuery })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showEntryMessage('delete-results', 'success', `Farmer with ID ${farmerId} deleted successfully!`);
+                    document.getElementById('delete-farmer-id').value = '';
+                } else {
+                    showEntryMessage('delete-results', 'error', `Failed to delete farmer: ${result.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                showEntryMessage('delete-results', 'error', `Delete failed: ${error.message}`);
+            }
         }
 
         function displaySQLResults(containerId, results) {

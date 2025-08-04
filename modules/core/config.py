@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804073500'  # v4.1.5 - Fix data entry forms
-COMMIT_HASH = "data-entry-fix"  # Fix farmer entry with correct fields
+DEPLOYMENT_TIMESTAMP = '20250804075000'  # v4.1.6 - Add delete functionality
+COMMIT_HASH = "add-delete-feature"  # Add safe data deletion with confirmation
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.5"
+VERSION = "v4.1.6"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
