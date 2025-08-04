@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804192500'  # v4.4.11 - Make debug endpoint public for signin diagnosis
-COMMIT_HASH = "public-debug-endpoint"  # Make signin debug endpoint accessible without auth
+DEPLOYMENT_TIMESTAMP = '20250804193000'  # v4.4.12 - Add minimal signin test to isolate template issue
+COMMIT_HASH = "minimal-signin-test"  # Test template rendering with minimal context
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.11"
+VERSION = "v4.4.12"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

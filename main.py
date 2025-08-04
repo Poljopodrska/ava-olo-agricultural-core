@@ -225,6 +225,27 @@ async def signin_debug(request: Request):
     
     return debug_results
 
+# Minimal signin test endpoint to isolate the issue
+@app.get("/debug/minimal-signin")
+async def minimal_signin_test(request: Request):
+    """Minimal signin test to isolate template rendering issue"""
+    try:
+        # Try to render just the template with minimal context
+        return templates.TemplateResponse("auth/signin.html", {
+            "request": request,
+            "version": "v4.4.11",
+            "language": "en",
+            "t": {"sign_in_title": "Sign In", "whatsapp_label": "WhatsApp", "password_label": "Password", "sign_in_button": "Sign In"}
+        })
+    except Exception as e:
+        import traceback
+        return {
+            "error": "Template rendering failed",
+            "message": str(e),
+            "traceback": traceback.format_exc(),
+            "template_path": "auth/signin.html"
+        }
+
 # Include all routers
 app.include_router(health_router)
 app.include_router(deployment_router)
