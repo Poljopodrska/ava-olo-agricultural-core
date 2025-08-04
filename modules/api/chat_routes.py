@@ -796,6 +796,10 @@ async def chat_with_cava_engine(request: ChatRequest):
                         try:
                             sql_query = fava_response['sql_query']
                             
+                            # Log full SQL for field operations
+                            if 'fields' in sql_query.lower():
+                                logger.info(f"FAVA FIELD OPERATION SQL: {sql_query}")
+                            
                             # Handle different SQL operations
                             if fava_response.get('database_action') == 'INSERT':
                                 if 'RETURNING' in sql_query.upper():
@@ -803,9 +807,12 @@ async def chat_with_cava_engine(request: ChatRequest):
                                     result = await conn.fetchrow(sql_query)
                                     if result:
                                         logger.info(f"FAVA INSERT executed with ID: {result[0]}")
+                                        # Special logging for field insertions
+                                        if 'INSERT INTO fields' in sql_query:
+                                            logger.info(f"NEW FIELD CREATED: ID={result[0]}, SQL={sql_query}")
                                 else:
                                     await conn.execute(sql_query)
-                                    logger.info(f"FAVA INSERT executed")
+                                    logger.info(f"FAVA INSERT executed: {sql_query[:200]}")
                             elif fava_response.get('database_action') == 'UPDATE':
                                 await conn.execute(sql_query)
                                 logger.info(f"FAVA UPDATE executed")

@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804183000'  # v4.4.2 - Language system fixes for auth pages
-COMMIT_HASH = "language-auth-fixes"  # IP-based language for signin/signup
+DEPLOYMENT_TIMESTAMP = '20250804183500'  # v4.4.3 - Fix field names with quotes
+COMMIT_HASH = "field-quote-sanitization"  # Handles "Belouce" field names correctly
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.2"
+VERSION = "v4.4.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

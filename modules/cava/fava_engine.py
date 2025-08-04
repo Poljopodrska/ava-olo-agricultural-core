@@ -243,10 +243,32 @@ Generate FAVA response in JSON format:"""
             
             # Replace farmer_id placeholder in SQL if present
             if parsed.get('sql_query'):
-                parsed['sql_query'] = parsed['sql_query'].replace(
+                sql = parsed['sql_query'].replace(
                     '{farmer_id}', 
                     str(farmer_id)
                 )
+                
+                # Clean up field names with quotes - if field_name has outer quotes, remove them
+                # This handles cases like: field_name = '"Belouce"' -> 'Belouce'
+                import re
+                
+                # Handle INSERT INTO fields with quoted field names
+                # Example: VALUES (1, '"Belouce"', 3.2) -> VALUES (1, 'Belouce', 3.2)
+                # Pattern matches: farmer_id, 'field_name_with_quotes', area_ha
+                pattern = r"(VALUES\s*\([^,]+,\s*)'\"([^\"]+)\"'(\s*,)"
+                sql = re.sub(pattern, r"\1'\2'\3", sql)
+                
+                # Also handle double single quotes
+                pattern2 = r"(VALUES\s*\([^,]+,\s*)''([^']+)''(\s*,)"
+                sql = re.sub(pattern2, r"\1'\2'\3", sql)
+                
+                # Log the SQL transformation for debugging
+                if sql != parsed['sql_query'].replace('{farmer_id}', str(farmer_id)):
+                    logger.info(f"FAVA SQL sanitized - removed quotes from field name")
+                    logger.debug(f"Original: {parsed['sql_query']}")
+                    logger.debug(f"Sanitized: {sql}")
+                
+                parsed['sql_query'] = sql
             
             # Ensure all expected fields exist
             result = {
