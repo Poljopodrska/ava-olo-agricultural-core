@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="app-version" content="{{ version }}">
-    <title>Sign In - AVA OLO Farmer Portal</title>
+    <title>{{ t.sign_in_title if t else 'Sign In' }} - AVA OLO Farmer Portal</title>
     <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
     <style>
         .auth-container {
@@ -247,8 +247,8 @@
         <div class="auth-card">
             <div class="auth-header">
                 <div class="auth-logo">📱</div>
-                <h1 class="auth-title">Sign In</h1>
-                <p class="auth-subtitle">Access your AVA OLO dashboard</p>
+                <h1 class="auth-title">{{ t.sign_in_title if t else 'Sign In' }}</h1>
+                <p class="auth-subtitle">{{ t.sign_in_subtitle if t else 'Access your AVA OLO dashboard' }}</p>
             </div>
             
             {% if error %}
@@ -259,7 +259,7 @@
             
             <form method="post" class="auth-form">
                 <div class="form-group">
-                    <label for="whatsapp_number" class="form-label">WhatsApp Number</label>
+                    <label for="whatsapp_number" class="form-label">{{ t.whatsapp_label if t else 'WhatsApp Number' }}</label>
                     <div class="whatsapp-input">
                         <div class="whatsapp-prefix">+</div>
                         <input 
@@ -267,7 +267,7 @@
                             id="whatsapp_number" 
                             name="whatsapp_number" 
                             class="form-input"
-                            placeholder="359123456789"
+                            placeholder="{{ (t.whatsapp_placeholder[5:] if t.whatsapp_placeholder.startswith('e.g.') else t.whatsapp_placeholder[4:]) if t and t.whatsapp_placeholder else '359123456789' }}"
                             required
                             autocomplete="tel"
                         >
@@ -275,20 +275,20 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
+                    <label for="password" class="form-label">{{ t.password_label if t else 'Password' }}</label>
                     <input 
                         type="password" 
                         id="password" 
                         name="password" 
                         class="form-input"
-                        placeholder="Enter your password"
+                        placeholder="{{ t.password_placeholder if t else 'Enter your password' }}"
                         required
                         autocomplete="current-password"
                     >
                 </div>
                 
                 <button type="submit" class="auth-button whatsapp-style">
-                    🔐 Sign In to Dashboard
+                    🔐 {{ t.sign_in_button if t else 'Sign In to Dashboard' }}
                 </button>
             </form>
             
@@ -299,7 +299,7 @@
             </div>
             
             <div class="auth-links">
-                <p>Don't have an account? <a href="/auth/register" class="auth-link">Create New Account</a></p>
+                <p>{{ t.no_account if t else \"Don't have an account?\" }} <a href="/auth/register" class="auth-link">{{ t.register_link if t else 'Create New Account' }}</a></p>
             </div>
         </div>
     </div>

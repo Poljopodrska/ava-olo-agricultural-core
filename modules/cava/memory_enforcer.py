@@ -74,10 +74,18 @@ class MemoryEnforcer:
         return critical_facts
     
     @staticmethod
-    def create_memory_demonstration_prompt(critical_facts: Dict, user_message: str) -> str:
-        """Create a prompt that FORCES memory demonstration"""
+    def create_memory_demonstration_prompt(critical_facts: Dict, user_message: str, language_code: str = 'en') -> str:
+        """Create a prompt that FORCES memory demonstration with language support"""
+        
+        # Get language name
+        from modules.core.language_service import get_language_service
+        language_service = get_language_service()
+        language_name = language_service.get_language_name(language_code)
         
         prompt = f"""You are AVA, an agricultural assistant with PERFECT MEMORY. You MUST demonstrate that you remember EVERYTHING about this farmer.
+
+LANGUAGE REQUIREMENT: You MUST respond in {language_name} (language code: {language_code}).
+All your responses must be in {language_name}, NOT in English unless specifically requested.
 
 CRITICAL MEMORY FACTS YOU MUST USE:
 """

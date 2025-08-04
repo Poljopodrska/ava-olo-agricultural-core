@@ -757,31 +757,38 @@ async def chat_with_cava_engine(request: ChatRequest):
         # Store user message
         await store_message(wa_phone_number, 'user', message)
         
+        # LANGUAGE DETECTION: Detect language from WhatsApp number for ALL users
+        from modules.core.language_service import get_language_service
+        language_service = get_language_service()
+        
+        # Detect language from WhatsApp number (works for all users, registered or not)
+        detected_language = language_service.detect_language_from_whatsapp(wa_phone_number)
+        logger.info(f"Language detected from WhatsApp {wa_phone_number}: {detected_language}")
+        
+        # Check if message contains language change request
+        is_change, new_language = language_service.detect_language_change_request(message)
+        if is_change and new_language:
+            detected_language = new_language
+            logger.info(f"Language change requested: {new_language}")
+        
         # FAVA INTEGRATION: Process message through FAVA for farmer-aware intelligence
         fava_response = None
         if farmer_id:
             try:
-                from modules.core.language_service import get_language_service
-                language_service = get_language_service()
                 fava_engine = get_fava_engine()
                 
                 async with db_manager.get_connection_async() as conn:
-                    # Get farmer's language preference
-                    farmer_language = await language_service.get_farmer_language(farmer_id, conn)
-                    
-                    # Check if message contains language change request
-                    is_change, new_language = language_service.detect_language_change_request(message)
+                    # Update farmer's language preference if changed
                     if is_change and new_language:
-                        # Update language preference
                         await language_service.update_farmer_language(farmer_id, new_language, conn)
-                        farmer_language = new_language
-                        logger.info(f"Language changed to {new_language} for farmer {farmer_id}")
+                        logger.info(f"Language preference updated to {new_language} for farmer {farmer_id}")
                     
+                    # Use the detected language (already detected above for ALL users)
                     fava_response = await fava_engine.process_farmer_message(
                         farmer_id=farmer_id,
                         message=message,
                         db_connection=conn,
-                        language_code=farmer_language
+                        language_code=detected_language  # Use the already detected language
                     )
                     
                     # Execute database action if FAVA suggests one

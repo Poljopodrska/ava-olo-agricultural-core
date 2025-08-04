@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804182500'  # v4.4.1 - Dashboard field display improvements
-COMMIT_HASH = "dashboard-field-display"  # Shows surface, crop, variety, last task
+DEPLOYMENT_TIMESTAMP = '20250804183000'  # v4.4.2 - Language system fixes for auth pages
+COMMIT_HASH = "language-auth-fixes"  # IP-based language for signin/signup
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.1"
+VERSION = "v4.4.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

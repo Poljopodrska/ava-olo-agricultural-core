@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+"""
+Translation system for AVA OLO
+Provides UI translations for all supported languages
+"""
+
+TRANSLATIONS = {
+    'en': {
+        # Sign In Page
+        'sign_in_title': 'Sign In',
+        'sign_in_subtitle': 'Welcome back to AVA OLO',
+        'whatsapp_label': 'WhatsApp Number',
+        'whatsapp_placeholder': 'e.g., +359888123456',
+        'password_label': 'Password',
+        'password_placeholder': 'Enter your password',
+        'sign_in_button': 'Sign In',
+        'no_account': "Don't have an account?",
+        'register_link': 'Register here',
+        'forgot_password': 'Forgot password?',
+        
+        # Register Page
+        'register_title': 'Create Account',
+        'register_subtitle': 'Join AVA OLO Farmer Portal',
+        'first_name_label': 'First Name',
+        'first_name_placeholder': 'Enter your first name',
+        'last_name_label': 'Last Name',
+        'last_name_placeholder': 'Enter your last name',
+        'email_label': 'Email',
+        'email_placeholder': 'your@email.com',
+        'confirm_password_label': 'Confirm Password',
+        'confirm_password_placeholder': 'Re-enter your password',
+        'register_button': 'Create Account',
+        'have_account': 'Already have an account?',
+        'signin_link': 'Sign in here',
+        
+        # Common
+        'error_invalid_whatsapp': 'Please enter a valid WhatsApp number',
+        'error_invalid_password': 'Incorrect password',
+        'error_no_account': 'No account found with this WhatsApp number',
+        'error_passwords_mismatch': 'Passwords do not match',
+        'error_password_too_short': 'Password must be at least 8 characters',
+        'welcome': 'Welcome',
+        'loading': 'Loading...',
+    },
+    
+    'sl': {  # Slovenian
+        # Sign In Page
+        'sign_in_title': 'Prijava',
+        'sign_in_subtitle': 'Dobrodošli nazaj v AVA OLO',
+        'whatsapp_label': 'WhatsApp številka',
+        'whatsapp_placeholder': 'npr. +38640123456',
+        'password_label': 'Geslo',
+        'password_placeholder': 'Vnesite svoje geslo',
+        'sign_in_button': 'Prijava',
+        'no_account': 'Nimate računa?',
+        'register_link': 'Registrirajte se tukaj',
+        'forgot_password': 'Pozabljeno geslo?',
+        
+        # Register Page
+        'register_title': 'Ustvari račun',
+        'register_subtitle': 'Pridružite se portalu AVA OLO za kmete',
+        'first_name_label': 'Ime',
+        'first_name_placeholder': 'Vnesite svoje ime',
+        'last_name_label': 'Priimek',
+        'last_name_placeholder': 'Vnesite svoj priimek',
+        'email_label': 'E-pošta',
+        'email_placeholder': 'vas@email.com',
+        'confirm_password_label': 'Potrdi geslo',
+        'confirm_password_placeholder': 'Ponovno vnesite geslo',
+        'register_button': 'Ustvari račun',
+        'have_account': 'Že imate račun?',
+        'signin_link': 'Prijavite se tukaj',
+        
+        # Common
+        'error_invalid_whatsapp': 'Prosimo, vnesite veljavno WhatsApp številko',
+        'error_invalid_password': 'Napačno geslo',
+        'error_no_account': 'Ni najdenega računa s to WhatsApp številko',
+        'error_passwords_mismatch': 'Gesli se ne ujemata',
+        'error_password_too_short': 'Geslo mora imeti vsaj 8 znakov',
+        'welcome': 'Dobrodošli',
+        'loading': 'Nalaganje...',
+    },
+    
+    'bg': {  # Bulgarian
+        # Sign In Page
+        'sign_in_title': 'Вход',
+        'sign_in_subtitle': 'Добре дошли отново в AVA OLO',
+        'whatsapp_label': 'WhatsApp номер',
+        'whatsapp_placeholder': 'напр. +359888123456',
+        'password_label': 'Парола',
+        'password_placeholder': 'Въведете паролата си',
+        'sign_in_button': 'Вход',
+        'no_account': 'Нямате акаунт?',
+        'register_link': 'Регистрирайте се тук',
+        'forgot_password': 'Забравена парола?',
+        
+        # Register Page
+        'register_title': 'Създаване на акаунт',
+        'register_subtitle': 'Присъединете се към портала за фермери AVA OLO',
+        'first_name_label': 'Име',
+        'first_name_placeholder': 'Въведете вашето име',
+        'last_name_label': 'Фамилия',
+        'last_name_placeholder': 'Въведете вашата фамилия',
+        'email_label': 'Имейл',
+        'email_placeholder': 'вашият@имейл.com',
+        'confirm_password_label': 'Потвърдете паролата',
+        'confirm_password_placeholder': 'Въведете отново паролата',
+        'register_button': 'Създай акаунт',
+        'have_account': 'Вече имате акаунт?',
+        'signin_link': 'Влезте тук',
+        
+        # Common
+        'error_invalid_whatsapp': 'Моля, въведете валиден WhatsApp номер',
+        'error_invalid_password': 'Грешна парола',
+        'error_no_account': 'Няма намерен акаунт с този WhatsApp номер',
+        'error_passwords_mismatch': 'Паролите не съвпадат',
+        'error_password_too_short': 'Паролата трябва да е поне 8 символа',
+        'welcome': 'Добре дошли',
+        'loading': 'Зареждане...',
+    },
+    
+    'hr': {  # Croatian
+        # Sign In Page
+        'sign_in_title': 'Prijava',
+        'sign_in_subtitle': 'Dobrodošli natrag u AVA OLO',
+        'whatsapp_label': 'WhatsApp broj',
+        'whatsapp_placeholder': 'npr. +385911234567',
+        'password_label': 'Lozinka',
+        'password_placeholder': 'Unesite svoju lozinku',
+        'sign_in_button': 'Prijava',
+        'no_account': 'Nemate račun?',
+        'register_link': 'Registrirajte se ovdje',
+        'forgot_password': 'Zaboravljena lozinka?',
+        
+        # Register Page
+        'register_title': 'Stvori račun',
+        'register_subtitle': 'Pridružite se AVA OLO portalu za poljoprivrednike',
+        'first_name_label': 'Ime',
+        'first_name_placeholder': 'Unesite svoje ime',
+        'last_name_label': 'Prezime',
+        'last_name_placeholder': 'Unesite svoje prezime',
+        'email_label': 'E-pošta',
+        'email_placeholder': 'vaš@email.com',
+        'confirm_password_label': 'Potvrdi lozinku',
+        'confirm_password_placeholder': 'Ponovno unesite lozinku',
+        'register_button': 'Stvori račun',
+        'have_account': 'Već imate račun?',
+        'signin_link': 'Prijavite se ovdje',
+        
+        # Common
+        'error_invalid_whatsapp': 'Molimo unesite valjan WhatsApp broj',
+        'error_invalid_password': 'Pogrešna lozinka',
+        'error_no_account': 'Nema pronađenog računa s ovim WhatsApp brojem',
+        'error_passwords_mismatch': 'Lozinke se ne podudaraju',
+        'error_password_too_short': 'Lozinka mora imati najmanje 8 znakova',
+        'welcome': 'Dobrodošli',
+        'loading': 'Učitavanje...',
+    },
+    
+    'de': {  # German
+        # Sign In Page
+        'sign_in_title': 'Anmelden',
+        'sign_in_subtitle': 'Willkommen zurück bei AVA OLO',
+        'whatsapp_label': 'WhatsApp-Nummer',
+        'whatsapp_placeholder': 'z.B. +43664123456',
+        'password_label': 'Passwort',
+        'password_placeholder': 'Passwort eingeben',
+        'sign_in_button': 'Anmelden',
+        'no_account': 'Noch kein Konto?',
+        'register_link': 'Hier registrieren',
+        'forgot_password': 'Passwort vergessen?',
+        
+        # Register Page
+        'register_title': 'Konto erstellen',
+        'register_subtitle': 'Treten Sie dem AVA OLO Bauernportal bei',
+        'first_name_label': 'Vorname',
+        'first_name_placeholder': 'Geben Sie Ihren Vornamen ein',
+        'last_name_label': 'Nachname',
+        'last_name_placeholder': 'Geben Sie Ihren Nachnamen ein',
+        'email_label': 'E-Mail',
+        'email_placeholder': 'ihre@email.com',
+        'confirm_password_label': 'Passwort bestätigen',
+        'confirm_password_placeholder': 'Passwort erneut eingeben',
+        'register_button': 'Konto erstellen',
+        'have_account': 'Haben Sie bereits ein Konto?',
+        'signin_link': 'Hier anmelden',
+        
+        # Common
+        'error_invalid_whatsapp': 'Bitte geben Sie eine gültige WhatsApp-Nummer ein',
+        'error_invalid_password': 'Falsches Passwort',
+        'error_no_account': 'Kein Konto mit dieser WhatsApp-Nummer gefunden',
+        'error_passwords_mismatch': 'Passwörter stimmen nicht überein',
+        'error_password_too_short': 'Passwort muss mindestens 8 Zeichen lang sein',
+        'welcome': 'Willkommen',
+        'loading': 'Wird geladen...',
+    },
+    
+    'it': {  # Italian
+        # Sign In Page
+        'sign_in_title': 'Accedi',
+        'sign_in_subtitle': 'Bentornato su AVA OLO',
+        'whatsapp_label': 'Numero WhatsApp',
+        'whatsapp_placeholder': 'es. +393331234567',
+        'password_label': 'Password',
+        'password_placeholder': 'Inserisci la tua password',
+        'sign_in_button': 'Accedi',
+        'no_account': 'Non hai un account?',
+        'register_link': 'Registrati qui',
+        'forgot_password': 'Password dimenticata?',
+        
+        # Register Page
+        'register_title': 'Crea account',
+        'register_subtitle': 'Unisciti al portale agricoltori AVA OLO',
+        'first_name_label': 'Nome',
+        'first_name_placeholder': 'Inserisci il tuo nome',
+        'last_name_label': 'Cognome',
+        'last_name_placeholder': 'Inserisci il tuo cognome',
+        'email_label': 'Email',
+        'email_placeholder': 'tua@email.com',
+        'confirm_password_label': 'Conferma password',
+        'confirm_password_placeholder': 'Reinserisci la password',
+        'register_button': 'Crea account',
+        'have_account': 'Hai già un account?',
+        'signin_link': 'Accedi qui',
+        
+        # Common
+        'error_invalid_whatsapp': 'Inserisci un numero WhatsApp valido',
+        'error_invalid_password': 'Password errata',
+        'error_no_account': 'Nessun account trovato con questo numero WhatsApp',
+        'error_passwords_mismatch': 'Le password non corrispondono',
+        'error_password_too_short': 'La password deve essere di almeno 8 caratteri',
+        'welcome': 'Benvenuto',
+        'loading': 'Caricamento...',
+    }
+}
+
+def get_translations(language_code: str = 'en') -> dict:
+    """Get translations for a specific language"""
+    return TRANSLATIONS.get(language_code, TRANSLATIONS['en'])

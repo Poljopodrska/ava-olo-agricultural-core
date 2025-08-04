@@ -12,6 +12,7 @@ import re
 import logging
 from modules.core.config import VERSION
 from modules.core.database_manager import get_db_manager
+from modules.core.translations import get_translations
 
 logger = logging.getLogger(__name__)
 
@@ -173,10 +174,23 @@ async def pure_chat_page(request: Request):
 
 @router.get("/signin", response_class=HTMLResponse)
 async def signin_page(request: Request):
-    """Display sign-in page"""
+    """Display sign-in page with language detection"""
+    # Detect language from IP address
+    from modules.core.language_service import get_language_service
+    language_service = get_language_service()
+    
+    # Get client IP
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    detected_language = await language_service.detect_language_from_ip(client_ip)
+    
+    # Get translations for the detected language
+    translations = get_translations(detected_language)
+    
     return templates.TemplateResponse("auth/signin.html", {
         "request": request,
-        "version": VERSION
+        "version": VERSION,
+        "language": detected_language,
+        "t": translations
     })
 
 @router.post("/signin")
@@ -233,10 +247,23 @@ async def signin_submit(
 
 @router.get("/register", response_class=HTMLResponse)
 async def register_page(request: Request):
-    """Display traditional form registration"""
+    """Display traditional form registration with language detection"""
+    # Detect language from IP address
+    from modules.core.language_service import get_language_service
+    language_service = get_language_service()
+    
+    # Get client IP
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    detected_language = await language_service.detect_language_from_ip(client_ip)
+    
+    # Get translations for the detected language
+    translations = get_translations(detected_language)
+    
     return templates.TemplateResponse("auth/register_split.html", {
         "request": request,
-        "version": VERSION
+        "version": VERSION,
+        "language": detected_language,
+        "t": translations
     })
 
 @router.post("/register")
