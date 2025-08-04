@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804083000'  # v4.1.7 - Fix registration and deactivation
-COMMIT_HASH = "fix-registration-deactivation"  # Fix registration checks and use deactivation instead of deletion
+DEPLOYMENT_TIMESTAMP = '20250804084500'  # v4.1.8 - Fix special characters in dashboard
+COMMIT_HASH = "fix-special-chars-dashboard"  # Fix display of names with special characters
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.1.7"
+VERSION = "v4.1.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -270,18 +270,24 @@ class DatabaseDashboard {
                         </tr>
                     </thead>
                     <tbody>
-                        ${results.map(row => `
+                        ${results.map(row => {
+                            // Escape special characters in names for JavaScript string
+                            const firstName = (row.manager_name || row.first_name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                            const lastName = (row.manager_last_name || row.last_name || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+                            const displayName = `${firstName} ${lastName}`.trim();
+                            
+                            return `
                             <tr>
                                 ${columns.map(col => `<td>${this.formatCellValue(row[col])}</td>`).join('')}
                                 ${showDelete ? `
                                     <td style="text-align: center;">
-                                        <button class="btn btn-danger btn-sm" onclick="dashboard.confirmDelete('farmers', ${row.id || row.farmer_id}, '${(row.manager_name || row.first_name || '')} ${(row.manager_last_name || row.last_name || '')}')">
+                                        <button class="btn btn-danger btn-sm" onclick="dashboard.confirmDelete('farmers', ${row.id || row.farmer_id}, '${displayName}')">
                                             🔒 Deactivate
                                         </button>
                                     </td>
                                 ` : ''}
                             </tr>
-                        `).join('')}
+                        `}).join('')}
                     </tbody>
                 </table>
             </div>
