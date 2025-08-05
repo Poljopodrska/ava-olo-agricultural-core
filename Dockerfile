@@ -1,4 +1,4 @@
-# AVA OLO Agricultural Core Service - v4.9.2
+# AVA OLO Agricultural Core Service - v4.9.3
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.11-slim
 
 # Cache busting
