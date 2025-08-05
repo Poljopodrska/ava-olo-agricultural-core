@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.11.0
-Full restoration with all routers and error handling
+AVA OLO Agricultural Core - v4.11.1
+Gradual restoration - essential routers only
 """
 import os
 import sys
@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from datetime import datetime
 
 # Set up logging
 logging.basicConfig(
@@ -23,91 +24,38 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.11.0"
+VERSION = "v4.11.1"
 
 # Import config with fallback
 try:
-    from modules.core.config import constitutional_deployment_completion, VERSION as CONFIG_VERSION
+    from modules.core.config import VERSION as CONFIG_VERSION
     VERSION = CONFIG_VERSION
 except ImportError:
-    def constitutional_deployment_completion():
-        print(f"Constitutional deployment complete: {VERSION}")
+    pass
 
-# Import database manager with fallback
-try:
-    from modules.core.database_manager import get_db_manager
-except ImportError:
-    def get_db_manager():
-        return None
-
-# Import routers with error handling
+# Import routers safely
 routers_to_include = []
 
+# Health router - use simple version
 try:
-    from modules.api.health_routes import router as health_router
+    from modules.api.health_routes_simple import router as health_router
     routers_to_include.append(("health", health_router))
-except ImportError as e:
-    logger.warning(f"Failed to import health router: {e}")
+except ImportError:
+    logger.warning("Failed to import simple health router")
 
+# Auth router - use minimal version
 try:
-    from modules.auth.routes import router as auth_router
+    from modules.auth.routes_minimal import router as auth_router
     routers_to_include.append(("auth", auth_router))
-except ImportError as e:
-    logger.warning(f"Failed to import auth router: {e}")
+except ImportError:
+    logger.warning("Failed to import minimal auth router")
 
-try:
-    from modules.api.dashboard_routes import router as dashboard_router
-    routers_to_include.append(("dashboard", dashboard_router))
-except ImportError as e:
-    logger.warning(f"Failed to import dashboard router: {e}")
-
+# Farmer dashboard router
 try:
     from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
     routers_to_include.append(("farmer_dashboard", farmer_dashboard_router))
 except ImportError as e:
     logger.warning(f"Failed to import farmer dashboard router: {e}")
-
-try:
-    from modules.api.weather_routes import router as weather_router
-    routers_to_include.append(("weather", weather_router))
-except ImportError as e:
-    logger.warning(f"Failed to import weather router: {e}")
-
-try:
-    from modules.api.chat_routes import router as chat_router
-    routers_to_include.append(("chat", chat_router))
-except ImportError as e:
-    logger.warning(f"Failed to import chat router: {e}")
-
-try:
-    from modules.api.task_management_routes import router as task_management_router
-    routers_to_include.append(("task_management", task_management_router))
-except ImportError as e:
-    logger.warning(f"Failed to import task management router: {e}")
-
-try:
-    from modules.fields.routes import router as fields_router
-    routers_to_include.append(("fields", fields_router))
-except ImportError as e:
-    logger.warning(f"Failed to import fields router: {e}")
-
-try:
-    from modules.api.debug_edi_kante import router as debug_edi_router
-    routers_to_include.append(("debug_edi", debug_edi_router))
-except ImportError as e:
-    logger.warning(f"Failed to import debug edi router: {e}")
-
-try:
-    from modules.api.cava_registration_routes import router as cava_router
-    routers_to_include.append(("cava_registration", cava_router))
-except ImportError as e:
-    logger.warning(f"Failed to import cava registration router: {e}")
-
-try:
-    from modules.whatsapp.routes import router as whatsapp_router
-    routers_to_include.append(("whatsapp", whatsapp_router))
-except ImportError as e:
-    logger.warning(f"Failed to import whatsapp router: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -160,10 +108,10 @@ async def root():
         "status": "operational",
         "features": {
             "language_detection": True,
-            "field_management": True,
-            "task_management": True,
-            "chat_integration": True,
-            "weather_monitoring": True
+            "field_management": False,
+            "task_management": False,
+            "chat_integration": False,
+            "weather_monitoring": False
         },
         "routers": [name for name, _ in routers_to_include]
     })
@@ -201,35 +149,14 @@ for router_name, router in routers_to_include:
     except Exception as e:
         logger.error(f"Failed to include {router_name} router: {e}")
 
-# Import datetime after routers
-from datetime import datetime
-
 # Startup event
 @app.on_event("startup")
 async def startup_event():
     """Startup event"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
+    logger.info(f"Gradual restoration - essential routers only")
     logger.info(f"Included routers: {[name for name, _ in routers_to_include]}")
-    
-    # Test database
-    try:
-        db_manager = get_db_manager()
-        if db_manager and hasattr(db_manager, 'test_connection'):
-            if db_manager.test_connection(retries=2, delay=1):
-                logger.info("Database connection successful")
-            else:
-                logger.warning("Database connection failed but continuing")
-        else:
-            logger.info("Database manager not available")
-    except Exception as e:
-        logger.error(f"Database test error: {e}")
-    
     logger.info(f"AVA OLO Agricultural Core ready - {VERSION}")
-    
-    try:
-        constitutional_deployment_completion()
-    except Exception as e:
-        logger.error(f"Constitutional completion error: {e}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
