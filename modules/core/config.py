@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805204500'  # v4.13.5 - Minimal auth fix
-COMMIT_HASH = "minimal-auth-fix"  # Only essential auth fix without debug code
+DEPLOYMENT_TIMESTAMP = '20250805204600'  # v4.13.6 - Weather functionality connected
+COMMIT_HASH = "weather-connected"  # Connected weather routes to actual weather service
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.5"
+VERSION = "v4.13.6"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
