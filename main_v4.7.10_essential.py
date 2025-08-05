@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.8.0
-Phase 1: Core routers only (health, auth, static files)
+AVA OLO Agricultural Core - v4.7.10
+Essential routers only
 """
 import os
 import logging
@@ -21,6 +21,8 @@ from modules.core.database_manager import get_db_manager
 # Essential route imports
 from modules.api.health_routes import router as health_router
 from modules.auth.routes import router as auth_router
+from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
+from modules.api.weather_routes import router as weather_router
 
 # Set up logging
 logging.basicConfig(
@@ -30,7 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.8.0"
+VERSION = "v4.7.10"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -71,30 +73,31 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - phase 1"""
+    """Root endpoint - essential version"""
     return JSONResponse(content={
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
-        "status": "phase1",
-        "routers": ["health", "auth", "static"],
-        "phase": "Core routers only"
+        "status": "essential",
+        "routers": 4
     })
 
-# Landing page redirect
+# Landing page
 @app.get("/landing")
 async def landing(request: Request):
     """Redirect to farmer dashboard"""
     return RedirectResponse(url="/farmer/dashboard", status_code=307)
 
-# Include core routers only
+# Include essential routers only
 app.include_router(health_router, tags=["health"])
 app.include_router(auth_router)
+app.include_router(farmer_dashboard_router)
+app.include_router(weather_router)
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Phase 1 startup"""
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Phase 1: Core routers")
+    """Essential startup"""
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 4 essential routers")
     
     # Test database
     try:
@@ -106,7 +109,7 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Database test error: {e}")
     
-    logger.info(f"AVA OLO Agricultural Core ready - {VERSION} Phase 1")
+    logger.info(f"AVA OLO Agricultural Core ready - {VERSION} Essential")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
