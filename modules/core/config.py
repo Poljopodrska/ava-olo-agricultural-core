@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250805052000'  # v4.7.7 - Fixed Dockerfile version and checks
 COMMIT_HASH = "dockerfile-fixes"  # Updated Dockerfile VERSION and disabled Git check
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.7.7"
+VERSION = "v4.7.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
