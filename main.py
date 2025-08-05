@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.9.2
-Ultra-minimal - bare FastAPI only
+AVA OLO Agricultural Core - v4.9.3
+Phase 1: Add static files mount
 """
 import os
 import logging
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 
 # Set up logging
@@ -17,8 +18,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.9.2"
-BUILD_ID = "ultra-minimal"
+VERSION = "v4.9.3"
+BUILD_ID = "static-files"
 
 # Initialize FastAPI
 app = FastAPI(
@@ -28,6 +29,14 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+# Mount static files
+try:
+    if os.path.exists("static"):
+        app.mount("/static", StaticFiles(directory="static"), name="static")
+        logger.info("Static files mounted")
+except Exception as e:
+    logger.error(f"Failed to mount static files: {e}")
+
 # Root endpoint
 @app.get("/")
 async def root():
@@ -36,6 +45,7 @@ async def root():
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
         "status": "operational",
+        "features": ["static_files"],
         "timestamp": datetime.now().isoformat()
     })
 
@@ -54,7 +64,7 @@ async def health():
 async def startup_event():
     """Startup"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
-    logger.info("Ultra-minimal version - FastAPI only")
+    logger.info("Phase 1: Static files mount")
     logger.info("Ready to serve")
 
 if __name__ == "__main__":
