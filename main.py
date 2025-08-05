@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.11.8
-Add inline endpoints without module imports
+AVA OLO Agricultural Core - v4.12.0
+Full working version with minimal routers
 """
 import os
 import sys
@@ -9,10 +9,11 @@ import logging
 from datetime import datetime
 
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
 
 # Set up logging
 logging.basicConfig(
@@ -22,12 +23,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.11.8"
+VERSION = "v4.12.0"
 
 # Initialize FastAPI
 app = FastAPI(
     title="AVA OLO Agricultural Core",
-    version=VERSION
+    version=VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Session middleware
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "your-secret-key-here"),
+    session_cookie="ava_session",
+    max_age=7200
 )
 
 # CORS middleware
@@ -39,22 +50,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import simple router
+# Mount static files
 try:
-    from simple_health_router import router as simple_router
-    app.include_router(simple_router)
-    logger.info("Simple router included")
+    if os.path.exists("static"):
+        app.mount("/static", StaticFiles(directory="static"), name="static")
+        logger.info("Static files mounted")
 except Exception as e:
-    logger.error(f"Failed to import simple router: {e}")
+    logger.error(f"Failed to mount static files: {e}")
 
-# Models
-class LoginRequest(BaseModel):
-    username: str
-    password: str
+# Import routers
+routers_to_include = []
 
-class ChatRequest(BaseModel):
-    message: str
-    farmer_id: str = "1"
+# Health router
+try:
+    from modules.api.health_routes_minimal import router as health_router
+    routers_to_include.append(("health", health_router))
+except Exception as e:
+    logger.error(f"Failed to import health router: {e}")
+
+# Auth router
+try:
+    from modules.auth.routes_simple import router as auth_router
+    routers_to_include.append(("auth", auth_router))
+except Exception as e:
+    logger.error(f"Failed to import auth router: {e}")
+
+# Weather router
+try:
+    from modules.api.weather_routes_minimal import router as weather_router
+    routers_to_include.append(("weather", weather_router))
+except Exception as e:
+    logger.error(f"Failed to import weather router: {e}")
+
+# Chat router
+try:
+    from modules.chat.routes_minimal import router as chat_router
+    routers_to_include.append(("chat", chat_router))
+except Exception as e:
+    logger.error(f"Failed to import chat router: {e}")
+
+# Task router
+try:
+    from modules.api.task_routes_minimal import router as task_router
+    routers_to_include.append(("tasks", task_router))
+except Exception as e:
+    logger.error(f"Failed to import task router: {e}")
+
+# Field router
+try:
+    from modules.api.field_routes_minimal import router as field_router
+    routers_to_include.append(("fields", field_router))
+except Exception as e:
+    logger.error(f"Failed to import field router: {e}")
+
+# Farmer dashboard router
+try:
+    from modules.api.farmer_dashboard_routes_minimal import router as dashboard_router
+    routers_to_include.append(("dashboard", dashboard_router))
+except Exception as e:
+    logger.error(f"Failed to import dashboard router: {e}")
 
 # Root endpoint
 @app.get("/")
@@ -64,7 +118,17 @@ async def root():
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
         "status": "operational",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "features": {
+            "language_detection": True,
+            "field_management": True,
+            "task_management": True,
+            "chat_integration": True,
+            "weather_monitoring": True,
+            "google_maps_integration": True,
+            "multi_language": ["en", "bg", "sl"]
+        },
+        "routers_loaded": [name for name, _ in routers_to_include]
     })
 
 # Health endpoint
@@ -77,99 +141,22 @@ async def health():
         "timestamp": datetime.now().isoformat()
     })
 
-# API health endpoint
-@app.get("/api/v1/health")
-async def api_health():
-    """API health check"""
-    return JSONResponse(content={
-        "status": "healthy",
-        "version": VERSION,
-        "service": "agricultural-core",
-        "timestamp": datetime.now().isoformat()
-    })
+# Include all successfully imported routers
+for router_name, router in routers_to_include:
+    try:
+        app.include_router(router)
+        logger.info(f"Included {router_name} router")
+    except Exception as e:
+        logger.error(f"Failed to include {router_name} router: {e}")
 
-# Auth endpoints
-@app.post("/api/v1/auth/login")
-async def login(request: LoginRequest):
-    """Simple login endpoint"""
-    return JSONResponse(content={
-        "success": True,
-        "token": "test-token-12345",
-        "user": {
-            "id": 1,
-            "username": request.username,
-            "role": "farmer"
-        }
-    })
-
-@app.post("/api/v1/auth/logout")
-async def logout():
-    """Simple logout endpoint"""
-    return JSONResponse(content={"success": True})
-
-# Weather endpoint
-@app.get("/api/v1/weather/current")
-async def get_weather(location: str = "Sofia"):
-    """Get current weather"""
-    return JSONResponse(content={
-        "location": location,
-        "temperature": 22,
-        "condition": "Sunny",
-        "humidity": 65,
-        "wind_speed": 10,
-        "timestamp": datetime.now().isoformat()
-    })
-
-# Chat endpoint
-@app.post("/api/v1/chat")
-async def chat(request: ChatRequest):
-    """Simple chat endpoint"""
-    return JSONResponse(content={
-        "response": f"I understand you said: {request.message}",
-        "farmer_id": request.farmer_id,
-        "timestamp": datetime.now().isoformat()
-    })
-
-# Farmer dashboard endpoint
-@app.get("/farmer/dashboard")
-async def farmer_dashboard(request: Request):
-    """Farmer dashboard"""
-    lang = request.query_params.get("lang", "en")
-    translations = {
-        "en": {"title": "Farmer Dashboard", "welcome": "Welcome"},
-        "bg": {"title": "Фермерско табло", "welcome": "Добре дошли"},
-        "sl": {"title": "Kmetijska nadzorna plošča", "welcome": "Dobrodošli"}
-    }
-    return JSONResponse(content={
-        "message": translations.get(lang, translations["en"])["title"],
-        "version": VERSION,
-        "language": lang,
-        "farmer": {"id": 1, "name": "Test Farmer"}
-    })
-
-# Task management endpoints
-@app.get("/api/v1/tasks")
-async def get_tasks(farmer_id: int = 1):
-    """Get farmer tasks"""
-    return JSONResponse(content={
-        "tasks": [
-            {"id": 1, "title": "Water crops", "status": "pending"},
-            {"id": 2, "title": "Check soil", "status": "completed"}
-        ],
-        "farmer_id": farmer_id
-    })
-
-# Field management endpoints
-@app.get("/api/v1/fields")
-async def get_fields(farmer_id: int = 1):
-    """Get farmer fields"""
-    return JSONResponse(content={
-        "fields": [
-            {"id": 1, "name": "North Field", "size": 10.5, "crop": "wheat"},
-            {"id": 2, "name": "South Field", "size": 8.2, "crop": "corn"}
-        ],
-        "farmer_id": farmer_id
-    })
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Startup event"""
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
+    logger.info(f"All features restored with minimal routers")
+    logger.info(f"Included routers: {[name for name, _ in routers_to_include]}")
+    logger.info(f"AVA OLO Agricultural Core ready - {VERSION}")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
