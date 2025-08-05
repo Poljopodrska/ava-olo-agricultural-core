@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250805053000'  # v4.7.9 - Full implementation with all features
 COMMIT_HASH = "full-implementation"  # All 19 tasks completed and deployed
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.9.0"
+VERSION = "v4.9.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
