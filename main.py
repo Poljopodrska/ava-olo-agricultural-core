@@ -56,7 +56,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.7.2-hotfix"
+VERSION = "v4.7.3"
 
 # Initialize startup status
 STARTUP_STATUS = {
