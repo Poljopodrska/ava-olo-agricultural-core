@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.11.1
-Gradual restoration - essential routers only
+AVA OLO Agricultural Core - v4.11.2
+Add weather and chat routers
 """
 import os
 import sys
@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.11.1"
+VERSION = "v4.11.2"
 
 # Import config with fallback
 try:
@@ -50,12 +50,19 @@ try:
 except ImportError:
     logger.warning("Failed to import minimal auth router")
 
-# Farmer dashboard router
+# Weather router
 try:
-    from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
-    routers_to_include.append(("farmer_dashboard", farmer_dashboard_router))
+    from modules.api.weather_routes import router as weather_router
+    routers_to_include.append(("weather", weather_router))
 except ImportError as e:
-    logger.warning(f"Failed to import farmer dashboard router: {e}")
+    logger.warning(f"Failed to import weather router: {e}")
+
+# Chat router
+try:
+    from modules.api.chat_routes import router as chat_router
+    routers_to_include.append(("chat", chat_router))
+except ImportError as e:
+    logger.warning(f"Failed to import chat router: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -110,8 +117,8 @@ async def root():
             "language_detection": True,
             "field_management": False,
             "task_management": False,
-            "chat_integration": False,
-            "weather_monitoring": False
+            "chat_integration": True,
+            "weather_monitoring": True
         },
         "routers": [name for name, _ in routers_to_include]
     })
@@ -141,6 +148,55 @@ async def landing_page(request: Request):
         logger.error(f"Landing page error: {e}")
         return RedirectResponse(url="/farmer/dashboard")
 
+# Farmer dashboard endpoint without router
+@app.get("/farmer/dashboard")
+async def farmer_dashboard(request: Request):
+    """Farmer dashboard - minimal version"""
+    try:
+        from fastapi.templating import Jinja2Templates
+        templates = Jinja2Templates(directory="templates")
+        
+        # Get language from query params or default
+        language = request.query_params.get("lang", "en")
+        
+        # Basic translations
+        translations = {
+            "en": {
+                "dashboard_title": "Farmer Dashboard",
+                "welcome": "Welcome",
+                "weather": "Weather",
+                "fields": "Fields",
+                "tasks": "Tasks"
+            },
+            "bg": {
+                "dashboard_title": "Фермерско табло",
+                "welcome": "Добре дошли",
+                "weather": "Време",
+                "fields": "Полета",
+                "tasks": "Задачи"
+            },
+            "sl": {
+                "dashboard_title": "Kmetijska nadzorna plošča",
+                "welcome": "Dobrodošli",
+                "weather": "Vreme",
+                "fields": "Polja",
+                "tasks": "Naloge"
+            }
+        }
+        
+        t = translations.get(language, translations["en"])
+        
+        return templates.TemplateResponse("farmer/dashboard.html", {
+            "request": request,
+            "version": VERSION,
+            "language": language,
+            "t": t,
+            "farmer": {"name": "Farmer", "id": 1}
+        })
+    except Exception as e:
+        logger.error(f"Farmer dashboard error: {e}")
+        return JSONResponse({"error": "Dashboard temporarily unavailable"}, status_code=500)
+
 # Include all successfully imported routers
 for router_name, router in routers_to_include:
     try:
@@ -154,7 +210,7 @@ for router_name, router in routers_to_include:
 async def startup_event():
     """Startup event"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
-    logger.info(f"Gradual restoration - essential routers only")
+    logger.info(f"Added weather and chat routers")
     logger.info(f"Included routers: {[name for name, _ in routers_to_include]}")
     logger.info(f"AVA OLO Agricultural Core ready - {VERSION}")
 
