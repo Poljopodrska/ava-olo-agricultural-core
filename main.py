@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.12
-Fix template name mismatch for farmer dashboard
+AVA OLO Agricultural Core v4.13.13
+Fix dashboard indentation and add debugging endpoints
 """
 import uvicorn
 import sys

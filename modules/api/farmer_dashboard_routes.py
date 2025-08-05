@@ -22,6 +22,21 @@ router = APIRouter(prefix="/farmer", tags=["farmer-dashboard"])
 async def test_farmer_auth(farmer: dict = Depends(require_auth)):
     """Test endpoint to check if auth is working"""
     return {"status": "ok", "farmer": farmer}
+
+@router.get("/test-simple-dashboard", response_class=HTMLResponse)
+async def test_simple_dashboard(request: Request, farmer: dict = Depends(require_auth)):
+    """Simple test dashboard without complex data fetching"""
+    return templates.TemplateResponse("farmer/dashboard.html", {
+        "request": request,
+        "version": VERSION,
+        "farmer": farmer,
+        "fields": [],
+        "total_fields": 0,
+        "total_area": 0,
+        "weather": {"temperature": "20°C", "condition": "Sunny"},
+        "messages": [],
+        "message_count": 0
+    })
 templates = Jinja2Templates(directory="templates")
 
 async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
@@ -196,63 +211,69 @@ async def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, 
 async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth)):
     """Main farmer dashboard - shows personalized data"""
     
-    farmer_id = farmer['farmer_id']
-    
-    # Get farmer's data
-    fields = await get_farmer_fields(farmer_id)
-    weather = await get_farmer_weather(farmer_id)
-    messages = await get_farmer_messages(farmer_id)
-    
-    # Calculate totals
-    total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
-    
-    # Get farmer's language preference and WhatsApp number
-    db_manager = get_db_manager()
-    farmer_result = db_manager.execute_query(
-        "SELECT language_preference, COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number FROM farmers WHERE id = %s", 
-        (farmer_id,)
-    )
-    
-    # Import language service
-    from ..core.language_service import get_language_service
-    language_service = get_language_service()
-    
-    detected_language = 'en'  # Default to English
-    
-    if farmer_result and 'rows' in farmer_result and farmer_result['rows']:
-        stored_language = farmer_result['rows'][0][0]
-        whatsapp_number = farmer_result['rows'][0][1]
+    try:
+        farmer_id = farmer['farmer_id']
         
-        if stored_language:
-            # Use stored language preference
-            detected_language = stored_language
-            logger.info(f"Using stored language preference for farmer {farmer_id}: {detected_language}")
-        elif whatsapp_number:
-            # Fall back to detecting from WhatsApp number
-            detected_language = language_service.detect_language_from_whatsapp(whatsapp_number)
-            logger.info(f"Language detected for farmer {farmer_id} from WhatsApp {whatsapp_number}: {detected_language}")
-    
-    # Get translations for the detected language
-    from ..core.translations import get_translations, TranslationDict
-    translations = get_translations(detected_language)
-    
-    # Wrap translations in TranslationDict for template attribute access
-    if isinstance(translations, dict):
-        translations = TranslationDict(translations)
-    
-    return templates.TemplateResponse("farmer/dashboard.html", {
-        "request": request,
-        "version": VERSION,
-        "farmer": farmer,
-        "fields": fields,
-        "total_fields": len(fields),
-        "total_area": round(total_area, 2),
-        "weather": weather,
-        "messages": messages,
-        "message_count": len(messages),
-        "language": detected_language,
-        "t": translations  # Add translations to template context
-    })
+        # Get farmer's data
+        fields = await get_farmer_fields(farmer_id)
+        weather = await get_farmer_weather(farmer_id)
+        messages = await get_farmer_messages(farmer_id)
+        
+        # Calculate totals
+        total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
+        
+        # Get farmer's language preference and WhatsApp number
+        db_manager = get_db_manager()
+        farmer_result = db_manager.execute_query(
+            "SELECT language_preference, COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number FROM farmers WHERE id = %s", 
+            (farmer_id,)
+        )
+        
+        # Import language service
+        from ..core.language_service import get_language_service
+        language_service = get_language_service()
+        
+        detected_language = 'en'  # Default to English
+        
+        if farmer_result and 'rows' in farmer_result and farmer_result['rows']:
+            stored_language = farmer_result['rows'][0][0]
+            whatsapp_number = farmer_result['rows'][0][1]
+            
+            if stored_language:
+                # Use stored language preference
+                detected_language = stored_language
+                logger.info(f"Using stored language preference for farmer {farmer_id}: {detected_language}")
+            elif whatsapp_number:
+                # Fall back to detecting from WhatsApp number
+                detected_language = language_service.detect_language_from_whatsapp(whatsapp_number)
+                logger.info(f"Language detected for farmer {farmer_id} from WhatsApp {whatsapp_number}: {detected_language}")
+        
+        # Get translations for the detected language
+        from ..core.translations import get_translations, TranslationDict
+        translations = get_translations(detected_language)
+        
+        # Wrap translations in TranslationDict for template attribute access
+        if isinstance(translations, dict):
+            translations = TranslationDict(translations)
+        
+        return templates.TemplateResponse("farmer/dashboard_v2.html", {
+            "request": request,
+            "version": VERSION,
+            "farmer": farmer,
+            "fields": fields,
+            "total_fields": len(fields),
+            "total_area": round(total_area, 2),
+            "weather": weather,
+            "messages": messages,
+            "message_count": len(messages),
+            "language": detected_language,
+            "t": translations  # Add translations to template context
+        })
+    except Exception as e:
+        logger.error(f"Error rendering farmer dashboard: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Dashboard error: {str(e)}")
 
 @router.get("/api/fields", response_class=JSONResponse)
 async def api_farmer_fields(farmer: dict = Depends(require_auth)):

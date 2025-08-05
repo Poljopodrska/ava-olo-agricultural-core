@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805215800'  # v4.13.12 - Fix template name mismatch
-COMMIT_HASH = "fix-template-name"  # Use correct template name farmer/dashboard.html
+DEPLOYMENT_TIMESTAMP = '20250805220500'  # v4.13.13 - Fix dashboard indentation and add debugging
+COMMIT_HASH = "fix-dashboard-indentation"  # Fix broken indentation in dashboard function
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.12"
+VERSION = "v4.13.13"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
