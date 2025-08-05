@@ -19,7 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.8.1"
+VERSION = "v4.8.0-minimal-test"
 
 # Initialize FastAPI
 app = FastAPI(
