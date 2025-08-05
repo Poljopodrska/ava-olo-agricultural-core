@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805220500'  # v4.13.13 - Fix dashboard indentation and add debugging
-COMMIT_HASH = "fix-dashboard-indentation"  # Fix broken indentation in dashboard function
+DEPLOYMENT_TIMESTAMP = '20250805221000'  # v4.13.14 - Fix async/sync mismatch in dashboard
+COMMIT_HASH = "fix-async-sync-mismatch"  # Remove async from sync database functions
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.13"
+VERSION = "v4.13.14"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

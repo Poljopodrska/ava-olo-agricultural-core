@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.13
-Fix dashboard indentation and add debugging endpoints
+AVA OLO Agricultural Core v4.13.14
+Fix async/sync mismatch in dashboard functions
 """
 import uvicorn
 import sys

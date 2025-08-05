@@ -39,7 +39,7 @@ async def test_simple_dashboard(request: Request, farmer: dict = Depends(require
     })
 templates = Jinja2Templates(directory="templates")
 
-async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
+def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
     """Get all fields for a specific farmer with crop and last task info"""
     db_manager = get_db_manager()
     
@@ -117,7 +117,7 @@ async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
         logger.error(f"Error fetching farmer fields: {e}")
         return []
 
-async def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
+def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
     """Get weather for farmer's location"""
     db_manager = get_db_manager()
     
@@ -160,7 +160,7 @@ async def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
         'forecast': []
     }
 
-async def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, Any]]:
+def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, Any]]:
     """Get last N messages for a farmer"""
     db_manager = get_db_manager()
     
@@ -215,9 +215,9 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
         farmer_id = farmer['farmer_id']
         
         # Get farmer's data
-        fields = await get_farmer_fields(farmer_id)
-        weather = await get_farmer_weather(farmer_id)
-        messages = await get_farmer_messages(farmer_id)
+        fields = get_farmer_fields(farmer_id)
+        weather = get_farmer_weather(farmer_id)
+        messages = get_farmer_messages(farmer_id)
         
         # Calculate totals
         total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
@@ -278,7 +278,7 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
 @router.get("/api/fields", response_class=JSONResponse)
 async def api_farmer_fields(farmer: dict = Depends(require_auth)):
     """API endpoint for farmer's fields"""
-    fields = await get_farmer_fields(farmer['farmer_id'])
+    fields = get_farmer_fields(farmer['farmer_id'])
     return JSONResponse(content={
         "success": True,
         "fields": fields,
@@ -288,7 +288,7 @@ async def api_farmer_fields(farmer: dict = Depends(require_auth)):
 @router.get("/api/weather", response_class=JSONResponse)
 async def api_farmer_weather(farmer: dict = Depends(require_auth)):
     """API endpoint for farmer's weather"""
-    weather = await get_farmer_weather(farmer['farmer_id'])
+    weather = get_farmer_weather(farmer['farmer_id'])
     return JSONResponse(content={
         "success": True,
         "weather": weather
@@ -297,7 +297,7 @@ async def api_farmer_weather(farmer: dict = Depends(require_auth)):
 @router.get("/api/messages", response_class=JSONResponse)
 async def api_farmer_messages(farmer: dict = Depends(require_auth), limit: int = 6):
     """API endpoint for farmer's messages"""
-    messages = await get_farmer_messages(farmer['farmer_id'], limit)
+    messages = get_farmer_messages(farmer['farmer_id'], limit)
     return JSONResponse(content={
         "success": True,
         "messages": messages,
