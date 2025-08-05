@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.11.2
-Add weather and chat routers
+AVA OLO Agricultural Core - v4.11.3
+Add only weather router to minimal working base
 """
 import os
 import sys
@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.11.2"
+VERSION = "v4.11.3"
 
 # Import config with fallback
 try:
@@ -50,19 +50,12 @@ try:
 except ImportError:
     logger.warning("Failed to import minimal auth router")
 
-# Weather router
+# Weather router - should work without database
 try:
     from modules.api.weather_routes import router as weather_router
     routers_to_include.append(("weather", weather_router))
 except ImportError as e:
     logger.warning(f"Failed to import weather router: {e}")
-
-# Chat router
-try:
-    from modules.api.chat_routes import router as chat_router
-    routers_to_include.append(("chat", chat_router))
-except ImportError as e:
-    logger.warning(f"Failed to import chat router: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -117,7 +110,7 @@ async def root():
             "language_detection": True,
             "field_management": False,
             "task_management": False,
-            "chat_integration": True,
+            "chat_integration": False,
             "weather_monitoring": True
         },
         "routers": [name for name, _ in routers_to_include]
@@ -210,7 +203,7 @@ for router_name, router in routers_to_include:
 async def startup_event():
     """Startup event"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
-    logger.info(f"Added weather and chat routers")
+    logger.info(f"Added only weather router to minimal base")
     logger.info(f"Included routers: {[name for name, _ in routers_to_include]}")
     logger.info(f"AVA OLO Agricultural Core ready - {VERSION}")
 
