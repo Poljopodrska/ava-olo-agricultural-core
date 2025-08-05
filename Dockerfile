@@ -1,4 +1,4 @@
-# AVA OLO Agricultural Core Service - v4.10.1
+# AVA OLO Agricultural Core Service - v4.10.2
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.11-slim
 
 # Cache busting
@@ -16,8 +16,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including gcc for psutil
 RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    gcc \
+    python3-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,13 +38,13 @@ RUN test -f main.py || (echo "ERROR: main.py not found!" && exit 1)
 RUN echo "Build completed at: $(date)" > /build-info.txt
 RUN echo "Git SHA: ${GITHUB_SHA}" >> /build-info.txt
 RUN echo "Cachebust: ${CACHEBUST}" >> /build-info.txt
-RUN echo "✅ Ultra-minimal build complete" >> /build-info.txt
+RUN echo "✅ Build complete with all dependencies" >> /build-info.txt
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production
 ENV PORT=8080
-ENV VERSION=v4.10.1
+ENV VERSION=v4.10.2
 
 # Embed Git information
 ENV GITHUB_SHA=${GITHUB_SHA}

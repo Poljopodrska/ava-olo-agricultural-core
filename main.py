@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.10.1
+AVA OLO Agricultural Core - v4.10.2
 Phase 3: Add auth router inline
 """
 import os
@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.10.1"
+VERSION = "v4.10.2"
 BUILD_ID = "auth-router-inline"
 
 # Create simple health router
