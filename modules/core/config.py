@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805201500'  # v4.13.2 - Proper language detection logic
-COMMIT_HASH = "lang-detect-fix"  # IP-based when no WhatsApp, WhatsApp-based when available
+DEPLOYMENT_TIMESTAMP = '20250805203000'  # v4.13.3 - Fix signin error with debugging
+COMMIT_HASH = "signin-error-fix"  # Added debugging for Internal Server Error after signin
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.2"
+VERSION = "v4.13.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

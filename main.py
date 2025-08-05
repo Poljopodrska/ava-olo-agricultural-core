@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.2
-Production release with proper language detection
+AVA OLO Agricultural Core v4.13.3
+Production release with signin error debugging
 """
 import uvicorn
 import sys
@@ -246,6 +246,24 @@ async def minimal_signin_test(request: Request):
             "template_path": "auth/signin.html"
         }
 
+# Debug endpoint to check auth state after signin
+@app.get("/debug/auth-state")
+async def debug_auth_state(request: Request):
+    """Debug endpoint to check authentication state"""
+    from modules.auth.routes import get_current_farmer
+    
+    cookies = dict(request.cookies)
+    farmer = await get_current_farmer(request)
+    
+    return {
+        "cookies": cookies,
+        "current_farmer": farmer,
+        "farmer_id_cookie": request.cookies.get("farmer_id"),
+        "farmer_name_cookie": request.cookies.get("farmer_name"),
+        "headers": dict(request.headers),
+        "version": VERSION
+    }
+
 # Include all routers
 app.include_router(health_router)
 app.include_router(deployment_router)
@@ -298,7 +316,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("AVA OLO Agricultural Core ready - v4.13.2 Production with Proper Language Detection")
+    logger.info("AVA OLO Agricultural Core ready - v4.13.3 Production with Signin Debugging")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
