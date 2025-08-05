@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - HOTFIX v4.7.2
-Temporarily disables new routers to fix deployment issue
+AVA OLO Agricultural Core - v4.7.5
+Complete implementation with all features enabled
 """
 import asyncio
 import os
@@ -44,9 +44,8 @@ from modules.api.weather_routes import router as weather_router
 from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
 from modules.api.cava_registration_routes import router as cava_router
 from modules.whatsapp.routes import router as whatsapp_router
-# TEMPORARILY DISABLED TO FIX DEPLOYMENT
-# from modules.api.task_management_routes import router as task_management_router
-# from modules.api.debug_edi_kante import router as debug_edi_router
+from modules.api.task_management_routes import router as task_management_router
+from modules.api.debug_edi_kante import router as debug_edi_router
 
 # Set up logging
 logging.basicConfig(
@@ -56,7 +55,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.7.3"
+VERSION = "v4.7.5"
 
 # Initialize startup status
 STARTUP_STATUS = {
@@ -66,7 +65,7 @@ STARTUP_STATUS = {
     "validation_result": None,
     "monitoring_started": False,
     "error": None,
-    "total_routers_included": 20  # Reduced from 22
+    "total_routers_included": 22  # Back to full router count
 }
 
 @asynccontextmanager
@@ -144,17 +143,16 @@ app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
-# TEMPORARILY DISABLED
-# app.include_router(task_management_router)
-# app.include_router(debug_edi_router)
-STARTUP_STATUS["total_routers_included"] = 20
+app.include_router(task_management_router)
+app.include_router(debug_edi_router)
+STARTUP_STATUS["total_routers_included"] = 22
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup for production with 20 routers and basic auth"""
+    """Core startup for production with 22 routers and basic auth"""
     global STARTUP_STATUS
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 20 routers and basic auth protection")
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 22 routers and basic auth protection")
     
     # Run validation
     try:

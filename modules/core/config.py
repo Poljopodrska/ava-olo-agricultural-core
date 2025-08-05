@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805045000'  # v4.7.3 - Critical fix: Add missing weather_routes.py
-COMMIT_HASH = "critical-weather-fix"  # Added missing weather_routes.py module
+DEPLOYMENT_TIMESTAMP = '20250805050000'  # v4.7.5 - Complete implementation with all features
+COMMIT_HASH = "complete-all-features"  # Re-enabled all routers after fixing weather_routes
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.7.3"
+VERSION = "v4.7.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
