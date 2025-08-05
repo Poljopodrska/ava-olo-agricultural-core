@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.8.8
-Phase 3: Add minimal auth router
+AVA OLO Agricultural Core - v4.8.9
+Phase 3b: Simple auth endpoints without templates
 """
 import os
 import sys
@@ -9,15 +9,12 @@ import logging
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, APIRouter
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime
-
-# Minimal module imports
-from modules.auth.routes_minimal import router as auth_router
 
 # Set up logging
 logging.basicConfig(
@@ -27,8 +24,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.8.8"
-BUILD_ID = "phase3"
+VERSION = "v4.8.9"
+BUILD_ID = "phase3b"
 
 # Create simple health router
 health_router = APIRouter(prefix="/api/v1/health", tags=["health"])
@@ -43,13 +40,44 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     })
 
-@health_router.get("/simple")
-async def simple_health():
-    """Very simple health check"""
+# Create simple auth router
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
+
+@auth_router.get("/signin")
+async def signin_page():
+    """Sign in endpoint - returns JSON for now"""
     return JSONResponse({
-        "status": "ok",
-        "version": VERSION
+        "message": "Sign in page",
+        "version": VERSION,
+        "status": "auth routes working"
     })
+
+@auth_router.get("/register")
+async def register_page():
+    """Register endpoint - returns JSON for now"""
+    return JSONResponse({
+        "message": "Register page",
+        "version": VERSION,
+        "status": "auth routes working"
+    })
+
+@auth_router.post("/signin")
+async def signin_submit(request: Request):
+    """Process sign-in"""
+    return RedirectResponse(url="/farmer/dashboard", status_code=303)
+
+@auth_router.post("/register")
+async def register_submit(request: Request):
+    """Process registration"""
+    return RedirectResponse(url="/farmer/dashboard", status_code=303)
+
+@auth_router.get("/logout")
+async def logout():
+    """Log out user"""
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie(key="farmer_id")
+    response.delete_cookie(key="farmer_name")
+    return response
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -84,29 +112,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files with error handling
+# Mount static files
 try:
     if os.path.exists("static"):
         app.mount("/static", StaticFiles(directory="static"), name="static")
-        logger.info("Static files mounted successfully")
-    else:
-        logger.warning("Static directory not found")
+        logger.info("Static files mounted")
 except Exception as e:
     logger.error(f"Failed to mount static files: {e}")
 
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - phase 3"""
+    """Root endpoint"""
     return JSONResponse(content={
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
-        "status": "phase3",
-        "phase": "Auth router added",
+        "status": "phase3b",
+        "phase": "Auth endpoints without templates",
         "routers": ["health", "auth", "static"]
     })
 
-# Basic health endpoint
+# Health endpoint
 @app.get("/health")
 async def health():
     """Basic health check"""
@@ -122,11 +148,11 @@ app.include_router(auth_router)
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Phase 3 startup"""
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Phase 3")
-    logger.info("Health router active")
-    logger.info("Auth router added")
-    logger.info("Phase 3 ready")
+    """Startup"""
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Phase 3b")
+    logger.info("Health and auth routers active")
+    logger.info("No template dependencies")
+    logger.info("Phase 3b ready")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
