@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.8.7
-Phase 2: Add simple health router without database
+AVA OLO Agricultural Core - v4.8.8
+Phase 3: Add minimal auth router
 """
 import os
 import sys
@@ -13,7 +13,11 @@ from fastapi import FastAPI, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from datetime import datetime
+
+# Minimal module imports
+from modules.auth.routes_minimal import router as auth_router
 
 # Set up logging
 logging.basicConfig(
@@ -23,8 +27,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.8.7"
-BUILD_ID = "phase2"
+VERSION = "v4.8.8"
+BUILD_ID = "phase3"
 
 # Create simple health router
 health_router = APIRouter(prefix="/api/v1/health", tags=["health"])
@@ -63,6 +67,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Session middleware for auth
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "your-secret-key-here"),
+    session_cookie="ava_session",
+    max_age=7200
+)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -85,13 +97,13 @@ except Exception as e:
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - phase 2"""
+    """Root endpoint - phase 3"""
     return JSONResponse(content={
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
-        "status": "phase2",
-        "phase": "Health router added",
-        "routers": ["health", "static"]
+        "status": "phase3",
+        "phase": "Auth router added",
+        "routers": ["health", "auth", "static"]
     })
 
 # Basic health endpoint
@@ -103,17 +115,18 @@ async def health():
         "version": VERSION
     })
 
-# Include health router
+# Include routers
 app.include_router(health_router)
+app.include_router(auth_router)
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Phase 2 startup"""
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Phase 2")
-    logger.info("Health router added")
-    logger.info("No database dependencies")
-    logger.info("Phase 2 ready")
+    """Phase 3 startup"""
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Phase 3")
+    logger.info("Health router active")
+    logger.info("Auth router added")
+    logger.info("Phase 3 ready")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
