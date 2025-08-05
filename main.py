@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.11.3
-Add only weather router to minimal working base
+AVA OLO Agricultural Core - v4.11.4
+Ultra-minimal version with NO router imports
 """
 import os
 import sys
@@ -24,38 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.11.3"
-
-# Import config with fallback
-try:
-    from modules.core.config import VERSION as CONFIG_VERSION
-    VERSION = CONFIG_VERSION
-except ImportError:
-    pass
-
-# Import routers safely
-routers_to_include = []
-
-# Health router - use simple version
-try:
-    from modules.api.health_routes_simple import router as health_router
-    routers_to_include.append(("health", health_router))
-except ImportError:
-    logger.warning("Failed to import simple health router")
-
-# Auth router - use minimal version
-try:
-    from modules.auth.routes_minimal import router as auth_router
-    routers_to_include.append(("auth", auth_router))
-except ImportError:
-    logger.warning("Failed to import minimal auth router")
-
-# Weather router - should work without database
-try:
-    from modules.api.weather_routes import router as weather_router
-    routers_to_include.append(("weather", weather_router))
-except ImportError as e:
-    logger.warning(f"Failed to import weather router: {e}")
+VERSION = "v4.11.4"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -111,9 +80,8 @@ async def root():
             "field_management": False,
             "task_management": False,
             "chat_integration": False,
-            "weather_monitoring": True
-        },
-        "routers": [name for name, _ in routers_to_include]
+            "weather_monitoring": False
+        }
     })
 
 # Health endpoint
@@ -125,6 +93,32 @@ async def health():
         "version": VERSION,
         "timestamp": datetime.now().isoformat()
     })
+
+# Health router endpoints
+@app.get("/api/v1/health")
+async def api_health():
+    """API health check"""
+    return JSONResponse(content={
+        "status": "healthy",
+        "version": VERSION,
+        "service": "agricultural-core",
+        "timestamp": datetime.now().isoformat()
+    })
+
+# Auth endpoints
+@app.post("/api/v1/auth/login")
+async def login():
+    """Simple login endpoint"""
+    return JSONResponse(content={
+        "success": True,
+        "token": "test-token",
+        "user": {"id": 1, "name": "Test User"}
+    })
+
+@app.post("/api/v1/auth/logout")
+async def logout():
+    """Simple logout endpoint"""
+    return JSONResponse(content={"success": True})
 
 # Landing page
 @app.get("/landing")
@@ -141,7 +135,7 @@ async def landing_page(request: Request):
         logger.error(f"Landing page error: {e}")
         return RedirectResponse(url="/farmer/dashboard")
 
-# Farmer dashboard endpoint without router
+# Farmer dashboard endpoint
 @app.get("/farmer/dashboard")
 async def farmer_dashboard(request: Request):
     """Farmer dashboard - minimal version"""
@@ -190,21 +184,12 @@ async def farmer_dashboard(request: Request):
         logger.error(f"Farmer dashboard error: {e}")
         return JSONResponse({"error": "Dashboard temporarily unavailable"}, status_code=500)
 
-# Include all successfully imported routers
-for router_name, router in routers_to_include:
-    try:
-        app.include_router(router)
-        logger.info(f"Included {router_name} router")
-    except Exception as e:
-        logger.error(f"Failed to include {router_name} router: {e}")
-
 # Startup event
 @app.on_event("startup")
 async def startup_event():
     """Startup event"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
-    logger.info(f"Added only weather router to minimal base")
-    logger.info(f"Included routers: {[name for name, _ in routers_to_include]}")
+    logger.info(f"Ultra-minimal version with NO router imports")
     logger.info(f"AVA OLO Agricultural Core ready - {VERSION}")
 
 if __name__ == "__main__":
