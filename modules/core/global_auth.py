@@ -29,8 +29,11 @@ PUBLIC_PATHS = [
     "/favicon.ico",
     "/debug/signin-test",  # Debug endpoint for signin troubleshooting
     "/debug/minimal-signin",  # Minimal signin test
+    "/debug/auth-state",  # Debug auth state
     "/api/v1/debug/check-edi-kante",  # Edi Kante fields check endpoint
     "/api/v1/whatsapp/webhook",  # WhatsApp webhook needs to be public
+    "/farmer/dashboard",  # Farmer dashboard - has its own auth via require_auth
+    "/farmer/api",  # Farmer API endpoints - have their own auth
 ]
 
 class GlobalAuthMiddleware(BaseHTTPMiddleware):

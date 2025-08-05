@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.3
-Production release with signin error debugging
+AVA OLO Agricultural Core v4.13.4
+Production release with farmer dashboard auth fix
 """
 import uvicorn
 import sys
@@ -316,7 +316,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("AVA OLO Agricultural Core ready - v4.13.3 Production with Signin Debugging")
+    logger.info("AVA OLO Agricultural Core ready - v4.13.4 Production with Dashboard Auth Fix")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":
