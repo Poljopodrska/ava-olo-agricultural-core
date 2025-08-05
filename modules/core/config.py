@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805051000'  # v4.7.6 - Simplified startup without validator
-COMMIT_HASH = "simplified-startup"  # Removed startup validator to fix deployment loop
+DEPLOYMENT_TIMESTAMP = '20250805052000'  # v4.7.7 - Fixed Dockerfile version and checks
+COMMIT_HASH = "dockerfile-fixes"  # Updated Dockerfile VERSION and disabled Git check
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.7.6"
+VERSION = "v4.7.7"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

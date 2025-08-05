@@ -53,7 +53,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.7.6"
+VERSION = "v4.7.7"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
