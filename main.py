@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.6
-Production release with weather functionality connected
+AVA OLO Agricultural Core v4.13.7
+Production release with weather async fix
 """
 import uvicorn
 import sys

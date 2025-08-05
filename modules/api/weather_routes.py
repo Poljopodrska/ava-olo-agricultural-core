@@ -20,11 +20,11 @@ async def get_farmer_weather(request: Request, current_user=Depends(get_current_
         # Import weather service
         from ..weather.service import weather_service
         
-        # Get current weather using the weather service
-        weather_data = await weather_service.get_current_weather()
+        # Get current weather using the weather service (NOT async)
+        weather_data = weather_service.get_current_weather()
         
         # Get forecast
-        forecast_data = await weather_service.get_forecast()
+        forecast_data = weather_service.get_forecast()
         
         # Format response
         return JSONResponse(content={
@@ -72,9 +72,9 @@ async def get_current_weather(lat: float = None, lon: float = None):
         
         # Use provided coordinates or defaults
         if lat and lon:
-            weather_data = await weather_service.get_weather_by_coordinates(lat, lon)
+            weather_data = weather_service.get_weather_by_coordinates(lat, lon)
         else:
-            weather_data = await weather_service.get_current_weather()
+            weather_data = weather_service.get_current_weather()
         
         return JSONResponse(content={
             "status": "success",
@@ -96,9 +96,9 @@ async def get_weather_forecast(lat: float = None, lon: float = None, days: int =
         
         # Use provided coordinates or defaults
         if lat and lon:
-            forecast_data = await weather_service.get_forecast_by_coordinates(lat, lon, days)
+            forecast_data = weather_service.get_forecast_by_coordinates(lat, lon, days)
         else:
-            forecast_data = await weather_service.get_forecast(days)
+            forecast_data = weather_service.get_forecast(days)
         
         return JSONResponse(content={
             "status": "success",
@@ -120,9 +120,9 @@ async def get_agricultural_weather(lat: float = None, lon: float = None):
         
         # Get agricultural forecast
         if lat and lon:
-            agri_data = await weather_service.get_agricultural_forecast(lat, lon)
+            agri_data = weather_service.get_agricultural_forecast(lat, lon)
         else:
-            agri_data = await weather_service.get_agricultural_forecast()
+            agri_data = weather_service.get_agricultural_forecast()
         
         return JSONResponse(content={
             "status": "success",
@@ -143,9 +143,9 @@ async def get_weather_alerts(lat: float = None, lon: float = None):
         
         # Get weather data first
         if lat and lon:
-            weather_data = await weather_service.get_weather_by_coordinates(lat, lon)
+            weather_data = weather_service.get_weather_by_coordinates(lat, lon)
         else:
-            weather_data = await weather_service.get_current_weather()
+            weather_data = weather_service.get_current_weather()
         
         # Get alerts based on current conditions
         alerts = weather_service.get_weather_alerts(weather_data)
@@ -175,7 +175,7 @@ async def weather_service_health():
         from ..weather.service import weather_service
         
         # Test API connection
-        test_weather = await weather_service.get_current_weather()
+        test_weather = weather_service.get_current_weather()
         
         if test_weather and "temperature" in test_weather:
             return JSONResponse(content={
