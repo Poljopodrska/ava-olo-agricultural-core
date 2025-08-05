@@ -191,13 +191,12 @@ async def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, 
 async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth)):
     """Main farmer dashboard - shows personalized data"""
     
-    try:
-        farmer_id = farmer['farmer_id']
-        
-        # Get farmer's data
-        fields = await get_farmer_fields(farmer_id)
-        weather = await get_farmer_weather(farmer_id)
-        messages = await get_farmer_messages(farmer_id)
+    farmer_id = farmer['farmer_id']
+    
+    # Get farmer's data
+    fields = await get_farmer_fields(farmer_id)
+    weather = await get_farmer_weather(farmer_id)
+    messages = await get_farmer_messages(farmer_id)
     
     # Calculate totals
     total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
@@ -249,18 +248,6 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
         "language": detected_language,
         "t": translations  # Add translations to template context
     })
-    except Exception as e:
-        logger.error(f"Error in farmer dashboard: {e}", exc_info=True)
-        # Return error response
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": "Internal Server Error",
-                "details": str(e),
-                "farmer": farmer,
-                "version": VERSION
-            }
-        )
 
 @router.get("/api/fields", response_class=JSONResponse)
 async def api_farmer_fields(farmer: dict = Depends(require_auth)):

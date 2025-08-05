@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805203500'  # v4.13.4 - Fix farmer dashboard auth issue
-COMMIT_HASH = "dashboard-auth-fix"  # Allow farmer dashboard through global auth middleware
+DEPLOYMENT_TIMESTAMP = '20250805204500'  # v4.13.5 - Minimal auth fix
+COMMIT_HASH = "minimal-auth-fix"  # Only essential auth fix without debug code
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.4"
+VERSION = "v4.13.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
