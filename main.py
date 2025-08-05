@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.10
-Production release with both weather routes files fixed
+AVA OLO Agricultural Core v4.13.11
+Debug release to identify dashboard error
 """
 import uvicorn
 import sys
@@ -37,7 +37,7 @@ from modules.api.business_routes import router as business_router
 # Dashboard routes moved to monitoring-dashboards service
 from modules.api.deployment_webhook import router as webhook_router
 from modules.api.system_routes import router as system_router
-from modules.api.debug_services import router as debug_services_router
+# from modules.api.debug_services import router as debug_services_router  # TEMP: Disabled - imports location_service
 from modules.api.debug_deployment import router as debug_deployment_router
 from modules.api.code_status import router as code_status_router
 from modules.auth.routes import router as auth_router
@@ -125,6 +125,12 @@ async def root(request: Request):
 @app.get("/health")
 async def health():
     return {"status": "healthy", "version": VERSION}
+
+# Test endpoint for debugging
+@app.get("/test-simple")
+async def test_simple():
+    """Simple test that should always work"""
+    return {"status": "ok", "version": VERSION, "message": "Test endpoint works"}
 
 # Debug endpoint to test auth - protected by global middleware
 @app.get("/debug/auth-test")
@@ -257,7 +263,7 @@ app.include_router(business_router)
 # Dashboard routers moved to monitoring-dashboards service
 app.include_router(webhook_router)
 app.include_router(system_router)
-app.include_router(debug_services_router)
+# app.include_router(debug_services_router)  # TEMP: Disabled
 app.include_router(debug_deployment_router)
 app.include_router(code_status_router)
 app.include_router(auth_router)
@@ -267,7 +273,7 @@ app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
-STARTUP_STATUS["total_routers_included"] = 20
+STARTUP_STATUS["total_routers_included"] = 19  # debug_services temporarily disabled
 
 # Startup event
 @app.on_event("startup")

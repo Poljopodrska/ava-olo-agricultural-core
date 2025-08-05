@@ -17,6 +17,11 @@ from ..auth.routes import get_current_farmer, require_auth
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/farmer", tags=["farmer-dashboard"])
+
+@router.get("/test-auth")
+async def test_farmer_auth(farmer: dict = Depends(require_auth)):
+    """Test endpoint to check if auth is working"""
+    return {"status": "ok", "farmer": farmer}
 templates = Jinja2Templates(directory="templates")
 
 async def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
