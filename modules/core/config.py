@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804194000'  # v4.4.14 - FINAL FIX: Jinja2 template syntax error in signin.html
-COMMIT_HASH = "fix-jinja-syntax"  # Fixed escaped quotes causing template rendering failure
+DEPLOYMENT_TIMESTAMP = '20250805191000'  # v4.13.0 - v4.4.15 with lazy database initialization
+COMMIT_HASH = "lazy-db-init"  # Fixed import-time database connection issue
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.4.14"
+VERSION = "v4.13.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

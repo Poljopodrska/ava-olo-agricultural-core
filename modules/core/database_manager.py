@@ -31,8 +31,12 @@ class DatabaseManager:
         self.config = get_database_config()
         self.pool_initialized = False
         self.async_pool = None
+        self._init_attempted = False
         
-        if POOL_AVAILABLE:
+    def _ensure_pool(self):
+        """Lazily initialize the connection pool on first use"""
+        if not self._init_attempted and POOL_AVAILABLE:
+            self._init_attempted = True
             try:
                 init_connection_pool()
                 self.pool_initialized = True
@@ -43,6 +47,8 @@ class DatabaseManager:
     @contextmanager
     def get_connection(self):
         """Get a database connection (pooled or direct)"""
+        self._ensure_pool()  # Initialize pool on first use
+        
         if self.pool_initialized and POOL_AVAILABLE:
             # Use pooled connection
             try:
