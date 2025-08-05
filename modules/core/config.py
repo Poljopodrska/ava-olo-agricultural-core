@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805050000'  # v4.7.5 - Complete implementation with all features
-COMMIT_HASH = "complete-all-features"  # Re-enabled all routers after fixing weather_routes
+DEPLOYMENT_TIMESTAMP = '20250805051000'  # v4.7.6 - Simplified startup without validator
+COMMIT_HASH = "simplified-startup"  # Removed startup validator to fix deployment loop
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.7.5"
+VERSION = "v4.7.6"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
