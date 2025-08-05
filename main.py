@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.10.2
-Phase 3: Add auth router inline
+AVA OLO Agricultural Core - v4.10.3
+Phase 6: Add dashboard router
 """
 import os
 import logging
 from fastapi import FastAPI, APIRouter, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from datetime import datetime
 
 # Set up logging
@@ -18,8 +19,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.10.2"
-BUILD_ID = "auth-router-inline"
+VERSION = "v4.10.3"
+BUILD_ID = "dashboard-router"
+
+# Templates
+templates = Jinja2Templates(directory="templates")
 
 # Create simple health router
 health_router = APIRouter(prefix="/api/v1/health", tags=["health"])
@@ -71,6 +75,33 @@ async def logout():
     response.delete_cookie(key="farmer_name")
     return response
 
+# Create dashboard router
+dashboard_router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+
+@dashboard_router.get("/", response_class=HTMLResponse)
+async def dashboard_home(request: Request):
+    """Main dashboard page"""
+    try:
+        return templates.TemplateResponse("dashboard.html", {
+            "request": request,
+            "version": VERSION
+        })
+    except Exception as e:
+        logger.error(f"Dashboard error: {e}")
+        return JSONResponse({"error": "Dashboard unavailable"}, status_code=500)
+
+@dashboard_router.get("/health", response_class=HTMLResponse)
+async def health_dashboard(request: Request):
+    """Health dashboard"""
+    try:
+        return templates.TemplateResponse("health_dashboard.html", {
+            "request": request,
+            "version": VERSION
+        })
+    except Exception as e:
+        logger.error(f"Health dashboard error: {e}")
+        return JSONResponse({"error": "Health dashboard unavailable"}, status_code=500)
+
 # Initialize FastAPI
 app = FastAPI(
     title="AVA OLO Agricultural Core",
@@ -95,9 +126,22 @@ async def root():
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
         "status": "operational",
-        "features": ["static_files", "health_router", "auth_router"],
+        "features": ["static_files", "health_router", "auth_router", "dashboard_router"],
         "timestamp": datetime.now().isoformat()
     })
+
+# Landing page
+@app.get("/landing", response_class=HTMLResponse)
+async def landing_page(request: Request):
+    """Landing page"""
+    try:
+        return templates.TemplateResponse("landing.html", {
+            "request": request,
+            "version": VERSION
+        })
+    except Exception as e:
+        logger.error(f"Landing page error: {e}")
+        return RedirectResponse(url="/farmer/dashboard")
 
 # Health endpoint
 @app.get("/health")
@@ -112,13 +156,14 @@ async def health():
 # Include routers
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(dashboard_router)
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
     """Startup"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
-    logger.info("Phase 3: Auth router added inline")
+    logger.info("Phase 6: Dashboard router added")
     logger.info("Ready to serve")
 
 if __name__ == "__main__":
