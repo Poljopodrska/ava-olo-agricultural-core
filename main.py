@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.9
-Production release with complete weather mock data fix
+AVA OLO Agricultural Core v4.13.10
+Production release with both weather routes files fixed
 """
 import uvicorn
 import sys

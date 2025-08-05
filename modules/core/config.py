@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805210200'  # v4.13.9 - Complete weather mock data fix
-COMMIT_HASH = "weather-mock-complete"  # Remove all weather service imports temporarily
+DEPLOYMENT_TIMESTAMP = '20250805214500'  # v4.13.10 - Fix modules/weather/routes.py as well
+COMMIT_HASH = "weather-routes-complete-fix"  # Fixed both weather routes files
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.9"
+VERSION = "v4.13.10"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
