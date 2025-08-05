@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.8.4
-Bare minimum - no module imports
+AVA OLO Agricultural Core - v4.8.5
+Debug version - print environment info
 """
 import os
+import sys
 import logging
+
+print("=== CONTAINER STARTUP DEBUG ===")
+print(f"Python version: {sys.version}")
+print(f"Working directory: {os.getcwd()}")
+print(f"Directory contents: {os.listdir('.')}")
+print(f"Static dir exists: {os.path.exists('static')}")
+print("=== END DEBUG ===")
 
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 # Set up logging
 logging.basicConfig(
@@ -19,30 +26,24 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.8.4"
+VERSION = "v4.8.5"
 
 # Initialize FastAPI
 app = FastAPI(
     title="AVA OLO Agricultural Core",
-    version=VERSION,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    version=VERSION
 )
-
-# Mount static files
-try:
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-except Exception as e:
-    logger.error(f"Failed to mount static files: {e}")
 
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - bare minimum"""
+    """Root endpoint - debug"""
     return JSONResponse(content={
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
-        "status": "bare-minimum"
+        "status": "debug",
+        "python": sys.version,
+        "cwd": os.getcwd()
     })
 
 # Health endpoint
@@ -54,23 +55,14 @@ async def health():
         "version": VERSION
     })
 
-# Simple API health endpoint
-@app.get("/api/v1/health/")
-async def api_health():
-    """API health check"""
-    return JSONResponse(content={
-        "status": "healthy",
-        "version": VERSION,
-        "service": "agricultural-core"
-    })
-
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Bare minimum startup"""
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Bare minimum")
-    logger.info("No module imports - testing container startup")
-    logger.info("Container started successfully!")
+    """Debug startup"""
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Debug")
+    logger.info(f"Python: {sys.version}")
+    logger.info(f"CWD: {os.getcwd()}")
+    logger.info("Container started!")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
