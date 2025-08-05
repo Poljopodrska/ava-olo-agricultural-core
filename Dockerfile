@@ -58,7 +58,7 @@ RUN echo "✅ NEW CODE VERIFIED - Deployment reality badges present" >> /build-i
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production
 ENV PORT=8080
-ENV VERSION=v4.7.8
+ENV VERSION=v4.7.9
 
 # Embed Git information for security verification
 ENV GITHUB_SHA=${GITHUB_SHA}
