@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805204700'  # v4.13.7 - Fix weather async calls
-COMMIT_HASH = "weather-async-fix"  # Fixed async/await issue in weather routes
+DEPLOYMENT_TIMESTAMP = '20250805204800'  # v4.13.8 - Temporary weather mock data
+COMMIT_HASH = "weather-mock-temp"  # Temporarily use mock data to fix dashboard error
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.7"
+VERSION = "v4.13.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
