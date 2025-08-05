@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805204800'  # v4.13.8 - Temporary weather mock data
-COMMIT_HASH = "weather-mock-temp"  # Temporarily use mock data to fix dashboard error
+DEPLOYMENT_TIMESTAMP = '20250805210200'  # v4.13.9 - Complete weather mock data fix
+COMMIT_HASH = "weather-mock-complete"  # Remove all weather service imports temporarily
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.8"
+VERSION = "v4.13.9"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
