@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804204000'  # v4.7.1 - Debug Edi Kante fields and complete task UI integration
-COMMIT_HASH = "complete-task-integration"  # Added debug endpoint and fully integrated task management UI
+DEPLOYMENT_TIMESTAMP = '20250805044000'  # v4.7.2 - Hotfix: Temporarily disable new routers
+COMMIT_HASH = "hotfix-deployment-issue"  # Temporarily removed task_management and debug_edi routers
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.7.1"
+VERSION = "v4.7.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
