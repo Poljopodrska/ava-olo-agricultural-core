@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.8.5
-Debug version - print environment info
+AVA OLO Agricultural Core - v4.8.6
+Phase 1: Add static files mount with proper error handling
 """
 import os
 import sys
 import logging
 
-print("=== CONTAINER STARTUP DEBUG ===")
-print(f"Python version: {sys.version}")
-print(f"Working directory: {os.getcwd()}")
-print(f"Directory contents: {os.listdir('.')}")
-print(f"Static dir exists: {os.path.exists('static')}")
-print("=== END DEBUG ===")
-
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 # Set up logging
 logging.basicConfig(
@@ -26,24 +20,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.8.5"
+VERSION = "v4.8.6"
 
 # Initialize FastAPI
 app = FastAPI(
     title="AVA OLO Agricultural Core",
-    version=VERSION
+    version=VERSION,
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
+
+# Mount static files with error handling
+try:
+    if os.path.exists("static"):
+        app.mount("/static", StaticFiles(directory="static"), name="static")
+        logger.info("Static files mounted successfully")
+    else:
+        logger.warning("Static directory not found")
+except Exception as e:
+    logger.error(f"Failed to mount static files: {e}")
 
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint - debug"""
+    """Root endpoint - phase 1"""
     return JSONResponse(content={
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
-        "status": "debug",
-        "python": sys.version,
-        "cwd": os.getcwd()
+        "status": "phase1",
+        "phase": "Static files mounted"
     })
 
 # Health endpoint
@@ -55,14 +60,24 @@ async def health():
         "version": VERSION
     })
 
+# API health endpoint for compatibility
+@app.get("/api/v1/health/")
+async def api_health():
+    """API health check"""
+    return JSONResponse(content={
+        "status": "healthy",
+        "version": VERSION,
+        "service": "agricultural-core"
+    })
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Debug startup"""
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Debug")
-    logger.info(f"Python: {sys.version}")
-    logger.info(f"CWD: {os.getcwd()}")
-    logger.info("Container started!")
+    """Phase 1 startup"""
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} - Phase 1")
+    logger.info(f"Working directory: {os.getcwd()}")
+    logger.info(f"Static directory exists: {os.path.exists('static')}")
+    logger.info("Phase 1: Static files mount complete")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
