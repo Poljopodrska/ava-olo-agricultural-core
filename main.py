@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.14
-Fix async/sync mismatch in dashboard functions
+AVA OLO Agricultural Core v4.13.15
+Minimal dashboard with mock data to isolate issue
 """
 import uvicorn
 import sys

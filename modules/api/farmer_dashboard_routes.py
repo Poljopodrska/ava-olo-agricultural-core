@@ -214,41 +214,14 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     try:
         farmer_id = farmer['farmer_id']
         
-        # Get farmer's data
-        fields = get_farmer_fields(farmer_id)
-        weather = get_farmer_weather(farmer_id)
-        messages = get_farmer_messages(farmer_id)
+        # Temporarily use minimal mock data to isolate the issue
+        fields = []
+        weather = {"temperature": "20°C", "condition": "Sunny", "humidity": "60%"}
+        messages = []
+        total_area = 0
+        detected_language = 'en'
         
-        # Calculate totals
-        total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
-        
-        # Get farmer's language preference and WhatsApp number
-        db_manager = get_db_manager()
-        farmer_result = db_manager.execute_query(
-            "SELECT language_preference, COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number FROM farmers WHERE id = %s", 
-            (farmer_id,)
-        )
-        
-        # Import language service
-        from ..core.language_service import get_language_service
-        language_service = get_language_service()
-        
-        detected_language = 'en'  # Default to English
-        
-        if farmer_result and 'rows' in farmer_result and farmer_result['rows']:
-            stored_language = farmer_result['rows'][0][0]
-            whatsapp_number = farmer_result['rows'][0][1]
-            
-            if stored_language:
-                # Use stored language preference
-                detected_language = stored_language
-                logger.info(f"Using stored language preference for farmer {farmer_id}: {detected_language}")
-            elif whatsapp_number:
-                # Fall back to detecting from WhatsApp number
-                detected_language = language_service.detect_language_from_whatsapp(whatsapp_number)
-                logger.info(f"Language detected for farmer {farmer_id} from WhatsApp {whatsapp_number}: {detected_language}")
-        
-        # Get translations for the detected language
+        # Get translations
         from ..core.translations import get_translations, TranslationDict
         translations = get_translations(detected_language)
         

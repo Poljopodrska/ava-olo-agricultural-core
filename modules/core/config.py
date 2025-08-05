@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805221000'  # v4.13.14 - Fix async/sync mismatch in dashboard
-COMMIT_HASH = "fix-async-sync-mismatch"  # Remove async from sync database functions
+DEPLOYMENT_TIMESTAMP = '20250805223500'  # v4.13.15 - Minimal dashboard with mock data
+COMMIT_HASH = "minimal-dashboard-mock"  # Use minimal mock data to isolate issue
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.14"
+VERSION = "v4.13.15"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
