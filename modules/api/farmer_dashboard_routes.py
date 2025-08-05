@@ -240,7 +240,7 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     if isinstance(translations, dict):
         translations = TranslationDict(translations)
     
-    return templates.TemplateResponse("farmer/dashboard_v2.html", {
+    return templates.TemplateResponse("farmer/dashboard.html", {
         "request": request,
         "version": VERSION,
         "farmer": farmer,

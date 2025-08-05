@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805215300'  # v4.13.11 - Debug dashboard error
-COMMIT_HASH = "debug-dashboard-error"  # Disable debug_services and add test endpoints
+DEPLOYMENT_TIMESTAMP = '20250805215800'  # v4.13.12 - Fix template name mismatch
+COMMIT_HASH = "fix-template-name"  # Use correct template name farmer/dashboard.html
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.11"
+VERSION = "v4.13.12"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
