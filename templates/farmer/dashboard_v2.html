@@ -103,154 +103,123 @@
         }
         
         .hourly-title {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
-            color: var(--ava-brown-primary);
+            color: #333;
             margin-bottom: 15px;
         }
         
         .hourly-scroll {
             display: flex;
-            gap: 12px;
             overflow-x: auto;
+            gap: 15px;
             padding-bottom: 10px;
-            -webkit-overflow-scrolling: touch;
         }
         
         .hourly-item {
-            flex-shrink: 0;
+            flex: 0 0 auto;
             text-align: center;
-            padding: 12px;
-            background: #f8f8f8;
-            border-radius: 10px;
-            border: 1px solid #e0e0e0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
             min-width: 80px;
-            transition: all 0.2s ease;
-        }
-        
-        .hourly-item:hover {
-            background: white;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
         .hourly-time {
             font-size: 0.9rem;
-            color: var(--ava-brown-muted);
+            color: #666;
             margin-bottom: 5px;
         }
         
         .hourly-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
+            font-size: 2rem;
+            margin: 5px 0;
         }
         
         .hourly-temp {
+            font-size: 1.1rem;
             font-weight: bold;
-            color: var(--ava-brown-primary);
+            color: #333;
         }
         
+        /* 5-day forecast */
         .weather-forecast {
             padding: 20px;
+            border-top: 1px solid #e0e0e0;
         }
         
         .forecast-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
-            color: var(--ava-brown-primary);
+            color: #333;
             margin-bottom: 15px;
         }
         
         .forecast-item {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 12px;
+            align-items: center;
+            padding: 10px 0;
             border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            transition: background 0.2s ease;
         }
         
-        .forecast-item:hover {
-            background: #f8f8f8;
-        }
-        
-        .forecast-item.selected {
-            background: #e8f4e8;
+        .forecast-item:last-child {
+            border-bottom: none;
         }
         
         .forecast-day {
-            font-weight: bold;
-            color: var(--ava-brown-primary);
+            font-weight: 600;
+            color: #333;
+            min-width: 100px;
         }
         
         .forecast-weather {
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1;
         }
         
         .forecast-temps {
             font-weight: bold;
-            color: var(--ava-brown-muted);
+            color: #666;
+            min-width: 60px;
+            text-align: right;
         }
         
         .forecast-details {
             display: flex;
             gap: 15px;
             font-size: 0.85rem;
-            color: var(--ava-brown-muted);
-            margin-top: 5px;
+            color: #666;
         }
         
-        .forecast-wind {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .forecast-rain {
+        .forecast-wind, .forecast-rain {
             display: flex;
             align-items: center;
             gap: 5px;
         }
         
         /* Chat Panel Styles */
+        .connection-status {
+            background: #ffeeba;
+            color: #856404;
+            padding: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
         .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .chat-message {
-            max-width: 70%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            font-size: 1rem;
-            line-height: 1.5;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        .chat-message.user {
-            background: var(--ava-olive-primary);
-            color: white;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-        
-        .chat-message.assistant {
-            background: #f0f0f0;
-            color: var(--ava-brown-primary);
-            align-self: flex-start;
+            background: #f5f5f5;
         }
         
         .chat-welcome {
             text-align: center;
             padding: 40px 20px;
-            color: var(--ava-brown-muted);
         }
         
         .chat-welcome-icon {
@@ -260,20 +229,48 @@
         
         .chat-welcome-title {
             font-size: 1.5rem;
+            font-weight: bold;
             color: var(--ava-brown-primary);
             margin-bottom: 10px;
-            font-weight: bold;
         }
         
         .chat-welcome-text {
-            font-size: 1.1rem;
+            color: #666;
             line-height: 1.5;
         }
         
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .chat-message.user {
+            background: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .chat-message.assistant {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .chat-error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
         .chat-input-area {
-            padding: 20px;
+            padding: 15px;
+            background: white;
             border-top: 1px solid #e0e0e0;
-            background: #fafafa;
         }
         
         .chat-input-container {
@@ -283,146 +280,57 @@
         
         .chat-input {
             flex: 1;
-            padding: 12px 15px;
-            border: 1px solid #ccc;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
             border-radius: 25px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             outline: none;
         }
         
         .chat-input:focus {
-            border-color: var(--ava-olive-primary);
+            border-color: var(--ava-brown-primary);
         }
         
         .chat-send-btn {
-            background: var(--ava-olive-primary);
+            background: var(--ava-brown-primary);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            font-size: 1.2rem;
+            width: 40px;
+            height: 40px;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .chat-send-btn:hover {
-            background: var(--ava-olive-secondary);
-            transform: scale(1.1);
-        }
-        
-        /* Farm Panel Styles - Simplified */
-        .fields-list {
-            padding: 20px;
-        }
-        
-        .field-item {
-            padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
-            background: white;
-        }
-        
-        .field-item:hover {
-            background: #f8f8f8;
-        }
-        
-        .field-name {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--ava-brown-primary);
-            margin-bottom: 8px;
-        }
-        
-        .field-info {
-            display: grid;
-            gap: 5px;
-            font-size: 0.95rem;
-            color: var(--ava-brown-muted);
-        }
-        
-        .field-info-item {
-            display: flex;
-            gap: 10px;
-        }
-        
-        .field-info-label {
-            font-weight: 600;
-            min-width: 80px;
-        }
-        
-        /* User Header */
-        .user-info {
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            transition: background 0.2s;
         }
         
-        .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+        .chat-send-btn:hover:not(:disabled) {
+            background: var(--ava-brown-dark);
         }
         
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+        .chat-send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
-        .version-display {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            color: var(--ava-brown-primary);
-            font-weight: bold;
-            z-index: 1000;
-        }
-        
-        /* Loading States */
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: var(--ava-brown-muted);
-        }
-        
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid var(--ava-olive-primary);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Chat States */
+        /* Typing indicator */
         .typing-indicator {
             display: flex;
-            align-items: center;
             gap: 4px;
-            padding: 12px 16px;
-            background: #f0f0f0;
-            border-radius: 18px;
-            margin: 10px 0;
+            padding: 15px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
             width: fit-content;
+            margin-bottom: 15px;
         }
         
         .typing-dot {
             width: 8px;
             height: 8px;
-            background: var(--ava-brown-muted);
+            background: #999;
             border-radius: 50%;
             animation: typing 1.4s infinite;
         }
@@ -437,32 +345,140 @@
         
         @keyframes typing {
             0%, 60%, 100% {
-                transform: translateY(0);
-                opacity: 0.4;
+                opacity: 0.3;
             }
             30% {
-                transform: translateY(-10px);
                 opacity: 1;
             }
         }
         
-        .chat-error {
-            background: #fee;
-            color: #c33;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            text-align: center;
+        /* User info in chat header */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
         }
         
-        .connection-status {
-            display: none;
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px;
-            margin-bottom: 10px;
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Farm Panel Styles - Simplified */
+        .fields-list {
+            padding: 20px;
+        }
+        
+        .field-item {
+            background: white;
+            border: 1px solid #e0e0e0;
             border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .field-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .field-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--ava-brown-primary);
+            margin-bottom: 8px;
+        }
+        
+        .field-info {
+            color: #666;
             font-size: 0.9rem;
+        }
+        
+        .field-info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 4px;
+        }
+        
+        .field-crop {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .empty-state-text {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state-btn {
+            background: var(--ava-brown-primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+        
+        .empty-state-btn:hover {
+            background: var(--ava-brown-dark);
+        }
+        
+        /* Loading states */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--ava-brown-primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         /* Add Field Button */
@@ -482,6 +498,23 @@
             background: #229954;
         }
         
+        /* Tasks Button */
+        .tasks-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .tasks-btn:hover {
+            background: #2980b9;
+        }
+        
         /* Field Modal */
         .field-modal {
             display: none;
@@ -490,10 +523,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 1000;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
         }
         
         .field-modal.active {
@@ -588,6 +621,241 @@
             background: #d5dbdd;
         }
         
+        /* Task Modal Styles */
+        .task-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .task-modal.active {
+            display: flex;
+        }
+        
+        .task-modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        /* Task List Styles */
+        .task-list {
+            margin-top: 20px;
+        }
+        
+        .task-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        
+        .task-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .task-item.completed {
+            background: #f0f9ff;
+            border-color: #27ae60;
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .task-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+        
+        .task-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .task-status.planned {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .task-status.in_progress {
+            background: #cce5ff;
+            color: #004085;
+        }
+        
+        .task-status.completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .task-details {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .task-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .task-action-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .task-action-btn:hover {
+            background: #f8f9fa;
+            border-color: #007bff;
+            color: #007bff;
+        }
+        
+        .task-action-btn.complete {
+            background: #27ae60;
+            color: white;
+            border-color: #27ae60;
+        }
+        
+        .task-action-btn.complete:hover {
+            background: #229954;
+        }
+        
+        /* Material Selection Styles */
+        .material-selection {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .material-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .material-item:last-child {
+            border-bottom: none;
+        }
+        
+        .dose-rate-input {
+            width: 100px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        /* Task Tabs */
+        .task-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .task-tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        
+        .task-tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .task-tab:hover {
+            color: #2980b9;
+        }
+        
+        /* Field History Styles */
+        .history-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .history-timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+        }
+        
+        .history-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .history-item::before {
+            content: '';
+            position: absolute;
+            left: -25px;
+            top: 20px;
+            width: 12px;
+            height: 12px;
+            background: #3498db;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .history-date {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .history-activity {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .history-materials {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        
         /* Mobile Responsive */
         @media (max-width: 1024px) {
             .dashboard-container {
@@ -597,27 +865,30 @@
             .panel {
                 width: 100% !important;
                 min-width: auto !important;
+                max-height: 300px;
                 border-right: none;
                 border-bottom: 1px solid #e0e0e0;
+            }
+            
+            .panel:last-child {
+                border-bottom: none;
+                max-height: none;
+                flex: 1;
+            }
+            
+            .chat-panel {
+                order: -1;
+                max-height: 400px;
             }
             
             .weather-panel, .farm-panel {
                 max-height: 300px;
             }
-            
-            .chat-panel {
-                flex: 1;
-                min-height: 400px;
-            }
         }
         
-        @media (max-width: 768px) {
-            .farm-stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .weather-details {
-                grid-template-columns: 1fr;
+        @media (max-width: 640px) {
+            .panel {
+                min-height: 250px;
             }
             
             .panel-header {
@@ -629,6 +900,392 @@
             }
         }
     </style>
+    <script>
+        // Task Management Functions
+        let currentTaskTab = 'upcoming';
+        let availableMaterials = [];
+
+        function openTasksModal() {
+            document.getElementById('tasks-modal').classList.add('active');
+            loadUpcomingTasks();
+            loadFieldsForSelection();
+            loadMaterials();
+        }
+
+        function closeTasksModal() {
+            document.getElementById('tasks-modal').classList.remove('active');
+        }
+
+        function switchTaskTab(tab) {
+            currentTaskTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.task-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Hide all tab contents
+            document.querySelectorAll('.task-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Show selected tab
+            switch(tab) {
+                case 'upcoming':
+                    document.getElementById('upcoming-tasks-tab').style.display = 'block';
+                    loadUpcomingTasks();
+                    break;
+                case 'completed':
+                    document.getElementById('completed-tasks-tab').style.display = 'block';
+                    loadCompletedTasks();
+                    break;
+                case 'create':
+                    document.getElementById('create-task-tab').style.display = 'block';
+                    break;
+                case 'history':
+                    document.getElementById('history-tab').style.display = 'block';
+                    loadFieldsForHistory();
+                    break;
+            }
+        }
+
+        async function loadUpcomingTasks() {
+            try {
+                const response = await fetch('/api/tasks/list?status=planned');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTasks(data.tasks, 'upcoming-tasks-list');
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        async function loadCompletedTasks() {
+            try {
+                const response = await fetch('/api/tasks/list?status=completed&limit=20');
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTasks(data.tasks, 'completed-tasks-list');
+                }
+            } catch (error) {
+                console.error('Error loading completed tasks:', error);
+            }
+        }
+
+        function displayTasks(tasks, containerId) {
+            const container = document.getElementById(containerId);
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">No tasks found</p>';
+                return;
+            }
+            
+            let html = '';
+            tasks.forEach(task => {
+                const statusClass = task.status.toLowerCase().replace('_', '');
+                html += `
+                    <div class="task-item ${statusClass}">
+                        <div class="task-header">
+                            <span class="task-name">${task.task_name}</span>
+                            <span class="task-status ${statusClass}">${task.status.replace('_', ' ')}</span>
+                        </div>
+                        <div class="task-details">
+                            <strong>Type:</strong> ${task.task_type}<br>
+                            <strong>Fields:</strong> ${task.field_names}<br>
+                            <strong>Area:</strong> ${task.total_area} ha<br>
+                            <strong>Date:</strong> ${task.planned_date || task.completed_date || 'Not set'}
+                            ${task.notes ? `<br><strong>Notes:</strong> ${task.notes}` : ''}
+                        </div>
+                        ${task.status === 'planned' ? `
+                            <div class="task-actions">
+                                <button class="task-action-btn complete" onclick="completeTask(${task.id})">
+                                    ✓ Mark Complete
+                                </button>
+                                <button class="task-action-btn" onclick="editTask(${task.id})">
+                                    Edit
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        async function loadFieldsForSelection() {
+            try {
+                const response = await fetch('/api/fields');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const container = document.getElementById('field-selection');
+                    let html = '';
+                    
+                    data.fields.forEach(field => {
+                        html += `
+                            <label style="display: block; margin: 5px 0;">
+                                <input type="checkbox" name="field_ids" value="${field.id}">
+                                ${field.field_name} (${field.area_ha} ha)
+                                ${field.crop_type ? ` - ${field.crop_type}` : ''}
+                            </label>
+                        `;
+                    });
+                    
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading fields:', error);
+            }
+        }
+
+        async function loadMaterials() {
+            try {
+                const response = await fetch('/api/tasks/materials');
+                const data = await response.json();
+                
+                if (data.success) {
+                    availableMaterials = data.materials;
+                }
+            } catch (error) {
+                console.error('Error loading materials:', error);
+            }
+        }
+
+        function toggleMaterialsSection() {
+            const section = document.getElementById('materials-section');
+            const checkbox = document.getElementById('include-materials');
+            
+            if (checkbox.checked) {
+                section.style.display = 'block';
+                displayMaterials();
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        function displayMaterials() {
+            const container = document.getElementById('materials-list');
+            let html = '';
+            
+            availableMaterials.forEach(material => {
+                html += `
+                    <div class="material-item">
+                        <label>
+                            <input type="checkbox" name="material_ids" value="${material.id}" 
+                                   onchange="toggleDoseRate(${material.id})">
+                            ${material.material_name} (${material.material_type})
+                        </label>
+                        <div id="dose-${material.id}" style="display: none;">
+                            <input type="number" class="dose-rate-input" 
+                                   id="dose-rate-${material.id}" 
+                                   placeholder="Dose rate">
+                            <span>${material.unit}/ha</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function toggleDoseRate(materialId) {
+            const checkbox = document.querySelector(`input[name="material_ids"][value="${materialId}"]`);
+            const doseDiv = document.getElementById(`dose-${materialId}`);
+            
+            if (checkbox.checked) {
+                doseDiv.style.display = 'block';
+            } else {
+                doseDiv.style.display = 'none';
+            }
+        }
+
+        async function createTask() {
+            const taskName = document.getElementById('task-name').value;
+            const taskType = document.getElementById('task-type').value;
+            const taskDate = document.getElementById('task-date').value;
+            const taskNotes = document.getElementById('task-notes').value;
+            
+            // Get selected fields
+            const fieldCheckboxes = document.querySelectorAll('input[name="field_ids"]:checked');
+            const fieldIds = Array.from(fieldCheckboxes).map(cb => parseInt(cb.value));
+            
+            if (!taskName || fieldIds.length === 0) {
+                alert('Please enter a task name and select at least one field');
+                return;
+            }
+            
+            // Get selected materials if any
+            const materials = [];
+            if (document.getElementById('include-materials').checked) {
+                const materialCheckboxes = document.querySelectorAll('input[name="material_ids"]:checked');
+                materialCheckboxes.forEach(cb => {
+                    const materialId = cb.value;
+                    const doseRate = document.getElementById(`dose-rate-${materialId}`).value;
+                    
+                    materials.push({
+                        material_id: parseInt(materialId),
+                        dose_rate: parseFloat(doseRate) || 0,
+                        unit: availableMaterials.find(m => m.id == materialId)?.unit || 'kg'
+                    });
+                });
+            }
+            
+            const taskData = {
+                task_name: taskName,
+                task_type: taskType,
+                planned_date: taskDate,
+                field_ids: fieldIds,
+                materials: materials,
+                notes: taskNotes
+            };
+            
+            try {
+                const response = await fetch('/api/tasks/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Task created successfully!');
+                    clearTaskForm();
+                    switchTaskTab('upcoming');
+                } else {
+                    alert('Error creating task: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error creating task:', error);
+                alert('Failed to create task');
+            }
+        }
+
+        function clearTaskForm() {
+            document.getElementById('create-task-form').reset();
+            document.getElementById('materials-section').style.display = 'none';
+        }
+
+        async function completeTask(taskId) {
+            const notes = prompt('Any completion notes? (optional)');
+            
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/complete`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        completed_date: new Date().toISOString().split('T')[0],
+                        completion_notes: notes
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Task marked as complete!');
+                    loadUpcomingTasks();
+                } else {
+                    alert('Error completing task: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error completing task:', error);
+            }
+        }
+
+        async function loadFieldsForHistory() {
+            try {
+                const response = await fetch('/api/fields');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const select = document.getElementById('history-field-select');
+                    let html = '<option value="">Choose a field...</option>';
+                    
+                    data.fields.forEach(field => {
+                        html += `<option value="${field.id}">${field.field_name}</option>`;
+                    });
+                    
+                    select.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('Error loading fields:', error);
+            }
+        }
+
+        async function loadFieldHistory() {
+            const fieldId = document.getElementById('history-field-select').value;
+            const year = document.getElementById('history-year-select').value;
+            
+            if (!fieldId) return;
+            
+            try {
+                let url = `/api/tasks/field-history/${fieldId}`;
+                if (year) {
+                    url += `?year=${year}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayFieldHistory(data.history);
+                }
+            } catch (error) {
+                console.error('Error loading field history:', error);
+            }
+        }
+
+        function displayFieldHistory(history) {
+            const container = document.getElementById('field-history');
+            
+            if (history.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">No history found for this field</p>';
+                return;
+            }
+            
+            let html = '';
+            history.forEach(item => {
+                html += `
+                    <div class="history-item">
+                        <div class="history-date">${item.activity_date}</div>
+                        <div class="history-activity">
+                            <strong>${item.activity_type}</strong> - ${item.description || item.task_name || 'No description'}
+                        </div>
+                        ${item.materials_used && item.materials_used.length > 0 ? `
+                            <div class="history-materials">
+                                <strong>Materials Used:</strong><br>
+                                ${item.materials_used.map(m => 
+                                    `${m.material}: ${m.quantity} ${m.unit} (${m.cost ? `$${m.cost}` : 'N/A'})`
+                                ).join('<br>')}
+                            </div>
+                        ` : ''}
+                        ${item.cost ? `<div><strong>Total Cost:</strong> $${item.cost}</div>` : ''}
+                        ${item.notes ? `<div><strong>Notes:</strong> ${item.notes}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('tasks-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeTasksModal();
+                }
+            });
+        });
+    </script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -706,9 +1363,14 @@
                     <div class="panel-title">🌾 My Farm</div>
                     <div class="panel-subtitle">Dashboard</div>
                 </div>
-                <button class="add-field-btn" onclick="openAddFieldModal()">
-                    + {{ t.dashboard_add_field if t else 'Add Field' }}
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="tasks-btn" onclick="openTasksModal()">
+                        📋 {{ t.dashboard_tasks if t else 'Tasks' }}
+                    </button>
+                    <button class="add-field-btn" onclick="openAddFieldModal()">
+                        + {{ t.dashboard_add_field if t else 'Add Field' }}
+                    </button>
+                </div>
             </div>
             <div class="panel-content">
                 <div class="fields-list" id="field-list">
@@ -718,36 +1380,21 @@
                             <div class="field-name">{{ field.field_name }}</div>
                             <div class="field-info">
                                 <div class="field-info-item">
-                                    <span class="field-info-label">Surface:</span>
-                                    <span style="color: #27ae60; font-weight: 600;">{{ field.area_ha }} ha</span>
+                                    📏 {{ field.area_ha }} ha
                                 </div>
-                                <div class="field-info-item">
-                                    <span class="field-info-label">Crop:</span>
-                                    <span>{{ field.crop_type or 'Not planted' }}</span>
-                                </div>
-                                <div class="field-info-item">
-                                    <span class="field-info-label">Variety:</span>
-                                    <span>{{ field.variety or '-' }}</span>
-                                </div>
-                                {% if field.last_task %}
-                                <div class="field-info-item" style="grid-column: 1 / -1; padding-top: 8px; border-top: 1px solid #f0f0f0; margin-top: 8px;">
-                                    <span class="field-info-label">Last Task:</span>
-                                    <span style="color: #2c3e50;">
-                                        <strong>{{ field.last_task.task_type }}</strong> 
-                                        <small style="color: #7f8c8d;">({{ field.last_task.date_performed }})</small>
-                                    </span>
-                                </div>
-                                {% else %}
-                                <div class="field-info-item" style="grid-column: 1 / -1; padding-top: 8px; color: #95a5a6; font-size: 0.85rem;">
-                                    No tasks recorded yet
-                                </div>
+                                {% if field.crop_type %}
+                                <div class="field-crop">🌾 {{ field.crop_type }}</div>
                                 {% endif %}
                             </div>
                         </div>
                         {% endfor %}
                     {% else %}
-                        <div style="color: var(--ava-brown-muted); font-style: italic; padding: 20px; text-align: center;">
-                            No fields configured yet
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🌾</div>
+                            <div class="empty-state-text">No fields added yet</div>
+                            <button class="empty-state-btn" onclick="openAddFieldModal()">
+                                Add Your First Field
+                            </button>
                         </div>
                     {% endif %}
                 </div>
@@ -755,45 +1402,112 @@
         </div>
     </div>
     
-    <div class="version-display">{{ version }} <span id="deployment-badge" class="deployment-badge" style="margin-left: 8px; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; background: #FF9800; color: white;">...</span></div>
-    
-    <script src="/static/js/constitutional-interactions.js"></script>
     <script>
-        window.AVA_VERSION = '{{ version }}';
+        let mapWindow = null;
+        let fieldCoordinates = [];
         
-        // Load weather data using farmer location
-        async function loadWeatherData() {
+        // Add Field Modal Functions
+        function openAddFieldModal() {
+            document.getElementById('add-field-modal').classList.add('active');
+        }
+        
+        function closeAddFieldModal() {
+            document.getElementById('add-field-modal').classList.remove('active');
+            document.getElementById('field-form').reset();
+            fieldCoordinates = [];
+            document.getElementById('field-coordinates-display').textContent = '';
+        }
+        
+        function openMapDrawing() {
+            // Open the map drawing page in a new window
+            mapWindow = window.open('/farmer/draw-field', 'field-drawing', 'width=1200,height=800');
+            
+            // Listen for messages from the map window
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === 'field-coordinates') {
+                    fieldCoordinates = event.data.coordinates;
+                    document.getElementById('field-coordinates').value = JSON.stringify(fieldCoordinates);
+                    document.getElementById('field-coordinates-display').textContent = 
+                        `Field drawn with ${fieldCoordinates.length} points, Area: ${event.data.area} ha`;
+                    
+                    // Update the area field if available
+                    const areaInput = document.querySelector('input[name="area_ha"]');
+                    if (areaInput) {
+                        areaInput.value = event.data.area;
+                    }
+                }
+            });
+        }
+        
+        async function saveField() {
+            const form = document.getElementById('field-form');
+            const formData = new FormData(form);
+            
+            // Add coordinates if available
+            if (fieldCoordinates.length > 0) {
+                const centerLat = fieldCoordinates.reduce((sum, coord) => sum + coord.lat, 0) / fieldCoordinates.length;
+                const centerLng = fieldCoordinates.reduce((sum, coord) => sum + coord.lng, 0) / fieldCoordinates.length;
+                
+                formData.append('center_lat', centerLat);
+                formData.append('center_lng', centerLng);
+                formData.append('coordinates', JSON.stringify(fieldCoordinates));
+            }
+            
+            // Convert FormData to JSON
+            const data = {};
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
             try {
-                // Load current weather for farmer location
-                const currentResponse = await fetch('/api/weather/current-farmer');
-                if (currentResponse.ok) {
-                    const currentData = await currentResponse.json();
-                    displayCurrentWeather(currentData.data);
-                }
+                const response = await fetch('/api/fields/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
                 
-                // Load hourly forecast
-                const hourlyResponse = await fetch('/api/weather/hourly-farmer');
-                if (hourlyResponse.ok) {
-                    const hourlyData = await hourlyResponse.json();
-                    displayHourlyForecast(hourlyData.data.hourly);
-                }
+                const result = await response.json();
                 
-                // Load forecast
-                const forecastResponse = await fetch('/api/weather/forecast-farmer');
-                if (forecastResponse.ok) {
-                    const forecastData = await forecastResponse.json();
-                    displayWeatherForecast(forecastData.data);
+                if (result.success) {
+                    alert('Field added successfully!');
+                    closeAddFieldModal();
+                    // Reload the page to show the new field
+                    window.location.reload();
+                } else {
+                    alert('Error adding field: ' + result.error);
                 }
-                
             } catch (error) {
-                console.error('Weather data error:', error);
-                // Show default weather
-                loadDefaultWeather();
+                console.error('Error:', error);
+                alert('Failed to add field');
             }
         }
         
-        // Fallback for weather
-        async function loadDefaultWeather() {
+        // Weather loading
+        async function loadWeather() {
+            try {
+                const response = await fetch('/api/weather/farmer');
+                const data = await response.json();
+                
+                if (data.success && data.weather) {
+                    displayCurrentWeather(data.weather);
+                    if (data.weather.hourly_forecast) {
+                        displayHourlyForecast(data.weather.hourly_forecast);
+                    }
+                    if (data.weather.forecast) {
+                        displayWeatherForecast(data.weather.forecast);
+                    }
+                } else {
+                    showWeatherError();
+                }
+            } catch (error) {
+                console.error('Weather fetch error:', error);
+                showWeatherError();
+            }
+        }
+        
+        function showWeatherError() {
             const hourlyDiv = document.getElementById('hourly-forecast');
             const forecastDiv = document.getElementById('weather-forecast');
             
@@ -998,13 +1712,12 @@
                         addMessageToChat('assistant', data.response);
                     }
                 } else {
-                    addMessageToChat('error', 'Chat service unavailable. Please try again later.');
+                    addMessageToChat('error', 'Failed to send message. Please try again.');
                 }
-                
             } catch (error) {
-                console.error('Chat error:', error);
                 hideTypingIndicator();
-                addMessageToChat('error', 'Failed to connect to chat service. Please check your connection.');
+                console.error('Error:', error);
+                addMessageToChat('error', 'Connection error. Please check your internet connection.');
             } finally {
                 input.disabled = false;
                 document.getElementById('send-btn').disabled = false;
@@ -1012,341 +1725,44 @@
             }
         }
         
-        // Load chat history
-        async function loadChatHistory() {
-            try {
-                const response = await fetch('/api/chat/history?limit=6');
-                if (response.ok) {
-                    const data = await response.json();
-                    displayChatHistory(data.data.messages);
-                }
-            } catch (error) {
-                console.error('Chat history error:', error);
-            }
-        }
-        
-        function displayChatHistory(messages) {
-            const chatMessages = document.getElementById('chat-messages');
-            const welcomeDiv = document.getElementById('chat-welcome');
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial messages if any
+            {% if messages %}
+                {% for message in messages %}
+                    addMessageToChat('{{ message.role }}', `{{ message.content|replace("'", "\\'") }}`);
+                {% endfor %}
+            {% endif %}
             
-            if (messages.length === 0) return;
+            // Load weather
+            loadWeather();
             
-            if (welcomeDiv) {
-                welcomeDiv.style.display = 'none';
-            }
-            
-            chatMessages.innerHTML = '';
-            
-            messages.reverse().forEach(msg => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `chat-message ${msg.role}`;
-                messageDiv.textContent = msg.content;
-                chatMessages.appendChild(messageDiv);
-            });
-            
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-        
-        // Update deployment badge
-        async function updateDeploymentBadge() {
-            const badge = document.getElementById('deployment-badge');
-            if (!badge) return;
-            
-            try {
-                const response = await fetch('/api/deployment/reality-check');
-                const data = await response.json();
-                const isReal = data.reality_status === 'REAL_DEPLOYMENT';
-                
-                badge.textContent = isReal ? 'REAL ✓' : 'FAKE ✗';
-                badge.style.background = isReal ? '#4CAF50' : '#F44336';
-                badge.style.color = 'white';
-            } catch (error) {
-                badge.textContent = '?';
-                badge.style.background = '#FF9800';
-                badge.style.color = 'white';
-            }
-        }
-
-        // Load all data on page load
-        window.addEventListener('load', function() {
-            loadWeatherData();
-            loadChatHistory();
+            // Check chat connection
             checkChatConnection();
-            updateDeploymentBadge();
         });
-        
-        // Refresh weather every 10 minutes
-        setInterval(loadWeatherData, 600000);
-        
-        // Google Maps variables
-        let map;
-        let drawingManager;
-        let currentPolygon = null;
-        let fieldCoordinates = [];
-        
-        // Add Field Modal Functions
-        function openAddFieldModal() {
-            document.getElementById('add-field-modal').classList.add('active');
-        }
-        
-        function closeAddFieldModal() {
-            document.getElementById('add-field-modal').classList.remove('active');
-            document.getElementById('add-field-form').reset();
-            document.getElementById('field-coordinates-display').innerHTML = '';
-        }
-        
-        // Map Modal Functions
-        function openMapDrawing() {
-            document.getElementById('map-modal').classList.add('active');
-            if (!map) {
-                loadGoogleMaps();
-            }
-        }
-        
-        function closeMapModal() {
-            document.getElementById('map-modal').classList.remove('active');
-            if (currentPolygon && !fieldCoordinates.length) {
-                currentPolygon.setMap(null);
-                currentPolygon = null;
-            }
-        }
-        
-        function loadGoogleMaps() {
-            // Check if Google Maps is already loaded
-            if (typeof google !== 'undefined' && google.maps) {
-                initializeMap();
-                return;
-            }
-            
-            // Load Google Maps API
-            const script = document.createElement('script');
-            script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo&libraries=drawing,geometry&callback=initializeMap';
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-        }
-        
-        function initializeMap() {
-            // Initialize map centered on Slovenia (can be changed based on farmer location)
-            map = new google.maps.Map(document.getElementById('field-map'), {
-                center: { lat: 46.1512, lng: 14.9955 }, // Ljubljana, Slovenia
-                zoom: 13,
-                mapTypeId: 'satellite', // Satellite view for better field identification
-                mapTypeControl: true,
-                mapTypeControlOptions: {
-                    mapTypeIds: ['roadmap', 'satellite', 'hybrid']
-                }
-            });
-            
-            // Initialize drawing manager
-            drawingManager = new google.maps.drawing.DrawingManager({
-                drawingMode: google.maps.drawing.OverlayType.POLYGON,
-                drawingControl: true,
-                drawingControlOptions: {
-                    position: google.maps.ControlPosition.TOP_CENTER,
-                    drawingModes: [google.maps.drawing.OverlayType.POLYGON]
-                },
-                polygonOptions: {
-                    fillColor: '#27ae60',
-                    fillOpacity: 0.35,
-                    strokeColor: '#27ae60',
-                    strokeWeight: 3,
-                    editable: true,
-                    draggable: true
-                }
-            });
-            
-            drawingManager.setMap(map);
-            
-            // Add listener for polygon complete
-            google.maps.event.addListener(drawingManager, 'polygoncomplete', function(polygon) {
-                // Remove previous polygon if exists
-                if (currentPolygon) {
-                    currentPolygon.setMap(null);
-                }
-                
-                currentPolygon = polygon;
-                drawingManager.setDrawingMode(null);
-                
-                // Calculate area
-                const area = google.maps.geometry.spherical.computeArea(polygon.getPath());
-                const areaInHectares = (area / 10000).toFixed(2);
-                
-                document.getElementById('area-display').style.display = 'block';
-                document.getElementById('calculated-area').textContent = areaInHectares + ' ha';
-                document.getElementById('save-coordinates-btn').disabled = false;
-                
-                // Update area when polygon is edited
-                google.maps.event.addListener(polygon.getPath(), 'set_at', updateArea);
-                google.maps.event.addListener(polygon.getPath(), 'insert_at', updateArea);
-                google.maps.event.addListener(polygon.getPath(), 'remove_at', updateArea);
-            });
-        }
-        
-        function updateArea() {
-            if (currentPolygon) {
-                const area = google.maps.geometry.spherical.computeArea(currentPolygon.getPath());
-                const areaInHectares = (area / 10000).toFixed(2);
-                document.getElementById('calculated-area').textContent = areaInHectares + ' ha';
-            }
-        }
-        
-        function saveFieldCoordinates() {
-            if (!currentPolygon) return;
-            
-            // Get polygon coordinates
-            const path = currentPolygon.getPath();
-            fieldCoordinates = [];
-            
-            for (let i = 0; i < path.getLength(); i++) {
-                const latLng = path.getAt(i);
-                fieldCoordinates.push({
-                    lat: latLng.lat(),
-                    lng: latLng.lng()
-                });
-            }
-            
-            // Calculate center point
-            const bounds = new google.maps.LatLngBounds();
-            fieldCoordinates.forEach(coord => {
-                bounds.extend(new google.maps.LatLng(coord.lat, coord.lng));
-            });
-            const center = bounds.getCenter();
-            
-            // Store coordinates in hidden field
-            document.getElementById('field-coordinates').value = JSON.stringify({
-                coordinates: fieldCoordinates,
-                center: { lat: center.lat(), lng: center.lng() },
-                area: document.getElementById('calculated-area').textContent
-            });
-            
-            // Update display
-            document.getElementById('field-coordinates-display').innerHTML = 
-                `✅ Field boundaries saved (${fieldCoordinates.length} points, ${document.getElementById('calculated-area').textContent})`;
-            
-            // Update area field if it exists
-            const areaInput = document.querySelector('input[name="area_ha"]');
-            if (areaInput) {
-                const areaValue = parseFloat(document.getElementById('calculated-area').textContent);
-                areaInput.value = areaValue;
-            }
-            
-            closeMapModal();
-        }
-        
-        // Make initializeMap globally accessible for Google Maps callback
-        window.initializeMap = initializeMap;
-        
-        async function saveField() {
-            const form = document.getElementById('add-field-form');
-            const formData = new FormData(form);
-            
-            const coordinatesData = document.getElementById('field-coordinates').value;
-            let parsedCoordinates = null;
-            if (coordinatesData) {
-                try {
-                    parsedCoordinates = JSON.parse(coordinatesData);
-                } catch (e) {
-                    console.error('Failed to parse coordinates:', e);
-                }
-            }
-            
-            const fieldData = {
-                field_name: formData.get('field_name'),
-                area_ha: parseFloat(formData.get('area_ha')),
-                crop_type: formData.get('crop_type'),
-                variety: formData.get('variety'),
-                country: formData.get('country') || '{{ farmer.country }}',
-                coordinates: parsedCoordinates ? parsedCoordinates.coordinates : null,
-                center_lat: parsedCoordinates ? parsedCoordinates.center.lat : null,
-                center_lng: parsedCoordinates ? parsedCoordinates.center.lng : null
-            };
-            
-            try {
-                const response = await fetch('/farmer/api/fields/add', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(fieldData)
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        alert('Field added successfully!');
-                        closeAddFieldModal();
-                        location.reload(); // Reload to show new field
-                    } else {
-                        alert('Error: ' + (result.error || 'Failed to add field'));
-                    }
-                } else {
-                    alert('Failed to add field. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error adding field:', error);
-                alert('Failed to add field. Please check your connection.');
-            }
-        }
     </script>
-    
-    <!-- Map Drawing Modal -->
-    <div id="map-modal" class="field-modal">
-        <div class="field-modal-content" style="max-width: 90%; width: 1200px;">
-            <div class="field-modal-header">
-                <div class="field-modal-title">Draw Field Boundaries</div>
-                <div class="field-modal-subtitle">Click on the map to draw your field boundaries. Double-click to complete.</div>
-            </div>
-            
-            <div id="map-container" style="position: relative;">
-                <div id="field-map" style="height: 500px; width: 100%; border: 2px solid #27ae60; border-radius: 8px;"></div>
-                
-                <div style="position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
-                    <div style="font-weight: 600; margin-bottom: 5px;">Instructions:</div>
-                    <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem;">
-                        <li>Click to add points</li>
-                        <li>Double-click to complete</li>
-                        <li>Drag points to adjust</li>
-                    </ul>
-                </div>
-                
-                <div id="area-display" style="position: absolute; top: 10px; right: 10px; background: white; padding: 10px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none;">
-                    <div style="font-weight: 600;">Area: <span id="calculated-area" style="color: #27ae60;">0 ha</span></div>
-                </div>
-            </div>
-            
-            <div class="field-modal-actions">
-                <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeMapModal()">
-                    Cancel
-                </button>
-                <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="saveFieldCoordinates()" id="save-coordinates-btn" disabled>
-                    Save Field Boundaries
-                </button>
-            </div>
-        </div>
-    </div>
     
     <!-- Add Field Modal -->
     <div id="add-field-modal" class="field-modal">
         <div class="field-modal-content">
             <div class="field-modal-header">
-                <div class="field-modal-title">Add New Field</div>
-                <div class="field-modal-subtitle">Enter field information to add to your farm</div>
+                <h2 class="field-modal-title">Add New Field</h2>
+                <p class="field-modal-subtitle">Enter your field information</p>
             </div>
             
-            <form id="add-field-form">
+            <form id="field-form">
                 <div class="field-form-group">
-                    <label class="field-form-label">Field Name *</label>
+                    <label class="field-form-label">Field Name</label>
                     <input type="text" name="field_name" class="field-form-input" placeholder="e.g., North Field" required>
                 </div>
                 
                 <div class="field-form-group">
-                    <label class="field-form-label">Area (hectares) *</label>
+                    <label class="field-form-label">Area (hectares)</label>
                     <input type="number" name="area_ha" class="field-form-input" placeholder="e.g., 5.5" step="0.1" required>
                 </div>
                 
                 <div class="field-form-group">
-                    <label class="field-form-label">Current Crop</label>
+                    <label class="field-form-label">Current Crop (Optional)</label>
                     <select name="crop_type" class="field-form-select">
                         <option value="">No crop planted</option>
                         <option value="Wheat">Wheat</option>
@@ -1384,6 +1800,130 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+    
+    <!-- Tasks Modal -->
+    <div id="tasks-modal" class="task-modal">
+        <div class="task-modal-content">
+            <div class="field-modal-header">
+                <h2 class="field-modal-title">Task Management</h2>
+                <p class="field-modal-subtitle">Plan and track your agricultural tasks</p>
+            </div>
+            
+            <div class="task-tabs">
+                <button class="task-tab active" onclick="switchTaskTab('upcoming')">Upcoming Tasks</button>
+                <button class="task-tab" onclick="switchTaskTab('completed')">Completed</button>
+                <button class="task-tab" onclick="switchTaskTab('create')">Create Task</button>
+                <button class="task-tab" onclick="switchTaskTab('history')">Field History</button>
+            </div>
+            
+            <!-- Upcoming Tasks Tab -->
+            <div id="upcoming-tasks-tab" class="task-tab-content">
+                <div class="task-list" id="upcoming-tasks-list">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Completed Tasks Tab -->
+            <div id="completed-tasks-tab" class="task-tab-content" style="display: none;">
+                <div class="task-list" id="completed-tasks-list">
+                    <!-- Completed tasks will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Create Task Tab -->
+            <div id="create-task-tab" class="task-tab-content" style="display: none;">
+                <form id="create-task-form">
+                    <div class="field-form-group">
+                        <label class="field-form-label">Task Name</label>
+                        <input type="text" id="task-name" class="field-form-input" placeholder="e.g., Apply Fertilizer" required>
+                    </div>
+                    
+                    <div class="field-form-group">
+                        <label class="field-form-label">Task Type</label>
+                        <select id="task-type" class="field-form-select">
+                            <option value="planting">Planting</option>
+                            <option value="fertilizing">Fertilizing</option>
+                            <option value="spraying">Spraying</option>
+                            <option value="harvesting">Harvesting</option>
+                            <option value="tillage">Tillage</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="field-form-group">
+                        <label class="field-form-label">Planned Date</label>
+                        <input type="date" id="task-date" class="field-form-input" required>
+                    </div>
+                    
+                    <div class="field-form-group">
+                        <label class="field-form-label">Select Fields</label>
+                        <div id="field-selection">
+                            <!-- Field checkboxes will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="field-form-group">
+                        <label class="field-form-label">
+                            <input type="checkbox" id="include-materials" onchange="toggleMaterialsSection()">
+                            Include Materials/Products
+                        </label>
+                    </div>
+                    
+                    <div id="materials-section" class="material-selection" style="display: none;">
+                        <h4>Select Materials</h4>
+                        <div id="materials-list">
+                            <!-- Materials will be loaded here -->
+                        </div>
+                    </div>
+                    
+                    <div class="field-form-group">
+                        <label class="field-form-label">Notes</label>
+                        <textarea id="task-notes" class="field-form-input" rows="3" placeholder="Additional notes..."></textarea>
+                    </div>
+                    
+                    <div class="field-modal-actions">
+                        <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="clearTaskForm()">
+                            Clear
+                        </button>
+                        <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="createTask()">
+                            Create Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Field History Tab -->
+            <div id="history-tab" class="task-tab-content" style="display: none;">
+                <div class="field-form-group">
+                    <label class="field-form-label">Select Field</label>
+                    <select id="history-field-select" class="field-form-select" onchange="loadFieldHistory()">
+                        <option value="">Choose a field...</option>
+                        <!-- Fields will be loaded here -->
+                    </select>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Year</label>
+                    <select id="history-year-select" class="field-form-select" onchange="loadFieldHistory()">
+                        <option value="">All Years</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                    </select>
+                </div>
+                
+                <div class="history-timeline" id="field-history">
+                    <!-- History will be loaded here -->
+                </div>
+            </div>
+            
+            <div class="field-modal-actions">
+                <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeTasksModal()">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 </body>

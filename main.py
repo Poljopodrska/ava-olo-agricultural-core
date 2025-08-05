@@ -51,6 +51,7 @@ from modules.cava.routes import router as cava_router
 from modules.api.chat_routes import router as chat_router
 from modules.api.chat_history_routes import router as chat_history_router
 from modules.api.task_management_routes import router as task_management_router
+from modules.api.debug_edi_kante import router as debug_edi_router
 
 # WhatsApp integration
 from modules.whatsapp.webhook_handler import router as whatsapp_router
@@ -269,14 +270,15 @@ app.include_router(chat_router)
 app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
 app.include_router(task_management_router)
-STARTUP_STATUS["total_routers_included"] = 21
+app.include_router(debug_edi_router)
+STARTUP_STATUS["total_routers_included"] = 22
 
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Core startup for production with 21 routers and basic auth"""
+    """Core startup for production with 22 routers and basic auth"""
     global STARTUP_STATUS
-    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 21 routers and basic auth protection")
+    logger.info(f"Starting AVA OLO Agricultural Core {VERSION} with 22 routers and basic auth protection")
     
     # Run validation
     try:

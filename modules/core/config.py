@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250804201500'  # v4.7.0 - Task Management System Implementation
-COMMIT_HASH = "task-management-system"  # Complete task management with materials and field history
+DEPLOYMENT_TIMESTAMP = '20250804204000'  # v4.7.1 - Debug Edi Kante fields and complete task UI integration
+COMMIT_HASH = "complete-task-integration"  # Added debug endpoint and fully integrated task management UI
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.7.0"
+VERSION = "v4.7.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
