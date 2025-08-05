@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.1
-Production release with lazy database initialization
+AVA OLO Agricultural Core v4.13.2
+Production release with proper language detection
 """
 import uvicorn
 import sys
@@ -298,7 +298,7 @@ async def startup_event():
     except Exception as e:
         STARTUP_STATUS["error"] = f"Monitoring: {str(e)}"
     
-    logger.info("AVA OLO Agricultural Core ready - v4.13.1 Production with Lazy DB Init")
+    logger.info("AVA OLO Agricultural Core ready - v4.13.2 Production with Proper Language Detection")
     constitutional_deployment_completion()
 
 if __name__ == "__main__":

@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805195000'  # v4.13.1 - Full v4.4.15 with lazy database initialization
-COMMIT_HASH = "full-v4415-lazy"  # Complete v4.4.15 codebase with lazy DB init
+DEPLOYMENT_TIMESTAMP = '20250805201500'  # v4.13.2 - Proper language detection logic
+COMMIT_HASH = "lang-detect-fix"  # IP-based when no WhatsApp, WhatsApp-based when available
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.1"
+VERSION = "v4.13.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

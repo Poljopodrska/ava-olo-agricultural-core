@@ -119,8 +119,8 @@ async def get_active_farmer_by_whatsapp(whatsapp_number: str):
         logger.error(f"Error getting farmer by WhatsApp: {e}")
         return None
 
-async def create_farmer_account(first_name: str, last_name: str, whatsapp_number: str, email: str, password: str):
-    """Create new farmer account"""
+async def create_farmer_account(first_name: str, last_name: str, whatsapp_number: str, email: str, password: str, language_preference: str = 'en'):
+    """Create new farmer account with language preference"""
     db_manager = get_db_manager()
     
     try:
@@ -140,13 +140,13 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
         # Create default farm name
         default_farm_name = f"{first_name} {last_name}'s Farm"
         
-        # Insert into farmers table
+        # Insert into farmers table with language preference
         query = """
         INSERT INTO farmers (
             manager_name, manager_last_name, email, phone, 
             wa_phone_number, password_hash, whatsapp_number, 
-            farm_name, country
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            farm_name, country, language_preference
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
         
@@ -154,7 +154,7 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
             query, 
             (first_name, last_name, email, whatsapp_number, 
              whatsapp_number, password_hash, whatsapp_number, 
-             default_farm_name, 'Bulgaria')
+             default_farm_name, 'Bulgaria', language_preference)
         )
         
         if result and 'rows' in result and len(result['rows']) > 0:
@@ -229,16 +229,27 @@ async def signin_submit(
 ):
     """Process sign-in form submission"""
     
-    # Get language detection for error pages
+    # Get language detection - prefer WhatsApp number if provided
     language_service = get_language_service()
-    client_ip = request.headers.get("X-Forwarded-For")
-    if client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-    elif request.client:
-        client_ip = request.client.host
+    
+    # First try to detect from WhatsApp number if valid
+    detected_language = 'en'  # Default
+    if validate_whatsapp_number(whatsapp_number):
+        formatted_number = format_whatsapp_number(whatsapp_number)
+        detected_language = language_service.detect_language_from_whatsapp(formatted_number)
+        logger.info(f"Language detected from WhatsApp {formatted_number}: {detected_language}")
     else:
-        client_ip = "127.0.0.1"
-    detected_language = await language_service.detect_language_from_ip(client_ip)
+        # Fall back to IP-based detection
+        client_ip = request.headers.get("X-Forwarded-For")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        elif request.client:
+            client_ip = request.client.host
+        else:
+            client_ip = "127.0.0.1"
+        detected_language = await language_service.detect_language_from_ip(client_ip)
+        logger.info(f"Language detected from IP {client_ip}: {detected_language}")
+    
     translations = get_translations(detected_language)
     
     # Validate WhatsApp number
@@ -349,16 +360,27 @@ async def register_submit(
 ):
     """Process registration form submission"""
     
-    # Get language detection for error pages
+    # Get language detection - prefer WhatsApp number if valid
     language_service = get_language_service()
-    client_ip = request.headers.get("X-Forwarded-For")
-    if client_ip:
-        client_ip = client_ip.split(",")[0].strip()
-    elif request.client:
-        client_ip = request.client.host
+    
+    # First try to detect from WhatsApp number if valid
+    detected_language = 'en'  # Default
+    if validate_whatsapp_number(whatsapp_number):
+        formatted_number = format_whatsapp_number(whatsapp_number)
+        detected_language = language_service.detect_language_from_whatsapp(formatted_number)
+        logger.info(f"Language detected from WhatsApp {formatted_number}: {detected_language}")
     else:
-        client_ip = "127.0.0.1"
-    detected_language = await language_service.detect_language_from_ip(client_ip)
+        # Fall back to IP-based detection
+        client_ip = request.headers.get("X-Forwarded-For")
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        elif request.client:
+            client_ip = request.client.host
+        else:
+            client_ip = "127.0.0.1"
+        detected_language = await language_service.detect_language_from_ip(client_ip)
+        logger.info(f"Language detected from IP {client_ip}: {detected_language}")
+    
     translations = get_translations(detected_language)
     
     # Validate required fields
@@ -431,7 +453,8 @@ async def register_submit(
             last_name.strip(), 
             formatted_number, 
             email, 
-            password
+            password,
+            detected_language
         )
         
         if farmer_id:

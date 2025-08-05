@@ -201,37 +201,35 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     # Calculate totals
     total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
     
-    # Get farmer's country for language detection
+    # Get farmer's language preference and WhatsApp number
     db_manager = get_db_manager()
-    country_result = db_manager.execute_query(
-        "SELECT country FROM farmers WHERE id = %s", 
+    farmer_result = db_manager.execute_query(
+        "SELECT language_preference, COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number FROM farmers WHERE id = %s", 
         (farmer_id,)
     )
     
-    country_code = 'EN'  # Default to English
-    if country_result and 'rows' in country_result and country_result['rows']:
-        country = country_result['rows'][0][0]
-        if country:
-            # Map country to language code
-            country_to_lang = {
-                'slovenia': 'SI',
-                'slovenija': 'SI',
-                'italy': 'IT',
-                'italia': 'IT',
-                'france': 'FR',
-                'germany': 'DE',
-                'deutschland': 'DE',
-                'croatia': 'HR',
-                'hrvatska': 'HR',
-                'austria': 'AT',
-                'österreich': 'AT'
-            }
-            country_lower = country.lower()
-            country_code = country_to_lang.get(country_lower, 'EN')
+    # Import language service
+    from ..core.language_service import get_language_service
+    language_service = get_language_service()
+    
+    detected_language = 'en'  # Default to English
+    
+    if farmer_result and 'rows' in farmer_result and farmer_result['rows']:
+        stored_language = farmer_result['rows'][0][0]
+        whatsapp_number = farmer_result['rows'][0][1]
+        
+        if stored_language:
+            # Use stored language preference
+            detected_language = stored_language
+            logger.info(f"Using stored language preference for farmer {farmer_id}: {detected_language}")
+        elif whatsapp_number:
+            # Fall back to detecting from WhatsApp number
+            detected_language = language_service.detect_language_from_whatsapp(whatsapp_number)
+            logger.info(f"Language detected for farmer {farmer_id} from WhatsApp {whatsapp_number}: {detected_language}")
     
     # Get translations for the detected language
     from ..core.translations import get_translations, TranslationDict
-    translations = get_translations(country_code)
+    translations = get_translations(detected_language)
     
     # Wrap translations in TranslationDict for template attribute access
     if isinstance(translations, dict):
@@ -247,7 +245,7 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
         "weather": weather,
         "messages": messages,
         "message_count": len(messages),
-        "country_code": country_code,
+        "language": detected_language,
         "t": translations  # Add translations to template context
     })
 
