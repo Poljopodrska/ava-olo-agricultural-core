@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core - v4.9.3
-Phase 1: Add static files mount
+AVA OLO Agricultural Core - v4.10.0
+Phase 2: Add health router
 """
 import os
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from datetime import datetime
@@ -18,8 +18,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Version
-VERSION = "v4.9.3"
-BUILD_ID = "static-files"
+VERSION = "v4.10.0"
+BUILD_ID = "health-router"
+
+# Create simple health router
+health_router = APIRouter(prefix="/api/v1/health", tags=["health"])
+
+@health_router.get("/")
+async def health_check():
+    """Basic health check endpoint"""
+    return JSONResponse({
+        "status": "healthy",
+        "version": VERSION,
+        "build_id": BUILD_ID,
+        "timestamp": datetime.now().isoformat()
+    })
 
 # Initialize FastAPI
 app = FastAPI(
@@ -45,7 +58,7 @@ async def root():
         "message": "AVA OLO Agricultural Core API",
         "version": VERSION,
         "status": "operational",
-        "features": ["static_files"],
+        "features": ["static_files", "health_router"],
         "timestamp": datetime.now().isoformat()
     })
 
@@ -59,12 +72,15 @@ async def health():
         "timestamp": datetime.now().isoformat()
     })
 
+# Include routers
+app.include_router(health_router)
+
 # Startup event
 @app.on_event("startup")
 async def startup_event():
     """Startup"""
     logger.info(f"Starting AVA OLO Agricultural Core {VERSION}")
-    logger.info("Phase 1: Static files mount")
+    logger.info("Phase 2: Health router added")
     logger.info("Ready to serve")
 
 if __name__ == "__main__":

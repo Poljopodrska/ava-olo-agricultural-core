@@ -1,4 +1,4 @@
-# AVA OLO Agricultural Core Service - v4.9.3
+# AVA OLO Agricultural Core Service - v4.10.0
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.11-slim
 
 # Cache busting
@@ -41,7 +41,7 @@ RUN echo "✅ Ultra-minimal build complete" >> /build-info.txt
 ENV PYTHONUNBUFFERED=1
 ENV ENVIRONMENT=production
 ENV PORT=8080
-ENV VERSION=v4.9.3
+ENV VERSION=v4.10.0
 
 # Embed Git information
 ENV GITHUB_SHA=${GITHUB_SHA}
