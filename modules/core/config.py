@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250806212000'  # v4.16.15 - Fix duplicate key error by manually managing IDs
 COMMIT_HASH = "fix-duplicate-key-error"  # Manually generate next ID to avoid sequence issues
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.15"
+VERSION = "v4.16.16"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

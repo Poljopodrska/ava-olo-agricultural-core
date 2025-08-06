@@ -2,10 +2,12 @@
 """
 Diagnostic routes for testing IP detection and language
 """
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Request, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
 import httpx
 import logging
+from ..core.simple_db import execute_simple_query
+from ..auth.routes import require_auth
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/diagnostic", tags=["diagnostic"])
@@ -186,3 +188,173 @@ async def check_ip_detection(request: Request):
     """
     
     return HTMLResponse(content=html)
+
+@router.get("/check-field/{field_name}")
+async def check_field_by_name(field_name: str, farmer: dict = Depends(require_auth)):
+    """Check if a field with given name exists for the current farmer"""
+    try:
+        farmer_id = farmer.get('farmer_id')
+        
+        # Search for the field
+        query = """
+        SELECT id, field_name, farmer_id, area_ha
+        FROM fields 
+        WHERE farmer_id = %s AND field_name = %s
+        ORDER BY id DESC
+        """
+        result = execute_simple_query(query, (farmer_id, field_name))
+        
+        if result.get('success') and result.get('rows'):
+            fields = []
+            for row in result['rows']:
+                fields.append({
+                    'id': row[0],
+                    'field_name': row[1],
+                    'farmer_id': row[2],
+                    'area_ha': float(row[3]) if row[3] else None
+                })
+            
+            return JSONResponse(content={
+                "success": True,
+                "found": True,
+                "fields": fields,
+                "count": len(fields)
+            })
+        else:
+            # Also check without farmer_id filter to see if it exists for another farmer
+            query_all = """
+            SELECT id, field_name, farmer_id, area_ha
+            FROM fields 
+            WHERE field_name = %s
+            ORDER BY id DESC
+            LIMIT 10
+            """
+            result_all = execute_simple_query(query_all, (field_name,))
+            
+            other_farmers_fields = []
+            if result_all.get('success') and result_all.get('rows'):
+                for row in result_all['rows']:
+                    other_farmers_fields.append({
+                        'id': row[0],
+                        'field_name': row[1],
+                        'farmer_id': row[2],
+                        'area_ha': float(row[3]) if row[3] else None
+                    })
+            
+            return JSONResponse(content={
+                "success": True,
+                "found": False,
+                "message": f"No field named '{field_name}' found for farmer {farmer_id}",
+                "fields_for_other_farmers": other_farmers_fields
+            })
+            
+    except Exception as e:
+        logger.error(f"Error checking field: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@router.get("/recent-fields")
+async def get_recent_fields(farmer: dict = Depends(require_auth)):
+    """Get the most recent fields for the current farmer"""
+    try:
+        farmer_id = farmer.get('farmer_id')
+        
+        # Get last 10 fields
+        query = """
+        SELECT id, field_name, farmer_id, area_ha, country, latitude, longitude
+        FROM fields 
+        WHERE farmer_id = %s
+        ORDER BY id DESC
+        LIMIT 10
+        """
+        result = execute_simple_query(query, (farmer_id,))
+        
+        fields = []
+        if result.get('success') and result.get('rows'):
+            for row in result['rows']:
+                fields.append({
+                    'id': row[0],
+                    'field_name': row[1],
+                    'farmer_id': row[2],
+                    'area_ha': float(row[3]) if row[3] else None,
+                    'country': row[4],
+                    'latitude': float(row[5]) if row[5] else None,
+                    'longitude': float(row[6]) if row[6] else None
+                })
+        
+        # Also get total count
+        count_query = "SELECT COUNT(*) FROM fields WHERE farmer_id = %s"
+        count_result = execute_simple_query(count_query, (farmer_id,))
+        total_count = count_result['rows'][0][0] if count_result.get('success') and count_result.get('rows') else 0
+        
+        return JSONResponse(content={
+            "success": True,
+            "farmer_id": farmer_id,
+            "recent_fields": fields,
+            "count": len(fields),
+            "total_count": total_count
+        })
+            
+    except Exception as e:
+        logger.error(f"Error getting recent fields: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
+@router.get("/all-fields-debug")
+async def get_all_fields_debug(farmer: dict = Depends(require_auth)):
+    """Debug endpoint to see all fields and why they might not be showing"""
+    try:
+        farmer_id = farmer.get('farmer_id')
+        
+        # Get ALL fields for this farmer with full details
+        query = """
+        SELECT id, field_name, farmer_id, area_ha, country, 
+               latitude, longitude, blok_id, raba, notes
+        FROM fields 
+        WHERE farmer_id = %s
+        ORDER BY id DESC
+        """
+        result = execute_simple_query(query, (farmer_id,))
+        
+        fields = []
+        if result.get('success') and result.get('rows'):
+            for row in result['rows']:
+                fields.append({
+                    'id': row[0],
+                    'field_name': row[1],
+                    'farmer_id': row[2],
+                    'area_ha': float(row[3]) if row[3] else None,
+                    'country': row[4],
+                    'latitude': float(row[5]) if row[5] else None,
+                    'longitude': float(row[6]) if row[6] else None,
+                    'blok_id': row[7],
+                    'raba': row[8],
+                    'notes': row[9]
+                })
+        
+        # Also check what get_farmer_fields returns
+        from ..api.farmer_dashboard_routes import get_farmer_fields
+        dashboard_fields = get_farmer_fields(farmer_id)
+        
+        return JSONResponse(content={
+            "success": True,
+            "farmer_id": farmer_id,
+            "direct_query_fields": fields,
+            "direct_query_count": len(fields),
+            "dashboard_function_fields": dashboard_fields,
+            "dashboard_function_count": len(dashboard_fields),
+            "mismatch": len(fields) != len(dashboard_fields)
+        })
+            
+    except Exception as e:
+        logger.error(f"Error in debug endpoint: {e}")
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
