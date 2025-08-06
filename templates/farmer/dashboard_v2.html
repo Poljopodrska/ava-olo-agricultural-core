@@ -1472,6 +1472,19 @@
         }
         
         async function saveField() {
+            // First test if we can reach the API
+            try {
+                const testResponse = await fetch('/farmer/test-post', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({test: 'connectivity'})
+                });
+                const testResult = await testResponse.json();
+                console.log('API connectivity test:', testResult);
+            } catch (e) {
+                console.error('API connectivity test failed:', e);
+            }
+            
             const form = document.getElementById('field-form');
             const formData = new FormData(form);
             
@@ -1490,6 +1503,8 @@
             for (let [key, value] of formData.entries()) {
                 data[key] = value;
             }
+            
+            console.log('Sending field data:', data);
             
             try {
                 const response = await fetch('/farmer/api/fields/add', {
@@ -1515,8 +1530,8 @@
                     alert('Error adding field: ' + (result.error || 'Unknown error'));
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Failed to add field');
+                console.error('Error adding field:', error);
+                alert('Failed to add field: ' + error.message);
             }
         }
         

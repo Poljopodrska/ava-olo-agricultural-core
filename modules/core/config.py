@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250806181500'  # v4.16.7 - Fix field creation API endpoint URL
 COMMIT_HASH = "fix-field-creation"  # Fix incorrect API endpoint URL for field creation
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.7"
+VERSION = "v4.16.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

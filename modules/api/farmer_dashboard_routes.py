@@ -23,6 +23,17 @@ async def test_farmer_auth(farmer: dict = Depends(require_auth)):
     """Test endpoint to check if auth is working"""
     return {"status": "ok", "farmer": farmer}
 
+@router.post("/test-post")
+async def test_post(request: Request):
+    """Test POST endpoint without auth to verify routing"""
+    try:
+        data = await request.json()
+        logger.info(f"Test POST received data: {data}")
+        return JSONResponse(content={"success": True, "received": data})
+    except Exception as e:
+        logger.error(f"Test POST error: {e}")
+        return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
+
 @router.get("/test-simple-dashboard", response_class=HTMLResponse)
 async def test_simple_dashboard(request: Request, farmer: dict = Depends(require_auth)):
     """Simple test dashboard without complex data fetching"""
@@ -427,6 +438,9 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
     """API endpoint to add a new field for the farmer"""
     
     try:
+        # Log the incoming request
+        logger.info(f"Field creation request received. Farmer: {farmer}")
+        
         data = await request.json()
         farmer_id = farmer['farmer_id']
         db_manager = get_db_manager()
