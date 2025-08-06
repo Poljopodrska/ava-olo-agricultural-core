@@ -140,6 +140,14 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
         # Create default farm name
         default_farm_name = f"{first_name} {last_name}'s Farm"
         
+        # Detect country from phone number
+        from ..utils.phone_country_detector import detect_country_from_phone
+        detected_country = detect_country_from_phone(whatsapp_number)
+        if not detected_country:
+            detected_country = 'Unknown'
+        
+        logger.info(f"Registration - Phone: {whatsapp_number}, Country: {detected_country}, Language: {language_preference}")
+        
         # Insert into farmers table with language preference
         query = """
         INSERT INTO farmers (
@@ -154,7 +162,7 @@ async def create_farmer_account(first_name: str, last_name: str, whatsapp_number
             query, 
             (first_name, last_name, email, whatsapp_number, 
              whatsapp_number, password_hash, whatsapp_number, 
-             default_farm_name, 'Bulgaria', language_preference)
+             default_farm_name, detected_country, language_preference)
         )
         
         if result and 'rows' in result and len(result['rows']) > 0:

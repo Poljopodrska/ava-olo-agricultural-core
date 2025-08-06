@@ -45,7 +45,7 @@ def get_farmer_language(farmer_id: int) -> str:
     
     try:
         query = """
-        SELECT language_preference 
+        SELECT language_preference, whatsapp_number, country
         FROM farmers 
         WHERE id = %s
         """
@@ -53,6 +53,21 @@ def get_farmer_language(farmer_id: int) -> str:
         
         if result and 'rows' in result and len(result['rows']) > 0:
             language = result['rows'][0][0]
+            whatsapp = result['rows'][0][1]
+            country = result['rows'][0][2]
+            logger.info(f"Farmer {farmer_id}: language={language}, whatsapp={whatsapp}, country={country}")
+            
+            # If language is not set, try to detect from WhatsApp number
+            if not language and whatsapp:
+                from ..core.language_service import get_language_service
+                service = get_language_service()
+                language = service.detect_language_from_whatsapp(whatsapp)
+                logger.info(f"Detected language from WhatsApp {whatsapp}: {language}")
+                
+                # Update the database with detected language
+                update_query = "UPDATE farmers SET language_preference = %s WHERE id = %s"
+                db_manager.execute_query(update_query, (language, farmer_id))
+                
             return language if language else 'en'
         return 'en'
     except Exception as e:
