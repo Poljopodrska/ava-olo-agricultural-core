@@ -54,6 +54,9 @@ from modules.api.chat_history_routes import router as chat_history_router
 # WhatsApp integration
 from modules.whatsapp.webhook_handler import router as whatsapp_router
 
+# Migration routes (temporary)
+from modules.api.migration_location_routes import router as migration_router
+
 # Global authentication middleware
 from modules.core.global_auth import GlobalAuthMiddleware
 
@@ -273,7 +276,8 @@ app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
-STARTUP_STATUS["total_routers_included"] = 20
+app.include_router(migration_router)
+STARTUP_STATUS["total_routers_included"] = 21
 
 # Startup event
 @app.on_event("startup")

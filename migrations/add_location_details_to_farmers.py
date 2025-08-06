@@ -9,18 +9,20 @@ import os
 from datetime import datetime
 
 def get_connection():
-    """Get database connection from central config"""
-    # Import from shared central config
-    import sys
-    sys.path.append('C:\\AVA-Projects\\ava-olo-shared')
-    from environments.central_config import CentralConfig
+    """Get database connection"""
+    # Use environment variables or defaults
+    db_host = os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com')
+    db_name = os.getenv('DB_NAME', 'farmer_crm')
+    db_user = os.getenv('DB_USER', 'postgres')
+    db_password = os.getenv('DB_PASSWORD', 'j2D8J4LH:~eFrUz>$:kkNT(P$Rq_')
+    db_port = os.getenv('DB_PORT', '5432')
     
     return psycopg2.connect(
-        host=CentralConfig.DB_HOST,
-        database=CentralConfig.DB_NAME,
-        user=CentralConfig.DB_USER,
-        password=CentralConfig.DB_PASSWORD,
-        port=CentralConfig.DB_PORT
+        host=db_host,
+        database=db_name,
+        user=db_user,
+        password=db_password,
+        port=db_port
     )
 
 def run_migration():
