@@ -187,72 +187,118 @@ async def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
         # Get current weather for Logatec
         current_weather = await weather_service.get_current_weather(LOGATEC_LAT, LOGATEC_LON)
         
+        # Get hourly forecast for next 24 hours
+        hourly_data = await weather_service.get_hourly_forecast(LOGATEC_LAT, LOGATEC_LON)
+        
+        # Get 5-day forecast
+        forecast_data = await weather_service.get_weather_forecast(LOGATEC_LAT, LOGATEC_LON, days=5)
+        
+        # Build response with new format
+        weather_response = {
+            'location': 'Logatec, Slovenia',
+            'rainfall_24h': 0,  # Default
+            'hourly': [],
+            'forecast': []
+        }
+        
+        # Add rainfall from current weather if available
         if current_weather:
-            # Extract numeric temperature value
-            temp_str = current_weather.get('temperature', '20°C')
-            temperature = float(temp_str.replace('°C', '')) if '°C' in str(temp_str) else 20
-            
-            # Extract numeric humidity value
-            humidity_str = current_weather.get('humidity', '60%')
-            humidity = int(humidity_str.replace('%', '')) if '%' in str(humidity_str) else 60
-            
-            # Extract numeric wind speed
-            wind_str = current_weather.get('wind_speed', '10 km/h')
-            wind_speed = int(wind_str.split()[0]) if 'km/h' in str(wind_str) else 10
-            
-            # Get forecast data
-            forecast_data = await weather_service.get_weather_forecast(LOGATEC_LAT, LOGATEC_LON, days=3)
-            
-            # Format forecast
-            forecast = []
-            if forecast_data and 'forecasts' in forecast_data:
-                for i, day_forecast in enumerate(forecast_data['forecasts'][:3]):
-                    day_names = ['Today', 'Tomorrow', 'Day 3']
-                    # Extract numeric values from forecast
-                    high_str = day_forecast.get('temp_max', '25°C')
-                    low_str = day_forecast.get('temp_min', '18°C')
-                    high = int(high_str.replace('°C', '')) if '°C' in str(high_str) else 25
-                    low = int(low_str.replace('°C', '')) if '°C' in str(low_str) else 18
-                    
-                    forecast.append({
-                        'day': day_names[i],
-                        'high': high,
-                        'low': low,
-                        'conditions': day_forecast.get('description', 'Clear'),
-                        'icon': day_forecast.get('icon', '☀️')
-                    })
-            else:
-                # Default forecast if API fails
-                forecast = [
-                    {'day': 'Today', 'high': 25, 'low': 18, 'conditions': 'Partly Cloudy', 'icon': '⛅'},
-                    {'day': 'Tomorrow', 'high': 27, 'low': 19, 'conditions': 'Sunny', 'icon': '☀️'},
-                    {'day': 'Day 3', 'high': 24, 'low': 17, 'conditions': 'Cloudy', 'icon': '☁️'}
-                ]
-            
-            return {
-                'location': 'Logatec, Slovenia',
-                'temperature': temperature,
-                'conditions': current_weather.get('description', 'Clear'),
-                'humidity': humidity,
-                'wind_speed': wind_speed,
-                'icon': current_weather.get('icon', '☀️'),
-                'forecast': forecast
-            }
+            weather_response['rainfall_24h'] = current_weather.get('rainfall_24h', 0)
+            weather_response['temperature'] = current_weather.get('temperature', '20°C')
+            weather_response['conditions'] = current_weather.get('description', 'Clear')
+            weather_response['humidity'] = current_weather.get('humidity', '60%')
+            weather_response['wind_speed'] = current_weather.get('wind_speed', '10 km/h')
+            weather_response['icon'] = current_weather.get('icon', '☀️')
+        
+        # Add hourly forecast
+        if hourly_data:
+            for hour in hourly_data:
+                weather_response['hourly'].append({
+                    'time': hour['time'],
+                    'temp': hour['temp'],
+                    'icon': hour['icon'],
+                    'rainfall': hour.get('rainfall_mm', 0),
+                    'wind': hour['wind']['speed']
+                })
+        
+        # Add 5-day forecast
+        if forecast_data and 'forecasts' in forecast_data:
+            for day_forecast in forecast_data['forecasts'][:5]:
+                # Extract temperature values
+                temp_max = day_forecast.get('temp_max', '25°C')
+                temp_min = day_forecast.get('temp_min', '18°C')
+                
+                # Remove °C if present
+                if isinstance(temp_max, str) and '°C' in temp_max:
+                    temp_max = temp_max.replace('°C', '')
+                if isinstance(temp_min, str) and '°C' in temp_min:
+                    temp_min = temp_min.replace('°C', '')
+                
+                weather_response['forecast'].append({
+                    'day': day_forecast.get('day_name', 'Day'),
+                    'high': temp_max,
+                    'low': temp_min,
+                    'conditions': day_forecast.get('description', 'Clear'),
+                    'icon': day_forecast.get('icon', '☀️'),
+                    'rainfall': day_forecast.get('rainfall', '0 mm')
+                })
+        
+        # Add default data if missing
+        if not weather_response['hourly']:
+            # Generate sample hourly data
+            import datetime
+            current_hour = datetime.datetime.now().hour
+            for i in range(24):
+                hour = (current_hour + i) % 24
+                weather_response['hourly'].append({
+                    'time': f"{hour:02d}:00",
+                    'temp': 20 + (i % 5),
+                    'icon': '☀️' if 6 <= hour <= 18 else '🌙',
+                    'rainfall': 0,
+                    'wind': 10
+                })
+        
+        if not weather_response['forecast']:
+            # Default 5-day forecast
+            weather_response['forecast'] = [
+                {'day': 'Today', 'high': '22', 'low': '14', 'conditions': 'Clear', 'icon': '☀️', 'rainfall': '0 mm'},
+                {'day': 'Tomorrow', 'high': '24', 'low': '16', 'conditions': 'Sunny', 'icon': '☀️', 'rainfall': '0 mm'},
+                {'day': 'Wednesday', 'high': '23', 'low': '15', 'conditions': 'Partly Cloudy', 'icon': '⛅', 'rainfall': '0 mm'},
+                {'day': 'Thursday', 'high': '21', 'low': '13', 'conditions': 'Cloudy', 'icon': '☁️', 'rainfall': '2 mm'},
+                {'day': 'Friday', 'high': '22', 'low': '14', 'conditions': 'Clear', 'icon': '☀️', 'rainfall': '0 mm'}
+            ]
+        
+        return weather_response
+        
     except Exception as e:
         logger.error(f"Error fetching weather: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
     
-    # Return default weather data for Logatec if API fails
+    # Return default weather data with new format
+    import datetime
+    current_hour = datetime.datetime.now().hour
+    hourly_default = []
+    for i in range(24):
+        hour = (current_hour + i) % 24
+        hourly_default.append({
+            'time': f"{hour:02d}:00",
+            'temp': 20 + (i % 5),
+            'icon': '☀️' if 6 <= hour <= 18 else '🌙',
+            'rainfall': 0,
+            'wind': 10
+        })
+    
     return {
         'location': 'Logatec, Slovenia',
-        'temperature': 20,
-        'conditions': 'Clear',
-        'humidity': 60,
-        'wind_speed': 10,
-        'icon': '☀️',
+        'rainfall_24h': 0,
+        'hourly': hourly_default,
         'forecast': [
-            {'day': 'Today', 'high': 22, 'low': 14, 'conditions': 'Clear', 'icon': '☀️'},
-            {'day': 'Tomorrow', 'high': 24, 'low': 16, 'conditions': 'Sunny', 'icon': '☀️'},
-            {'day': 'Day 3', 'high': 23, 'low': 15, 'conditions': 'Partly Cloudy', 'icon': '⛅'}
+            {'day': 'Today', 'high': '22', 'low': '14', 'conditions': 'Clear', 'icon': '☀️', 'rainfall': '0 mm'},
+            {'day': 'Tomorrow', 'high': '24', 'low': '16', 'conditions': 'Sunny', 'icon': '☀️', 'rainfall': '0 mm'},
+            {'day': 'Wednesday', 'high': '23', 'low': '15', 'conditions': 'Partly Cloudy', 'icon': '⛅', 'rainfall': '0 mm'},
+            {'day': 'Thursday', 'high': '21', 'low': '13', 'conditions': 'Cloudy', 'icon': '☁️', 'rainfall': '2 mm'},
+            {'day': 'Friday', 'high': '22', 'low': '14', 'conditions': 'Clear', 'icon': '☀️', 'rainfall': '0 mm'}
         ]
     }
 

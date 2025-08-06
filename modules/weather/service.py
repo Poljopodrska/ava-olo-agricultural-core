@@ -147,21 +147,91 @@ class WeatherService:
                         'lon': lon,
                         'appid': self.api_key,
                         'units': 'metric',
-                        'cnt': 9  # Next 27 hours (3-hour intervals) to ensure full 24h coverage
+                        'cnt': 40  # Get max allowed (5 days of 3-hour intervals)
                     },
                     timeout=10.0
                 )
                 
                 if response.status_code == 200:
                     data = response.json()
-                    return self._format_hourly_data(data)
+                    return self._format_hourly_data_interpolated(data)
                 else:
                     print(f"Hourly forecast API error: {response.status_code}")
-                    return self._get_mock_hourly_data()
+                    return self._get_mock_hourly_data_24h()
                     
         except Exception as e:
             print(f"Hourly forecast service error: {e}")
-            return self._get_mock_hourly_data()
+            return self._get_mock_hourly_data_24h()
+    
+    def _format_hourly_data_interpolated(self, data: Dict) -> List[Dict]:
+        """Format and interpolate hourly forecast data to get 24 individual hours"""
+        hourly_data = []
+        current_time = datetime.now()
+        
+        # Get 3-hour forecast data
+        forecast_list = data.get('list', [])
+        
+        if not forecast_list:
+            return self._get_mock_hourly_data_24h()
+        
+        # Create 24 hourly entries by interpolating between 3-hour forecasts
+        for hour_offset in range(24):
+            target_time = current_time + timedelta(hours=hour_offset)
+            target_timestamp = target_time.timestamp()
+            
+            # Find surrounding 3-hour forecasts
+            prev_forecast = None
+            next_forecast = None
+            
+            for i, item in enumerate(forecast_list):
+                item_timestamp = item['dt']
+                if item_timestamp <= target_timestamp:
+                    prev_forecast = item
+                if item_timestamp >= target_timestamp and next_forecast is None:
+                    next_forecast = item
+                    break
+            
+            # If we have both, interpolate; otherwise use the closest one
+            if prev_forecast and next_forecast and prev_forecast != next_forecast:
+                # Linear interpolation
+                prev_time = prev_forecast['dt']
+                next_time = next_forecast['dt']
+                weight = (target_timestamp - prev_time) / (next_time - prev_time) if next_time != prev_time else 0
+                
+                # Interpolate temperature
+                temp = prev_forecast['main']['temp'] * (1 - weight) + next_forecast['main']['temp'] * weight
+                
+                # Use the closer forecast for other values
+                forecast = prev_forecast if weight < 0.5 else next_forecast
+            else:
+                # Use the closest available forecast
+                forecast = next_forecast if next_forecast else prev_forecast if prev_forecast else forecast_list[0]
+                temp = forecast['main']['temp']
+            
+            weather = forecast['weather'][0]
+            wind = forecast.get('wind', {})
+            
+            # Get rainfall
+            rain_3h = forecast.get('rain', {}).get('3h', 0)
+            snow_3h = forecast.get('snow', {}).get('3h', 0)
+            # Divide by 3 to get approximate hourly rainfall
+            hourly_rain = (rain_3h + snow_3h) / 3
+            
+            hourly_data.append({
+                'time': target_time.strftime('%H:%M'),
+                'hour': target_time.hour,
+                'temp': int(round(temp)),
+                'icon': self._get_weather_emoji(weather['icon']),
+                'description': weather['description'].title(),
+                'wind': {
+                    'speed': int(round(wind.get('speed', 0) * 3.6)),  # Convert to km/h
+                    'direction': self._get_wind_direction(wind.get('deg', 0))
+                },
+                'rainfall_mm': round(hourly_rain, 1),
+                'humidity': forecast['main']['humidity']
+            })
+        
+        return hourly_data
     
     def _format_hourly_data(self, data: Dict) -> List[Dict]:
         """Format hourly forecast data"""
@@ -201,7 +271,7 @@ class WeatherService:
         return directions[index]
     
     def _get_mock_hourly_data(self) -> List[Dict]:
-        """Mock hourly data for testing"""
+        """Mock hourly data for testing (old 3-hour intervals)"""
         hourly_data = []
         current_hour = datetime.now().hour
         
@@ -219,8 +289,41 @@ class WeatherService:
                     'speed': 10 + i * 2,
                     'direction': ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][i]
                 },
-                'precipitation': 0 if i < 5 else 2.5,
+                'rainfall_mm': 0 if i < 5 else 2.5,
                 'humidity': 60 + i * 2
+            })
+        
+        return hourly_data
+    
+    def _get_mock_hourly_data_24h(self) -> List[Dict]:
+        """Mock hourly data for testing - 24 individual hours"""
+        hourly_data = []
+        current_hour = datetime.now().hour
+        
+        for i in range(24):  # 24 individual hours
+            hour = (current_hour + i) % 24
+            # Temperature curve: cooler at night, warmer during day
+            if 0 <= hour < 6:
+                temp = 15 + hour  # 15-20°C early morning
+            elif 6 <= hour < 12:
+                temp = 20 + (hour - 6)  # 20-26°C morning
+            elif 12 <= hour < 18:
+                temp = 26 - (hour - 12) // 2  # 26-23°C afternoon
+            else:
+                temp = 23 - (hour - 18)  # 23-17°C evening
+            
+            hourly_data.append({
+                'time': f"{hour:02d}:00",
+                'hour': hour,
+                'temp': temp,
+                'icon': '☀️' if 6 <= hour <= 18 else '🌙',
+                'description': 'Clear' if i % 4 == 0 else 'Partly Cloudy',
+                'wind': {
+                    'speed': 8 + (i % 5) * 2,
+                    'direction': ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][i % 8]
+                },
+                'rainfall_mm': 0 if i < 18 else round(i / 10, 1),  # Some evening rain
+                'humidity': 55 + (i % 3) * 5
             })
         
         return hourly_data
