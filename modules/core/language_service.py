@@ -197,6 +197,10 @@ class LanguageService:
         # Clean the number
         clean_number = re.sub(r'[^\d+]', '', whatsapp_number)
         
+        # Handle 00 prefix (international format)
+        if clean_number.startswith('00'):
+            clean_number = '+' + clean_number[2:]
+        
         # Ensure it starts with +
         if not clean_number.startswith('+'):
             clean_number = '+' + clean_number
