@@ -23,6 +23,17 @@ async def test_farmer_auth(farmer: dict = Depends(require_auth)):
     """Test endpoint to check if auth is working"""
     return {"status": "ok", "farmer": farmer}
 
+@router.get("/test-farmer-info")
+async def test_farmer_info(request: Request, farmer: dict = Depends(require_auth)):
+    """Get detailed farmer info for debugging"""
+    return JSONResponse(content={
+        "farmer_from_auth": farmer,
+        "farmer_id": farmer.get('farmer_id') if farmer else None,
+        "farmer_name": farmer.get('name') if farmer else None,
+        "cookies": dict(request.cookies),
+        "farmer_id_type": type(farmer.get('farmer_id')).__name__ if farmer and 'farmer_id' in farmer else None
+    })
+
 @router.post("/test-post")
 async def test_post(request: Request):
     """Test POST endpoint without auth to verify routing"""
@@ -486,22 +497,38 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
     """API endpoint to add a new field for the farmer"""
     
     try:
-        # Log the incoming request
-        logger.info(f"Field creation request received. Farmer object: {farmer}")
+        # Log the incoming request with all details
+        logger.info(f"=== FIELD CREATION START ===")
+        logger.info(f"Request headers: {dict(request.headers)}")
+        logger.info(f"Request cookies: {request.cookies}")
+        logger.info(f"Farmer object from auth: {farmer}")
         logger.info(f"Farmer type: {type(farmer)}")
         
         data = await request.json()
+        logger.info(f"Request data: {data}")
         
         # Check if farmer_id exists
         if not farmer or 'farmer_id' not in farmer:
             logger.error(f"Invalid farmer object: {farmer}")
             return JSONResponse(content={
                 "success": False,
-                "error": "Authentication error - no farmer ID found"
+                "error": "Authentication error - no farmer ID found",
+                "farmer_object": str(farmer)
             }, status_code=401)
         
         farmer_id = farmer['farmer_id']
-        logger.info(f"Farmer ID extracted: {farmer_id}")
+        logger.info(f"Farmer ID extracted: {farmer_id}, type: {type(farmer_id)}")
+        
+        # Ensure farmer_id is an integer
+        try:
+            farmer_id = int(farmer_id)
+            logger.info(f"Farmer ID converted to int: {farmer_id}")
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid farmer_id format: {farmer_id}, error: {e}")
+            return JSONResponse(content={
+                "success": False,
+                "error": f"Invalid farmer ID format: {farmer_id}"
+            }, status_code=400)
         
         db_manager = get_db_manager()
         
@@ -630,7 +657,9 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
         
         return JSONResponse(content={
             "success": False,
-            "error": error_message
+            "error": error_message,
+            "details": str(e),
+            "farmer_id": farmer_id if 'farmer_id' in locals() else "not_set"
         }, status_code=500)
 
 @router.get("/api/stats", response_class=JSONResponse)
