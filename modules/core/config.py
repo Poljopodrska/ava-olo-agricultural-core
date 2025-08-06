@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250806183000'  # v4.16.9 - Add database initialization and better error handling
 COMMIT_HASH = "fix-fields-table"  # Add database table creation and detailed error messages
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.12"
+VERSION = "v4.16.13"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

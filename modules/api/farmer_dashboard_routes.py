@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 
 from ..core.config import VERSION
 from ..core.database_manager import get_db_manager
+from ..core.simple_db import execute_simple_query
 from ..auth.routes import get_current_farmer, require_auth
 
 logger = logging.getLogger(__name__)
@@ -551,14 +552,14 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             }, status_code=400)
         
         # Insert the new field with coordinates if provided
-        # Note: Remove created_at/updated_at as they may not exist in the table
+        # Use simple_db to avoid context manager issues
         if data.get('center_lat') and data.get('center_lng'):
             insert_query = """
             INSERT INTO fields (farmer_id, field_name, area_ha, latitude, longitude, country)
             VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """
-            result = db_manager.execute_query(
+            result = execute_simple_query(
                 insert_query,
                 (farmer_id, data['field_name'], area_ha, 
                  float(data['center_lat']), float(data['center_lng']),
@@ -570,14 +571,22 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             VALUES (%s, %s, %s, %s)
             RETURNING id
             """
-            result = db_manager.execute_query(
+            result = execute_simple_query(
                 insert_query,
                 (farmer_id, data['field_name'], area_ha, 
                  data.get('country', farmer.get('country', 'Slovenia')))
             )
         
+        # Check if the query was successful
+        if not result.get('success'):
+            logger.error(f"Field creation failed: {result.get('error')}")
+            return JSONResponse(content={
+                "success": False,
+                "error": f"Database error: {result.get('error', 'Unknown error')}"
+            }, status_code=500)
+        
         # Store polygon coordinates if provided
-        if data.get('coordinates') and result and 'rows' in result and result['rows']:
+        if data.get('coordinates') and result.get('rows'):
             field_id = result['rows'][0][0]
             try:
                 # Store coordinates as JSON in a separate table or field
@@ -590,14 +599,14 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
                 SET notes = %s
                 WHERE id = %s
                 """
-                db_manager.execute_query(boundary_query, (f"COORDINATES:{coordinates_json}", field_id))
+                execute_simple_query(boundary_query, (f"COORDINATES:{coordinates_json}", field_id))
             except Exception as e:
                 logger.warning(f"Could not store field coordinates: {e}")
         
         # Log the result
         logger.info(f"Field insert result: {result}")
         
-        if result and 'rows' in result and result['rows']:
+        if result.get('success') and result.get('rows'):
             field_id = result['rows'][0][0]
             logger.info(f"Field created with ID: {field_id}")
             
@@ -608,11 +617,14 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
                 VALUES (%s, %s, %s, CURRENT_DATE, 'active')
                 """
                 try:
-                    db_manager.execute_query(
+                    crop_result = execute_simple_query(
                         crop_query,
                         (field_id, data['crop_type'], data.get('variety', ''))
                     )
-                    logger.info(f"Crop type '{data['crop_type']}' added to field {field_id}")
+                    if crop_result.get('success'):
+                        logger.info(f"Crop type '{data['crop_type']}' added to field {field_id}")
+                    else:
+                        logger.warning(f"Could not add crop type: {crop_result.get('error')}")
                 except Exception as e:
                     logger.warning(f"Could not add crop type: {e}")
             
@@ -620,9 +632,9 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             verify_query = """
             SELECT id, field_name, area_ha FROM fields WHERE id = %s
             """
-            verification = db_manager.execute_query(verify_query, (field_id,))
+            verification = execute_simple_query(verify_query, (field_id,))
             
-            if verification and 'rows' in verification and verification['rows']:
+            if verification.get('success') and verification.get('rows'):
                 logger.info(f"Field verified in database: {verification['rows'][0]}")
             else:
                 logger.warning(f"Could not verify field {field_id} after creation")
