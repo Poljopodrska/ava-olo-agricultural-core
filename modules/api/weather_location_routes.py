@@ -34,8 +34,11 @@ async def get_weather_for_location(
                 "error": "No weather data available for this location"
             })
         
-        # Get forecast
-        forecast_data = await weather_service.get_weather_forecast(lat, lon, days=3)
+        # Get hourly forecast for next 24 hours
+        hourly_data = await weather_service.get_hourly_forecast(lat, lon)
+        
+        # Get 5-day forecast
+        forecast_data = await weather_service.get_weather_forecast(lat, lon, days=5)
         
         # Format the response
         weather_response = {
@@ -44,13 +47,25 @@ async def get_weather_for_location(
             "humidity": current_weather.get('humidity', '60%'),
             "wind_speed": current_weather.get('wind_speed', '10 km/h'),
             "icon": current_weather.get('icon', '🌤️'),
+            "rainfall_24h": current_weather.get('rainfall_24h', 0),  # mm in last 24h
+            "hourly": [],
             "forecast": []
         }
         
-        # Add forecast if available
+        # Add hourly forecast
+        if hourly_data:
+            for hour in hourly_data:
+                weather_response['hourly'].append({
+                    'time': hour['time'],
+                    'temp': hour['temp'],
+                    'icon': hour['icon'],
+                    'rainfall': hour.get('rainfall_mm', 0),  # mm expected
+                    'wind': hour['wind']['speed']
+                })
+        
+        # Add 5-day forecast
         if forecast_data and 'forecasts' in forecast_data:
-            day_names = ['Today', 'Tomorrow', 'Day 3']
-            for i, day_forecast in enumerate(forecast_data['forecasts'][:3]):
+            for day_forecast in forecast_data['forecasts'][:5]:
                 # Extract temperature values
                 temp_max = day_forecast.get('temp_max', '25°C')
                 temp_min = day_forecast.get('temp_min', '18°C')
@@ -62,11 +77,12 @@ async def get_weather_for_location(
                     temp_min = temp_min.replace('°C', '')
                 
                 weather_response['forecast'].append({
-                    'day': day_names[i] if i < len(day_names) else f'Day {i+1}',
+                    'day': day_forecast.get('day_name', 'Day'),
                     'high': temp_max,
                     'low': temp_min,
                     'conditions': day_forecast.get('description', 'Clear'),
-                    'icon': day_forecast.get('icon', '☀️')
+                    'icon': day_forecast.get('icon', '☀️'),
+                    'rainfall': day_forecast.get('rainfall', '0 mm')
                 })
         
         # Add proof of real API call

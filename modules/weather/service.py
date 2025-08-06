@@ -105,6 +105,7 @@ class WeatherService:
                         'description': f'API returned {response.status_code}',
                         'icon': '❌',
                         'wind_speed': '0 km/h',
+                        'rainfall_24h': 0,
                         'error': True,
                         'error_details': response.text[:200]
                     }
@@ -122,6 +123,7 @@ class WeatherService:
                 'description': str(e)[:50],
                 'icon': '❌',
                 'wind_speed': '0 km/h',
+                'rainfall_24h': 0,
                 'error': True,
                 'error_type': type(e).__name__
             }
@@ -145,7 +147,7 @@ class WeatherService:
                         'lon': lon,
                         'appid': self.api_key,
                         'units': 'metric',
-                        'cnt': 8  # Next 24 hours (3-hour intervals)
+                        'cnt': 9  # Next 27 hours (3-hour intervals) to ensure full 24h coverage
                     },
                     timeout=10.0
                 )
@@ -171,6 +173,11 @@ class WeatherService:
             main = item['main']
             wind = item.get('wind', {})
             
+            # Get rainfall in mm (not percentage)
+            rain_3h = item.get('rain', {}).get('3h', 0)  # mm in last 3 hours
+            snow_3h = item.get('snow', {}).get('3h', 0)  # mm in last 3 hours
+            total_precip = rain_3h + snow_3h
+            
             hourly_data.append({
                 'time': dt.strftime('%H:%M'),
                 'hour': dt.hour,
@@ -181,7 +188,7 @@ class WeatherService:
                     'speed': int(round(wind.get('speed', 0) * 3.6)),  # Convert to km/h
                     'direction': self._get_wind_direction(wind.get('deg', 0))
                 },
-                'precipitation': item.get('rain', {}).get('3h', 0),
+                'rainfall_mm': round(total_precip, 1),  # Rainfall in mm
                 'humidity': main['humidity']
             })
         
@@ -259,6 +266,17 @@ class WeatherService:
         main = data['main']
         wind = data.get('wind', {})
         
+        # Get rainfall data - OpenWeather provides rain volume for last 1h and 3h
+        rain_1h = data.get('rain', {}).get('1h', 0)  # mm in last hour
+        rain_3h = data.get('rain', {}).get('3h', 0)  # mm in last 3 hours
+        snow_1h = data.get('snow', {}).get('1h', 0)  # mm in last hour
+        snow_3h = data.get('snow', {}).get('3h', 0)  # mm in last 3 hours
+        
+        # Use 3h data and extrapolate for 24h estimate (very rough)
+        # Better would be to call history API but that costs extra
+        rainfall_3h = rain_3h + snow_3h
+        rainfall_24h_estimate = rainfall_3h * 8  # Rough estimate
+        
         return {
             'location': data['name'],
             'temperature': self._format_temperature(main['temp']),
@@ -273,6 +291,9 @@ class WeatherService:
             'raw_temp': main['temp'],
             'raw_humidity': main['humidity'],
             'weather_code': weather['icon'],
+            'rainfall_1h': round(rain_1h + snow_1h, 1),  # mm in last hour
+            'rainfall_3h': round(rainfall_3h, 1),  # mm in last 3 hours
+            'rainfall_24h': round(rainfall_24h_estimate, 1),  # Estimated mm in last 24h
             'proof': data.get('proof', {})
         }
     
@@ -281,6 +302,7 @@ class WeatherService:
         daily_forecasts = []
         current_date = None
         daily_data = {}
+        today = datetime.now().date()
         
         for item in data['list']:
             dt = datetime.fromtimestamp(item['dt'])
@@ -293,9 +315,19 @@ class WeatherService:
                 
                 # Start new day
                 current_date = date_key
+                
+                # Calculate day name
+                days_diff = (dt.date() - today).days
+                if days_diff == 0:
+                    day_display = "Today"
+                elif days_diff == 1:
+                    day_display = "Tomorrow"
+                else:
+                    day_display = dt.strftime('%A')  # Full day name
+                
                 daily_data = {
                     'date': dt.strftime('%Y-%m-%d'),
-                    'day_name': dt.strftime('%A'),
+                    'day_name': day_display,
                     'temp_min': item['main']['temp_min'],
                     'temp_max': item['main']['temp_max'],
                     'description': item['weather'][0]['description'].title(),
@@ -303,12 +335,17 @@ class WeatherService:
                     'humidity': item['main']['humidity'],
                     'wind_speed': item['wind'].get('speed', 0),
                     'wind_direction': self._get_wind_direction(item['wind'].get('deg', 0)),
-                    'precipitation': item.get('rain', {}).get('3h', 0) + item.get('snow', {}).get('3h', 0)
+                    'rainfall_mm': 0  # Will accumulate
                 }
             else:
                 # Update min/max temps for the day
                 daily_data['temp_min'] = min(daily_data['temp_min'], item['main']['temp_min'])
                 daily_data['temp_max'] = max(daily_data['temp_max'], item['main']['temp_max'])
+            
+            # Accumulate rainfall for the day
+            rain_3h = item.get('rain', {}).get('3h', 0)
+            snow_3h = item.get('snow', {}).get('3h', 0)
+            daily_data['rainfall_mm'] += (rain_3h + snow_3h)
         
         # Add last day
         if daily_data:
@@ -327,7 +364,7 @@ class WeatherService:
                 'humidity': self._format_humidity(forecast['humidity']),
                 'wind_speed': self._format_wind_speed(forecast['wind_speed']),
                 'wind_direction': forecast.get('wind_direction', ''),
-                'precipitation': f"{forecast['precipitation']:.1f} mm" if forecast['precipitation'] > 0 else "0 mm"
+                'rainfall': f"{forecast['rainfall_mm']:.1f} mm" if forecast.get('rainfall_mm', 0) > 0 else "0 mm"
             })
         
         return {
