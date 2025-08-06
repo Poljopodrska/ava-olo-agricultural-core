@@ -50,15 +50,28 @@ async def test_post(request: Request):
 async def test_field_simple(request: Request):
     """Test field creation with hardcoded values to isolate issue"""
     try:
+        # Get next available ID first
+        max_id_query = "SELECT COALESCE(MAX(id), 0) + 1 FROM fields"
+        max_id_result = execute_simple_query(max_id_query, ())
+        
+        if not max_id_result.get('success') or not max_id_result.get('rows'):
+            return JSONResponse(content={
+                "success": False,
+                "error": "Could not determine next field ID",
+                "database_working": False
+            }, status_code=500)
+        
+        next_id = max_id_result['rows'][0][0]
+        
         # Test with hardcoded values (without timestamp columns)
         test_query = """
-        INSERT INTO fields (farmer_id, field_name, area_ha, country)
-        VALUES (1, 'Test Field', 5.5, 'Slovenia')
+        INSERT INTO fields (id, farmer_id, field_name, area_ha, country)
+        VALUES (%s, 1, 'Test Field', 5.5, 'Slovenia')
         RETURNING id
         """
         
-        logger.info("Attempting test field insertion...")
-        result = execute_simple_query(test_query, ())
+        logger.info(f"Attempting test field insertion with ID {next_id}...")
+        result = execute_simple_query(test_query, (next_id,))
         
         if result and result.get('success') and 'rows' in result and result['rows']:
             field_id = result['rows'][0][0]
@@ -543,29 +556,42 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
                 "error": "Invalid area value"
             }, status_code=400)
         
-        # Insert the new field with coordinates if provided
+        # First, get the next available ID to avoid sequence issues
+        max_id_query = "SELECT COALESCE(MAX(id), 0) + 1 FROM fields"
+        max_id_result = execute_simple_query(max_id_query, ())
+        
+        if not max_id_result.get('success') or not max_id_result.get('rows'):
+            return JSONResponse(content={
+                "success": False,
+                "error": "Could not determine next field ID"
+            }, status_code=500)
+        
+        next_id = max_id_result['rows'][0][0]
+        logger.info(f"Next available field ID: {next_id}")
+        
+        # Insert the new field with explicit ID to avoid sequence issues
         # Use simple_db to avoid context manager issues
         if data.get('center_lat') and data.get('center_lng'):
             insert_query = """
-            INSERT INTO fields (farmer_id, field_name, area_ha, latitude, longitude, country)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO fields (id, farmer_id, field_name, area_ha, latitude, longitude, country)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """
             result = execute_simple_query(
                 insert_query,
-                (farmer_id, data['field_name'], area_ha, 
+                (next_id, farmer_id, data['field_name'], area_ha, 
                  float(data['center_lat']), float(data['center_lng']),
                  data.get('country', farmer.get('country', 'Slovenia')))
             )
         else:
             insert_query = """
-            INSERT INTO fields (farmer_id, field_name, area_ha, country)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO fields (id, farmer_id, field_name, area_ha, country)
+            VALUES (%s, %s, %s, %s, %s)
             RETURNING id
             """
             result = execute_simple_query(
                 insert_query,
-                (farmer_id, data['field_name'], area_ha, 
+                (next_id, farmer_id, data['field_name'], area_ha, 
                  data.get('country', farmer.get('country', 'Slovenia')))
             )
         

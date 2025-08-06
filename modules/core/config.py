@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806210500'  # v4.16.14 - Complete fix for all database operations
-COMMIT_HASH = "fix-all-db-operations"  # Update all database calls to use simple_db
+DEPLOYMENT_TIMESTAMP = '20250806212000'  # v4.16.15 - Fix duplicate key error by manually managing IDs
+COMMIT_HASH = "fix-duplicate-key-error"  # Manually generate next ID to avoid sequence issues
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.14"
+VERSION = "v4.16.15"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
