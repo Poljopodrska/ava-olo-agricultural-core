@@ -34,6 +34,7 @@ PUBLIC_PATHS = [
     "/api/v1/whatsapp/webhook",  # WhatsApp webhook needs to be public
     "/farmer/dashboard",  # Farmer dashboard - has its own auth via require_auth
     "/farmer/api",  # Farmer API endpoints - have their own auth
+    "/diagnostic/ip-check",  # IP detection diagnostic - public for testing
 ]
 
 class GlobalAuthMiddleware(BaseHTTPMiddleware):
