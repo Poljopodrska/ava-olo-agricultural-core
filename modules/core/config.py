@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250805225500'  # v4.13.17 - Add Logatec weather to dashboard
-COMMIT_HASH = "logatec-weather-dashboard"  # Display weather for Logatec, Slovenia
+DEPLOYMENT_TIMESTAMP = '20250806105000'  # v4.14.2 - Location system with migration endpoint
+COMMIT_HASH = "location-system-complete"  # Dynamic location for weather, address collection
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.13.17"
+VERSION = "v4.14.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
