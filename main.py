@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.16
-Restore weather functionality with proper async handling
+AVA OLO Agricultural Core v4.13.17
+Add Logatec weather display to farmer dashboard
 """
 import uvicorn
 import sys

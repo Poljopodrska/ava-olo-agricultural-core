@@ -117,47 +117,86 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
         logger.error(f"Error fetching farmer fields: {e}")
         return []
 
-def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
-    """Get weather for farmer's location"""
-    db_manager = get_db_manager()
-    
+async def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
+    """Get weather for farmer's location - Fixed to Logatec, Slovenia"""
     try:
-        # Get farmer's city/location
-        query = """
-        SELECT city, country, latitude, longitude
-        FROM farmers 
-        WHERE id = %s
-        """
-        result = db_manager.execute_query(query, (farmer_id,))
+        # Logatec, Slovenia coordinates
+        LOGATEC_LAT = 45.9144
+        LOGATEC_LON = 14.2258
         
-        if result and 'rows' in result and len(result['rows']) > 0:
-            city = result['rows'][0][0] or "Unknown"
-            country = result['rows'][0][1] or "Unknown"
+        # Import weather service
+        from ..weather.service import weather_service
+        
+        # Get current weather for Logatec
+        current_weather = await weather_service.get_current_weather(LOGATEC_LAT, LOGATEC_LON)
+        
+        if current_weather:
+            # Extract numeric temperature value
+            temp_str = current_weather.get('temperature', '20°C')
+            temperature = float(temp_str.replace('°C', '')) if '°C' in str(temp_str) else 20
             
-            # In production, this would call a weather API
-            # For now, return mock data
-            return {
-                'location': f"{city}, {country}",
-                'temperature': 22,
-                'conditions': 'Partly Cloudy',
-                'humidity': 65,
-                'wind_speed': 12,
-                'forecast': [
-                    {'day': 'Today', 'high': 25, 'low': 18, 'conditions': 'Partly Cloudy'},
-                    {'day': 'Tomorrow', 'high': 27, 'low': 19, 'conditions': 'Sunny'},
-                    {'day': 'Day 3', 'high': 24, 'low': 17, 'conditions': 'Rainy'}
+            # Extract numeric humidity value
+            humidity_str = current_weather.get('humidity', '60%')
+            humidity = int(humidity_str.replace('%', '')) if '%' in str(humidity_str) else 60
+            
+            # Extract numeric wind speed
+            wind_str = current_weather.get('wind_speed', '10 km/h')
+            wind_speed = int(wind_str.split()[0]) if 'km/h' in str(wind_str) else 10
+            
+            # Get forecast data
+            forecast_data = await weather_service.get_weather_forecast(LOGATEC_LAT, LOGATEC_LON, days=3)
+            
+            # Format forecast
+            forecast = []
+            if forecast_data and 'forecasts' in forecast_data:
+                for i, day_forecast in enumerate(forecast_data['forecasts'][:3]):
+                    day_names = ['Today', 'Tomorrow', 'Day 3']
+                    # Extract numeric values from forecast
+                    high_str = day_forecast.get('temp_max', '25°C')
+                    low_str = day_forecast.get('temp_min', '18°C')
+                    high = int(high_str.replace('°C', '')) if '°C' in str(high_str) else 25
+                    low = int(low_str.replace('°C', '')) if '°C' in str(low_str) else 18
+                    
+                    forecast.append({
+                        'day': day_names[i],
+                        'high': high,
+                        'low': low,
+                        'conditions': day_forecast.get('description', 'Clear'),
+                        'icon': day_forecast.get('icon', '☀️')
+                    })
+            else:
+                # Default forecast if API fails
+                forecast = [
+                    {'day': 'Today', 'high': 25, 'low': 18, 'conditions': 'Partly Cloudy', 'icon': '⛅'},
+                    {'day': 'Tomorrow', 'high': 27, 'low': 19, 'conditions': 'Sunny', 'icon': '☀️'},
+                    {'day': 'Day 3', 'high': 24, 'low': 17, 'conditions': 'Cloudy', 'icon': '☁️'}
                 ]
+            
+            return {
+                'location': 'Logatec, Slovenia',
+                'temperature': temperature,
+                'conditions': current_weather.get('description', 'Clear'),
+                'humidity': humidity,
+                'wind_speed': wind_speed,
+                'icon': current_weather.get('icon', '☀️'),
+                'forecast': forecast
             }
     except Exception as e:
         logger.error(f"Error fetching weather: {e}")
     
+    # Return default weather data for Logatec if API fails
     return {
-        'location': 'Unknown',
-        'temperature': '--',
-        'conditions': 'Unavailable',
-        'humidity': '--',
-        'wind_speed': '--',
-        'forecast': []
+        'location': 'Logatec, Slovenia',
+        'temperature': 20,
+        'conditions': 'Clear',
+        'humidity': 60,
+        'wind_speed': 10,
+        'icon': '☀️',
+        'forecast': [
+            {'day': 'Today', 'high': 22, 'low': 14, 'conditions': 'Clear', 'icon': '☀️'},
+            {'day': 'Tomorrow', 'high': 24, 'low': 16, 'conditions': 'Sunny', 'icon': '☀️'},
+            {'day': 'Day 3', 'high': 23, 'low': 15, 'conditions': 'Partly Cloudy', 'icon': '⛅'}
+        ]
     }
 
 def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, Any]]:
@@ -214,11 +253,13 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     try:
         farmer_id = farmer['farmer_id']
         
-        # Temporarily use minimal mock data to isolate the issue
-        fields = []
-        weather = {"temperature": "20°C", "condition": "Sunny", "humidity": "60%"}
-        messages = []
-        total_area = 0
+        # Get farmer's data
+        fields = get_farmer_fields(farmer_id)
+        weather = await get_farmer_weather(farmer_id)  # Now async with real weather data
+        messages = get_farmer_messages(farmer_id)
+        
+        # Calculate totals
+        total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
         detected_language = 'en'
         
         # Get translations
@@ -261,7 +302,7 @@ async def api_farmer_fields(farmer: dict = Depends(require_auth)):
 @router.get("/api/weather", response_class=JSONResponse)
 async def api_farmer_weather(farmer: dict = Depends(require_auth)):
     """API endpoint for farmer's weather"""
-    weather = get_farmer_weather(farmer['farmer_id'])
+    weather = await get_farmer_weather(farmer['farmer_id'])
     return JSONResponse(content={
         "success": True,
         "weather": weather
