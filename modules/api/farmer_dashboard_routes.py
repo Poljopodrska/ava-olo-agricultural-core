@@ -40,10 +40,10 @@ async def test_field_simple(request: Request):
     try:
         db_manager = get_db_manager()
         
-        # Test with hardcoded values
+        # Test with hardcoded values (without timestamp columns)
         test_query = """
-        INSERT INTO fields (farmer_id, field_name, area_ha, country, created_at, updated_at)
-        VALUES (1, 'Test Field', 5.5, 'Slovenia', NOW(), NOW())
+        INSERT INTO fields (farmer_id, field_name, area_ha, country)
+        VALUES (1, 'Test Field', 5.5, 'Slovenia')
         RETURNING id
         """
         
@@ -524,10 +524,11 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             }, status_code=400)
         
         # Insert the new field with coordinates if provided
+        # Note: Remove created_at/updated_at as they may not exist in the table
         if data.get('center_lat') and data.get('center_lng'):
             insert_query = """
-            INSERT INTO fields (farmer_id, field_name, area_ha, latitude, longitude, country, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO fields (farmer_id, field_name, area_ha, latitude, longitude, country)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING id
             """
             result = db_manager.execute_query(
@@ -538,8 +539,8 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             )
         else:
             insert_query = """
-            INSERT INTO fields (farmer_id, field_name, area_ha, country, created_at, updated_at)
-            VALUES (%s, %s, %s, %s, NOW(), NOW())
+            INSERT INTO fields (farmer_id, field_name, area_ha, country)
+            VALUES (%s, %s, %s, %s)
             RETURNING id
             """
             result = db_manager.execute_query(
