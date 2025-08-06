@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806140000'  # v4.14.9 - Fix language detection and remove 00 prefix support
-COMMIT_HASH = "fix-language-detection"  # Fix existing users' language preferences and remove 00 prefix
+DEPLOYMENT_TIMESTAMP = '20250806180000'  # v4.16.5 - Add diagnostic IP detection page
+COMMIT_HASH = "add-ip-diagnostic"  # Add diagnostic page to debug IP detection issues
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.4"
+VERSION = "v4.16.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
