@@ -34,7 +34,8 @@ async def run_location_migration():
             AND column_name IN (
                 'street_address', 'house_number', 'postal_code', 'city', 'country',
                 'weather_latitude', 'weather_longitude', 'weather_location_name',
-                'address_collected', 'location_prompt_shown', 'location_updated_at'
+                'address_collected', 'location_prompt_shown', 'location_updated_at',
+                'language_preference'
             )
         """
         existing_result = db_manager.execute_query(check_query)
@@ -53,7 +54,8 @@ async def run_location_migration():
             ("vat_number", "VARCHAR(50)"),
             ("address_collected", "BOOLEAN DEFAULT FALSE"),
             ("location_prompt_shown", "BOOLEAN DEFAULT FALSE"),
-            ("location_updated_at", "TIMESTAMP")
+            ("location_updated_at", "TIMESTAMP"),
+            ("language_preference", "VARCHAR(10) DEFAULT 'en'")
         ]
         
         # Add missing columns
@@ -96,7 +98,8 @@ async def run_location_migration():
             AND column_name IN (
                 'street_address', 'house_number', 'postal_code', 'city', 'country',
                 'weather_latitude', 'weather_longitude', 'weather_location_name',
-                'address_collected', 'location_prompt_shown', 'location_updated_at'
+                'address_collected', 'location_prompt_shown', 'location_updated_at',
+                'language_preference'
             )
             ORDER BY ordinal_position
         """
