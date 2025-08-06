@@ -34,6 +34,54 @@ async def test_post(request: Request):
         logger.error(f"Test POST error: {e}")
         return JSONResponse(content={"success": False, "error": str(e)}, status_code=500)
 
+@router.post("/test-field-simple")
+async def test_field_simple(request: Request):
+    """Test field creation with hardcoded values to isolate issue"""
+    try:
+        db_manager = get_db_manager()
+        
+        # Test with hardcoded values
+        test_query = """
+        INSERT INTO fields (farmer_id, field_name, area_ha, country, created_at, updated_at)
+        VALUES (1, 'Test Field', 5.5, 'Slovenia', NOW(), NOW())
+        RETURNING id
+        """
+        
+        logger.info("Attempting test field insertion...")
+        result = db_manager.execute_query(test_query, ())
+        
+        if result and 'rows' in result and result['rows']:
+            field_id = result['rows'][0][0]
+            logger.info(f"Test field created with ID: {field_id}")
+            
+            # Now delete it
+            delete_query = "DELETE FROM fields WHERE id = %s"
+            db_manager.execute_query(delete_query, (field_id,))
+            
+            return JSONResponse(content={
+                "success": True,
+                "message": f"Test successful! Created and deleted field ID {field_id}",
+                "database_working": True
+            })
+        else:
+            return JSONResponse(content={
+                "success": False,
+                "error": "No result from INSERT",
+                "database_working": False
+            }, status_code=500)
+            
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        logger.error(f"Test field error: {e}\n{error_detail}")
+        
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "database_working": False,
+            "traceback": error_detail
+        }, status_code=500)
+
 @router.get("/test-simple-dashboard", response_class=HTMLResponse)
 async def test_simple_dashboard(request: Request, farmer: dict = Depends(require_auth)):
     """Simple test dashboard without complex data fetching"""
@@ -439,10 +487,22 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
     
     try:
         # Log the incoming request
-        logger.info(f"Field creation request received. Farmer: {farmer}")
+        logger.info(f"Field creation request received. Farmer object: {farmer}")
+        logger.info(f"Farmer type: {type(farmer)}")
         
         data = await request.json()
+        
+        # Check if farmer_id exists
+        if not farmer or 'farmer_id' not in farmer:
+            logger.error(f"Invalid farmer object: {farmer}")
+            return JSONResponse(content={
+                "success": False,
+                "error": "Authentication error - no farmer ID found"
+            }, status_code=401)
+        
         farmer_id = farmer['farmer_id']
+        logger.info(f"Farmer ID extracted: {farmer_id}")
+        
         db_manager = get_db_manager()
         
         logger.info(f"Adding field for farmer {farmer_id}: {data}")

@@ -1485,6 +1485,19 @@
                 console.error('API connectivity test failed:', e);
             }
             
+            // Test database with simple field creation
+            try {
+                const dbTestResponse = await fetch('/farmer/test-field-simple', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({})
+                });
+                const dbTestResult = await dbTestResponse.json();
+                console.log('Database test result:', dbTestResult);
+            } catch (e) {
+                console.error('Database test failed:', e);
+            }
+            
             const form = document.getElementById('field-form');
             const formData = new FormData(form);
             
