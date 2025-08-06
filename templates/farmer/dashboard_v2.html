@@ -1300,10 +1300,17 @@
             <div class="panel-content">
                 <!-- Location Search Box -->
                 <div style="padding: 15px; background: #f8f8f8; border-bottom: 1px solid #e0e0e0;">
-                    <input type="text" 
-                           id="location-search" 
-                           placeholder="Search for any location..." 
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" 
+                               id="location-search" 
+                               placeholder="Enter city name (e.g., Paris, Tokyo, New York)..." 
+                               style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        <button id="search-weather-btn" 
+                                style="padding: 10px 20px; background: var(--ava-green); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">
+                            Search
+                        </button>
+                    </div>
+                    <div id="search-status" style="margin-top: 5px; font-size: 12px; color: #666;"></div>
                 </div>
                 
                 <div class="weather-location-header" id="weather-location-header">
@@ -2190,38 +2197,73 @@
         window.addEventListener('DOMContentLoaded', checkLocationOnLoad);
     </script>
     
-    <!-- Google Maps Places API for Location Search -->
+    <!-- Simple Location Search without Google Maps dependency -->
     <script>
-        let autocomplete;
         let currentLat = null;
         let currentLon = null;
         
-        function initLocationSearch() {
-            const input = document.getElementById('location-search');
-            if (!input) return;
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('location-search');
+            const searchBtn = document.getElementById('search-weather-btn');
+            const statusDiv = document.getElementById('search-status');
             
-            // Create autocomplete object
-            autocomplete = new google.maps.places.Autocomplete(input);
+            if (!searchInput || !searchBtn) {
+                console.error('Search elements not found');
+                return;
+            }
             
-            // Listen for place selection
-            autocomplete.addListener('place_changed', function() {
-                const place = autocomplete.getPlace();
-                
-                if (!place.geometry || !place.geometry.location) {
-                    console.error('No location data for this place');
-                    return;
+            // Search on button click
+            searchBtn.addEventListener('click', function() {
+                const location = searchInput.value.trim();
+                if (location) {
+                    searchLocation(location);
                 }
-                
-                // Get coordinates
-                currentLat = place.geometry.location.lat();
-                currentLon = place.geometry.location.lng();
-                
-                console.log('Selected location:', place.name);
-                console.log('Coordinates:', currentLat, currentLon);
-                
-                // Update weather for new location
-                updateWeatherForLocation(currentLat, currentLon, place.name || place.formatted_address);
             });
+            
+            // Search on Enter key
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const location = searchInput.value.trim();
+                    if (location) {
+                        searchLocation(location);
+                    }
+                }
+            });
+        });
+        
+        async function searchLocation(locationName) {
+            const statusDiv = document.getElementById('search-status');
+            
+            try {
+                statusDiv.textContent = 'Searching for ' + locationName + '...';
+                
+                // Use OpenWeatherMap's geocoding API
+                const apiKey = '53efe5a8c7ac5cad63b7b0419f5d3069';
+                const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(locationName)}&limit=1&appid=${apiKey}`;
+                
+                const response = await fetch(geocodeUrl);
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    currentLat = location.lat;
+                    currentLon = location.lon;
+                    
+                    const fullName = location.name + (location.state ? ', ' + location.state : '') + ', ' + location.country;
+                    console.log('Found location:', fullName, 'at', currentLat, currentLon);
+                    
+                    statusDiv.textContent = 'Found: ' + fullName;
+                    
+                    // Update weather for this location
+                    updateWeatherForLocation(currentLat, currentLon, fullName);
+                } else {
+                    statusDiv.textContent = 'Location not found. Try another city name.';
+                }
+            } catch (error) {
+                console.error('Error searching location:', error);
+                statusDiv.textContent = 'Error searching location. Please try again.';
+            }
         }
         
         async function updateWeatherForLocation(lat, lon, locationName) {
@@ -2318,11 +2360,6 @@
             forecastHtml += '</div>';
             forecastDiv.innerHTML = forecastHtml;
         }
-    </script>
-    
-    <!-- Load Google Maps JavaScript API with Places library -->
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo&libraries=places&callback=initLocationSearch">
     </script>
 </body>
 </html>
