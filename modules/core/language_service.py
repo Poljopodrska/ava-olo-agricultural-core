@@ -194,14 +194,10 @@ class LanguageService:
         """
         Detect language from WhatsApp number country code
         """
-        # Clean the number
+        # Clean the number - keep only digits and +
         clean_number = re.sub(r'[^\d+]', '', whatsapp_number)
         
-        # Handle 00 prefix (international format)
-        if clean_number.startswith('00'):
-            clean_number = '+' + clean_number[2:]
-        
-        # Ensure it starts with +
+        # Ensure it starts with + (required format)
         if not clean_number.startswith('+'):
             clean_number = '+' + clean_number
         

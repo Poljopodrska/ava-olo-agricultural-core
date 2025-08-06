@@ -323,12 +323,10 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
         logger.info(f"Farmer {farmer_id} language preference: {detected_language}")
         
         # Get translations
-        from ..core.translations import get_translations, TranslationDict
+        from ..core.translations import get_translations
         translations = get_translations(detected_language)
         
-        # Wrap translations in TranslationDict for template attribute access
-        if isinstance(translations, dict):
-            translations = TranslationDict(translations)
+        logger.info(f"Loaded translations for language '{detected_language}': {translations}")
         
         return templates.TemplateResponse("farmer/dashboard_v2.html", {
             "request": request,
