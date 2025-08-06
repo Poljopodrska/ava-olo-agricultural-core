@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806183000'  # v4.16.9 - Add database initialization and better error handling
-COMMIT_HASH = "fix-fields-table"  # Add database table creation and detailed error messages
+DEPLOYMENT_TIMESTAMP = '20250806210500'  # v4.16.14 - Complete fix for all database operations
+COMMIT_HASH = "fix-all-db-operations"  # Update all database calls to use simple_db
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.13"
+VERSION = "v4.16.14"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

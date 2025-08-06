@@ -50,8 +50,6 @@ async def test_post(request: Request):
 async def test_field_simple(request: Request):
     """Test field creation with hardcoded values to isolate issue"""
     try:
-        db_manager = get_db_manager()
-        
         # Test with hardcoded values (without timestamp columns)
         test_query = """
         INSERT INTO fields (farmer_id, field_name, area_ha, country)
@@ -60,15 +58,15 @@ async def test_field_simple(request: Request):
         """
         
         logger.info("Attempting test field insertion...")
-        result = db_manager.execute_query(test_query, ())
+        result = execute_simple_query(test_query, ())
         
-        if result and 'rows' in result and result['rows']:
+        if result and result.get('success') and 'rows' in result and result['rows']:
             field_id = result['rows'][0][0]
             logger.info(f"Test field created with ID: {field_id}")
             
             # Now delete it
             delete_query = "DELETE FROM fields WHERE id = %s"
-            db_manager.execute_query(delete_query, (field_id,))
+            execute_simple_query(delete_query, (field_id,))
             
             return JSONResponse(content={
                 "success": True,
@@ -78,7 +76,7 @@ async def test_field_simple(request: Request):
         else:
             return JSONResponse(content={
                 "success": False,
-                "error": "No result from INSERT",
+                "error": result.get('error', 'No result from INSERT'),
                 "database_working": False
             }, status_code=500)
             
@@ -112,8 +110,6 @@ templates = Jinja2Templates(directory="templates")
 
 def get_farmer_language(farmer_id: int) -> str:
     """Get farmer's language preference from database"""
-    db_manager = get_db_manager()
-    
     try:
         # First try to get language preference
         query = """
@@ -121,9 +117,9 @@ def get_farmer_language(farmer_id: int) -> str:
         FROM farmers 
         WHERE id = %s
         """
-        result = db_manager.execute_query(query, (farmer_id,))
+        result = execute_simple_query(query, (farmer_id,))
         
-        if result and 'rows' in result and len(result['rows']) > 0:
+        if result and result.get('success') and 'rows' in result and len(result['rows']) > 0:
             language = result['rows'][0][0]
             
             # If we have a language preference, use it
@@ -140,9 +136,9 @@ def get_farmer_language(farmer_id: int) -> str:
             FROM farmers 
             WHERE id = %s
             """
-            phone_result = db_manager.execute_query(phone_query, (farmer_id,))
+            phone_result = execute_simple_query(phone_query, (farmer_id,))
             
-            if phone_result and 'rows' in phone_result and len(phone_result['rows']) > 0:
+            if phone_result and phone_result.get('success') and 'rows' in phone_result and len(phone_result['rows']) > 0:
                 whatsapp = phone_result['rows'][0][0]
                 if whatsapp:
                     logger.info(f"Found WhatsApp number for farmer {farmer_id}: {whatsapp}")
@@ -154,7 +150,7 @@ def get_farmer_language(farmer_id: int) -> str:
                     # Save it for next time
                     try:
                         update_query = "UPDATE farmers SET language_preference = %s WHERE id = %s"
-                        db_manager.execute_query(update_query, (detected_language, farmer_id))
+                        execute_simple_query(update_query, (detected_language, farmer_id))
                         logger.info(f"Saved language preference {detected_language} for farmer {farmer_id}")
                     except Exception as update_error:
                         logger.error(f"Could not update language preference: {update_error}")
@@ -169,8 +165,6 @@ def get_farmer_language(farmer_id: int) -> str:
 
 def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
     """Get all fields for a specific farmer with crop and last task info"""
-    db_manager = get_db_manager()
-    
     try:
         # Get fields with crop information and last task
         query = """
@@ -209,10 +203,10 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
         WHERE f.farmer_id = %s
         ORDER BY f.field_name
         """
-        results = db_manager.execute_query(query, (farmer_id,))
+        results = execute_simple_query(query, (farmer_id,))
         
         fields = []
-        if results and 'rows' in results:
+        if results and results.get('success') and 'rows' in results:
             for row in results['rows']:
                 field_data = {
                     'id': row[0],
@@ -375,8 +369,6 @@ async def get_farmer_weather(farmer_id: int) -> Dict[str, Any]:
 
 def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, Any]]:
     """Get last N messages for a farmer"""
-    db_manager = get_db_manager()
-    
     try:
         # Get farmer's WhatsApp number
         farmer_query = """
@@ -384,9 +376,9 @@ def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, Any]]:
         FROM farmers 
         WHERE id = %s
         """
-        farmer_result = db_manager.execute_query(farmer_query, (farmer_id,))
+        farmer_result = execute_simple_query(farmer_query, (farmer_id,))
         
-        if not farmer_result or 'rows' not in farmer_result or not farmer_result['rows'] or not farmer_result['rows'][0][0]:
+        if not farmer_result or not farmer_result.get('success') or 'rows' not in farmer_result or not farmer_result['rows'] or not farmer_result['rows'][0][0]:
             return []
         
         wa_number = farmer_result['rows'][0][0]
@@ -399,10 +391,10 @@ def get_farmer_messages(farmer_id: int, limit: int = 6) -> List[Dict[str, Any]]:
         ORDER BY timestamp DESC
         LIMIT %s
         """
-        results = db_manager.execute_query(query, (wa_number, limit))
+        results = execute_simple_query(query, (wa_number, limit))
         
         messages = []
-        if results and 'rows' in results:
+        if results and results.get('success') and 'rows' in results:
             for row in results['rows']:
                 messages.append({
                     'id': row[0],
@@ -679,11 +671,10 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
     """API endpoint for farmer's statistics"""
     
     farmer_id = farmer['farmer_id']
-    db_manager = get_db_manager()
     
     try:
         # Get field stats
-        field_stats = db_manager.execute_query("""
+        field_stats = execute_simple_query("""
             SELECT 
                 COUNT(*) as total_fields,
                 COALESCE(SUM(area_ha), 0) as total_area,
@@ -693,7 +684,7 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
         """, (farmer_id,))
         
         # Get crop stats  
-        crop_stats = db_manager.execute_query("""
+        crop_stats = execute_simple_query("""
             SELECT 
                 COUNT(DISTINCT fc.crop_name) as crop_types,
                 COUNT(*) as total_crops
@@ -703,7 +694,7 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
         """, (farmer_id,))
         
         # Get task stats
-        task_stats = db_manager.execute_query("""
+        task_stats = execute_simple_query("""
             SELECT 
                 COUNT(*) as total_tasks,
                 COUNT(*) FILTER (WHERE t.status = 'completed') as completed_tasks
@@ -715,17 +706,17 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
         
         stats = {
             'fields': {
-                'total': field_stats['rows'][0][0] if field_stats and 'rows' in field_stats and field_stats['rows'] else 0,
-                'total_area': float(field_stats['rows'][0][1]) if field_stats and 'rows' in field_stats and field_stats['rows'] else 0,
-                'countries': field_stats['rows'][0][2] if field_stats and 'rows' in field_stats and field_stats['rows'] else 0
+                'total': field_stats['rows'][0][0] if field_stats and field_stats.get('success') and 'rows' in field_stats and field_stats['rows'] else 0,
+                'total_area': float(field_stats['rows'][0][1]) if field_stats and field_stats.get('success') and 'rows' in field_stats and field_stats['rows'] else 0,
+                'countries': field_stats['rows'][0][2] if field_stats and field_stats.get('success') and 'rows' in field_stats and field_stats['rows'] else 0
             },
             'crops': {
-                'types': crop_stats['rows'][0][0] if crop_stats and 'rows' in crop_stats and crop_stats['rows'] else 0,
-                'total': crop_stats['rows'][0][1] if crop_stats and 'rows' in crop_stats and crop_stats['rows'] else 0
+                'types': crop_stats['rows'][0][0] if crop_stats and crop_stats.get('success') and 'rows' in crop_stats and crop_stats['rows'] else 0,
+                'total': crop_stats['rows'][0][1] if crop_stats and crop_stats.get('success') and 'rows' in crop_stats and crop_stats['rows'] else 0
             },
             'tasks': {
-                'total': task_stats['rows'][0][0] if task_stats and 'rows' in task_stats and task_stats['rows'] else 0,
-                'completed': task_stats['rows'][0][1] if task_stats and 'rows' in task_stats and task_stats['rows'] else 0
+                'total': task_stats['rows'][0][0] if task_stats and task_stats.get('success') and 'rows' in task_stats and task_stats['rows'] else 0,
+                'completed': task_stats['rows'][0][1] if task_stats and task_stats.get('success') and 'rows' in task_stats and task_stats['rows'] else 0
             }
         }
         
@@ -749,7 +740,6 @@ async def update_farmer_location(
     """Update farmer's location information"""
     try:
         data = await request.json()
-        db_manager = get_db_manager()
         
         # Extract location data
         street_address = data.get('street_address', '')
@@ -783,13 +773,13 @@ async def update_farmer_location(
         # Create location name for weather service
         location_name = f"{city}, {country}" if city and country else None
         
-        result = db_manager.execute_query(
+        result = execute_simple_query(
             update_query,
             (street_address, house_number, postal_code, city, country, 
              latitude, longitude, location_name, farmer['id'])
         )
         
-        if result and result.get('affected_rows', 0) > 0:
+        if result and result.get('success') and result.get('affected_rows', 0) > 0:
             return JSONResponse(content={
                 "success": True,
                 "message": "Location updated successfully"
@@ -811,7 +801,6 @@ async def update_farmer_location(
 async def check_farmer_location(farmer: dict = Depends(require_auth)):
     """Check if farmer has location data"""
     try:
-        db_manager = get_db_manager()
         
         query = """
         SELECT 
@@ -828,9 +817,9 @@ async def check_farmer_location(farmer: dict = Depends(require_auth)):
         WHERE id = %s
         """
         
-        result = db_manager.execute_query(query, (farmer['id'],))
+        result = execute_simple_query(query, (farmer['id'],))
         
-        if result and 'rows' in result and result['rows']:
+        if result and result.get('success') and 'rows' in result and result['rows']:
             row = result['rows'][0]
             return JSONResponse(content={
                 "success": True,
