@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-AVA OLO Agricultural Core v4.13.15
-Minimal dashboard with mock data to isolate issue
+AVA OLO Agricultural Core v4.13.16
+Restore weather functionality with proper async handling
 """
 import uvicorn
 import sys

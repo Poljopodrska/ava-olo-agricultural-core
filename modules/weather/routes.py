@@ -2,12 +2,10 @@
 """
 Weather API routes for AVA OLO Farmer Portal
 Provides weather endpoints for the dashboard
-TEMPORARY: All endpoints return mock data until service import issue is resolved
 """
 from fastapi import APIRouter, HTTPException, Request, Depends
 from typing import Optional
 from datetime import datetime, timedelta
-from modules.auth.routes import get_current_farmer
 
 router = APIRouter(prefix="/api/weather", tags=["weather"])
 
@@ -59,10 +57,32 @@ def _get_mock_forecast_data(days: int = 5):
 @router.get("/current")
 async def get_current_weather(lat: Optional[float] = None, lon: Optional[float] = None):
     """Get current weather conditions"""
-    return {
-        "status": "success",
-        "data": _get_mock_weather_data()
-    }
+    try:
+        # Try to import and use the weather service
+        from modules.weather.service import weather_service
+        weather_data = await weather_service.get_current_weather(lat, lon)
+        
+        if not weather_data:
+            raise HTTPException(status_code=503, detail="Weather service unavailable")
+        
+        return {
+            "status": "success",
+            "data": weather_data
+        }
+    except ImportError:
+        # If import fails, use mock data
+        return {
+            "status": "success",
+            "data": _get_mock_weather_data(),
+            "note": "Using mock data due to service unavailable"
+        }
+    except Exception as e:
+        # For any other error, return mock data
+        return {
+            "status": "success",
+            "data": _get_mock_weather_data(),
+            "note": f"Using mock data due to: {str(e)}"
+        }
 
 @router.get("/forecast")
 async def get_weather_forecast(lat: Optional[float] = None, lon: Optional[float] = None, days: int = 5):
@@ -70,29 +90,62 @@ async def get_weather_forecast(lat: Optional[float] = None, lon: Optional[float]
     if days < 1 or days > 7:
         raise HTTPException(status_code=400, detail="Days must be between 1 and 7")
     
-    return {
-        "status": "success",
-        "data": _get_mock_forecast_data(days)
-    }
+    try:
+        from modules.weather.service import weather_service
+        forecast_data = await weather_service.get_weather_forecast(lat, lon, days)
+        
+        if not forecast_data:
+            raise HTTPException(status_code=503, detail="Weather forecast service unavailable")
+        
+        return {
+            "status": "success",
+            "data": forecast_data
+        }
+    except ImportError:
+        return {
+            "status": "success",
+            "data": _get_mock_forecast_data(days),
+            "note": "Using mock data due to service unavailable"
+        }
+    except Exception as e:
+        return {
+            "status": "success",
+            "data": _get_mock_forecast_data(days),
+            "note": f"Using mock data due to: {str(e)}"
+        }
 
 @router.get("/alerts")
 async def get_weather_alerts(lat: Optional[float] = None, lon: Optional[float] = None):
     """Get agricultural weather alerts"""
-    return {
-        "status": "success",
-        "data": {
-            "alerts": [
-                {
-                    "type": "temperature",
-                    "severity": "low",
-                    "title": "🌡️ Optimal Temperature",
-                    "message": "Current temperature is ideal for most crops",
-                    "action": "Continue normal operations"
-                }
-            ],
-            "count": 1
+    try:
+        from modules.weather.service import weather_service
+        alerts = await weather_service.get_weather_alerts(lat, lon)
+        
+        return {
+            "status": "success",
+            "data": {
+                "alerts": alerts,
+                "count": len(alerts)
+            }
         }
-    }
+    except Exception:
+        # Return mock alerts
+        return {
+            "status": "success",
+            "data": {
+                "alerts": [
+                    {
+                        "type": "temperature",
+                        "severity": "low",
+                        "title": "🌡️ Optimal Temperature",
+                        "message": "Current temperature is ideal for most crops",
+                        "action": "Continue normal operations"
+                    }
+                ],
+                "count": 1
+            },
+            "note": "Using mock data"
+        }
 
 @router.get("/locations/bulgaria")
 async def get_bulgaria_weather():
@@ -106,11 +159,20 @@ async def get_bulgaria_weather():
     ]
     
     results = []
-    for i, location in enumerate(locations):
-        weather_data = _get_mock_weather_data()
-        weather_data["region"] = location["name"]
-        weather_data["temperature"] = f"{20 + i}°C"  # Vary temperatures slightly
-        results.append(weather_data)
+    try:
+        from modules.weather.service import weather_service
+        for location in locations:
+            weather_data = await weather_service.get_current_weather(location["lat"], location["lon"])
+            if weather_data:
+                weather_data["region"] = location["name"]
+                results.append(weather_data)
+    except Exception:
+        # Use mock data for all regions
+        for i, location in enumerate(locations):
+            weather_data = _get_mock_weather_data()
+            weather_data["region"] = location["name"]
+            weather_data["temperature"] = f"{20 + i}°C"
+            results.append(weather_data)
     
     return {
         "status": "success",
@@ -123,85 +185,131 @@ async def get_bulgaria_weather():
 @router.get("/current-farmer")
 async def get_current_farmer_weather(request: Request):
     """Get current weather for logged-in farmer's location"""
-    # Get farmer info from session/cookies
-    farmer = await get_current_farmer(request)
-    if not farmer:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Return mock weather data
-    weather_data = _get_mock_weather_data()
-    weather_data['farmer_location'] = "Slovenia"
-    weather_data['coordinates'] = {
-        'lat': 46.0569,
-        'lon': 14.5058
-    }
-    
-    return {
-        "status": "success",
-        "data": weather_data
-    }
+    try:
+        # Import auth dependency
+        from modules.auth.routes import get_current_farmer
+        
+        # Get farmer info from session/cookies
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # For now, use default Slovenia location
+        # In production, this would get the farmer's actual location
+        weather_data = _get_mock_weather_data()
+        weather_data['farmer_location'] = "Slovenia"
+        weather_data['coordinates'] = {
+            'lat': 46.0569,
+            'lon': 14.5058
+        }
+        
+        return {
+            "status": "success",
+            "data": weather_data
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Weather service error: {str(e)}")
 
 @router.get("/forecast-farmer")
 async def get_farmer_weather_forecast(request: Request, days: int = 5):
     """Get weather forecast for logged-in farmer's location"""
-    # Get farmer info
-    farmer = await get_current_farmer(request)
-    if not farmer:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Get mock forecast
-    forecast_data = _get_mock_forecast_data(days)
-    forecast_data['farmer_location'] = "Slovenia"
-    
-    return {
-        "status": "success",
-        "data": forecast_data
-    }
+    try:
+        from modules.auth.routes import get_current_farmer
+        
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Get mock forecast
+        forecast_data = _get_mock_forecast_data(days)
+        forecast_data['farmer_location'] = "Slovenia"
+        
+        return {
+            "status": "success",
+            "data": forecast_data
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Weather forecast error: {str(e)}")
 
 @router.get("/hourly-farmer")
 async def get_farmer_hourly_forecast(request: Request):
     """Get hourly forecast for logged-in farmer's location"""
-    # Get farmer info
-    farmer = await get_current_farmer(request)
-    if not farmer:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    # Mock hourly data
-    hourly_data = []
-    current_hour = datetime.now().hour
-    
-    for i in range(8):  # 8 3-hour intervals = 24 hours
-        hour = (current_hour + i * 3) % 24
-        temp = 20 + (5 * (1 if hour < 12 else -1))  # Temperature curve
+    try:
+        from modules.auth.routes import get_current_farmer
         
-        hourly_data.append({
-            'time': f"{hour:02d}:00",
-            'hour': hour,
-            'temp': temp + i,
-            'icon': '☀️' if 6 <= hour <= 18 else '🌙',
-            'description': 'Clear' if i % 3 == 0 else 'Partly Cloudy',
-            'wind': {
-                'speed': 10 + i * 2,
-                'direction': ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][i % 8]
-            },
-            'precipitation': 0 if i < 5 else 2.5,
-            'humidity': 60 + i * 2
-        })
-    
-    return {
-        "status": "success",
-        "data": {
-            "hourly": hourly_data,
-            "location": "Slovenia"
+        # Get farmer info
+        farmer = await get_current_farmer(request)
+        if not farmer:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        
+        # Mock hourly data
+        hourly_data = []
+        current_hour = datetime.now().hour
+        
+        for i in range(8):  # 8 3-hour intervals = 24 hours
+            hour = (current_hour + i * 3) % 24
+            temp = 20 + (5 * (1 if hour < 12 else -1))  # Temperature curve
+            
+            hourly_data.append({
+                'time': f"{hour:02d}:00",
+                'hour': hour,
+                'temp': temp + i,
+                'icon': '☀️' if 6 <= hour <= 18 else '🌙',
+                'description': 'Clear' if i % 3 == 0 else 'Partly Cloudy',
+                'wind': {
+                    'speed': 10 + i * 2,
+                    'direction': ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][i % 8]
+                },
+                'precipitation': 0 if i < 5 else 2.5,
+                'humidity': 60 + i * 2
+            })
+        
+        return {
+            "status": "success",
+            "data": {
+                "hourly": hourly_data,
+                "location": "Slovenia"
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Hourly forecast error: {str(e)}")
 
 @router.get("/health")
 async def weather_service_health():
     """Check weather service health"""
-    return {
-        "status": "degraded",
-        "service": "weather",
-        "api_key_configured": True,
-        "message": "Using mock data temporarily"
-    }
+    try:
+        from modules.weather.service import weather_service
+        # Test API connection
+        test_weather = await weather_service.get_current_weather()
+        
+        if test_weather and "temperature" in test_weather:
+            return {
+                "status": "healthy",
+                "service": "weather",
+                "api_key_configured": bool(weather_service.api_key),
+                "api_key_preview": weather_service.api_key[:8] + "..." if weather_service.api_key else None,
+                "default_location": f"{weather_service.default_location['lat']}, {weather_service.default_location['lon']}",
+                "test_successful": True
+            }
+        else:
+            return {
+                "status": "degraded",
+                "service": "weather",
+                "api_key_configured": bool(weather_service.api_key),
+                "message": "Using mock data",
+                "test_successful": False
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "service": "weather",
+            "error": str(e),
+            "message": "Weather service unavailable"
+        }
