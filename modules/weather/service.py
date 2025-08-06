@@ -17,12 +17,8 @@ class WeatherService:
         self.base_url = "http://api.openweathermap.org/data/2.5"
         self.onecall_url = "https://api.openweathermap.org/data/3.0/onecall"
         
-        # Default location for Slovenian farms (Ljubljana)
-        self.default_location = {
-            'lat': 46.0569,  # Ljubljana latitude
-            'lon': 14.5058,  # Ljubljana longitude
-            'name': 'Ljubljana, Slovenia'
-        }
+        # No default location - must be provided by farmer or return None
+        self.default_location = None
     
     def _get_weather_emoji(self, weather_code: str, is_day: bool = True) -> str:
         """Get appropriate emoji for weather condition"""
@@ -66,10 +62,9 @@ class WeatherService:
         if not self.api_key:
             return self._get_mock_weather_data()
         
-        # Use default location if not specified
+        # Return None if no location provided
         if lat is None or lon is None:
-            lat = self.default_location['lat']
-            lon = self.default_location['lon']
+            return None
         
         try:
             async with httpx.AsyncClient() as client:
@@ -111,10 +106,9 @@ class WeatherService:
         if not self.api_key:
             return self._get_mock_hourly_data()
         
-        # Use default location if not specified
+        # Return None if no location provided
         if lat is None or lon is None:
-            lat = self.default_location['lat']
-            lon = self.default_location['lon']
+            return None
         
         try:
             async with httpx.AsyncClient() as client:
@@ -203,10 +197,9 @@ class WeatherService:
         if not self.api_key:
             return self._get_mock_forecast_data()
         
-        # Use default location if not specified
+        # Return None if no location provided
         if lat is None or lon is None:
-            lat = self.default_location['lat']
-            lon = self.default_location['lon']
+            return None
         
         try:
             async with httpx.AsyncClient() as client:
@@ -318,7 +311,7 @@ class WeatherService:
     def _get_mock_weather_data(self) -> Dict:
         """Mock weather data for testing/fallback"""
         return {
-            'location': 'Ljubljana, Slovenia',
+            'location': 'Location not set',
             'temperature': '18°C',
             'feels_like': '17°C',
             'humidity': '72%',
@@ -356,7 +349,7 @@ class WeatherService:
             })
         
         return {
-            'location': 'Ljubljana, Slovenia',
+            'location': 'Location not set',
             'forecasts': forecasts
         }
     

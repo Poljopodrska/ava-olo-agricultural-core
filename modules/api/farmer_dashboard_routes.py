@@ -476,3 +476,121 @@ async def api_farmer_stats(farmer: dict = Depends(require_auth)):
             "success": False,
             "error": "Failed to fetch statistics"
         }, status_code=500)
+
+@router.post("/update-location")
+async def update_farmer_location(
+    request: Request,
+    farmer: dict = Depends(require_auth)
+):
+    """Update farmer's location information"""
+    try:
+        data = await request.json()
+        db_manager = get_db_manager()
+        
+        # Extract location data
+        street_address = data.get('street_address', '')
+        house_number = data.get('house_number', '')
+        postal_code = data.get('postal_code', '')
+        city = data.get('city', '')
+        country = data.get('country', '')
+        
+        # Optional: Get lat/lon from address (to be implemented with geocoding service)
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        # Update farmer's location in database
+        update_query = """
+        UPDATE farmers 
+        SET 
+            street_address = %s,
+            house_number = %s,
+            postal_code = %s,
+            city = %s,
+            country = %s,
+            weather_latitude = %s,
+            weather_longitude = %s,
+            weather_location_name = %s,
+            address_collected = TRUE,
+            location_prompt_shown = TRUE,
+            location_updated_at = NOW()
+        WHERE id = %s
+        """
+        
+        # Create location name for weather service
+        location_name = f"{city}, {country}" if city and country else None
+        
+        result = db_manager.execute_query(
+            update_query,
+            (street_address, house_number, postal_code, city, country, 
+             latitude, longitude, location_name, farmer['id'])
+        )
+        
+        if result and result.get('affected_rows', 0) > 0:
+            return JSONResponse(content={
+                "success": True,
+                "message": "Location updated successfully"
+            })
+        else:
+            return JSONResponse(content={
+                "success": False,
+                "error": "Failed to update location"
+            }, status_code=400)
+            
+    except Exception as e:
+        logger.error(f"Error updating farmer location: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "error": f"Failed to update location: {str(e)}"
+        }, status_code=500)
+
+@router.get("/check-location")
+async def check_farmer_location(farmer: dict = Depends(require_auth)):
+    """Check if farmer has location data"""
+    try:
+        db_manager = get_db_manager()
+        
+        query = """
+        SELECT 
+            address_collected,
+            street_address,
+            house_number,
+            postal_code,
+            city,
+            country,
+            weather_latitude,
+            weather_longitude,
+            whatsapp_number
+        FROM farmers 
+        WHERE id = %s
+        """
+        
+        result = db_manager.execute_query(query, (farmer['id'],))
+        
+        if result and 'rows' in result and result['rows']:
+            row = result['rows'][0]
+            return JSONResponse(content={
+                "success": True,
+                "has_location": bool(row[0]),  # address_collected
+                "location": {
+                    "street_address": row[1],
+                    "house_number": row[2],
+                    "postal_code": row[3],
+                    "city": row[4],
+                    "country": row[5],
+                    "latitude": float(row[6]) if row[6] else None,
+                    "longitude": float(row[7]) if row[7] else None
+                },
+                "whatsapp_number": row[8]
+            })
+        
+        return JSONResponse(content={
+            "success": False,
+            "has_location": False
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking farmer location: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e)
+        }, status_code=500)

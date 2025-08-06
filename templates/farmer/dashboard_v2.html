@@ -1938,5 +1938,238 @@
             </div>
         </div>
     </div>
+
+    <!-- Location Collection Modal -->
+    <div id="location-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>📍 Set Your Farm Location</h2>
+                <p style="margin-top: 10px; color: #666;">Please provide your farm's address for accurate weather information</p>
+            </div>
+            
+            <form id="location-form" onsubmit="saveLocation(event)">
+                <div class="form-group">
+                    <label for="street_address">Street Address *</label>
+                    <input type="text" id="street_address" name="street_address" class="form-control" required 
+                           placeholder="Enter street name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="house_number">House Number</label>
+                    <input type="text" id="house_number" name="house_number" class="form-control" 
+                           placeholder="Enter house/farm number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="postal_code">Postal Code *</label>
+                    <input type="text" id="postal_code" name="postal_code" class="form-control" required 
+                           placeholder="Enter postal code">
+                </div>
+                
+                <div class="form-group">
+                    <label for="city">City *</label>
+                    <input type="text" id="city" name="city" class="form-control" required 
+                           placeholder="Enter city name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="country">Country *</label>
+                    <input type="text" id="country" name="country" class="form-control" required readonly
+                           style="background-color: #f5f5f5;">
+                    <small style="color: #666;">Detected from your WhatsApp number</small>
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Save Location
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .modal-header {
+            background: var(--ava-brown-primary, #6B4423);
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        #location-form {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--ava-brown-primary, #6B4423);
+            box-shadow: 0 0 0 2px rgba(107, 68, 35, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--ava-brown-primary, #6B4423);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #543519;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
+    <script>
+        // Check and show location modal on page load
+        async function checkLocationOnLoad() {
+            try {
+                const response = await fetch('/farmer/check-location');
+                const data = await response.json();
+                
+                if (data.success && !data.has_location) {
+                    // Detect country from WhatsApp number
+                    const country = detectCountryFromPhone(data.whatsapp_number || '');
+                    document.getElementById('country').value = country || 'Slovenia';
+                    
+                    // Show the modal
+                    document.getElementById('location-modal').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error checking location:', error);
+            }
+        }
+        
+        // Detect country from phone number
+        function detectCountryFromPhone(phoneNumber) {
+            if (!phoneNumber) return '';
+            
+            const phone = phoneNumber.replace(/[^\d]/g, '');
+            
+            const countryMap = {
+                '386': 'Slovenia',
+                '385': 'Croatia',
+                '381': 'Serbia',
+                '387': 'Bosnia and Herzegovina',
+                '359': 'Bulgaria',
+                '40': 'Romania',
+                '39': 'Italy',
+                '43': 'Austria',
+                '49': 'Germany',
+                '33': 'France',
+                '34': 'Spain'
+            };
+            
+            // Check for matches (3 digits first, then 2)
+            for (let len = 3; len >= 2; len--) {
+                const prefix = phone.substring(0, len);
+                if (countryMap[prefix]) {
+                    return countryMap[prefix];
+                }
+            }
+            
+            return 'Slovenia'; // Default
+        }
+        
+        // Save location
+        async function saveLocation(event) {
+            event.preventDefault();
+            
+            const formData = {
+                street_address: document.getElementById('street_address').value,
+                house_number: document.getElementById('house_number').value,
+                postal_code: document.getElementById('postal_code').value,
+                city: document.getElementById('city').value,
+                country: document.getElementById('country').value
+            };
+            
+            try {
+                const response = await fetch('/farmer/update-location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Hide modal and reload page to update weather
+                    document.getElementById('location-modal').style.display = 'none';
+                    window.location.reload();
+                } else {
+                    alert('Failed to save location. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error saving location:', error);
+                alert('Error saving location. Please try again.');
+            }
+        }
+        
+        // Call on page load
+        window.addEventListener('DOMContentLoaded', checkLocationOnLoad);
+    </script>
 </body>
 </html>
