@@ -59,8 +59,10 @@ class WeatherService:
     
     async def get_current_weather(self, lat: Optional[float] = None, lon: Optional[float] = None) -> Optional[Dict]:
         """Get current weather for specified location"""
+        # Hardcode API key as fallback if not in environment
         if not self.api_key:
-            return self._get_mock_weather_data()
+            self.api_key = "53efe5a8c7ac5cad63b7b0419f5d3069"
+            print(f"WARNING: Using hardcoded API key as OPENWEATHER_API_KEY not found in environment")
         
         # Return None if no location provided
         if lat is None or lon is None:
@@ -94,17 +96,41 @@ class WeatherService:
                     }
                     return self._format_current_weather(data)
                 else:
-                    print(f"Weather API error: {response.status_code}")
-                    return self._get_mock_weather_data()
+                    print(f"Weather API error: {response.status_code}, Response: {response.text}")
+                    # Return error with coordinates for debugging
+                    return {
+                        'location': f'API Error ({lat:.2f}, {lon:.2f})',
+                        'temperature': 'ERR',
+                        'humidity': 'ERR%',
+                        'description': f'API returned {response.status_code}',
+                        'icon': '❌',
+                        'wind_speed': '0 km/h',
+                        'error': True,
+                        'error_details': response.text[:200]
+                    }
                     
         except Exception as e:
             print(f"Weather service error: {e}")
-            return self._get_mock_weather_data()
+            print(f"Error type: {type(e).__name__}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            # Return error instead of mock data so we can see what's wrong
+            return {
+                'location': f'Exception ({lat:.2f}, {lon:.2f})',
+                'temperature': 'ERR',
+                'humidity': 'ERR%',
+                'description': str(e)[:50],
+                'icon': '❌',
+                'wind_speed': '0 km/h',
+                'error': True,
+                'error_type': type(e).__name__
+            }
     
     async def get_hourly_forecast(self, lat: Optional[float] = None, lon: Optional[float] = None) -> Optional[List[Dict]]:
         """Get hourly forecast for next 24 hours"""
+        # Hardcode API key as fallback if not in environment
         if not self.api_key:
-            return self._get_mock_hourly_data()
+            self.api_key = "53efe5a8c7ac5cad63b7b0419f5d3069"
         
         # Return None if no location provided
         if lat is None or lon is None:
@@ -194,8 +220,9 @@ class WeatherService:
     
     async def get_weather_forecast(self, lat: Optional[float] = None, lon: Optional[float] = None, days: int = 5) -> Optional[Dict]:
         """Get weather forecast for specified location"""
+        # Hardcode API key as fallback if not in environment
         if not self.api_key:
-            return self._get_mock_forecast_data()
+            self.api_key = "53efe5a8c7ac5cad63b7b0419f5d3069"
         
         # Return None if no location provided
         if lat is None or lon is None:
