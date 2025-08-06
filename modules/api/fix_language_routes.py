@@ -12,7 +12,7 @@ from ..core.language_service import get_language_service
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/fix", tags=["fix-language"])
 
-@router.get("/italian-users-language")
+@router.get("/italian-users-language-fix-now")
 async def fix_italian_users_language():
     """Fix language preferences for Italian users"""
     db_manager = get_db_manager()
@@ -77,7 +77,7 @@ async def fix_italian_users_language():
         logger.error(f"Error fixing Italian users: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/all-users-language")
+@router.get("/all-users-language-fix-now")
 async def fix_all_users_language():
     """Auto-detect and fix language for all users based on WhatsApp"""
     db_manager = get_db_manager()
