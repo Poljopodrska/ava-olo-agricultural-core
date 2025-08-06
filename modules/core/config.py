@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806123000'  # v4.14.5 - Fix country detection and language fallback
-COMMIT_HASH = "fix-country-language-detection"  # Fix hardcoded Bulgaria, add language fallback
+DEPLOYMENT_TIMESTAMP = '20250806130000'  # v4.14.6 - Fix language detection for existing users
+COMMIT_HASH = "fix-existing-users-language"  # Better fallback for existing users, fix dashboard_tasks
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.14.5"
+VERSION = "v4.14.6"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

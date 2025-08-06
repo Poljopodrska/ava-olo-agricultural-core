@@ -45,7 +45,9 @@ def get_farmer_language(farmer_id: int) -> str:
     
     try:
         query = """
-        SELECT language_preference, whatsapp_number, country
+        SELECT language_preference, 
+               COALESCE(whatsapp_number, wa_phone_number, phone) as whatsapp,
+               country
         FROM farmers 
         WHERE id = %s
         """

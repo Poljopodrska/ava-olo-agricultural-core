@@ -63,6 +63,7 @@ TRANSLATIONS = {
         'dashboard_field_last_task': 'Last Task',
         'dashboard_total_area': 'Total Area',
         'dashboard_total_fields': 'Total Fields',
+        'dashboard_tasks': 'Tasks',
         
         # Common
         'error_invalid_whatsapp': 'Please enter a valid WhatsApp number',
@@ -132,6 +133,7 @@ TRANSLATIONS = {
         'dashboard_field_last_task': 'Zadnje opravilo',
         'dashboard_total_area': 'Skupna površina',
         'dashboard_total_fields': 'Skupno polj',
+        'dashboard_tasks': 'Opravila',
         
         # Common
         'error_invalid_whatsapp': 'Prosimo, vnesite veljavno WhatsApp številko',
