@@ -552,10 +552,24 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             }, status_code=500)
             
     except Exception as e:
-        logger.error(f"Error adding field: {e}")
+        import traceback
+        error_detail = traceback.format_exc()
+        logger.error(f"Error adding field: {e}\n{error_detail}")
+        
+        # Return more specific error message
+        error_message = str(e)
+        if "fields" in error_message and "does not exist" in error_message:
+            error_message = "Fields table does not exist in database. Please contact support."
+        elif "field_crops" in error_message and "does not exist" in error_message:
+            error_message = "Field crops table does not exist in database. Please contact support."
+        elif "foreign key" in error_message.lower():
+            error_message = "Invalid farmer ID or database constraint error."
+        elif "connection" in error_message.lower():
+            error_message = "Database connection error. Please try again."
+        
         return JSONResponse(content={
             "success": False,
-            "error": f"Failed to add field: {str(e)}"
+            "error": error_message
         }, status_code=500)
 
 @router.get("/api/stats", response_class=JSONResponse)

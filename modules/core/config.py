@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806181500'  # v4.16.7 - Fix field creation API endpoint URL
-COMMIT_HASH = "fix-field-creation"  # Fix incorrect API endpoint URL for field creation
+DEPLOYMENT_TIMESTAMP = '20250806183000'  # v4.16.9 - Add database initialization and better error handling
+COMMIT_HASH = "fix-fields-table"  # Add database table creation and detailed error messages
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.8"
+VERSION = "v4.16.9"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

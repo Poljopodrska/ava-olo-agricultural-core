@@ -62,6 +62,9 @@ from modules.api.migration_location_routes import router as migration_router
 # Diagnostic routes for IP detection
 from modules.api.diagnostic_routes import router as diagnostic_router
 
+# Database initialization routes
+from modules.api.database_init_routes import router as db_init_router
+
 # Global authentication middleware
 from modules.core.global_auth import GlobalAuthMiddleware
 
@@ -294,7 +297,8 @@ app.include_router(chat_history_router)
 app.include_router(whatsapp_router)
 app.include_router(migration_router)
 app.include_router(diagnostic_router)
-STARTUP_STATUS["total_routers_included"] = 22
+app.include_router(db_init_router)
+STARTUP_STATUS["total_routers_included"] = 23
 
 # Startup event
 @app.on_event("startup")
