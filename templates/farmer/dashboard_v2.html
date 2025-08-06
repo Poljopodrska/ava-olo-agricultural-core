@@ -2277,6 +2277,7 @@
                 }
                 
                 // Call weather API with new coordinates
+                console.log(`Fetching weather for ${locationName} at ${lat}, ${lon}`);
                 const response = await fetch(`/api/weather/location?lat=${lat}&lon=${lon}`, {
                     credentials: 'include'
                 });
@@ -2286,9 +2287,11 @@
                 }
                 
                 const data = await response.json();
+                console.log('Weather API response:', data);
                 
                 // Update weather display
                 if (data.success && data.weather) {
+                    console.log('Weather data:', data.weather);
                     displayWeatherData(data.weather, locationName);
                 } else {
                     console.error('No weather data received');
@@ -2319,12 +2322,28 @@
             // Update current weather
             const currentWeatherDiv = document.querySelector('.current-weather');
             if (currentWeatherDiv && weather) {
+                // Handle temperature - check if it already has °C
+                let tempDisplay = weather.temperature || '20';
+                if (typeof tempDisplay === 'string' && !tempDisplay.includes('°')) {
+                    tempDisplay += '°C';
+                } else if (typeof tempDisplay === 'number') {
+                    tempDisplay = tempDisplay + '°C';
+                }
+                
+                // Handle humidity - ensure it has %
+                let humidityDisplay = weather.humidity || '60';
+                if (typeof humidityDisplay === 'string' && !humidityDisplay.includes('%')) {
+                    humidityDisplay += '%';
+                }
+                
+                console.log('Displaying weather:', {temp: tempDisplay, humidity: humidityDisplay, desc: weather.description});
+                
                 currentWeatherDiv.innerHTML = `
                     <div style="font-size: 3rem; line-height: 1;">${weather.icon || '🌤️'}</div>
-                    <div style="font-size: 2.5rem; font-weight: 300; margin: 10px 0;">${weather.temperature || 20}°C</div>
+                    <div style="font-size: 2.5rem; font-weight: 300; margin: 10px 0;">${tempDisplay}</div>
                     <div style="font-size: 1.1rem; color: #666;">${weather.description || weather.conditions || 'Clear'}</div>
                     <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.9rem; color: #666;">
-                        <div>💧 ${weather.humidity || 60}%</div>
+                        <div>💧 ${humidityDisplay}</div>
                         <div>💨 ${weather.wind_speed || '10 km/h'}</div>
                     </div>
                 `;
