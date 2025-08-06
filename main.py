@@ -90,25 +90,34 @@ async def root(request: Request):
         language_service = get_language_service()
         
         # Get client IP - check for forwarded headers first (for deployment behind proxy)
+        # ALB adds X-Forwarded-For header
         client_ip = request.headers.get("X-Forwarded-For")
         if client_ip:
+            # X-Forwarded-For can contain multiple IPs, take the first (original client)
             client_ip = client_ip.split(",")[0].strip()
-        elif request.client:
-            client_ip = request.client.host
         else:
-            client_ip = "127.0.0.1"
+            # Try X-Real-IP header
+            client_ip = request.headers.get("X-Real-IP")
+            if not client_ip and request.client:
+                client_ip = request.client.host
+            elif not client_ip:
+                client_ip = "127.0.0.1"
         
+        # Log all headers for debugging
         logger.info(f"Landing page accessed from IP: {client_ip}")
+        logger.debug(f"Headers: X-Forwarded-For={request.headers.get('X-Forwarded-For')}, X-Real-IP={request.headers.get('X-Real-IP')}")
         
         # Try to detect language, but don't fail if it doesn't work
         try:
             detected_language = await language_service.detect_language_from_ip(client_ip)
+            logger.info(f"Language detected: {detected_language} for IP {client_ip}")
         except Exception as e:
             logger.warning(f"Language detection failed for IP {client_ip}: {e}")
             detected_language = 'en'  # Default to English
         
         # Get translations for the detected language
         translations = get_translations(detected_language)
+        logger.info(f"Using language: {detected_language}")
         
         return templates.TemplateResponse("landing.html", {
             "request": request,
