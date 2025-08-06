@@ -44,6 +44,7 @@ from modules.auth.routes import router as auth_router
 from modules.weather.routes import router as weather_router
 from modules.api.farmer_dashboard_routes import router as farmer_dashboard_router
 from modules.api.fix_language_routes import router as fix_language_router
+from modules.api.weather_location_routes import router as weather_location_router
 
 # CAVA routers
 from modules.cava.routes import router as cava_router
@@ -274,6 +275,7 @@ app.include_router(auth_router)
 app.include_router(weather_router)
 app.include_router(farmer_dashboard_router)
 app.include_router(fix_language_router)
+app.include_router(weather_location_router)
 app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)

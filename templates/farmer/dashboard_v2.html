@@ -1298,6 +1298,14 @@
                 </div>
             </div>
             <div class="panel-content">
+                <!-- Location Search Box -->
+                <div style="padding: 15px; background: #f8f8f8; border-bottom: 1px solid #e0e0e0;">
+                    <input type="text" 
+                           id="location-search" 
+                           placeholder="Search for any location..." 
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                </div>
+                
                 <div class="weather-location-header" id="weather-location-header">
                     <span id="weather-location-text">{{ weather.location }}</span>
                 </div>
@@ -2180,6 +2188,141 @@
         
         // Call on page load
         window.addEventListener('DOMContentLoaded', checkLocationOnLoad);
+    </script>
+    
+    <!-- Google Maps Places API for Location Search -->
+    <script>
+        let autocomplete;
+        let currentLat = null;
+        let currentLon = null;
+        
+        function initLocationSearch() {
+            const input = document.getElementById('location-search');
+            if (!input) return;
+            
+            // Create autocomplete object
+            autocomplete = new google.maps.places.Autocomplete(input);
+            
+            // Listen for place selection
+            autocomplete.addListener('place_changed', function() {
+                const place = autocomplete.getPlace();
+                
+                if (!place.geometry || !place.geometry.location) {
+                    console.error('No location data for this place');
+                    return;
+                }
+                
+                // Get coordinates
+                currentLat = place.geometry.location.lat();
+                currentLon = place.geometry.location.lng();
+                
+                console.log('Selected location:', place.name);
+                console.log('Coordinates:', currentLat, currentLon);
+                
+                // Update weather for new location
+                updateWeatherForLocation(currentLat, currentLon, place.name || place.formatted_address);
+            });
+        }
+        
+        async function updateWeatherForLocation(lat, lon, locationName) {
+            try {
+                // Show loading state
+                const weatherLocation = document.getElementById('weather-location-text');
+                const currentWeatherDiv = document.querySelector('.current-weather');
+                
+                if (weatherLocation) {
+                    weatherLocation.textContent = 'Loading weather for ' + locationName + '...';
+                }
+                
+                // Call weather API with new coordinates
+                const response = await fetch(`/api/weather/location?lat=${lat}&lon=${lon}`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch weather');
+                }
+                
+                const data = await response.json();
+                
+                // Update weather display
+                if (data.success && data.weather) {
+                    displayWeatherData(data.weather, locationName);
+                } else {
+                    console.error('No weather data received');
+                }
+                
+            } catch (error) {
+                console.error('Error updating weather:', error);
+                // Show error message
+                const weatherLocation = document.getElementById('weather-location-text');
+                if (weatherLocation) {
+                    weatherLocation.textContent = 'Error loading weather for ' + locationName;
+                }
+            }
+        }
+        
+        function displayWeatherData(weather, locationName) {
+            // Update location
+            const weatherLocation = document.getElementById('weather-location-text');
+            const weatherSubtitle = document.getElementById('weather-location');
+            
+            if (weatherLocation) {
+                weatherLocation.textContent = locationName;
+            }
+            if (weatherSubtitle) {
+                weatherSubtitle.textContent = locationName;
+            }
+            
+            // Update current weather
+            const currentWeatherDiv = document.querySelector('.current-weather');
+            if (currentWeatherDiv && weather) {
+                currentWeatherDiv.innerHTML = `
+                    <div style="font-size: 3rem; line-height: 1;">${weather.icon || '🌤️'}</div>
+                    <div style="font-size: 2.5rem; font-weight: 300; margin: 10px 0;">${weather.temperature || 20}°C</div>
+                    <div style="font-size: 1.1rem; color: #666;">${weather.description || weather.conditions || 'Clear'}</div>
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 15px; font-size: 0.9rem; color: #666;">
+                        <div>💧 ${weather.humidity || 60}%</div>
+                        <div>💨 ${weather.wind_speed || '10 km/h'}</div>
+                    </div>
+                `;
+            }
+            
+            // Update forecast if available
+            if (weather.forecast && Array.isArray(weather.forecast)) {
+                displayWeatherForecast(weather.forecast);
+            }
+        }
+        
+        function displayWeatherForecast(forecast) {
+            const forecastDiv = document.getElementById('weather-forecast');
+            if (!forecastDiv) return;
+            
+            let forecastHtml = '<div class="forecast-title" style="font-size: 1rem; font-weight: 600; margin-bottom: 15px;">3-Day Forecast</div>';
+            forecastHtml += '<div style="display: flex; justify-content: space-between; gap: 10px;">';
+            
+            forecast.slice(0, 3).forEach((day, index) => {
+                forecastHtml += `
+                    <div style="flex: 1; text-align: center; padding: 10px; background: #f8f8f8; border-radius: 8px;">
+                        <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 5px;">${day.day || 'Day ' + (index + 1)}</div>
+                        <div style="font-size: 1.5rem; margin: 5px 0;">${day.icon || '☀️'}</div>
+                        <div style="font-size: 0.85rem;">
+                            <span style="font-weight: 600;">${day.high || 25}°</span> / 
+                            <span style="color: #888;">${day.low || 18}°</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #666; margin-top: 5px;">${day.conditions || 'Clear'}</div>
+                    </div>
+                `;
+            });
+            
+            forecastHtml += '</div>';
+            forecastDiv.innerHTML = forecastHtml;
+        }
+    </script>
+    
+    <!-- Load Google Maps JavaScript API with Places library -->
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDyFXHN3VqQ9kWvj9ihcLjkpemf1FBc3uo&libraries=places&callback=initLocationSearch">
     </script>
 </body>
 </html>
