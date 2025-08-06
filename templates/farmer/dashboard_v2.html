@@ -1523,13 +1523,8 @@
                 const data = await response.json();
                 
                 if (data.success && data.weather) {
-                    displayCurrentWeather(data.weather);
-                    if (data.weather.hourly_forecast) {
-                        displayHourlyForecast(data.weather.hourly_forecast);
-                    }
-                    if (data.weather.forecast) {
-                        displayWeatherForecast(data.weather.forecast);
-                    }
+                    console.log('Weather API data:', data.weather);
+                    displayWeatherData(data.weather, data.weather.location || 'Weather');
                 } else {
                     showWeatherError();
                 }
@@ -1766,8 +1761,17 @@
                 {% endfor %}
             {% endif %}
             
-            // Load weather
-            loadWeather();
+            // Display initial weather data passed from server
+            {% if weather %}
+                const initialWeather = {{ weather | tojson | safe }};
+                if (initialWeather) {
+                    console.log('Initial weather data:', initialWeather);
+                    displayWeatherData(initialWeather, initialWeather.location || 'Logatec, Slovenia');
+                }
+            {% else %}
+                // Load weather if not provided
+                loadWeather();
+            {% endif %}
             
             // Check chat connection
             checkChatConnection();

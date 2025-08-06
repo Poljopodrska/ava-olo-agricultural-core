@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250806140000'  # v4.14.9 - Fix language detection and remove 00 prefix support
 COMMIT_HASH = "fix-language-detection"  # Fix existing users' language preferences and remove 00 prefix
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.1"
+VERSION = "v4.16.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
