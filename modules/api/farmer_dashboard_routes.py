@@ -44,10 +44,9 @@ def get_farmer_language(farmer_id: int) -> str:
     db_manager = get_db_manager()
     
     try:
+        # First try to get language preference
         query = """
-        SELECT language_preference, 
-               COALESCE(whatsapp_number, wa_phone_number, phone) as whatsapp,
-               country
+        SELECT language_preference
         FROM farmers 
         WHERE id = %s
         """
@@ -55,22 +54,43 @@ def get_farmer_language(farmer_id: int) -> str:
         
         if result and 'rows' in result and len(result['rows']) > 0:
             language = result['rows'][0][0]
-            whatsapp = result['rows'][0][1]
-            country = result['rows'][0][2]
-            logger.info(f"Farmer {farmer_id}: language={language}, whatsapp={whatsapp}, country={country}")
             
-            # If language is not set, try to detect from WhatsApp number
-            if not language and whatsapp:
-                from ..core.language_service import get_language_service
-                service = get_language_service()
-                language = service.detect_language_from_whatsapp(whatsapp)
-                logger.info(f"Detected language from WhatsApp {whatsapp}: {language}")
-                
-                # Update the database with detected language
-                update_query = "UPDATE farmers SET language_preference = %s WHERE id = %s"
-                db_manager.execute_query(update_query, (language, farmer_id))
-                
-            return language if language else 'en'
+            # If we have a language preference, use it
+            if language:
+                logger.info(f"Farmer {farmer_id} has language preference: {language}")
+                return language
+            
+            # If no language preference, try to detect from WhatsApp
+            logger.info(f"Farmer {farmer_id} has no language preference, checking WhatsApp")
+            
+            # Get WhatsApp number (try all possible columns)
+            phone_query = """
+            SELECT COALESCE(whatsapp_number, wa_phone_number, phone) as phone
+            FROM farmers 
+            WHERE id = %s
+            """
+            phone_result = db_manager.execute_query(phone_query, (farmer_id,))
+            
+            if phone_result and 'rows' in phone_result and len(phone_result['rows']) > 0:
+                whatsapp = phone_result['rows'][0][0]
+                if whatsapp:
+                    logger.info(f"Found WhatsApp number for farmer {farmer_id}: {whatsapp}")
+                    from ..core.language_service import get_language_service
+                    service = get_language_service()
+                    detected_language = service.detect_language_from_whatsapp(whatsapp)
+                    logger.info(f"Detected language: {detected_language}")
+                    
+                    # Save it for next time
+                    try:
+                        update_query = "UPDATE farmers SET language_preference = %s WHERE id = %s"
+                        db_manager.execute_query(update_query, (detected_language, farmer_id))
+                        logger.info(f"Saved language preference {detected_language} for farmer {farmer_id}")
+                    except Exception as update_error:
+                        logger.error(f"Could not update language preference: {update_error}")
+                    
+                    return detected_language
+        
+        logger.info(f"Defaulting to English for farmer {farmer_id}")
         return 'en'
     except Exception as e:
         logger.error(f"Error fetching farmer language: {e}")
