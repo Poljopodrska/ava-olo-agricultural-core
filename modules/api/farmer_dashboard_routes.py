@@ -39,6 +39,26 @@ async def test_simple_dashboard(request: Request, farmer: dict = Depends(require
     })
 templates = Jinja2Templates(directory="templates")
 
+def get_farmer_language(farmer_id: int) -> str:
+    """Get farmer's language preference from database"""
+    db_manager = get_db_manager()
+    
+    try:
+        query = """
+        SELECT language_preference 
+        FROM farmers 
+        WHERE id = %s
+        """
+        result = db_manager.execute_query(query, (farmer_id,))
+        
+        if result and 'rows' in result and len(result['rows']) > 0:
+            language = result['rows'][0][0]
+            return language if language else 'en'
+        return 'en'
+    except Exception as e:
+        logger.error(f"Error fetching farmer language: {e}")
+        return 'en'
+
 def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
     """Get all fields for a specific farmer with crop and last task info"""
     db_manager = get_db_manager()
@@ -260,7 +280,10 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
         
         # Calculate totals
         total_area = sum(field['area_ha'] for field in fields if field['area_ha'])
-        detected_language = 'en'
+        
+        # Get farmer's language preference from database
+        detected_language = get_farmer_language(farmer_id)
+        logger.info(f"Farmer {farmer_id} language preference: {detected_language}")
         
         # Get translations
         from ..core.translations import get_translations, TranslationDict

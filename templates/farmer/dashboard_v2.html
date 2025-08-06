@@ -1335,7 +1335,7 @@
             <div class="panel-header">
                 <div>
                     <div class="panel-title">🤖 {{ t.dashboard_chat if t else 'AVA Assistant' }}</div>
-                    <div class="panel-subtitle">Agricultural AI Helper</div>
+                    <div class="panel-subtitle">{{ t.dashboard_chat_subtitle if t else 'Agricultural AI Helper' }}</div>
                 </div>
                 <div class="user-info">
                     <span>{{ farmer.name }}</span>
@@ -1403,7 +1403,7 @@
                     {% else %}
                         <div class="empty-state">
                             <div class="empty-state-icon">🌾</div>
-                            <div class="empty-state-text">No fields added yet</div>
+                            <div class="empty-state-text">{{ t.dashboard_no_fields if t else 'No fields added yet' }}</div>
                             <button class="empty-state-btn" onclick="openAddFieldModal()">
                                 Add Your First Field
                             </button>
@@ -1415,6 +1415,16 @@
     </div>
     
     <script>
+        // Translation strings for JavaScript
+        const translations = {
+            dashboard_24h_forecast: "{{ t.dashboard_24h_forecast if t else '24-Hour Forecast' }}",
+            dashboard_5day_forecast: "{{ t.dashboard_5day_forecast if t else '5-Day Forecast' }}",
+            dashboard_weather_unavailable: "{{ t.dashboard_weather_unavailable if t else 'Weather data temporarily unavailable' }}",
+            dashboard_field_area: "{{ t.dashboard_field_area if t else 'Area' }}",
+            dashboard_field_crop: "{{ t.dashboard_field_crop if t else 'Crop' }}",
+            dashboard_field_last_task: "{{ t.dashboard_field_last_task if t else 'Last Task' }}"
+        };
+        
         let mapWindow = null;
         let fieldCoordinates = [];
         
@@ -1525,16 +1535,16 @@
             
             // Show sample data
             hourlyDiv.innerHTML = `
-                <div class="hourly-title">24-Hour Forecast</div>
+                <div class="hourly-title">${translations.dashboard_24h_forecast}</div>
                 <div style="color: var(--ava-brown-muted); padding: 20px; text-align: center;">
-                    {{ t.dashboard_weather_unavailable if t else 'Weather data temporarily unavailable' }}
+                    ${translations.dashboard_weather_unavailable}
                 </div>
             `;
             
             forecastDiv.innerHTML = `
-                <div class="forecast-title">5-Day Forecast</div>
+                <div class="forecast-title">${translations.dashboard_5day_forecast}</div>
                 <div style="color: var(--ava-brown-muted); padding: 20px; text-align: center;">
-                    {{ t.dashboard_weather_unavailable if t else 'Weather data temporarily unavailable' }}
+                    ${translations.dashboard_weather_unavailable}
                 </div>
             `;
         }
@@ -1548,7 +1558,7 @@
         
         function displayHourlyForecast(hourly) {
             const hourlyDiv = document.getElementById('hourly-forecast');
-            let hourlyHtml = '<div class="hourly-title">24-Hour Forecast</div>';
+            let hourlyHtml = `<div class="hourly-title">${translations.dashboard_24h_forecast}</div>`;
             hourlyHtml += '<div class="hourly-scroll">';
             
             hourly.forEach(hour => {
@@ -1590,7 +1600,7 @@
         
         function displayWeatherForecast(forecast) {
             const forecastDiv = document.getElementById('weather-forecast');
-            let forecastHtml = '<div class="forecast-title">5-Day Forecast</div>';
+            let forecastHtml = `<div class="forecast-title">${translations.dashboard_5day_forecast}</div>`;
             
             forecast.forecasts.forEach((day, index) => {
                 const dayLabel = getDayLabel(day.date, index);
@@ -1808,7 +1818,7 @@
                         Cancel
                     </button>
                     <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="saveField()">
-                        Add Field
+                        {{ t.dashboard_add_field if t else 'Add Field' }}
                     </button>
                 </div>
             </form>
