@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806180000'  # v4.16.5 - Add diagnostic IP detection page
-COMMIT_HASH = "add-ip-diagnostic"  # Add diagnostic page to debug IP detection issues
+DEPLOYMENT_TIMESTAMP = '20250806181500'  # v4.16.7 - Fix field creation API endpoint URL
+COMMIT_HASH = "fix-field-creation"  # Fix incorrect API endpoint URL for field creation
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.6"
+VERSION = "v4.16.7"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

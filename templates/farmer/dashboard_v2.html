@@ -1492,13 +1492,17 @@
             }
             
             try {
-                const response = await fetch('/api/fields/add', {
+                const response = await fetch('/farmer/api/fields/add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(data)
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const result = await response.json();
                 
@@ -1508,7 +1512,7 @@
                     // Reload the page to show the new field
                     window.location.reload();
                 } else {
-                    alert('Error adding field: ' + result.error);
+                    alert('Error adding field: ' + (result.error || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error:', error);
