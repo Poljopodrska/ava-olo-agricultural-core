@@ -231,6 +231,22 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
                         field_data['crop_type'] = crop_row[0]
                         field_data['variety'] = crop_row[1]
                         field_data['planting_date'] = crop_row[2].strftime('%Y-%m-%d') if crop_row[2] else None
+                    
+                    # Also fetch last task for this field
+                    task_query = """
+                    SELECT task_type, date_performed
+                    FROM tasks
+                    WHERE field_id = %s
+                    ORDER BY date_performed DESC
+                    LIMIT 1
+                    """
+                    task_result = execute_simple_query(task_query, (row[0],))
+                    if task_result and task_result.get('success') and task_result.get('rows'):
+                        task_row = task_result['rows'][0]
+                        field_data['last_task'] = {
+                            'task_type': task_row[0],
+                            'date_performed': task_row[1].strftime('%Y-%m-%d') if task_row[1] else None
+                        }
                 
                 fields.append(field_data)
         
@@ -677,6 +693,103 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             "error": error_message,
             "details": str(e),
             "farmer_id": farmer_id if 'farmer_id' in locals() else "not_set"
+        }, status_code=500)
+
+@router.post("/api/tasks/add", response_class=JSONResponse)
+async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
+    """API endpoint to add a new task/activity report for a field"""
+    
+    try:
+        data = await request.json()
+        farmer_id = farmer['farmer_id']
+        
+        logger.info(f"Adding task for farmer {farmer_id}: {data}")
+        
+        # Validate required fields
+        if not data.get('field_id') or not data.get('task_type') or not data.get('date_performed'):
+            return JSONResponse(content={
+                "success": False,
+                "error": "Field ID, task type, and date are required"
+            }, status_code=400)
+        
+        # First check if tasks table exists, if not create it
+        check_table_query = """
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'tasks'
+        )
+        """
+        table_exists = execute_simple_query(check_table_query, ())
+        
+        if not table_exists.get('success') or not table_exists['rows'][0][0]:
+            # Create tasks table
+            create_table_query = """
+            CREATE TABLE IF NOT EXISTS tasks (
+                id SERIAL PRIMARY KEY,
+                field_id INTEGER REFERENCES fields(id),
+                task_type VARCHAR(100),
+                date_performed DATE,
+                material_used VARCHAR(200),
+                quantity DECIMAL(10,2),
+                unit VARCHAR(20),
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+            execute_simple_query(create_table_query, ())
+            logger.info("Created tasks table")
+        
+        # Insert the task
+        insert_query = """
+        INSERT INTO tasks (field_id, task_type, date_performed, material_used, quantity, unit, notes)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        RETURNING id
+        """
+        
+        # Convert quantity to float if provided
+        quantity = None
+        if data.get('quantity'):
+            try:
+                quantity = float(data['quantity'])
+            except (ValueError, TypeError):
+                quantity = None
+        
+        result = execute_simple_query(
+            insert_query,
+            (
+                int(data['field_id']),
+                data['task_type'],
+                data['date_performed'],
+                data.get('material_used', ''),
+                quantity,
+                data.get('unit', ''),
+                data.get('notes', '')
+            )
+        )
+        
+        if result.get('success') and result.get('rows'):
+            task_id = result['rows'][0][0]
+            logger.info(f"Task created with ID: {task_id}")
+            
+            return JSONResponse(content={
+                "success": True,
+                "task_id": task_id,
+                "message": "Activity recorded successfully"
+            })
+        else:
+            logger.error(f"Failed to create task: {result.get('error')}")
+            return JSONResponse(content={
+                "success": False,
+                "error": f"Failed to save activity: {result.get('error', 'Unknown error')}"
+            }, status_code=500)
+            
+    except Exception as e:
+        logger.error(f"Error adding task: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e)
         }, status_code=500)
 
 @router.get("/api/stats", response_class=JSONResponse)

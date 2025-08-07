@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806213500'  # v4.16.17 - Fix fields not showing in dashboard
-COMMIT_HASH = "fix-fields-display"  # Simplify get_farmer_fields to avoid complex JOIN failures
+DEPLOYMENT_TIMESTAMP = '20250806220000'  # v4.17.0 - Add task reporting functionality
+COMMIT_HASH = "add-task-reporting"  # Click fields to report past activities (spraying, fertilizing, etc)
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.16.17"
+VERSION = "v4.17.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

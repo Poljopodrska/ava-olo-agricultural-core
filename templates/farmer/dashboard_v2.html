@@ -393,6 +393,7 @@
         .field-item:hover {
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transform: translateY(-1px);
+            background: #f8f9fa;
         }
         
         .field-name {
@@ -1398,7 +1399,7 @@
                 <div class="fields-list" id="field-list">
                     {% if fields %}
                         {% for field in fields %}
-                        <div class="field-item">
+                        <div class="field-item" onclick="openTaskModal({{ field.id }}, '{{ field.field_name }}')" title="Click to add task">
                             <div class="field-name">{{ field.field_name }}</div>
                             <div class="field-info">
                                 <div class="field-info-item">
@@ -1407,6 +1408,14 @@
                                 {% if field.crop_type %}
                                 <div class="field-crop">🌾 {{ field.crop_type }}</div>
                                 {% endif %}
+                                {% if field.last_task %}
+                                <div class="field-info-item" style="color: #666; font-size: 0.9em; margin-top: 8px;">
+                                    📝 Last: {{ field.last_task.task_type }} ({{ field.last_task.date_performed }})
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div style="position: absolute; top: 15px; right: 15px; color: #3498db; font-size: 20px;">
+                                ➕
                             </div>
                         </div>
                         {% endfor %}
@@ -1448,6 +1457,58 @@
             document.getElementById('field-form').reset();
             fieldCoordinates = [];
             document.getElementById('field-coordinates-display').textContent = '';
+        }
+        
+        // Task Modal Functions
+        function openTaskModal(fieldId, fieldName) {
+            document.getElementById('task-modal').classList.add('active');
+            document.getElementById('task-field-id').value = fieldId;
+            document.getElementById('task-field-name').textContent = fieldName;
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.querySelector('input[name="date_performed"]').value = today;
+        }
+        
+        function closeTaskModal() {
+            document.getElementById('task-modal').classList.remove('active');
+            document.getElementById('task-form').reset();
+        }
+        
+        async function saveTask() {
+            const form = document.getElementById('task-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            // Validate required fields
+            if (!data.task_type || !data.date_performed) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/farmer/api/tasks/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Activity recorded successfully!');
+                    closeTaskModal();
+                    // Reload the page to show updated last task
+                    window.location.reload();
+                } else {
+                    alert('Failed to save activity: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error saving task:', error);
+                alert('Error saving activity. Please try again.');
+            }
         }
         
         function openMapDrawing() {
@@ -1871,27 +1932,75 @@
         </div>
     </div>
     
-    <!-- Tasks Modal -->
-    <div id="tasks-modal" class="task-modal">
-        <div class="task-modal-content">
+    <!-- Task Reporting Modal -->
+    <div id="task-modal" class="field-modal">
+        <div class="field-modal-content">
             <div class="field-modal-header">
-                <h2 class="field-modal-title">Task Management</h2>
-                <p class="field-modal-subtitle">Plan and track your agricultural tasks</p>
+                <h2 class="field-modal-title">Report Field Activity</h2>
+                <p class="field-modal-subtitle">Record what was done on <span id="task-field-name"></span></p>
             </div>
             
-            <div class="task-tabs">
-                <button class="task-tab active" onclick="switchTaskTab('upcoming')">Upcoming Tasks</button>
-                <button class="task-tab" onclick="switchTaskTab('completed')">Completed</button>
-                <button class="task-tab" onclick="switchTaskTab('create')">Create Task</button>
-                <button class="task-tab" onclick="switchTaskTab('history')">Field History</button>
-            </div>
-            
-            <!-- Upcoming Tasks Tab -->
-            <div id="upcoming-tasks-tab" class="task-tab-content">
-                <div class="task-list" id="upcoming-tasks-list">
-                    <!-- Tasks will be loaded here -->
+            <form id="task-form">
+                <input type="hidden" id="task-field-id" name="field_id">
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Activity Type</label>
+                    <select name="task_type" class="field-form-select" required>
+                        <option value="">Select activity...</option>
+                        <option value="Plowing">Plowing</option>
+                        <option value="Planting">Planting</option>
+                        <option value="Fertilizing">Fertilizing</option>
+                        <option value="Spraying - Herbicide">Spraying - Herbicide</option>
+                        <option value="Spraying - Pesticide">Spraying - Pesticide</option>
+                        <option value="Spraying - Fungicide">Spraying - Fungicide</option>
+                        <option value="Irrigation">Irrigation</option>
+                        <option value="Harvesting">Harvesting</option>
+                        <option value="Tillage">Tillage</option>
+                        <option value="Soil Testing">Soil Testing</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
-            </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Date Performed</label>
+                    <input type="date" name="date_performed" class="field-form-input" required>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Product/Material Used (Optional)</label>
+                    <input type="text" name="material_used" class="field-form-input" placeholder="e.g., NPK 15-15-15, Roundup, etc.">
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Quantity (Optional)</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" name="quantity" class="field-form-input" placeholder="Amount" step="0.1" style="flex: 1;">
+                        <select name="unit" class="field-form-select" style="width: 120px;">
+                            <option value="">Unit</option>
+                            <option value="kg">kg</option>
+                            <option value="L">Liters</option>
+                            <option value="kg/ha">kg/ha</option>
+                            <option value="L/ha">L/ha</option>
+                            <option value="bags">Bags</option>
+                            <option value="tons">Tons</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Notes</label>
+                    <textarea name="notes" class="field-form-input" rows="3" placeholder="Weather conditions, observations, results..."></textarea>
+                </div>
+                
+                <div class="field-modal-actions">
+                    <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeTaskModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="saveTask()">
+                        Save Activity
+                    </button>
+                </div>
+            </form>
             
             <!-- Completed Tasks Tab -->
             <div id="completed-tasks-tab" class="task-tab-content" style="display: none;">
@@ -1985,12 +2094,6 @@
                 <div class="history-timeline" id="field-history">
                     <!-- History will be loaded here -->
                 </div>
-            </div>
-            
-            <div class="field-modal-actions">
-                <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeTasksModal()">
-                    Close
-                </button>
             </div>
         </div>
     </div>
