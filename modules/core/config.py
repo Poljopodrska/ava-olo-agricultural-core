@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806220300'  # v4.17.4 - Display fields with activities in table format
-COMMIT_HASH = "display-field-activities"  # Show Field, Size, Crop, Variety, Last Activity in table
+DEPLOYMENT_TIMESTAMP = '20250806220400'  # v4.17.5 - Add Change Crop button to update crop/variety
+COMMIT_HASH = "add-crop-change"  # Button to change crop type and variety for each field
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.4"
+VERSION = "v4.17.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -702,6 +702,122 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             "farmer_id": farmer_id if 'farmer_id' in locals() else "not_set"
         }, status_code=500)
 
+@router.post("/api/fields/update-crop", response_class=JSONResponse)
+async def api_update_field_crop(request: Request, farmer: dict = Depends(require_auth)):
+    """API endpoint to update field crop information"""
+    try:
+        data = await request.json()
+        
+        # Validate farmer
+        if not farmer or 'farmer_id' not in farmer:
+            return JSONResponse(content={
+                "success": False,
+                "error": "Authentication required"
+            }, status_code=401)
+        
+        farmer_id = int(farmer['farmer_id']) if farmer['farmer_id'] else None
+        field_id = data.get('field_id')
+        
+        if not field_id:
+            return JSONResponse(content={
+                "success": False,
+                "error": "Field ID is required"
+            }, status_code=400)
+        
+        # First verify this field belongs to the farmer
+        verify_query = """
+        SELECT id FROM fields 
+        WHERE id = %s AND farmer_id = %s
+        """
+        verify_result = execute_simple_query(verify_query, (int(field_id), farmer_id))
+        
+        if not verify_result.get('success') or not verify_result.get('rows'):
+            return JSONResponse(content={
+                "success": False,
+                "error": "Field not found or access denied"
+            }, status_code=404)
+        
+        # Check if field_crops entry exists
+        check_query = """
+        SELECT id FROM field_crops 
+        WHERE field_id = %s
+        ORDER BY id DESC
+        LIMIT 1
+        """
+        check_result = execute_simple_query(check_query, (int(field_id),))
+        
+        crop_type = data.get('crop_type', '')
+        variety = data.get('variety', '')
+        planting_date = data.get('planting_date')
+        notes = data.get('notes', '')
+        
+        if check_result.get('success') and check_result.get('rows'):
+            # Update existing crop entry
+            update_query = """
+            UPDATE field_crops 
+            SET crop_type = %s, 
+                variety = %s,
+                planting_date = %s,
+                notes = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE field_id = %s
+            AND id = (
+                SELECT id FROM field_crops 
+                WHERE field_id = %s 
+                ORDER BY id DESC 
+                LIMIT 1
+            )
+            """
+            result = execute_simple_query(update_query, (
+                crop_type, variety, planting_date, notes, int(field_id), int(field_id)
+            ))
+        else:
+            # Insert new crop entry
+            insert_query = """
+            INSERT INTO field_crops (field_id, crop_type, variety, planting_date, notes)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+            """
+            result = execute_simple_query(insert_query, (
+                int(field_id), crop_type, variety, planting_date, notes
+            ))
+        
+        if result.get('success'):
+            # Also record this as an activity
+            if crop_type:
+                activity_type = f"Crop Change - {crop_type}"
+                if variety:
+                    activity_type += f" ({variety})"
+                
+                activity_query = """
+                INSERT INTO field_activities (
+                    field_id, activity_type, activity_date, notes, created_by
+                )
+                VALUES (%s, %s, CURRENT_DATE, %s, %s)
+                """
+                execute_simple_query(activity_query, (
+                    int(field_id), activity_type, f"Changed to {crop_type} {variety}".strip(), farmer_id
+                ))
+            
+            return JSONResponse(content={
+                "success": True,
+                "message": "Crop information updated successfully"
+            })
+        else:
+            return JSONResponse(content={
+                "success": False,
+                "error": "Failed to update crop information"
+            }, status_code=500)
+            
+    except Exception as e:
+        logger.error(f"Error updating field crop: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e)
+        }, status_code=500)
+
 @router.post("/api/tasks/add", response_class=JSONResponse)
 async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
     """API endpoint to add a new field activity report"""

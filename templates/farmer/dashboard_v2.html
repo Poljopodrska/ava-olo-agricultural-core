@@ -1441,9 +1441,12 @@
                                         <span style="color: #999;">No activities yet</span>
                                     {% endif %}
                                 </td>
-                                <td style="padding: 12px; text-align: center;">
-                                    <button class="btn-small" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;" onclick="event.stopPropagation(); openTaskModal({{ field.id }}, '{{ field.field_name }}')">
-                                        + Add Activity
+                                <td style="padding: 12px; text-align: center; white-space: nowrap;">
+                                    <button class="btn-small" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px;" onclick="event.stopPropagation(); openTaskModal({{ field.id }}, '{{ field.field_name }}')">
+                                        + Activity
+                                    </button>
+                                    <button class="btn-small" style="background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;" onclick="event.stopPropagation(); openCropModal({{ field.id }}, '{{ field.field_name }}', '{{ field.crop_type or '' }}', '{{ field.variety or '' }}')">
+                                        🌾 Crop
                                     </button>
                                 </td>
                             </tr>
@@ -1503,6 +1506,62 @@
         function closeTaskModal() {
             document.getElementById('task-modal').classList.remove('active');
             document.getElementById('task-form').reset();
+        }
+        
+        // Crop Modal Functions
+        function openCropModal(fieldId, fieldName, currentCrop, currentVariety) {
+            document.getElementById('crop-modal').classList.add('active');
+            document.getElementById('crop-field-id').value = fieldId;
+            document.getElementById('crop-field-name').textContent = fieldName;
+            
+            // Set current values if they exist
+            if (currentCrop && currentCrop !== 'None') {
+                document.getElementById('crop-type-select').value = currentCrop;
+            }
+            if (currentVariety && currentVariety !== 'None') {
+                document.getElementById('crop-variety-input').value = currentVariety;
+            }
+        }
+        
+        function closeCropModal() {
+            document.getElementById('crop-modal').classList.remove('active');
+            document.getElementById('crop-form').reset();
+        }
+        
+        async function saveCrop() {
+            const form = document.getElementById('crop-form');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            // Validate required fields
+            if (!data.crop_type) {
+                alert('Please select a crop type');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/farmer/api/fields/update-crop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Crop information updated successfully!');
+                    closeCropModal();
+                    // Reload the page to show updated data
+                    window.location.reload();
+                } else {
+                    alert('Error updating crop: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating crop:', error);
+                alert('Failed to update crop information');
+            }
         }
         
         async function saveTask() {
@@ -2125,6 +2184,68 @@
                     <!-- History will be loaded here -->
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Crop Change Modal -->
+    <div id="crop-modal" class="field-modal">
+        <div class="field-modal-content" style="max-width: 500px;">
+            <div class="field-modal-header">
+                <h2 class="field-modal-title">Change Crop Information</h2>
+                <p class="field-modal-subtitle">Update crop for <span id="crop-field-name"></span></p>
+            </div>
+            
+            <form id="crop-form">
+                <input type="hidden" id="crop-field-id" name="field_id">
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Crop Type</label>
+                    <select name="crop_type" id="crop-type-select" class="field-form-select" required>
+                        <option value="">Select crop...</option>
+                        <option value="Wheat">Wheat</option>
+                        <option value="Corn">Corn (Maize)</option>
+                        <option value="Barley">Barley</option>
+                        <option value="Soybeans">Soybeans</option>
+                        <option value="Sunflower">Sunflower</option>
+                        <option value="Rapeseed">Rapeseed (Canola)</option>
+                        <option value="Potatoes">Potatoes</option>
+                        <option value="Sugar Beet">Sugar Beet</option>
+                        <option value="Alfalfa">Alfalfa</option>
+                        <option value="Clover">Clover</option>
+                        <option value="Grass">Grass/Pasture</option>
+                        <option value="Vegetables">Vegetables</option>
+                        <option value="Fruits">Fruits</option>
+                        <option value="Vineyards">Vineyards</option>
+                        <option value="Orchards">Orchards</option>
+                        <option value="Fallow">Fallow/No Crop</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Variety (Optional)</label>
+                    <input type="text" name="variety" id="crop-variety-input" class="field-form-input" placeholder="e.g., Apache, Pioneer P9234, etc.">
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Planting Date (Optional)</label>
+                    <input type="date" name="planting_date" id="crop-planting-date" class="field-form-input">
+                </div>
+                
+                <div class="field-form-group">
+                    <label class="field-form-label">Notes</label>
+                    <textarea name="notes" class="field-form-input" rows="2" placeholder="Additional information..."></textarea>
+                </div>
+                
+                <div class="field-modal-actions">
+                    <button type="button" class="field-modal-btn field-modal-btn-secondary" onclick="closeCropModal()">
+                        Cancel
+                    </button>
+                    <button type="button" class="field-modal-btn field-modal-btn-primary" onclick="saveCrop()">
+                        Update Crop
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
