@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806224000'  # v4.18.2 - Fix chat history loading
-COMMIT_HASH = "fix-history"  # Fixed chat history endpoint to handle farmers without WhatsApp numbers
+DEPLOYMENT_TIMESTAMP = '20250806225000'  # v4.18.3 - Add chat diagnostic endpoint
+COMMIT_HASH = "chat-diagnostic"  # Added diagnostic endpoint to debug chat_messages table
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.18.2"
+VERSION = "v4.18.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

@@ -630,3 +630,78 @@ async def test_crop_update(request: Request, farmer: dict = Depends(require_auth
             "error": str(e),
             "traceback": traceback.format_exc()
         }, status_code=500)
+
+@router.get("/test-chat-messages")
+async def test_chat_messages_table(farmer: dict = Depends(require_auth)):
+    """Test chat_messages table structure and data"""
+    try:
+        results = {}
+        
+        # Check table structure
+        columns_query = """
+        SELECT column_name, data_type
+        FROM information_schema.columns
+        WHERE table_name = 'chat_messages'
+        ORDER BY ordinal_position
+        """
+        columns_result = execute_simple_query(columns_query, ())
+        
+        if columns_result.get('success') and columns_result.get('rows'):
+            results["columns"] = [f"{row[0]} ({row[1]})" for row in columns_result['rows']]
+        else:
+            results["columns"] = "Table not found or no columns"
+        
+        # Check for messages with different phone formats
+        farmer_id = farmer.get('farmer_id')
+        test_formats = [
+            f"+farmer_{farmer_id}",
+            f"farmer_{farmer_id}",
+            f"+{farmer_id}"
+        ]
+        
+        for format in test_formats:
+            count_query = "SELECT COUNT(*) FROM chat_messages WHERE wa_phone_number = %s"
+            count_result = execute_simple_query(count_query, (format,))
+            if count_result.get('success') and count_result.get('rows'):
+                count = count_result['rows'][0][0]
+                if count > 0:
+                    results[f"messages_with_{format}"] = count
+        
+        # Get all unique phone formats in the table
+        unique_query = "SELECT DISTINCT wa_phone_number FROM chat_messages LIMIT 10"
+        unique_result = execute_simple_query(unique_query, ())
+        if unique_result.get('success') and unique_result.get('rows'):
+            results["sample_phone_formats"] = [row[0] for row in unique_result['rows']]
+        
+        # Get latest message for debugging
+        latest_query = """
+        SELECT wa_phone_number, role, content, timestamp
+        FROM chat_messages
+        ORDER BY timestamp DESC
+        LIMIT 3
+        """
+        latest_result = execute_simple_query(latest_query, ())
+        if latest_result.get('success') and latest_result.get('rows'):
+            results["latest_messages"] = []
+            for row in latest_result['rows']:
+                results["latest_messages"].append({
+                    "phone": row[0],
+                    "role": row[1],
+                    "content": row[2][:50] if row[2] else None,
+                    "time": str(row[3]) if row[3] else None
+                })
+        
+        return JSONResponse(content={
+            "success": True,
+            "farmer_id": farmer_id,
+            "expected_format": f"+farmer_{farmer_id}",
+            "results": results
+        })
+        
+    except Exception as e:
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
