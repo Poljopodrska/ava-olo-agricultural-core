@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001000'  # v4.19.0 - Fix all column name mismatches
-COMMIT_HASH = "fix-column-names"  # Use correct database column names: id not farmer_id, manager_name not name
+DEPLOYMENT_TIMESTAMP = '20250807001100'  # v4.19.1 - Add Edi messages debug endpoint
+COMMIT_HASH = "debug-edi-messages"  # Check why Edi's messages aren't being saved
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.19.0"
+VERSION = "v4.19.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
