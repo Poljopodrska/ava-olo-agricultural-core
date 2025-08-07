@@ -23,9 +23,22 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         if not farmer:
             raise HTTPException(status_code=401, detail="Not authenticated")
         
-        # Always use farmer_id format for dashboard messages
-        # This keeps dashboard chat separate from WhatsApp messages
-        wa_phone_number = f"+farmer_{farmer['farmer_id']}"
+        # Get farmer's WhatsApp number (which is their username)
+        farmer_query = """
+        SELECT whatsapp_number 
+        FROM farmers 
+        WHERE farmer_id = %s
+        """
+        
+        farmer_result = execute_simple_query(farmer_query, (farmer['farmer_id'],))
+        
+        # Every farmer MUST have a WhatsApp number since it's their username
+        if farmer_result.get('success') and farmer_result.get('rows') and farmer_result['rows'][0][0]:
+            wa_phone_number = farmer_result['rows'][0][0]
+        else:
+            # This should never happen but log it if it does
+            logger.error(f"Farmer {farmer['farmer_id']} has no WhatsApp number!")
+            wa_phone_number = f"+farmer_{farmer['farmer_id']}"
         
         logger.info(f"Looking for messages with wa_phone_number: {wa_phone_number}")
         
