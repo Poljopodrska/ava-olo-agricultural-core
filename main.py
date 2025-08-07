@@ -66,6 +66,7 @@ from modules.api.debug_chat_routes import router as debug_chat_router
 # Fix routes
 from modules.api.fix_farmer_whatsapp import router as fix_whatsapp_router
 from modules.api.fix_whatsapp_auto import router as fix_auto_router
+from modules.api.create_edi_route import router as create_edi_router
 
 # Database initialization routes
 from modules.api.database_init_routes import router as db_init_router
@@ -306,9 +307,10 @@ app.include_router(diagnostic_router)
 app.include_router(debug_chat_router)
 app.include_router(fix_whatsapp_router)
 app.include_router(fix_auto_router)
+app.include_router(create_edi_router)
 app.include_router(db_init_router)
 app.include_router(db_fix_router)
-STARTUP_STATUS["total_routers_included"] = 26
+STARTUP_STATUS["total_routers_included"] = 27
 
 # Startup event
 @app.on_event("startup")
