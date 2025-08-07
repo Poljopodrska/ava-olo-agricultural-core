@@ -255,6 +255,87 @@ async def check_field_by_name(field_name: str, farmer: dict = Depends(require_au
             "error": str(e)
         }, status_code=500)
 
+@router.post("/test-crop-update")
+async def test_crop_update(request: Request, farmer: dict = Depends(require_auth)):
+    """Simple test endpoint to debug crop update issues"""
+    try:
+        # Get request data
+        data = await request.json()
+        field_id = data.get('field_id')
+        
+        results = {
+            "request_data": data,
+            "farmer_id": farmer.get('farmer_id'),
+            "field_id": field_id
+        }
+        
+        # Test 1: Check if field exists and belongs to farmer
+        field_check = execute_simple_query(
+            "SELECT id, field_name FROM fields WHERE id = %s AND farmer_id = %s",
+            (int(field_id), farmer['farmer_id'])
+        )
+        results["field_check"] = {
+            "success": field_check.get('success'),
+            "found": bool(field_check.get('rows')),
+            "error": field_check.get('error')
+        }
+        
+        # Test 2: Check field_crops table structure
+        columns_check = execute_simple_query(
+            """SELECT column_name, data_type 
+               FROM information_schema.columns 
+               WHERE table_name = 'field_crops'
+               ORDER BY ordinal_position""",
+            ()
+        )
+        if columns_check.get('success') and columns_check.get('rows'):
+            results["field_crops_columns"] = [
+                f"{row[0]} ({row[1]})" for row in columns_check['rows']
+            ]
+        
+        # Test 3: Try a simple INSERT with minimal data
+        test_insert = execute_simple_query(
+            """INSERT INTO field_crops (field_id, crop_type, variety) 
+               VALUES (%s, 'TEST_CROP', 'TEST_VARIETY')
+               RETURNING id""",
+            (int(field_id),)
+        )
+        
+        if test_insert.get('success') and test_insert.get('rows'):
+            test_id = test_insert['rows'][0][0]
+            results["test_insert"] = {"success": True, "id": test_id}
+            
+            # Clean up test insert
+            execute_simple_query("DELETE FROM field_crops WHERE id = %s", (test_id,))
+        else:
+            results["test_insert"] = {
+                "success": False,
+                "error": test_insert.get('error')
+            }
+        
+        # Test 4: Check what's currently in field_crops for this field
+        current_crops = execute_simple_query(
+            "SELECT * FROM field_crops WHERE field_id = %s ORDER BY id DESC LIMIT 1",
+            (int(field_id),)
+        )
+        if current_crops.get('success') and current_crops.get('rows'):
+            results["current_crop"] = str(current_crops['rows'][0])
+        else:
+            results["current_crop"] = "No existing crop entry"
+        
+        return JSONResponse(content={
+            "success": True,
+            "tests": results
+        })
+        
+    except Exception as e:
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
+
 @router.get("/recent-fields")
 async def get_recent_fields(farmer: dict = Depends(require_auth)):
     """Get the most recent fields for the current farmer"""
@@ -302,6 +383,87 @@ async def get_recent_fields(farmer: dict = Depends(require_auth)):
         return JSONResponse(content={
             "success": False,
             "error": str(e)
+        }, status_code=500)
+
+@router.post("/test-crop-update")
+async def test_crop_update(request: Request, farmer: dict = Depends(require_auth)):
+    """Simple test endpoint to debug crop update issues"""
+    try:
+        # Get request data
+        data = await request.json()
+        field_id = data.get('field_id')
+        
+        results = {
+            "request_data": data,
+            "farmer_id": farmer.get('farmer_id'),
+            "field_id": field_id
+        }
+        
+        # Test 1: Check if field exists and belongs to farmer
+        field_check = execute_simple_query(
+            "SELECT id, field_name FROM fields WHERE id = %s AND farmer_id = %s",
+            (int(field_id), farmer['farmer_id'])
+        )
+        results["field_check"] = {
+            "success": field_check.get('success'),
+            "found": bool(field_check.get('rows')),
+            "error": field_check.get('error')
+        }
+        
+        # Test 2: Check field_crops table structure
+        columns_check = execute_simple_query(
+            """SELECT column_name, data_type 
+               FROM information_schema.columns 
+               WHERE table_name = 'field_crops'
+               ORDER BY ordinal_position""",
+            ()
+        )
+        if columns_check.get('success') and columns_check.get('rows'):
+            results["field_crops_columns"] = [
+                f"{row[0]} ({row[1]})" for row in columns_check['rows']
+            ]
+        
+        # Test 3: Try a simple INSERT with minimal data
+        test_insert = execute_simple_query(
+            """INSERT INTO field_crops (field_id, crop_type, variety) 
+               VALUES (%s, 'TEST_CROP', 'TEST_VARIETY')
+               RETURNING id""",
+            (int(field_id),)
+        )
+        
+        if test_insert.get('success') and test_insert.get('rows'):
+            test_id = test_insert['rows'][0][0]
+            results["test_insert"] = {"success": True, "id": test_id}
+            
+            # Clean up test insert
+            execute_simple_query("DELETE FROM field_crops WHERE id = %s", (test_id,))
+        else:
+            results["test_insert"] = {
+                "success": False,
+                "error": test_insert.get('error')
+            }
+        
+        # Test 4: Check what's currently in field_crops for this field
+        current_crops = execute_simple_query(
+            "SELECT * FROM field_crops WHERE field_id = %s ORDER BY id DESC LIMIT 1",
+            (int(field_id),)
+        )
+        if current_crops.get('success') and current_crops.get('rows'):
+            results["current_crop"] = str(current_crops['rows'][0])
+        else:
+            results["current_crop"] = "No existing crop entry"
+        
+        return JSONResponse(content={
+            "success": True,
+            "tests": results
+        })
+        
+    except Exception as e:
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
         }, status_code=500)
 
 @router.get("/all-fields-debug")
@@ -352,6 +514,87 @@ async def get_all_fields_debug(farmer: dict = Depends(require_auth)):
             
     except Exception as e:
         logger.error(f"Error in debug endpoint: {e}")
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
+
+@router.post("/test-crop-update")
+async def test_crop_update(request: Request, farmer: dict = Depends(require_auth)):
+    """Simple test endpoint to debug crop update issues"""
+    try:
+        # Get request data
+        data = await request.json()
+        field_id = data.get('field_id')
+        
+        results = {
+            "request_data": data,
+            "farmer_id": farmer.get('farmer_id'),
+            "field_id": field_id
+        }
+        
+        # Test 1: Check if field exists and belongs to farmer
+        field_check = execute_simple_query(
+            "SELECT id, field_name FROM fields WHERE id = %s AND farmer_id = %s",
+            (int(field_id), farmer['farmer_id'])
+        )
+        results["field_check"] = {
+            "success": field_check.get('success'),
+            "found": bool(field_check.get('rows')),
+            "error": field_check.get('error')
+        }
+        
+        # Test 2: Check field_crops table structure
+        columns_check = execute_simple_query(
+            """SELECT column_name, data_type 
+               FROM information_schema.columns 
+               WHERE table_name = 'field_crops'
+               ORDER BY ordinal_position""",
+            ()
+        )
+        if columns_check.get('success') and columns_check.get('rows'):
+            results["field_crops_columns"] = [
+                f"{row[0]} ({row[1]})" for row in columns_check['rows']
+            ]
+        
+        # Test 3: Try a simple INSERT with minimal data
+        test_insert = execute_simple_query(
+            """INSERT INTO field_crops (field_id, crop_type, variety) 
+               VALUES (%s, 'TEST_CROP', 'TEST_VARIETY')
+               RETURNING id""",
+            (int(field_id),)
+        )
+        
+        if test_insert.get('success') and test_insert.get('rows'):
+            test_id = test_insert['rows'][0][0]
+            results["test_insert"] = {"success": True, "id": test_id}
+            
+            # Clean up test insert
+            execute_simple_query("DELETE FROM field_crops WHERE id = %s", (test_id,))
+        else:
+            results["test_insert"] = {
+                "success": False,
+                "error": test_insert.get('error')
+            }
+        
+        # Test 4: Check what's currently in field_crops for this field
+        current_crops = execute_simple_query(
+            "SELECT * FROM field_crops WHERE field_id = %s ORDER BY id DESC LIMIT 1",
+            (int(field_id),)
+        )
+        if current_crops.get('success') and current_crops.get('rows'):
+            results["current_crop"] = str(current_crops['rows'][0])
+        else:
+            results["current_crop"] = "No existing crop entry"
+        
+        return JSONResponse(content={
+            "success": True,
+            "tests": results
+        })
+        
+    except Exception as e:
         import traceback
         return JSONResponse(content={
             "success": False,
@@ -471,6 +714,87 @@ async def test_field_activities_table(farmer: dict = Depends(require_auth)):
             "traceback": traceback.format_exc()
         }, status_code=500)
 
+@router.post("/test-crop-update")
+async def test_crop_update(request: Request, farmer: dict = Depends(require_auth)):
+    """Simple test endpoint to debug crop update issues"""
+    try:
+        # Get request data
+        data = await request.json()
+        field_id = data.get('field_id')
+        
+        results = {
+            "request_data": data,
+            "farmer_id": farmer.get('farmer_id'),
+            "field_id": field_id
+        }
+        
+        # Test 1: Check if field exists and belongs to farmer
+        field_check = execute_simple_query(
+            "SELECT id, field_name FROM fields WHERE id = %s AND farmer_id = %s",
+            (int(field_id), farmer['farmer_id'])
+        )
+        results["field_check"] = {
+            "success": field_check.get('success'),
+            "found": bool(field_check.get('rows')),
+            "error": field_check.get('error')
+        }
+        
+        # Test 2: Check field_crops table structure
+        columns_check = execute_simple_query(
+            """SELECT column_name, data_type 
+               FROM information_schema.columns 
+               WHERE table_name = 'field_crops'
+               ORDER BY ordinal_position""",
+            ()
+        )
+        if columns_check.get('success') and columns_check.get('rows'):
+            results["field_crops_columns"] = [
+                f"{row[0]} ({row[1]})" for row in columns_check['rows']
+            ]
+        
+        # Test 3: Try a simple INSERT with minimal data
+        test_insert = execute_simple_query(
+            """INSERT INTO field_crops (field_id, crop_type, variety) 
+               VALUES (%s, 'TEST_CROP', 'TEST_VARIETY')
+               RETURNING id""",
+            (int(field_id),)
+        )
+        
+        if test_insert.get('success') and test_insert.get('rows'):
+            test_id = test_insert['rows'][0][0]
+            results["test_insert"] = {"success": True, "id": test_id}
+            
+            # Clean up test insert
+            execute_simple_query("DELETE FROM field_crops WHERE id = %s", (test_id,))
+        else:
+            results["test_insert"] = {
+                "success": False,
+                "error": test_insert.get('error')
+            }
+        
+        # Test 4: Check what's currently in field_crops for this field
+        current_crops = execute_simple_query(
+            "SELECT * FROM field_crops WHERE field_id = %s ORDER BY id DESC LIMIT 1",
+            (int(field_id),)
+        )
+        if current_crops.get('success') and current_crops.get('rows'):
+            results["current_crop"] = str(current_crops['rows'][0])
+        else:
+            results["current_crop"] = "No existing crop entry"
+        
+        return JSONResponse(content={
+            "success": True,
+            "tests": results
+        })
+        
+    except Exception as e:
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
+
 @router.get("/test-field-crops")
 async def test_field_crops_table(farmer: dict = Depends(require_auth)):
     """Test endpoint to check field_crops table structure"""
@@ -543,6 +867,87 @@ async def test_field_crops_table(farmer: dict = Depends(require_auth)):
         
     except Exception as e:
         logger.error(f"Error testing field_crops table: {e}")
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
+
+@router.post("/test-crop-update")
+async def test_crop_update(request: Request, farmer: dict = Depends(require_auth)):
+    """Simple test endpoint to debug crop update issues"""
+    try:
+        # Get request data
+        data = await request.json()
+        field_id = data.get('field_id')
+        
+        results = {
+            "request_data": data,
+            "farmer_id": farmer.get('farmer_id'),
+            "field_id": field_id
+        }
+        
+        # Test 1: Check if field exists and belongs to farmer
+        field_check = execute_simple_query(
+            "SELECT id, field_name FROM fields WHERE id = %s AND farmer_id = %s",
+            (int(field_id), farmer['farmer_id'])
+        )
+        results["field_check"] = {
+            "success": field_check.get('success'),
+            "found": bool(field_check.get('rows')),
+            "error": field_check.get('error')
+        }
+        
+        # Test 2: Check field_crops table structure
+        columns_check = execute_simple_query(
+            """SELECT column_name, data_type 
+               FROM information_schema.columns 
+               WHERE table_name = 'field_crops'
+               ORDER BY ordinal_position""",
+            ()
+        )
+        if columns_check.get('success') and columns_check.get('rows'):
+            results["field_crops_columns"] = [
+                f"{row[0]} ({row[1]})" for row in columns_check['rows']
+            ]
+        
+        # Test 3: Try a simple INSERT with minimal data
+        test_insert = execute_simple_query(
+            """INSERT INTO field_crops (field_id, crop_type, variety) 
+               VALUES (%s, 'TEST_CROP', 'TEST_VARIETY')
+               RETURNING id""",
+            (int(field_id),)
+        )
+        
+        if test_insert.get('success') and test_insert.get('rows'):
+            test_id = test_insert['rows'][0][0]
+            results["test_insert"] = {"success": True, "id": test_id}
+            
+            # Clean up test insert
+            execute_simple_query("DELETE FROM field_crops WHERE id = %s", (test_id,))
+        else:
+            results["test_insert"] = {
+                "success": False,
+                "error": test_insert.get('error')
+            }
+        
+        # Test 4: Check what's currently in field_crops for this field
+        current_crops = execute_simple_query(
+            "SELECT * FROM field_crops WHERE field_id = %s ORDER BY id DESC LIMIT 1",
+            (int(field_id),)
+        )
+        if current_crops.get('success') and current_crops.get('rows'):
+            results["current_crop"] = str(current_crops['rows'][0])
+        else:
+            results["current_crop"] = "No existing crop entry"
+        
+        return JSONResponse(content={
+            "success": True,
+            "tests": results
+        })
+        
+    except Exception as e:
         import traceback
         return JSONResponse(content={
             "success": False,
