@@ -179,7 +179,7 @@ def get_farmer_language(farmer_id: int) -> str:
 def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
     """Get all fields for a specific farmer with crop and last task info"""
     try:
-        # Get fields with crop information and last task
+        # Simplified query - just get fields first, avoid complex JOINs that might fail
         query = """
         SELECT 
             f.id, 
@@ -190,29 +190,8 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
             f.blok_id, 
             f.raba, 
             f.notes, 
-            f.country,
-            -- Get current crop info (most recent planting)
-            fc.crop_type,
-            fc.variety,
-            fc.planting_date,
-            -- Get last task info
-            lt.task_type,
-            lt.date_performed
+            f.country
         FROM fields f
-        LEFT JOIN LATERAL (
-            SELECT crop_type, variety, planting_date
-            FROM field_crops
-            WHERE field_id = f.id
-            ORDER BY planting_date DESC
-            LIMIT 1
-        ) fc ON true
-        LEFT JOIN LATERAL (
-            SELECT task_type, date_performed
-            FROM tasks
-            WHERE field_id = f.id
-            ORDER BY date_performed DESC
-            LIMIT 1
-        ) lt ON true
         WHERE f.farmer_id = %s
         ORDER BY f.field_name
         """
@@ -231,19 +210,27 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
                     'raba': row[6],
                     'notes': row[7],
                     'country': row[8],
-                    'crop_type': row[9],
-                    'variety': row[10],
-                    'planting_date': row[11].strftime('%Y-%m-%d') if row[11] else None
+                    'crop_type': None,  # Will be fetched separately if needed
+                    'variety': None,
+                    'planting_date': None,
+                    'last_task': None
                 }
                 
-                # Add last task if exists
-                if row[12]:  # task_type exists
-                    field_data['last_task'] = {
-                        'task_type': row[12],
-                        'date_performed': row[13].strftime('%Y-%m-%d') if row[13] else None
-                    }
-                else:
-                    field_data['last_task'] = None
+                # Optionally fetch crop info for this field
+                if row[0]:  # if field has an ID
+                    crop_query = """
+                    SELECT crop_type, variety, planting_date
+                    FROM field_crops
+                    WHERE field_id = %s
+                    ORDER BY planting_date DESC
+                    LIMIT 1
+                    """
+                    crop_result = execute_simple_query(crop_query, (row[0],))
+                    if crop_result and crop_result.get('success') and crop_result.get('rows'):
+                        crop_row = crop_result['rows'][0]
+                        field_data['crop_type'] = crop_row[0]
+                        field_data['variety'] = crop_row[1]
+                        field_data['planting_date'] = crop_row[2].strftime('%Y-%m-%d') if crop_row[2] else None
                 
                 fields.append(field_data)
         
