@@ -699,27 +699,59 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
 async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
     """API endpoint to add a new task/activity report for a field"""
     
+    debug_info = {
+        "step": "start", 
+        "farmer": str(farmer) if farmer else "None",
+        "farmer_id": None,
+        "data": None,
+        "table_exists": False,
+        "insert_params": None
+    }
+    
     try:
-        data = await request.json()
+        # Parse request data
+        try:
+            data = await request.json()
+            debug_info["data"] = data
+            debug_info["step"] = "parsed_json"
+        except Exception as json_error:
+            logger.error(f"JSON parsing error: {json_error}")
+            return JSONResponse(content={
+                "success": False,
+                "error": f"Invalid JSON data: {str(json_error)}",
+                "debug": debug_info
+            }, status_code=400)
         
         # Ensure farmer_id is properly extracted
         if not farmer or 'farmer_id' not in farmer:
+            debug_info["step"] = "auth_failed"
             return JSONResponse(content={
                 "success": False,
-                "error": "Authentication required"
+                "error": "Authentication required",
+                "debug": debug_info
             }, status_code=401)
         
         farmer_id = int(farmer['farmer_id']) if farmer['farmer_id'] else None
+        debug_info["farmer_id"] = farmer_id
+        debug_info["step"] = "got_farmer_id"
         logger.info(f"Adding task for farmer {farmer_id}: {data}")
         
         # Validate required fields
         if not data.get('field_id') or not data.get('task_type') or not data.get('date_performed'):
+            debug_info["step"] = "validation_failed"
+            debug_info["missing_fields"] = {
+                "field_id": bool(data.get('field_id')),
+                "task_type": bool(data.get('task_type')),
+                "date_performed": bool(data.get('date_performed'))
+            }
             return JSONResponse(content={
                 "success": False,
-                "error": "Field ID, task type, and date are required"
+                "error": "Field ID, task type, and date are required",
+                "debug": debug_info
             }, status_code=400)
         
         # Always try to create tasks table if it doesn't exist
+        debug_info["step"] = "creating_table"
         create_table_query = """
         CREATE TABLE IF NOT EXISTS tasks (
             id SERIAL PRIMARY KEY,
@@ -734,12 +766,21 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
         )
         """
         create_result = execute_simple_query(create_table_query, ())
+        debug_info["table_creation"] = {
+            "success": create_result.get('success'),
+            "error": create_result.get('error') if not create_result.get('success') else None
+        }
+        
         if create_result.get('success'):
             logger.info("Tasks table ready")
+            debug_info["table_exists"] = True
         else:
             logger.warning(f"Could not ensure tasks table exists: {create_result.get('error')}")
+            # Continue anyway - table might already exist
+            debug_info["table_exists"] = "uncertain"
         
         # Insert the task
+        debug_info["step"] = "preparing_insert"
         insert_query = """
         INSERT INTO tasks (field_id, task_type, date_performed, material_used, quantity, unit, notes)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -751,45 +792,62 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
         if data.get('quantity'):
             try:
                 quantity = float(data['quantity'])
-            except (ValueError, TypeError):
+            except (ValueError, TypeError) as qty_error:
+                logger.warning(f"Could not convert quantity '{data.get('quantity')}' to float: {qty_error}")
                 quantity = None
         
-        result = execute_simple_query(
-            insert_query,
-            (
-                int(data['field_id']),
-                data['task_type'],
-                data['date_performed'],
-                data.get('material_used', ''),
-                quantity,
-                data.get('unit', ''),
-                data.get('notes', '')
-            )
+        # Prepare insert parameters
+        insert_params = (
+            int(data['field_id']),
+            data['task_type'],
+            data['date_performed'],
+            data.get('material_used', ''),
+            quantity,
+            data.get('unit', ''),
+            data.get('notes', '')
         )
+        debug_info["insert_params"] = str(insert_params)
+        debug_info["step"] = "executing_insert"
+        
+        result = execute_simple_query(insert_query, insert_params)
+        debug_info["insert_result"] = {
+            "success": result.get('success'),
+            "has_rows": bool(result.get('rows')),
+            "error": result.get('error') if not result.get('success') else None
+        }
         
         if result.get('success') and result.get('rows'):
             task_id = result['rows'][0][0]
             logger.info(f"Task created with ID: {task_id}")
+            debug_info["task_id"] = task_id
+            debug_info["step"] = "completed"
             
             return JSONResponse(content={
                 "success": True,
                 "task_id": task_id,
-                "message": "Activity recorded successfully"
+                "message": "Activity recorded successfully",
+                "debug": debug_info
             })
         else:
+            debug_info["step"] = "insert_failed"
             logger.error(f"Failed to create task: {result.get('error')}")
             return JSONResponse(content={
                 "success": False,
-                "error": f"Failed to save activity: {result.get('error', 'Unknown error')}"
+                "error": f"Failed to save activity: {result.get('error', 'Unknown error')}",
+                "debug": debug_info
             }, status_code=500)
             
     except Exception as e:
+        debug_info["step"] = "exception"
+        debug_info["exception"] = str(e)
         logger.error(f"Error adding task: {e}")
         import traceback
-        logger.error(traceback.format_exc())
+        debug_info["traceback"] = traceback.format_exc()
+        logger.error(debug_info["traceback"])
         return JSONResponse(content={
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "debug": debug_info
         }, status_code=500)
 
 @router.get("/api/stats", response_class=JSONResponse)

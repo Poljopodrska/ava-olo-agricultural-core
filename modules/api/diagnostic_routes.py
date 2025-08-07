@@ -358,3 +358,102 @@ async def get_all_fields_debug(farmer: dict = Depends(require_auth)):
             "error": str(e),
             "traceback": traceback.format_exc()
         }, status_code=500)
+
+@router.get("/test-tasks-table")
+async def test_tasks_table(farmer: dict = Depends(require_auth)):
+    """Test endpoint to check tasks table structure and accessibility"""
+    try:
+        results = {}
+        
+        # Check if tasks table exists
+        check_table_query = """
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'tasks'
+        )
+        """
+        table_result = execute_simple_query(check_table_query, ())
+        results["table_exists"] = table_result.get('rows')[0][0] if table_result.get('success') and table_result.get('rows') else False
+        
+        # Get table structure if it exists
+        if results["table_exists"]:
+            columns_query = """
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_name = 'tasks'
+            ORDER BY ordinal_position
+            """
+            columns_result = execute_simple_query(columns_query, ())
+            
+            if columns_result.get('success') and columns_result.get('rows'):
+                results["columns"] = []
+                for row in columns_result['rows']:
+                    results["columns"].append({
+                        "name": row[0],
+                        "type": row[1],
+                        "nullable": row[2],
+                        "default": row[3]
+                    })
+            
+            # Count tasks for this farmer
+            count_query = """
+            SELECT COUNT(*) 
+            FROM tasks t
+            JOIN fields f ON t.field_id = f.id
+            WHERE f.farmer_id = %s
+            """
+            count_result = execute_simple_query(count_query, (farmer['farmer_id'],))
+            results["task_count"] = count_result['rows'][0][0] if count_result.get('success') and count_result.get('rows') else 0
+            
+            # Get recent tasks
+            recent_query = """
+            SELECT t.id, t.task_type, t.date_performed, f.field_name
+            FROM tasks t
+            JOIN fields f ON t.field_id = f.id
+            WHERE f.farmer_id = %s
+            ORDER BY t.created_at DESC
+            LIMIT 5
+            """
+            recent_result = execute_simple_query(recent_query, (farmer['farmer_id'],))
+            
+            if recent_result.get('success') and recent_result.get('rows'):
+                results["recent_tasks"] = []
+                for row in recent_result['rows']:
+                    results["recent_tasks"].append({
+                        "id": row[0],
+                        "type": row[1],
+                        "date": str(row[2]) if row[2] else None,
+                        "field": row[3]
+                    })
+            else:
+                results["recent_tasks"] = []
+        
+        # Test INSERT capability
+        test_insert_query = """
+        EXPLAIN (ANALYZE false, BUFFERS false, FORMAT TEXT)
+        INSERT INTO tasks (field_id, task_type, date_performed, material_used, quantity, unit, notes)
+        VALUES (1, 'test', '2025-01-01', '', NULL, '', '')
+        """
+        try:
+            insert_test = execute_simple_query(test_insert_query, ())
+            results["can_insert"] = insert_test.get('success', False)
+            if not insert_test.get('success'):
+                results["insert_error"] = insert_test.get('error')
+        except Exception as e:
+            results["can_insert"] = False
+            results["insert_error"] = str(e)
+        
+        return JSONResponse(content={
+            "success": True,
+            "results": results,
+            "farmer_id": farmer['farmer_id']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error testing tasks table: {e}")
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
