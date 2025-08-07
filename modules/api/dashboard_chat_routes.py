@@ -115,34 +115,33 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
 async def get_farmer_chat_context(farmer_id: int) -> Dict:
     """Get comprehensive farmer context for chat"""
     try:
-        from modules.core.database_manager import get_db_manager
+        from modules.core.simple_db import execute_simple_query
         
-        db_manager = get_db_manager()
-        
-        # Get farmer details
+        # Get farmer details using simple_db for reliability
         farmer_query = """
         SELECT 
             farmer_id,
             name,
             email,
-            whatsapp_number
+            whatsapp_number,
+            username
         FROM farmers 
         WHERE farmer_id = %s
         """
         
-        farmer_result = await db_manager.execute_query(farmer_query, (farmer_id,))
+        farmer_result = execute_simple_query(farmer_query, (farmer_id,))
         
         farmer_data = {}
-        if farmer_result and len(farmer_result) > 0:
-            row = farmer_result[0]
+        if farmer_result.get('success') and farmer_result.get('rows'):
+            row = farmer_result['rows'][0]
             farmer_data = {
                 "farmer_id": row[0],
                 "name": row[1],
                 "email": row[2],
-                "whatsapp_number": row[3]
+                "whatsapp_number": row[3] if row[3] else row[4]  # Use username if no WhatsApp
             }
         
-        # Get farmer's fields
+        # Get farmer's fields using simple_db
         fields_query = """
         SELECT 
             id,
@@ -153,11 +152,11 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         ORDER BY field_name
         """
         
-        fields_result = await db_manager.execute_query(fields_query, (farmer_id,))
+        fields_result = execute_simple_query(fields_query, (farmer_id,))
         
         fields = []
-        if fields_result:
-            for row in fields_result:
+        if fields_result.get('success') and fields_result.get('rows'):
+            for row in fields_result['rows']:
                 fields.append({
                     "id": row[0],
                     "name": row[1] or f"Field {row[0]}",
@@ -175,9 +174,9 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         
         chat_history = []
         if farmer_data.get("whatsapp_number"):
-            chat_result = await db_manager.execute_query(chat_query, (farmer_data["whatsapp_number"],))
-            if chat_result:
-                for row in chat_result:
+            chat_result = execute_simple_query(chat_query, (farmer_data["whatsapp_number"],))
+            if chat_result.get('success') and chat_result.get('rows'):
+                for row in chat_result['rows']:
                     chat_history.append({
                         "content": row[0],
                         "role": row[1]
@@ -186,12 +185,13 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         return {
             "farmer_name": farmer_data.get("name", "Farmer"),
             "farmer_id": farmer_id,
+            "whatsapp_number": farmer_data.get("whatsapp_number"),
             "fields": fields,
             "recent_messages": chat_history,
             "summary": {
                 "total_fields": len(fields),
                 "total_hectares": sum(f['hectares'] for f in fields),
-                "main_crops": list(set(f['crop'] for f in fields if f['crop'] != "Not planted"))
+                "main_crops": []  # Will be populated from field_crops table if needed
             }
         }
         

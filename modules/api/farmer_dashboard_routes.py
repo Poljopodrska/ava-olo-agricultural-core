@@ -442,6 +442,36 @@ async def farmer_dashboard(request: Request, farmer: dict = Depends(require_auth
     try:
         farmer_id = farmer['farmer_id']
         
+        # Ensure farmer has WhatsApp number (auto-fix if missing)
+        if not farmer.get('whatsapp_number'):
+            logger.warning(f"Farmer {farmer_id} missing WhatsApp, auto-fixing...")
+            # Generate WhatsApp from username or ID
+            username = farmer.get('username')
+            if username and username.startswith('+'):
+                new_whatsapp = username
+            else:
+                new_whatsapp = f"+38640{str(farmer_id).zfill(6)}"
+            
+            # Update farmer record
+            update_query = """
+            UPDATE farmers
+            SET whatsapp_number = %s
+            WHERE farmer_id = %s AND whatsapp_number IS NULL
+            """
+            execute_simple_query(update_query, (new_whatsapp, farmer_id))
+            
+            # Also fix any old messages
+            old_format = f"+farmer_{farmer_id}"
+            msg_update_query = """
+            UPDATE chat_messages
+            SET wa_phone_number = %s
+            WHERE wa_phone_number = %s
+            """
+            execute_simple_query(msg_update_query, (new_whatsapp, old_format))
+            
+            # Update farmer dict
+            farmer['whatsapp_number'] = new_whatsapp
+        
         # Get farmer's data
         fields = get_farmer_fields(farmer_id)
         weather = await get_farmer_weather(farmer_id)  # Now async with real weather data
