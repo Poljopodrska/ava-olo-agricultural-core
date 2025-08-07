@@ -18,7 +18,7 @@ async def full_database_check():
     import urllib.parse
     password = "j2D8J4LH:~eFrUz>$:kkNT(P$Rq_"
     password_encoded = urllib.parse.quote_plus(password)
-    DB_URL = f"postgresql://postgres:{password_encoded}@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/postgres"
+    DB_URL = f"postgresql://postgres:{password_encoded}@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
     
     try:
         conn = psycopg2.connect(DB_URL)

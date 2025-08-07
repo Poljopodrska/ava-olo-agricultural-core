@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807000100'  # v4.18.7 - Fix database connection for inspection
-COMMIT_HASH = "fix-db-inspection"  # Fixed URL encoding for database password
+DEPLOYMENT_TIMESTAMP = '20250807000200'  # v4.18.8 - Fix database name for inspection
+COMMIT_HASH = "fix-db-name"  # Use farmer_crm database not postgres
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.18.7"
+VERSION = "v4.18.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
