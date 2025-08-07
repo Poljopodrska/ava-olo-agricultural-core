@@ -531,4 +531,26 @@ async def require_auth(request: Request):
             detail="Authentication required",
             headers={"WWW-Authenticate": "Basic"},
         )
+    
+    # Get full farmer data including WhatsApp from database
+    from ..core.simple_db import execute_simple_query
+    farmer_id = farmer.get('farmer_id')
+    
+    query = """
+    SELECT farmer_id, name, whatsapp_number, username, email
+    FROM farmers
+    WHERE farmer_id = %s
+    """
+    result = execute_simple_query(query, (farmer_id,))
+    
+    if result.get('success') and result.get('rows'):
+        row = result['rows'][0]
+        return {
+            "farmer_id": row[0],
+            "name": row[1],
+            "whatsapp_number": row[2],
+            "username": row[3],
+            "email": row[4]
+        }
+    
     return farmer
