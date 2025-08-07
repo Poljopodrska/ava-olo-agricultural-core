@@ -35,10 +35,34 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         # Every farmer MUST have a WhatsApp number since it's their username
         if farmer_result.get('success') and farmer_result.get('rows') and farmer_result['rows'][0][0]:
             wa_phone_number = farmer_result['rows'][0][0]
+            logger.info(f"Found WhatsApp for farmer {farmer['farmer_id']}: {wa_phone_number}")
         else:
-            # This should never happen but log it if it does
-            logger.error(f"Farmer {farmer['farmer_id']} has no WhatsApp number!")
-            wa_phone_number = f"+farmer_{farmer['farmer_id']}"
+            # Auto-fix: Set WhatsApp number if missing
+            logger.warning(f"Farmer {farmer['farmer_id']} has no WhatsApp number, auto-fixing...")
+            
+            # Get username to use as WhatsApp if it looks like a phone
+            username_query = "SELECT username FROM farmers WHERE farmer_id = %s"
+            username_result = execute_simple_query(username_query, (farmer['farmer_id'],))
+            
+            if username_result.get('success') and username_result.get('rows'):
+                username = username_result['rows'][0][0]
+                if username and username.startswith('+'):
+                    wa_phone_number = username
+                else:
+                    wa_phone_number = f"+38640{str(farmer['farmer_id']).zfill(6)}"
+            else:
+                wa_phone_number = f"+38640{str(farmer['farmer_id']).zfill(6)}"
+            
+            # Update farmer record with the WhatsApp number
+            update_query = "UPDATE farmers SET whatsapp_number = %s WHERE farmer_id = %s"
+            execute_simple_query(update_query, (wa_phone_number, farmer['farmer_id']))
+            
+            # Also update any old messages
+            old_format = f"+farmer_{farmer['farmer_id']}"
+            msg_update_query = "UPDATE chat_messages SET wa_phone_number = %s WHERE wa_phone_number = %s"
+            execute_simple_query(msg_update_query, (wa_phone_number, old_format))
+            
+            logger.info(f"Auto-fixed WhatsApp for farmer {farmer['farmer_id']}: {wa_phone_number}")
         
         logger.info(f"Looking for messages with wa_phone_number: {wa_phone_number}")
         

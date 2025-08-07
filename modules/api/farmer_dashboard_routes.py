@@ -1268,10 +1268,10 @@ async def check_farmer_location(farmer: dict = Depends(require_auth)):
             weather_longitude,
             whatsapp_number
         FROM farmers 
-        WHERE id = %s
+        WHERE farmer_id = %s
         """
         
-        result = execute_simple_query(query, (farmer['id'],))
+        result = execute_simple_query(query, (farmer['farmer_id'],))
         
         if result and result.get('success') and 'rows' in result and result['rows']:
             row = result['rows'][0]
