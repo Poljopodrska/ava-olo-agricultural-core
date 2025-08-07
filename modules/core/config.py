@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001300'  # v4.19.3 - Add test endpoint to debug message saving
-COMMIT_HASH = "test-message-save"  # Test different ways to save messages for Edi
+DEPLOYMENT_TIMESTAMP = '20250807001400'  # v4.19.4 - FIX: Include dashboard_chat_routes in main.py
+COMMIT_HASH = "fix-missing-router"  # CRITICAL FIX: dashboard_chat_routes was never included!
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.19.3"
+VERSION = "v4.19.4"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

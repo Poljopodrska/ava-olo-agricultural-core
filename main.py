@@ -52,6 +52,7 @@ from modules.cava.routes import router as cava_router
 # Chat routers
 from modules.api.chat_routes import router as chat_router
 from modules.api.chat_history_routes import router as chat_history_router
+from modules.api.dashboard_chat_routes import router as dashboard_chat_router
 
 # WhatsApp integration
 from modules.whatsapp.webhook_handler import router as whatsapp_router
@@ -306,6 +307,7 @@ app.include_router(weather_location_router)
 app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
+app.include_router(dashboard_chat_router)
 app.include_router(whatsapp_router)
 app.include_router(migration_router)
 app.include_router(diagnostic_router)
@@ -320,7 +322,7 @@ app.include_router(db_init_router)
 app.include_router(db_fix_router)
 app.include_router(check_edi_router)
 app.include_router(test_save_router)
-STARTUP_STATUS["total_routers_included"] = 32
+STARTUP_STATUS["total_routers_included"] = 33
 
 # Startup event
 @app.on_event("startup")
