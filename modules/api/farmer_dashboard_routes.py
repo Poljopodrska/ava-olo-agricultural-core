@@ -772,6 +772,24 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
                 "debug": debug_info
             }, status_code=404)
         
+        # First ensure field_crops table exists
+        debug_info["step"] = "ensuring_table_exists"
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS field_crops (
+            id SERIAL PRIMARY KEY,
+            field_id INTEGER REFERENCES fields(id) ON DELETE CASCADE,
+            crop_type VARCHAR(100),
+            variety VARCHAR(100),
+            planting_date DATE,
+            status VARCHAR(50) DEFAULT 'active'
+        )
+        """
+        table_result = execute_simple_query(create_table_query, ())
+        debug_info["table_creation"] = {
+            "success": table_result.get('success'),
+            "error": table_result.get('error') if not table_result.get('success') else None
+        }
+        
         # Check if field_crops entry exists
         debug_info["step"] = "checking_existing_crop"
         check_query = """
@@ -792,30 +810,37 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
         planting_date = data.get('planting_date')
         notes = data.get('notes', '')  # Keep for activity record but not for field_crops
         
+        # Handle empty planting_date - convert empty string to None for SQL
+        if planting_date == '' or planting_date == 'null':
+            planting_date = None
+        
+        # Ensure variety is not None (use empty string instead)
+        if variety is None:
+            variety = ''
+        
         debug_info["crop_data"] = {
             "crop_type": crop_type,
             "variety": variety,
             "planting_date": planting_date,
+            "planting_date_type": type(planting_date).__name__,
             "has_notes": bool(notes)
         }
         
         if check_result.get('success') and check_result.get('rows'):
             # Update existing crop entry (field_crops only has: field_id, crop_type, variety, planting_date)
             debug_info["step"] = "updating_existing_crop"
+            crop_id = check_result['rows'][0][0]  # Get the ID from the check query
+            debug_info["crop_id"] = crop_id
+            
+            # Simplified UPDATE query using the ID directly
             update_query = """
             UPDATE field_crops 
             SET crop_type = %s, 
                 variety = %s,
                 planting_date = %s
-            WHERE field_id = %s
-            AND id = (
-                SELECT id FROM field_crops 
-                WHERE field_id = %s 
-                ORDER BY id DESC 
-                LIMIT 1
-            )
+            WHERE id = %s
             """
-            update_params = (crop_type, variety, planting_date, int(field_id), int(field_id))
+            update_params = (crop_type, variety, planting_date, crop_id)
             debug_info["update_params"] = str(update_params)
             result = execute_simple_query(update_query, update_params)
             debug_info["update_result"] = {
