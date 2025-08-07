@@ -54,7 +54,7 @@ async def check_edi_fields():
             # 2. Get all fields for Edi
             cursor.execute("""
                 SELECT 
-                    field_id,
+                    id,
                     field_name,
                     area_ha,
                     location,
@@ -62,7 +62,7 @@ async def check_edi_fields():
                     created_at
                 FROM fields 
                 WHERE farmer_id = 49
-                ORDER BY field_id
+                ORDER BY id
             """)
             fields = cursor.fetchall()
             
