@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806220200'  # v4.17.3 - Fix: Use field_activities table instead of tasks
-COMMIT_HASH = "field-activities-table"  # Tasks table has different structure, created field_activities for field reporting
+DEPLOYMENT_TIMESTAMP = '20250806220300'  # v4.17.4 - Display fields with activities in table format
+COMMIT_HASH = "display-field-activities"  # Show Field, Size, Crop, Variety, Last Activity in table
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.3"
+VERSION = "v4.17.4"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

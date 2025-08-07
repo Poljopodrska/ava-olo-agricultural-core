@@ -216,7 +216,7 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
                     'last_task': None
                 }
                 
-                # Optionally fetch crop info for this field
+                # Fetch crop info for this field
                 if row[0]:  # if field has an ID
                     crop_query = """
                     SELECT crop_type, variety, planting_date
@@ -232,20 +232,27 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
                         field_data['variety'] = crop_row[1]
                         field_data['planting_date'] = crop_row[2].strftime('%Y-%m-%d') if crop_row[2] else None
                     
-                    # Also fetch last task for this field
-                    task_query = """
-                    SELECT task_type, date_performed
-                    FROM tasks
+                    # Fetch last activity for this field from field_activities table
+                    activity_query = """
+                    SELECT activity_type, activity_date, product_name, dose_amount, dose_unit
+                    FROM field_activities
                     WHERE field_id = %s
-                    ORDER BY date_performed DESC
+                    ORDER BY activity_date DESC, created_at DESC
                     LIMIT 1
                     """
-                    task_result = execute_simple_query(task_query, (row[0],))
-                    if task_result and task_result.get('success') and task_result.get('rows'):
-                        task_row = task_result['rows'][0]
+                    activity_result = execute_simple_query(activity_query, (row[0],))
+                    if activity_result and activity_result.get('success') and activity_result.get('rows'):
+                        activity_row = activity_result['rows'][0]
+                        # Format the task description
+                        task_desc = activity_row[0]  # activity_type
+                        if activity_row[2]:  # if product_name exists
+                            task_desc += f" - {activity_row[2]}"
+                            if activity_row[3] and activity_row[4]:  # if dose exists
+                                task_desc += f" ({activity_row[3]} {activity_row[4]})"
+                        
                         field_data['last_task'] = {
-                            'task_type': task_row[0],
-                            'date_performed': task_row[1].strftime('%Y-%m-%d') if task_row[1] else None
+                            'task_type': task_desc,
+                            'date_performed': activity_row[1].strftime('%Y-%m-%d') if activity_row[1] else None
                         }
                 
                 fields.append(field_data)

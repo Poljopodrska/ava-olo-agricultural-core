@@ -376,8 +376,23 @@
         }
         
         /* Farm Panel Styles - Simplified */
-        .fields-list {
-            padding: 20px;
+        .fields-table {
+            margin: 20px;
+            background: white;
+        }
+        
+        .fields-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .fields-table th {
+            color: #333;
+        }
+        
+        .btn-small:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .field-item {
@@ -1399,39 +1414,51 @@
                 </div>
             </div>
             <div class="panel-content">
-                <div class="fields-list" id="field-list">
-                    {% if fields %}
-                        {% for field in fields %}
-                        <div class="field-item" onclick="openTaskModal({{ field.id }}, '{{ field.field_name }}')" title="Click to add task">
-                            <div class="field-name">{{ field.field_name }}</div>
-                            <div class="field-info">
-                                <div class="field-info-item">
-                                    📏 {{ field.area_ha }} ha
-                                </div>
-                                {% if field.crop_type %}
-                                <div class="field-crop">🌾 {{ field.crop_type }}</div>
-                                {% endif %}
-                                {% if field.last_task %}
-                                <div class="field-info-item" style="color: #666; font-size: 0.9em; margin-top: 8px;">
-                                    📝 Last: {{ field.last_task.task_type }} ({{ field.last_task.date_performed }})
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div style="position: absolute; top: 15px; right: 15px; color: #3498db; font-size: 20px;">
-                                ➕
-                            </div>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state">
-                            <div class="empty-state-icon">🌾</div>
-                            <div class="empty-state-text">{{ t.dashboard_no_fields if t else 'No fields added yet' }}</div>
-                            <button class="empty-state-btn" onclick="openAddFieldModal()">
-                                Add Your First Field
-                            </button>
-                        </div>
-                    {% endif %}
-                </div>
+                {% if fields %}
+                    <table class="fields-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Field</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Size (ha)</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Crop</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Variety</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Last Activity</th>
+                                <th style="padding: 12px; text-align: center; font-weight: 600;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for field in fields %}
+                            <tr style="border-bottom: 1px solid #eee; cursor: pointer;" onclick="openTaskModal({{ field.id }}, '{{ field.field_name }}')">
+                                <td style="padding: 12px; font-weight: 500;">{{ field.field_name }}</td>
+                                <td style="padding: 12px;">{{ field.area_ha }}</td>
+                                <td style="padding: 12px;">{{ field.crop_type or '-' }}</td>
+                                <td style="padding: 12px;">{{ field.variety or '-' }}</td>
+                                <td style="padding: 12px; color: #666; font-size: 0.95em;">
+                                    {% if field.last_task %}
+                                        {{ field.last_task.task_type }}<br>
+                                        <small style="color: #999;">{{ field.last_task.date_performed }}</small>
+                                    {% else %}
+                                        <span style="color: #999;">No activities yet</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 12px; text-align: center;">
+                                    <button class="btn-small" style="background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;" onclick="event.stopPropagation(); openTaskModal({{ field.id }}, '{{ field.field_name }}')">
+                                        + Add Activity
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🌾</div>
+                        <div class="empty-state-text">{{ t.dashboard_no_fields if t else 'No fields added yet' }}</div>
+                        <button class="empty-state-btn" onclick="openAddFieldModal()">
+                            Add Your First Field
+                        </button>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
