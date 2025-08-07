@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806222000'  # v4.17.12 - Fix field_crops column names
-COMMIT_HASH = "fix-crop-columns"  # Fixed column names: crop_name not crop_type, start_date not planting_date
+DEPLOYMENT_TIMESTAMP = '20250806223000'  # v4.18.0 - WhatsApp-style chat with persistent history
+COMMIT_HASH = "chat-history"  # Added chat history loading, WhatsApp styling, and message persistence
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.12"
+VERSION = "v4.18.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

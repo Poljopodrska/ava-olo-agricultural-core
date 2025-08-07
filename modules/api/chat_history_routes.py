@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["chat-history"])
 
 @router.get("/history")
-async def get_farmer_chat_history(request: Request, limit: int = 6):
+async def get_farmer_chat_history(request: Request, limit: int = 100):
     """Get last N chat messages for authenticated farmer"""
     try:
         # Get farmer info
@@ -47,15 +47,19 @@ async def get_farmer_chat_history(request: Request, limit: int = 6):
         wa_phone_number = farmer_result[0][0]
         
         # Get chat messages filtered by farmer's WhatsApp number
+        # Using subquery to get last N messages in correct order (oldest to newest)
         query = """
-        SELECT 
-            role,
-            content,
-            timestamp
-        FROM chat_messages
-        WHERE wa_phone_number = %s
-        ORDER BY timestamp DESC
-        LIMIT %s
+        SELECT role, content, timestamp FROM (
+            SELECT 
+                role,
+                content,
+                timestamp
+            FROM chat_messages
+            WHERE wa_phone_number = %s
+            ORDER BY timestamp DESC
+            LIMIT %s
+        ) AS recent_messages
+        ORDER BY timestamp ASC
         """
         
         result = await db_manager.execute_query(query, (wa_phone_number, limit))

@@ -43,6 +43,26 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
         # Get farmer's detailed context
         farmer_context = await get_farmer_chat_context(farmer['farmer_id'])
         
+        # Get farmer's WhatsApp number for storing messages
+        wa_phone = farmer_context.get("whatsapp_number")
+        if not wa_phone:
+            # Use a default format if no WhatsApp number
+            wa_phone = f"+farmer_{farmer['farmer_id']}"
+        
+        # Store user message in database
+        from modules.core.database_manager import get_db_manager
+        db_manager = get_db_manager()
+        
+        try:
+            # Store user message
+            store_user_msg = """
+            INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
+            VALUES (%s, %s, %s, NOW())
+            """
+            await db_manager.execute_query(store_user_msg, (wa_phone, 'user', message))
+        except Exception as e:
+            logger.warning(f"Could not store user message: {e}")
+        
         # Use CAVA engine for intelligent responses
         cava_engine = get_cava_engine()
         
@@ -60,10 +80,22 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             farmer_context=farmer_context
         )
         
+        response_text = result.get("response", "I'm here to help with your farming questions!")
+        
+        # Store assistant response in database
+        try:
+            store_assistant_msg = """
+            INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
+            VALUES (%s, %s, %s, NOW())
+            """
+            await db_manager.execute_query(store_assistant_msg, (wa_phone, 'assistant', response_text))
+        except Exception as e:
+            logger.warning(f"Could not store assistant message: {e}")
+        
         return {
             "success": True,
             "connected": True,
-            "response": result.get("response", "I'm here to help with your farming questions!"),
+            "response": response_text,
             "model": result.get("model", "gpt-3.5-turbo"),
             "tokens_used": result.get("tokens_used", 0),
             "farmer_context_used": True,
