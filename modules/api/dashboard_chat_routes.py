@@ -12,7 +12,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/chat", tags=["dashboard-chat"])
+router = APIRouter(prefix="/api/dashboard/chat", tags=["dashboard-chat"])
 
 class DashboardChatRequest(BaseModel):
     content: str

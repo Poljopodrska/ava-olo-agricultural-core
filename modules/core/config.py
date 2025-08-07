@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001400'  # v4.19.4 - FIX: Include dashboard_chat_routes in main.py
-COMMIT_HASH = "fix-missing-router"  # CRITICAL FIX: dashboard_chat_routes was never included!
+DEPLOYMENT_TIMESTAMP = '20250807001500'  # v4.19.5 - Fix endpoint conflict between chat_routes and dashboard_chat_routes
+COMMIT_HASH = "fix-endpoint-conflict"  # Change dashboard chat to /api/dashboard/chat to avoid conflict
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.19.4"
+VERSION = "v4.19.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
