@@ -77,6 +77,7 @@ from modules.api.database_init_routes import router as db_init_router
 from modules.api.database_fix_routes import router as db_fix_router
 from modules.api.check_edi_messages import router as check_edi_router
 from modules.api.test_message_save import router as test_save_router
+from modules.api.check_edi_fields import router as check_fields_router
 
 # Global authentication middleware
 from modules.core.global_auth import GlobalAuthMiddleware
@@ -322,7 +323,8 @@ app.include_router(db_init_router)
 app.include_router(db_fix_router)
 app.include_router(check_edi_router)
 app.include_router(test_save_router)
-STARTUP_STATUS["total_routers_included"] = 33
+app.include_router(check_fields_router)
+STARTUP_STATUS["total_routers_included"] = 34
 
 # Startup event
 @app.on_event("startup")

@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001500'  # v4.19.5 - Fix endpoint conflict between chat_routes and dashboard_chat_routes
-COMMIT_HASH = "fix-endpoint-conflict"  # Change dashboard chat to /api/dashboard/chat to avoid conflict
+DEPLOYMENT_TIMESTAMP = '20250807001600'  # v4.19.6 - Add endpoint to check Edi's fields
+COMMIT_HASH = "check-edi-fields"  # Check what fields Edi has in the database
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.19.5"
+VERSION = "v4.19.6"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
