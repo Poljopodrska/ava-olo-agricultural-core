@@ -31,10 +31,25 @@ async def execute_sql(request: Request):
         
         if result.get('success'):
             rows = result.get('rows', [])
+            # Convert datetime objects to strings
+            import datetime
+            def serialize_row(row):
+                if row is None:
+                    return None
+                serialized = []
+                for item in row:
+                    if isinstance(item, (datetime.datetime, datetime.date)):
+                        serialized.append(item.isoformat())
+                    else:
+                        serialized.append(item)
+                return serialized
+            
+            serialized_rows = [serialize_row(row) for row in rows] if rows else []
+            
             return JSONResponse(content={
                 "success": True,
                 "rowcount": result.get('rowcount', len(rows)),
-                "rows": rows,
+                "rows": serialized_rows,
                 "query": query
             })
         else:
