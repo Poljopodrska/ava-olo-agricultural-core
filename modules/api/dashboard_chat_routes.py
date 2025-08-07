@@ -43,11 +43,9 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
         # Get farmer's detailed context
         farmer_context = await get_farmer_chat_context(farmer['farmer_id'])
         
-        # Get farmer's WhatsApp number for storing messages
-        wa_phone = farmer_context.get("whatsapp_number")
-        if not wa_phone:
-            # Use a default format if no WhatsApp number
-            wa_phone = f"+farmer_{farmer['farmer_id']}"
+        # Always use farmer_id format for dashboard messages to ensure consistency
+        # This keeps dashboard chat separate from WhatsApp messages
+        wa_phone = f"+farmer_{farmer['farmer_id']}"
         
         # Store user message in database using simple_db for reliability
         from modules.core.simple_db import execute_simple_query

@@ -23,21 +23,9 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         if not farmer:
             raise HTTPException(status_code=401, detail="Not authenticated")
         
-        # Get farmer's WhatsApp number for filtering using simple_db
-        farmer_query = """
-        SELECT whatsapp_number 
-        FROM farmers 
-        WHERE farmer_id = %s
-        """
-        
-        farmer_result = execute_simple_query(farmer_query, (farmer['farmer_id'],))
-        
-        # Use WhatsApp number if available, otherwise use default format
-        if farmer_result.get('success') and farmer_result.get('rows') and farmer_result['rows'][0][0]:
-            wa_phone_number = farmer_result['rows'][0][0]
-        else:
-            # Use the same format as in dashboard_chat_routes.py
-            wa_phone_number = f"+farmer_{farmer['farmer_id']}"
+        # Always use farmer_id format for dashboard messages
+        # This keeps dashboard chat separate from WhatsApp messages
+        wa_phone_number = f"+farmer_{farmer['farmer_id']}"
         
         logger.info(f"Looking for messages with wa_phone_number: {wa_phone_number}")
         

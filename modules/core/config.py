@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806225500'  # v4.18.4 - Fix deployment and use simple_db
-COMMIT_HASH = "fix-deploy"  # Fixed f-string issue and switched to simple_db for chat history
+DEPLOYMENT_TIMESTAMP = '20250806230000'  # v4.18.5 - Fix chat persistence with consistent ID format
+COMMIT_HASH = "fix-chat-id"  # Use farmer_ID format consistently for dashboard messages
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.18.4"
+VERSION = "v4.18.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
