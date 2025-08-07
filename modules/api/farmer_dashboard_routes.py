@@ -752,14 +752,13 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
         notes = data.get('notes', '')
         
         if check_result.get('success') and check_result.get('rows'):
-            # Update existing crop entry
+            # Update existing crop entry (without updated_at as field_crops may not have this column)
             update_query = """
             UPDATE field_crops 
             SET crop_type = %s, 
                 variety = %s,
                 planting_date = %s,
-                notes = %s,
-                updated_at = CURRENT_TIMESTAMP
+                notes = %s
             WHERE field_id = %s
             AND id = (
                 SELECT id FROM field_crops 
