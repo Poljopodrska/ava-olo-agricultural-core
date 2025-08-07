@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807000300'  # v4.18.9 - Use environment-based database config
-COMMIT_HASH = "use-env-db-config"  # Match config.py database selection logic
+DEPLOYMENT_TIMESTAMP = '20250807001000'  # v4.19.0 - Fix all column name mismatches
+COMMIT_HASH = "fix-column-names"  # Use correct database column names: id not farmer_id, manager_name not name
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.18.9"
+VERSION = "v4.19.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

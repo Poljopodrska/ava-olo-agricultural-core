@@ -537,9 +537,12 @@ async def require_auth(request: Request):
     farmer_id = farmer.get('farmer_id')
     
     query = """
-    SELECT farmer_id, name, whatsapp_number, username, email
+    SELECT id, CONCAT(manager_name, ' ', manager_last_name) as name, 
+           COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number, 
+           COALESCE(whatsapp_number, wa_phone_number) as username, 
+           email
     FROM farmers
-    WHERE farmer_id = %s
+    WHERE id = %s
     """
     result = execute_simple_query(query, (farmer_id,))
     

@@ -120,13 +120,13 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         # Get farmer details using simple_db for reliability
         farmer_query = """
         SELECT 
-            farmer_id,
-            name,
+            id,
+            CONCAT(manager_name, ' ', manager_last_name) as name,
             email,
-            whatsapp_number,
-            username
+            COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number,
+            COALESCE(whatsapp_number, wa_phone_number) as username
         FROM farmers 
-        WHERE farmer_id = %s
+        WHERE id = %s
         """
         
         farmer_result = execute_simple_query(farmer_query, (farmer_id,))
@@ -144,7 +144,7 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         # Get farmer's fields using simple_db
         fields_query = """
         SELECT 
-            id,
+            field_id,
             field_name,
             area_ha
         FROM fields

@@ -25,9 +25,9 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         
         # Get farmer's WhatsApp number (which is their username)
         farmer_query = """
-        SELECT whatsapp_number 
+        SELECT COALESCE(whatsapp_number, wa_phone_number) as whatsapp_number
         FROM farmers 
-        WHERE farmer_id = %s
+        WHERE id = %s
         """
         
         farmer_result = execute_simple_query(farmer_query, (farmer['farmer_id'],))
@@ -41,7 +41,7 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
             logger.warning(f"Farmer {farmer['farmer_id']} has no WhatsApp number, auto-fixing...")
             
             # Get username to use as WhatsApp if it looks like a phone
-            username_query = "SELECT username FROM farmers WHERE farmer_id = %s"
+            username_query = "SELECT COALESCE(whatsapp_number, wa_phone_number) FROM farmers WHERE id = %s"
             username_result = execute_simple_query(username_query, (farmer['farmer_id'],))
             
             if username_result.get('success') and username_result.get('rows'):
@@ -54,7 +54,7 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
                 wa_phone_number = f"+38640{str(farmer['farmer_id']).zfill(6)}"
             
             # Update farmer record with the WhatsApp number
-            update_query = "UPDATE farmers SET whatsapp_number = %s WHERE farmer_id = %s"
+            update_query = "UPDATE farmers SET whatsapp_number = %s WHERE id = %s"
             execute_simple_query(update_query, (wa_phone_number, farmer['farmer_id']))
             
             # Also update any old messages
