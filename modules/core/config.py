@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001700'  # v4.19.7 - Fix column name in fields check
-COMMIT_HASH = "fix-field-column"  # Use 'id' not 'field_id' for fields table
+DEPLOYMENT_TIMESTAMP = '20250807001800'  # v4.19.8 - Add endpoint to check fields table structure
+COMMIT_HASH = "check-fields-table"  # Check actual fields table structure and Edi's fields
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.19.7"
+VERSION = "v4.19.8"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
