@@ -2006,7 +2006,8 @@
             input.disabled = true;
             document.getElementById('send-btn').disabled = true;
             
-            addMessageToChat('user', message);
+            // Add user message with current timestamp
+            addMessageToChat('user', message, new Date().toISOString());
             showTypingIndicator();
             
             try {
@@ -2026,7 +2027,8 @@
                     if (data.connected === false) {
                         addMessageToChat('error', data.response || 'Chat service is not connected. Please check configuration.');
                     } else {
-                        addMessageToChat('assistant', data.response);
+                        // Add assistant response with current timestamp
+                        addMessageToChat('assistant', data.response, new Date().toISOString());
                     }
                 } else {
                     addMessageToChat('error', 'Failed to send message. Please try again.');

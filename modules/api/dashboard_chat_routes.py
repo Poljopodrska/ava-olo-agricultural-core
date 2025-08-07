@@ -49,9 +49,8 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             # Use a default format if no WhatsApp number
             wa_phone = f"+farmer_{farmer['farmer_id']}"
         
-        # Store user message in database
-        from modules.core.database_manager import get_db_manager
-        db_manager = get_db_manager()
+        # Store user message in database using simple_db for reliability
+        from modules.core.simple_db import execute_simple_query
         
         try:
             # Store user message
@@ -59,7 +58,7 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
             VALUES (%s, %s, %s, NOW())
             """
-            await db_manager.execute_query(store_user_msg, (wa_phone, 'user', message))
+            execute_simple_query(store_user_msg, (wa_phone, 'user', message))
         except Exception as e:
             logger.warning(f"Could not store user message: {e}")
         
@@ -88,7 +87,7 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
             VALUES (%s, %s, %s, NOW())
             """
-            await db_manager.execute_query(store_assistant_msg, (wa_phone, 'assistant', response_text))
+            execute_simple_query(store_assistant_msg, (wa_phone, 'assistant', response_text))
         except Exception as e:
             logger.warning(f"Could not store assistant message: {e}")
         
@@ -144,14 +143,12 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         # Get farmer's fields
         fields_query = """
         SELECT 
-            field_id,
-            name,
-            size_hectares,
-            crop_type,
-            status
+            id,
+            field_name,
+            area_ha
         FROM fields
         WHERE farmer_id = %s
-        ORDER BY name
+        ORDER BY field_name
         """
         
         fields_result = await db_manager.execute_query(fields_query, (farmer_id,))
@@ -162,9 +159,7 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
                 fields.append({
                     "id": row[0],
                     "name": row[1] or f"Field {row[0]}",
-                    "hectares": float(row[2]) if row[2] else 0,
-                    "crop": row[3] or "Not planted",
-                    "status": row[4] or "active"
+                    "hectares": float(row[2]) if row[2] else 0
                 })
         
         # Get recent chat history for context
