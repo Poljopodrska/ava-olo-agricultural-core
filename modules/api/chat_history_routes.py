@@ -6,6 +6,7 @@ Provides chat message history filtering and farmer-specific data
 from fastapi import APIRouter, HTTPException, Request
 from typing import Optional, List, Dict
 from modules.core.database_manager import get_db_manager
+from modules.core.simple_db import execute_simple_query
 from modules.auth.routes import get_current_farmer
 import logging
 
@@ -22,24 +23,23 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         if not farmer:
             raise HTTPException(status_code=401, detail="Not authenticated")
         
-        # Get farmer's WhatsApp number for filtering
-        db_manager = get_db_manager()
-        
-        # First get farmer's WhatsApp number
+        # Get farmer's WhatsApp number for filtering using simple_db
         farmer_query = """
         SELECT whatsapp_number 
         FROM farmers 
         WHERE farmer_id = %s
         """
         
-        farmer_result = await db_manager.execute_query(farmer_query, (farmer['farmer_id'],))
+        farmer_result = execute_simple_query(farmer_query, (farmer['farmer_id'],))
         
         # Use WhatsApp number if available, otherwise use default format
-        if farmer_result and len(farmer_result) > 0 and farmer_result[0][0]:
-            wa_phone_number = farmer_result[0][0]
+        if farmer_result.get('success') and farmer_result.get('rows') and farmer_result['rows'][0][0]:
+            wa_phone_number = farmer_result['rows'][0][0]
         else:
             # Use the same format as in dashboard_chat_routes.py
             wa_phone_number = f"+farmer_{farmer['farmer_id']}"
+        
+        logger.info(f"Looking for messages with wa_phone_number: {wa_phone_number}")
         
         # Get chat messages filtered by farmer's WhatsApp number
         # Using subquery to get last N messages in correct order (oldest to newest)
@@ -57,11 +57,11 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         ORDER BY timestamp ASC
         """
         
-        result = await db_manager.execute_query(query, (wa_phone_number, limit))
+        result = execute_simple_query(query, (wa_phone_number, limit))
         
         messages = []
-        if result:
-            for row in result:
+        if result.get('success') and result.get('rows'):
+            for row in result['rows']:
                 messages.append({
                     "role": row[0],
                     "content": row[1],

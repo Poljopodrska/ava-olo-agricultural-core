@@ -665,7 +665,8 @@ async def test_chat_messages_table(farmer: dict = Depends(require_auth)):
             if count_result.get('success') and count_result.get('rows'):
                 count = count_result['rows'][0][0]
                 if count > 0:
-                    results[f"messages_with_{format}"] = count
+                    key_name = f"messages_with_{format}".replace("+", "plus_").replace(" ", "_")
+                    results[key_name] = count
         
         # Get all unique phone formats in the table
         unique_query = "SELECT DISTINCT wa_phone_number FROM chat_messages LIMIT 10"
