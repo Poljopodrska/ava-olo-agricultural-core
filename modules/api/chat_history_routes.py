@@ -34,17 +34,12 @@ async def get_farmer_chat_history(request: Request, limit: int = 100):
         
         farmer_result = await db_manager.execute_query(farmer_query, (farmer['farmer_id'],))
         
-        if not farmer_result or len(farmer_result) == 0:
-            return {
-                "status": "success",
-                "data": {
-                    "messages": [],
-                    "farmer_id": farmer['farmer_id'],
-                    "message": "No WhatsApp number found for farmer"
-                }
-            }
-        
-        wa_phone_number = farmer_result[0][0]
+        # Use WhatsApp number if available, otherwise use default format
+        if farmer_result and len(farmer_result) > 0 and farmer_result[0][0]:
+            wa_phone_number = farmer_result[0][0]
+        else:
+            # Use the same format as in dashboard_chat_routes.py
+            wa_phone_number = f"+farmer_{farmer['farmer_id']}"
         
         # Get chat messages filtered by farmer's WhatsApp number
         # Using subquery to get last N messages in correct order (oldest to newest)

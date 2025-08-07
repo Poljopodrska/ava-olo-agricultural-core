@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806223500'  # v4.18.1 - Fix chat issues
-COMMIT_HASH = "fix-chat"  # Fixed database queries, timestamps, and simple_db usage
+DEPLOYMENT_TIMESTAMP = '20250806224000'  # v4.18.2 - Fix chat history loading
+COMMIT_HASH = "fix-history"  # Fixed chat history endpoint to handle farmers without WhatsApp numbers
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.18.1"
+VERSION = "v4.18.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
