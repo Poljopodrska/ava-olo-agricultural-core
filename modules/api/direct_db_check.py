@@ -14,11 +14,22 @@ router = APIRouter(prefix="/dbcheck", tags=["database"])
 async def full_database_check():
     """Complete database inspection directly"""
     
-    # URL encode the password for special characters
+    # Try to connect using environment-based configuration first
+    import os
     import urllib.parse
-    password = "j2D8J4LH:~eFrUz>$:kkNT(P$Rq_"
-    password_encoded = urllib.parse.quote_plus(password)
-    DB_URL = f"postgresql://postgres:{password_encoded}@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/farmer_crm"
+    
+    # Get from environment or use defaults (same as config.py)
+    db_host = os.getenv('DB_HOST', 'farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com')
+    db_name = os.getenv('DB_NAME', 'postgres')  
+    db_user = os.getenv('DB_USER', 'postgres')
+    db_password = os.getenv('DB_PASSWORD', 'j2D8J4LH:~eFrUz>$:kkNT(P$Rq_')
+    db_port = os.getenv('DB_PORT', '5432')
+    
+    # URL encode the password for special characters
+    password_encoded = urllib.parse.quote_plus(db_password)
+    DB_URL = f"postgresql://{db_user}:{password_encoded}@{db_host}:{db_port}/{db_name}"
+    
+    logger.info(f"Connecting to database: {db_name} at {db_host}")
     
     try:
         conn = psycopg2.connect(DB_URL)
