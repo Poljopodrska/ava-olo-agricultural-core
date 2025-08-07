@@ -470,3 +470,82 @@ async def test_field_activities_table(farmer: dict = Depends(require_auth)):
             "error": str(e),
             "traceback": traceback.format_exc()
         }, status_code=500)
+
+@router.get("/test-field-crops")
+async def test_field_crops_table(farmer: dict = Depends(require_auth)):
+    """Test endpoint to check field_crops table structure"""
+    try:
+        results = {}
+        
+        # Check if field_crops table exists
+        check_table_query = """
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'field_crops'
+        )
+        """
+        table_result = execute_simple_query(check_table_query, ())
+        results["table_exists"] = table_result.get('rows')[0][0] if table_result.get('success') and table_result.get('rows') else False
+        
+        # Get table structure if it exists
+        if results["table_exists"]:
+            columns_query = """
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_name = 'field_crops'
+            ORDER BY ordinal_position
+            """
+            columns_result = execute_simple_query(columns_query, ())
+            
+            if columns_result.get('success') and columns_result.get('rows'):
+                results["columns"] = []
+                for row in columns_result['rows']:
+                    results["columns"].append({
+                        "name": row[0],
+                        "type": row[1],
+                        "nullable": row[2],
+                        "default": row[3]
+                    })
+            
+            # Count crops for this farmer
+            count_query = """
+            SELECT COUNT(*) 
+            FROM field_crops fc
+            JOIN fields f ON fc.field_id = f.id
+            WHERE f.farmer_id = %s
+            """
+            count_result = execute_simple_query(count_query, (farmer['farmer_id'],))
+            results["crop_count"] = count_result['rows'][0][0] if count_result.get('success') and count_result.get('rows') else 0
+            
+            # Get sample data
+            sample_query = """
+            SELECT fc.*, f.field_name
+            FROM field_crops fc
+            JOIN fields f ON fc.field_id = f.id
+            WHERE f.farmer_id = %s
+            ORDER BY fc.id DESC
+            LIMIT 3
+            """
+            sample_result = execute_simple_query(sample_query, (farmer['farmer_id'],))
+            
+            if sample_result.get('success') and sample_result.get('rows'):
+                results["sample_data"] = []
+                for row in sample_result['rows']:
+                    results["sample_data"].append({
+                        "row": str(row)
+                    })
+        
+        return JSONResponse(content={
+            "success": True,
+            "results": results,
+            "farmer_id": farmer['farmer_id']
+        })
+        
+    except Exception as e:
+        logger.error(f"Error testing field_crops table: {e}")
+        import traceback
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }, status_code=500)
