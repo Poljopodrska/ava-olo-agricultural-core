@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806220100'  # v4.17.2 - Enhanced debugging for task API
-COMMIT_HASH = "debug-task-api"  # Added comprehensive debugging to identify 500 errors
+DEPLOYMENT_TIMESTAMP = '20250806220200'  # v4.17.3 - Fix: Use field_activities table instead of tasks
+COMMIT_HASH = "field-activities-table"  # Tasks table has different structure, created field_activities for field reporting
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.2"
+VERSION = "v4.17.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

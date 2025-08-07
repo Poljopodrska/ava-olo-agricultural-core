@@ -697,7 +697,7 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
 
 @router.post("/api/tasks/add", response_class=JSONResponse)
 async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
-    """API endpoint to add a new task/activity report for a field"""
+    """API endpoint to add a new field activity report"""
     
     debug_info = {
         "step": "start", 
@@ -734,7 +734,7 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
         farmer_id = int(farmer['farmer_id']) if farmer['farmer_id'] else None
         debug_info["farmer_id"] = farmer_id
         debug_info["step"] = "got_farmer_id"
-        logger.info(f"Adding task for farmer {farmer_id}: {data}")
+        logger.info(f"Adding field activity for farmer {farmer_id}: {data}")
         
         # Validate required fields
         if not data.get('field_id') or not data.get('task_type') or not data.get('date_performed'):
@@ -746,23 +746,28 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
             }
             return JSONResponse(content={
                 "success": False,
-                "error": "Field ID, task type, and date are required",
+                "error": "Field ID, activity type, and date are required",
                 "debug": debug_info
             }, status_code=400)
         
-        # Always try to create tasks table if it doesn't exist
+        # Create field_activities table if it doesn't exist
         debug_info["step"] = "creating_table"
         create_table_query = """
-        CREATE TABLE IF NOT EXISTS tasks (
+        CREATE TABLE IF NOT EXISTS field_activities (
             id SERIAL PRIMARY KEY,
-            field_id INTEGER REFERENCES fields(id),
-            task_type VARCHAR(100),
-            date_performed DATE,
-            material_used VARCHAR(200),
-            quantity DECIMAL(10,2),
-            unit VARCHAR(20),
+            field_id INTEGER REFERENCES fields(id) ON DELETE CASCADE,
+            activity_type VARCHAR(100) NOT NULL,
+            activity_date DATE NOT NULL,
+            product_name VARCHAR(200),
+            active_ingredient VARCHAR(200),
+            dose_amount DECIMAL(10,3),
+            dose_unit VARCHAR(50),
+            application_rate DECIMAL(10,3),
+            application_unit VARCHAR(50),
             notes TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            weather_conditions VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by INTEGER REFERENCES farmers(id)
         )
         """
         create_result = execute_simple_query(create_table_query, ())
@@ -772,39 +777,52 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
         }
         
         if create_result.get('success'):
-            logger.info("Tasks table ready")
+            logger.info("field_activities table ready")
             debug_info["table_exists"] = True
         else:
-            logger.warning(f"Could not ensure tasks table exists: {create_result.get('error')}")
+            logger.warning(f"Could not ensure field_activities table exists: {create_result.get('error')}")
             # Continue anyway - table might already exist
             debug_info["table_exists"] = "uncertain"
         
-        # Insert the task
+        # Also create an index for better performance
+        index_query = """
+        CREATE INDEX IF NOT EXISTS idx_field_activities_field_id 
+        ON field_activities(field_id);
+        CREATE INDEX IF NOT EXISTS idx_field_activities_date 
+        ON field_activities(activity_date);
+        """
+        execute_simple_query(index_query, ())
+        
+        # Insert the activity
         debug_info["step"] = "preparing_insert"
         insert_query = """
-        INSERT INTO tasks (field_id, task_type, date_performed, material_used, quantity, unit, notes)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO field_activities (
+            field_id, activity_type, activity_date, 
+            product_name, dose_amount, dose_unit, notes, created_by
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id
         """
         
         # Convert quantity to float if provided
-        quantity = None
+        dose_amount = None
         if data.get('quantity'):
             try:
-                quantity = float(data['quantity'])
+                dose_amount = float(data['quantity'])
             except (ValueError, TypeError) as qty_error:
                 logger.warning(f"Could not convert quantity '{data.get('quantity')}' to float: {qty_error}")
-                quantity = None
+                dose_amount = None
         
         # Prepare insert parameters
         insert_params = (
             int(data['field_id']),
-            data['task_type'],
-            data['date_performed'],
-            data.get('material_used', ''),
-            quantity,
-            data.get('unit', ''),
-            data.get('notes', '')
+            data['task_type'],  # Maps to activity_type
+            data['date_performed'],  # Maps to activity_date
+            data.get('material_used', ''),  # Maps to product_name
+            dose_amount,  # Maps to dose_amount
+            data.get('unit', ''),  # Maps to dose_unit
+            data.get('notes', ''),
+            farmer_id  # created_by
         )
         debug_info["insert_params"] = str(insert_params)
         debug_info["step"] = "executing_insert"
@@ -817,20 +835,20 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
         }
         
         if result.get('success') and result.get('rows'):
-            task_id = result['rows'][0][0]
-            logger.info(f"Task created with ID: {task_id}")
-            debug_info["task_id"] = task_id
+            activity_id = result['rows'][0][0]
+            logger.info(f"Field activity created with ID: {activity_id}")
+            debug_info["activity_id"] = activity_id
             debug_info["step"] = "completed"
             
             return JSONResponse(content={
                 "success": True,
-                "task_id": task_id,
-                "message": "Activity recorded successfully",
+                "activity_id": activity_id,
+                "message": "Field activity recorded successfully",
                 "debug": debug_info
             })
         else:
             debug_info["step"] = "insert_failed"
-            logger.error(f"Failed to create task: {result.get('error')}")
+            logger.error(f"Failed to create field activity: {result.get('error')}")
             return JSONResponse(content={
                 "success": False,
                 "error": f"Failed to save activity: {result.get('error', 'Unknown error')}",
@@ -840,7 +858,7 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
     except Exception as e:
         debug_info["step"] = "exception"
         debug_info["exception"] = str(e)
-        logger.error(f"Error adding task: {e}")
+        logger.error(f"Error adding field activity: {e}")
         import traceback
         debug_info["traceback"] = traceback.format_exc()
         logger.error(debug_info["traceback"])

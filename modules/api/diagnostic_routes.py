@@ -359,80 +359,93 @@ async def get_all_fields_debug(farmer: dict = Depends(require_auth)):
             "traceback": traceback.format_exc()
         }, status_code=500)
 
-@router.get("/test-tasks-table")
-async def test_tasks_table(farmer: dict = Depends(require_auth)):
-    """Test endpoint to check tasks table structure and accessibility"""
+@router.get("/test-field-activities")
+async def test_field_activities_table(farmer: dict = Depends(require_auth)):
+    """Test endpoint to check field_activities table structure and accessibility"""
     try:
         results = {}
         
-        # Check if tasks table exists
-        check_table_query = """
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'tasks'
-        )
-        """
-        table_result = execute_simple_query(check_table_query, ())
-        results["table_exists"] = table_result.get('rows')[0][0] if table_result.get('success') and table_result.get('rows') else False
-        
-        # Get table structure if it exists
-        if results["table_exists"]:
-            columns_query = """
-            SELECT column_name, data_type, is_nullable, column_default
-            FROM information_schema.columns
-            WHERE table_name = 'tasks'
-            ORDER BY ordinal_position
+        # Check both tables
+        for table_name in ['field_activities', 'tasks']:
+            check_table_query = f"""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = '{table_name}'
+            )
             """
-            columns_result = execute_simple_query(columns_query, ())
+            table_result = execute_simple_query(check_table_query, ())
+            table_exists = table_result.get('rows')[0][0] if table_result.get('success') and table_result.get('rows') else False
             
-            if columns_result.get('success') and columns_result.get('rows'):
-                results["columns"] = []
-                for row in columns_result['rows']:
-                    results["columns"].append({
-                        "name": row[0],
-                        "type": row[1],
-                        "nullable": row[2],
-                        "default": row[3]
-                    })
-            
-            # Count tasks for this farmer
+            if table_exists:
+                # Get table structure
+                columns_query = f"""
+                SELECT column_name, data_type, is_nullable, column_default
+                FROM information_schema.columns
+                WHERE table_name = '{table_name}'
+                ORDER BY ordinal_position
+                """
+                columns_result = execute_simple_query(columns_query, ())
+                
+                columns = []
+                if columns_result.get('success') and columns_result.get('rows'):
+                    for row in columns_result['rows']:
+                        columns.append({
+                            "name": row[0],
+                            "type": row[1],
+                            "nullable": row[2],
+                            "default": row[3]
+                        })
+                
+                results[table_name] = {
+                    "exists": True,
+                    "columns": columns
+                }
+            else:
+                results[table_name] = {
+                    "exists": False,
+                    "columns": []
+                }
+        
+        # Count field activities for this farmer
+        if results.get('field_activities', {}).get('exists'):
             count_query = """
             SELECT COUNT(*) 
-            FROM tasks t
-            JOIN fields f ON t.field_id = f.id
+            FROM field_activities fa
+            JOIN fields f ON fa.field_id = f.id
             WHERE f.farmer_id = %s
             """
             count_result = execute_simple_query(count_query, (farmer['farmer_id'],))
-            results["task_count"] = count_result['rows'][0][0] if count_result.get('success') and count_result.get('rows') else 0
+            results["activity_count"] = count_result['rows'][0][0] if count_result.get('success') and count_result.get('rows') else 0
             
-            # Get recent tasks
+            # Get recent activities
             recent_query = """
-            SELECT t.id, t.task_type, t.date_performed, f.field_name
-            FROM tasks t
-            JOIN fields f ON t.field_id = f.id
+            SELECT fa.id, fa.activity_type, fa.activity_date, f.field_name, fa.product_name
+            FROM field_activities fa
+            JOIN fields f ON fa.field_id = f.id
             WHERE f.farmer_id = %s
-            ORDER BY t.created_at DESC
+            ORDER BY fa.created_at DESC
             LIMIT 5
             """
             recent_result = execute_simple_query(recent_query, (farmer['farmer_id'],))
             
             if recent_result.get('success') and recent_result.get('rows'):
-                results["recent_tasks"] = []
+                results["recent_activities"] = []
                 for row in recent_result['rows']:
-                    results["recent_tasks"].append({
+                    results["recent_activities"].append({
                         "id": row[0],
                         "type": row[1],
                         "date": str(row[2]) if row[2] else None,
-                        "field": row[3]
+                        "field": row[3],
+                        "product": row[4]
                     })
             else:
-                results["recent_tasks"] = []
+                results["recent_activities"] = []
         
-        # Test INSERT capability
+        # Test INSERT capability for field_activities
         test_insert_query = """
         EXPLAIN (ANALYZE false, BUFFERS false, FORMAT TEXT)
-        INSERT INTO tasks (field_id, task_type, date_performed, material_used, quantity, unit, notes)
-        VALUES (1, 'test', '2025-01-01', '', NULL, '', '')
+        INSERT INTO field_activities (field_id, activity_type, activity_date, product_name, dose_amount, dose_unit, notes, created_by)
+        VALUES (1, 'test', '2025-01-01', '', NULL, '', '', 1)
         """
         try:
             insert_test = execute_simple_query(test_insert_query, ())
