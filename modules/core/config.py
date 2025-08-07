@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806220900'  # v4.17.10 - Add test endpoint for debugging crop updates
-COMMIT_HASH = "debug-crop-test"  # Added /diagnostic/test-crop-update endpoint for debugging
+DEPLOYMENT_TIMESTAMP = '20250806222000'  # v4.17.12 - Fix field_crops column names
+COMMIT_HASH = "fix-crop-columns"  # Fixed column names: crop_name not crop_type, start_date not planting_date
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.10"
+VERSION = "v4.17.12"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

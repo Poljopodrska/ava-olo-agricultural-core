@@ -219,10 +219,10 @@ def get_farmer_fields(farmer_id: int) -> List[Dict[str, Any]]:
                 # Fetch crop info for this field
                 if row[0]:  # if field has an ID
                     crop_query = """
-                    SELECT crop_type, variety, planting_date
+                    SELECT crop_name, variety, start_date
                     FROM field_crops
                     WHERE field_id = %s
-                    ORDER BY planting_date DESC
+                    ORDER BY start_year_int DESC, start_date DESC
                     LIMIT 1
                     """
                     crop_result = execute_simple_query(crop_query, (row[0],))
@@ -640,14 +640,16 @@ async def api_add_field(request: Request, farmer: dict = Depends(require_auth)):
             
             # If crop type is provided, add crop information
             if data.get('crop_type'):
+                from datetime import datetime
+                current_year = datetime.now().year
                 crop_query = """
-                INSERT INTO field_crops (field_id, crop_type, variety, planting_date, status)
-                VALUES (%s, %s, %s, CURRENT_DATE, 'active')
+                INSERT INTO field_crops (field_id, start_year_int, crop_name, variety, start_date)
+                VALUES (%s, %s, %s, %s, CURRENT_DATE)
                 """
                 try:
                     crop_result = execute_simple_query(
                         crop_query,
-                        (field_id, data['crop_type'], data.get('variety', ''))
+                        (field_id, current_year, data['crop_type'], data.get('variety', ''))
                     )
                     if crop_result.get('success'):
                         logger.info(f"Crop type '{data['crop_type']}' added to field {field_id}")
@@ -772,16 +774,20 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
                 "debug": debug_info
             }, status_code=404)
         
-        # First ensure field_crops table exists
+        # First ensure field_crops table exists (matching actual structure)
         debug_info["step"] = "ensuring_table_exists"
+        from datetime import datetime
+        current_year = datetime.now().year
         create_table_query = """
         CREATE TABLE IF NOT EXISTS field_crops (
-            id SERIAL PRIMARY KEY,
             field_id INTEGER REFERENCES fields(id) ON DELETE CASCADE,
-            crop_type VARCHAR(100),
+            start_year_int INTEGER,
+            crop_name VARCHAR(100),
             variety VARCHAR(100),
-            planting_date DATE,
-            status VARCHAR(50) DEFAULT 'active'
+            expected_yield_t_ha DECIMAL(10,2),
+            start_date DATE,
+            end_date DATE,
+            PRIMARY KEY (field_id, start_year_int)
         )
         """
         table_result = execute_simple_query(create_table_query, ())
@@ -790,15 +796,14 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
             "error": table_result.get('error') if not table_result.get('success') else None
         }
         
-        # Check if field_crops entry exists
+        # Check if field_crops entry exists for current year
         debug_info["step"] = "checking_existing_crop"
         check_query = """
-        SELECT id FROM field_crops 
-        WHERE field_id = %s
-        ORDER BY id DESC
+        SELECT field_id, start_year_int FROM field_crops 
+        WHERE field_id = %s AND start_year_int = %s
         LIMIT 1
         """
-        check_result = execute_simple_query(check_query, (int(field_id),))
+        check_result = execute_simple_query(check_query, (int(field_id), current_year))
         debug_info["check_result"] = {
             "success": check_result.get('success'),
             "has_rows": bool(check_result.get('rows')),
@@ -823,24 +828,23 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
             "variety": variety,
             "planting_date": planting_date,
             "planting_date_type": type(planting_date).__name__,
-            "has_notes": bool(notes)
+            "has_notes": bool(notes),
+            "current_year": current_year
         }
         
         if check_result.get('success') and check_result.get('rows'):
-            # Update existing crop entry (field_crops only has: field_id, crop_type, variety, planting_date)
+            # Update existing crop entry (using correct column names)
             debug_info["step"] = "updating_existing_crop"
-            crop_id = check_result['rows'][0][0]  # Get the ID from the check query
-            debug_info["crop_id"] = crop_id
             
-            # Simplified UPDATE query using the ID directly
+            # UPDATE using correct column names: crop_name instead of crop_type, start_date instead of planting_date
             update_query = """
             UPDATE field_crops 
-            SET crop_type = %s, 
+            SET crop_name = %s, 
                 variety = %s,
-                planting_date = %s
-            WHERE id = %s
+                start_date = %s
+            WHERE field_id = %s AND start_year_int = %s
             """
-            update_params = (crop_type, variety, planting_date, crop_id)
+            update_params = (crop_type, variety, planting_date, int(field_id), current_year)
             debug_info["update_params"] = str(update_params)
             result = execute_simple_query(update_query, update_params)
             debug_info["update_result"] = {
@@ -848,14 +852,14 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
                 "error": result.get('error') if not result.get('success') else None
             }
         else:
-            # Insert new crop entry (without notes column)
+            # Insert new crop entry (with correct column names)
             debug_info["step"] = "inserting_new_crop"
             insert_query = """
-            INSERT INTO field_crops (field_id, crop_type, variety, planting_date)
-            VALUES (%s, %s, %s, %s)
-            RETURNING id
+            INSERT INTO field_crops (field_id, start_year_int, crop_name, variety, start_date)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING field_id, start_year_int
             """
-            insert_params = (int(field_id), crop_type, variety, planting_date)
+            insert_params = (int(field_id), current_year, crop_type, variety, planting_date)
             debug_info["insert_params"] = str(insert_params)
             result = execute_simple_query(insert_query, insert_params)
             debug_info["insert_result"] = {
