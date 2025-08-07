@@ -42,6 +42,7 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
         
         # Get farmer's detailed context
         farmer_context = await get_farmer_chat_context(farmer['farmer_id'])
+        logger.info(f"Farmer context retrieved: {farmer_context}")
         
         # Get farmer's WhatsApp number for storing messages
         wa_phone = farmer_context.get("whatsapp_number")
@@ -49,7 +50,8 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             # Use a default format if no WhatsApp number
             wa_phone = f"+farmer_{farmer['farmer_id']}"
         
-        logger.info(f"Saving message with wa_phone: {wa_phone}")
+        logger.info(f"Dashboard chat: Farmer ID {farmer['farmer_id']}, WhatsApp: {wa_phone}")
+        logger.info(f"Saving user message: {message[:50]}...")
         
         # Store user message in database using simple_db for reliability
         from modules.core.simple_db import execute_simple_query
@@ -60,9 +62,14 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
             VALUES (%s, %s, %s, NOW())
             """
-            execute_simple_query(store_user_msg, (wa_phone, 'user', message))
+            result = execute_simple_query(store_user_msg, (wa_phone, 'user', message))
+            if result and result.get('success'):
+                logger.info(f"✅ User message stored successfully for {wa_phone}")
+            else:
+                logger.error(f"❌ Failed to store user message for {wa_phone}: {result}")
         except Exception as e:
-            logger.warning(f"Could not store user message: {e}")
+            logger.error(f"❌ Exception storing user message for {wa_phone}: {e}")
+            # Continue anyway to provide response to user
         
         # Use CAVA engine for intelligent responses
         cava_engine = get_cava_engine()
@@ -89,9 +96,13 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             INSERT INTO chat_messages (wa_phone_number, role, content, timestamp)
             VALUES (%s, %s, %s, NOW())
             """
-            execute_simple_query(store_assistant_msg, (wa_phone, 'assistant', response_text))
+            result = execute_simple_query(store_assistant_msg, (wa_phone, 'assistant', response_text))
+            if result and result.get('success'):
+                logger.info(f"✅ Assistant message stored successfully for {wa_phone}")
+            else:
+                logger.error(f"❌ Failed to store assistant message for {wa_phone}: {result}")
         except Exception as e:
-            logger.warning(f"Could not store assistant message: {e}")
+            logger.error(f"❌ Exception storing assistant message for {wa_phone}: {e}")
         
         return {
             "success": True,
