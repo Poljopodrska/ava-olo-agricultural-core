@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806220500'  # v4.17.6 - Fix: Remove updated_at column from field_crops UPDATE
-COMMIT_HASH = "fix-crop-update"  # Fixed UPDATE query - field_crops table doesn't have updated_at column
+DEPLOYMENT_TIMESTAMP = '20250806220600'  # v4.17.7 - Fix: Remove notes column from field_crops queries
+COMMIT_HASH = "fix-crop-notes"  # field_crops table doesn't have notes column - removed from INSERT/UPDATE
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.6"
+VERSION = "v4.17.7"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

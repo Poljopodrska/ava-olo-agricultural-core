@@ -749,16 +749,15 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
         crop_type = data.get('crop_type', '')
         variety = data.get('variety', '')
         planting_date = data.get('planting_date')
-        notes = data.get('notes', '')
+        notes = data.get('notes', '')  # Keep for activity record but not for field_crops
         
         if check_result.get('success') and check_result.get('rows'):
-            # Update existing crop entry (without updated_at as field_crops may not have this column)
+            # Update existing crop entry (field_crops only has: field_id, crop_type, variety, planting_date)
             update_query = """
             UPDATE field_crops 
             SET crop_type = %s, 
                 variety = %s,
-                planting_date = %s,
-                notes = %s
+                planting_date = %s
             WHERE field_id = %s
             AND id = (
                 SELECT id FROM field_crops 
@@ -768,17 +767,17 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
             )
             """
             result = execute_simple_query(update_query, (
-                crop_type, variety, planting_date, notes, int(field_id), int(field_id)
+                crop_type, variety, planting_date, int(field_id), int(field_id)
             ))
         else:
-            # Insert new crop entry
+            # Insert new crop entry (without notes column)
             insert_query = """
-            INSERT INTO field_crops (field_id, crop_type, variety, planting_date, notes)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO field_crops (field_id, crop_type, variety, planting_date)
+            VALUES (%s, %s, %s, %s)
             RETURNING id
             """
             result = execute_simple_query(insert_query, (
-                int(field_id), crop_type, variety, planting_date, notes
+                int(field_id), crop_type, variety, planting_date
             ))
         
         if result.get('success'):
@@ -788,6 +787,11 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
                 if variety:
                     activity_type += f" ({variety})"
                 
+                # Combine change description with user notes
+                activity_notes = f"Changed to {crop_type} {variety}".strip()
+                if notes:
+                    activity_notes += f". {notes}"
+                
                 activity_query = """
                 INSERT INTO field_activities (
                     field_id, activity_type, activity_date, notes, created_by
@@ -795,7 +799,7 @@ async def api_update_field_crop(request: Request, farmer: dict = Depends(require
                 VALUES (%s, %s, CURRENT_DATE, %s, %s)
                 """
                 execute_simple_query(activity_query, (
-                    int(field_id), activity_type, f"Changed to {crop_type} {variety}".strip(), farmer_id
+                    int(field_id), activity_type, activity_notes, farmer_id
                 ))
             
             return JSONResponse(content={
