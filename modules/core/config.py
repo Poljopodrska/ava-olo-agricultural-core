@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250806231000'  # v4.18.6 - Use actual WhatsApp number for unified chat
-COMMIT_HASH = "unified-chat"  # Use farmer's WhatsApp number for all messages
+DEPLOYMENT_TIMESTAMP = '20250807000100'  # v4.18.7 - Fix database connection for inspection
+COMMIT_HASH = "fix-db-inspection"  # Fixed URL encoding for database password
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.18.6"
+VERSION = "v4.18.7"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

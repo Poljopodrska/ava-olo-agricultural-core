@@ -14,7 +14,11 @@ router = APIRouter(prefix="/dbcheck", tags=["database"])
 async def full_database_check():
     """Complete database inspection directly"""
     
-    DB_URL = "postgresql://postgres:j2D8J4LH:~eFrUz>$:kkNT(P$Rq_@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/postgres"
+    # URL encode the password for special characters
+    import urllib.parse
+    password = "j2D8J4LH:~eFrUz>$:kkNT(P$Rq_"
+    password_encoded = urllib.parse.quote_plus(password)
+    DB_URL = f"postgresql://postgres:{password_encoded}@farmer-crm-production.cifgmm0mqg5q.us-east-1.rds.amazonaws.com:5432/postgres"
     
     try:
         conn = psycopg2.connect(DB_URL)
