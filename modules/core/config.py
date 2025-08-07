@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001200'  # v4.19.2 - Add detailed logging for message saving
-COMMIT_HASH = "debug-message-saving"  # Debug why messages aren't being saved to database
+DEPLOYMENT_TIMESTAMP = '20250807001300'  # v4.19.3 - Add test endpoint to debug message saving
+COMMIT_HASH = "test-message-save"  # Test different ways to save messages for Edi
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.19.2"
+VERSION = "v4.19.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
