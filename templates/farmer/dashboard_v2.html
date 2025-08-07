@@ -1280,11 +1280,14 @@
 
         // Close modal when clicking outside
         document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('tasks-modal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeTasksModal();
-                }
-            });
+            const taskModal = document.getElementById('task-modal');
+            if (taskModal) {
+                taskModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        closeTaskModal();
+                    }
+                });
+            }
         });
     </script>
 </head>

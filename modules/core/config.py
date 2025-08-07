@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250806220000'  # v4.17.0 - Add task reporting functionality
 COMMIT_HASH = "add-task-reporting"  # Click fields to report past activities (spraying, fertilizing, etc)
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.17.0"
+VERSION = "v4.17.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

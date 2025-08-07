@@ -701,8 +701,15 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
     
     try:
         data = await request.json()
-        farmer_id = farmer['farmer_id']
         
+        # Ensure farmer_id is properly extracted
+        if not farmer or 'farmer_id' not in farmer:
+            return JSONResponse(content={
+                "success": False,
+                "error": "Authentication required"
+            }, status_code=401)
+        
+        farmer_id = int(farmer['farmer_id']) if farmer['farmer_id'] else None
         logger.info(f"Adding task for farmer {farmer_id}: {data}")
         
         # Validate required fields
@@ -712,32 +719,25 @@ async def api_add_task(request: Request, farmer: dict = Depends(require_auth)):
                 "error": "Field ID, task type, and date are required"
             }, status_code=400)
         
-        # First check if tasks table exists, if not create it
-        check_table_query = """
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_name = 'tasks'
+        # Always try to create tasks table if it doesn't exist
+        create_table_query = """
+        CREATE TABLE IF NOT EXISTS tasks (
+            id SERIAL PRIMARY KEY,
+            field_id INTEGER REFERENCES fields(id),
+            task_type VARCHAR(100),
+            date_performed DATE,
+            material_used VARCHAR(200),
+            quantity DECIMAL(10,2),
+            unit VARCHAR(20),
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """
-        table_exists = execute_simple_query(check_table_query, ())
-        
-        if not table_exists.get('success') or not table_exists['rows'][0][0]:
-            # Create tasks table
-            create_table_query = """
-            CREATE TABLE IF NOT EXISTS tasks (
-                id SERIAL PRIMARY KEY,
-                field_id INTEGER REFERENCES fields(id),
-                task_type VARCHAR(100),
-                date_performed DATE,
-                material_used VARCHAR(200),
-                quantity DECIMAL(10,2),
-                unit VARCHAR(20),
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-            execute_simple_query(create_table_query, ())
-            logger.info("Created tasks table")
+        create_result = execute_simple_query(create_table_query, ())
+        if create_result.get('success'):
+            logger.info("Tasks table ready")
+        else:
+            logger.warning(f"Could not ensure tasks table exists: {create_result.get('error')}")
         
         # Insert the task
         insert_query = """
