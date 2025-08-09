@@ -21,6 +21,9 @@ templates = Jinja2Templates(directory="templates")
 class NLQRequest(BaseModel):
     question: str
 
+class SQLRequest(BaseModel):
+    query: str
+
 @router.get("", response_class=HTMLResponse)
 async def database_dashboard(request: Request):
     """Main database dashboard page"""
@@ -32,6 +35,69 @@ async def database_dashboard(request: Request):
     except Exception as e:
         logger.error(f"Error rendering database dashboard: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/sql", response_class=JSONResponse)
+async def execute_sql_query(request: SQLRequest):
+    """Execute a raw SQL query (SELECT only for safety)"""
+    try:
+        sql_query = request.query.strip()
+        
+        # Safety check - only allow SELECT queries
+        if not sql_query.upper().startswith('SELECT'):
+            return JSONResponse(content={
+                "success": False,
+                "error": "Only SELECT queries are allowed for safety reasons"
+            })
+        
+        # Additional safety checks
+        forbidden_keywords = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'CREATE', 'TRUNCATE', 'EXEC', 'EXECUTE']
+        query_upper = sql_query.upper()
+        for keyword in forbidden_keywords:
+            if keyword in query_upper:
+                return JSONResponse(content={
+                    "success": False,
+                    "error": f"Query contains forbidden keyword: {keyword}"
+                })
+        
+        # Execute the query
+        result = execute_simple_query(sql_query, ())
+        
+        if result.get('success'):
+            rows = result.get('rows', [])
+            columns = result.get('columns', [])
+            
+            # Convert rows to dict format
+            data = []
+            for row in rows:
+                row_dict = {}
+                for i, col in enumerate(columns):
+                    value = row[i] if i < len(row) else None
+                    # Convert datetime to string if needed
+                    if hasattr(value, 'isoformat'):
+                        value = value.isoformat()
+                    elif value is None:
+                        value = ""
+                    row_dict[col] = value
+                data.append(row_dict)
+            
+            return JSONResponse(content={
+                "success": True,
+                "data": data,
+                "columns": columns,
+                "query": sql_query
+            })
+        else:
+            return JSONResponse(content={
+                "success": False,
+                "error": result.get('error', 'Query execution failed')
+            })
+            
+    except Exception as e:
+        logger.error(f"Error executing SQL query: {e}")
+        return JSONResponse(content={
+            "success": False,
+            "error": str(e)
+        })
 
 @router.post("/nlq", response_class=JSONResponse)
 async def natural_language_query(request: NLQRequest):
@@ -138,7 +204,7 @@ async def quick_query(query_type: str):
             rows = result.get('rows', [])
             columns = result.get('columns', [])
             
-            # Convert to dict format
+            # Convert to dict format with proper type handling
             data = []
             for row in rows:
                 row_dict = {}
@@ -146,6 +212,12 @@ async def quick_query(query_type: str):
                     value = row[i] if i < len(row) else None
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
+                    elif isinstance(value, (int, float)):
+                        value = value
+                    elif value is None:
+                        value = ""
+                    else:
+                        value = str(value)
                     row_dict[col] = value
                 data.append(row_dict)
             
@@ -191,7 +263,7 @@ async def search_farmer(name: str):
             rows = result.get('rows', [])
             columns = result.get('columns', [])
             
-            # Convert to dict format
+            # Convert to dict format with proper type handling
             data = []
             for row in rows:
                 row_dict = {}
@@ -199,6 +271,12 @@ async def search_farmer(name: str):
                     value = row[i] if i < len(row) else None
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
+                    elif isinstance(value, (int, float)):
+                        value = value
+                    elif value is None:
+                        value = ""
+                    else:
+                        value = str(value)
                     row_dict[col] = value
                 data.append(row_dict)
             

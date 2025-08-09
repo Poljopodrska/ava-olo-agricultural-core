@@ -265,6 +265,36 @@
             </div>
         </div>
         
+        <!-- SQL Query -->
+        <div class="query-card">
+            <h2>SQL Query</h2>
+            <form onsubmit="executeSQLQuery(event)">
+                <textarea 
+                    id="sql-query-input"
+                    placeholder="Enter your SQL query here (SELECT statements only)..."
+                    style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #e2e8f0; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 0.95em; resize: vertical;"
+                    required></textarea>
+                <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: #718096; font-size: 0.9em;">Only SELECT queries are allowed for safety</span>
+                    <button type="submit" class="nlq-submit">Execute SQL</button>
+                </div>
+            </form>
+            
+            <details style="margin-top: 20px;">
+                <summary style="cursor: pointer; color: #4299e1; font-weight: 600;">View Database Schema</summary>
+                <div style="margin-top: 10px; padding: 15px; background: #f7fafc; border-radius: 6px; font-size: 0.9em;">
+                    <strong>Tables:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><code>farmers</code> - id, farm_name, manager_name, manager_last_name, city, country, phone, wa_phone_number, email, created_at</li>
+                        <li><code>fields</code> - id, farmer_id, field_name, area_ha, latitude, longitude, blok_id, raba, country, created_at</li>
+                        <li><code>field_crops</code> - id, field_id, crop_name, variety, planting_date, harvest_date, status, area_ha</li>
+                        <li><code>tasks</code> - id, field_id, task_type, task_description, due_date, status, created_at</li>
+                        <li><code>conversations</code> - id, farmer_id, message, response, timestamp</li>
+                    </ul>
+                </div>
+            </details>
+        </div>
+        
         <!-- Quick Queries -->
         <div class="query-card">
             <h2>Quick Queries</h2>
@@ -307,6 +337,33 @@
     </div>
     
     <script>
+        async function executeSQLQuery(event) {
+            event.preventDefault();
+            const sqlQuery = document.getElementById('sql-query-input').value;
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/dashboards/database/sql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query: sqlQuery })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data, data.columns, data.query);
+                } else {
+                    showError(data.error || 'Query failed');
+                }
+            } catch (error) {
+                showError('Failed to execute query: ' + error.message);
+            }
+        }
+        
         async function executeNLQ(event) {
             event.preventDefault();
             const question = document.getElementById('nlq-input').value;
