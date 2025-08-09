@@ -25,7 +25,7 @@ class WelcomePackageManager:
     def __init__(self, redis_client, db_ops):
         self.redis = redis_client
         self.db = db_ops
-        self.ttl_seconds = 14400  # 4 hours
+        self.ttl_seconds = 60  # 1 minute for testing (was 14400 = 4 hours)
         self.logger = logging.getLogger(__name__)
     
     def get_welcome_package(self, farmer_id: int) -> Dict:

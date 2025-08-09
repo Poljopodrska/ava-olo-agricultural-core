@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809230000'  # v4.28.0 - Add unified farmer data API for dashboard consistency
-COMMIT_HASH = "unified-farmer-api"  # Ensures dashboard and chat get exactly same data
+DEPLOYMENT_TIMESTAMP = '20250809235000'  # v4.28.1 - Reduce Redis TTL to 1 minute for testing
+COMMIT_HASH = "redis-ttl-1min"  # Quick cache refresh for testing
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.28.0"
+VERSION = "v4.28.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
