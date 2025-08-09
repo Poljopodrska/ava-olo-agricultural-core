@@ -70,8 +70,10 @@ async def execute_sql_query(request: SQLRequest):
             data = []
             for row in rows:
                 row_dict = {}
-                for i, col in enumerate(columns):
-                    value = row[i] if i < len(row) else None
+                # Ensure we don't go out of bounds
+                for i in range(min(len(columns), len(row))):
+                    col = columns[i]
+                    value = row[i]
                     # Convert datetime to string if needed
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
@@ -82,6 +84,11 @@ async def execute_sql_query(request: SQLRequest):
                     else:
                         value = str(value)
                     row_dict[col] = value
+                
+                # Add any missing columns as empty
+                for col in columns[len(row):]:
+                    row_dict[col] = ""
+                    
                 data.append(row_dict)
             
             return JSONResponse(content={
@@ -128,8 +135,10 @@ async def natural_language_query(request: NLQRequest):
             data = []
             for row in rows:
                 row_dict = {}
-                for i, col in enumerate(columns):
-                    value = row[i] if i < len(row) else None
+                # Ensure we don't go out of bounds
+                for i in range(min(len(columns), len(row))):
+                    col = columns[i]
+                    value = row[i]
                     # Convert datetime to string if needed
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
@@ -140,6 +149,11 @@ async def natural_language_query(request: NLQRequest):
                     else:
                         value = str(value)
                     row_dict[col] = value
+                
+                # Add any missing columns as empty
+                for col in columns[len(row):]:
+                    row_dict[col] = ""
+                    
                 data.append(row_dict)
             
             return JSONResponse(content={
@@ -218,8 +232,10 @@ async def quick_query(query_type: str):
             data = []
             for row in rows:
                 row_dict = {}
-                for i, col in enumerate(columns):
-                    value = row[i] if i < len(row) else None
+                # Ensure we don't go out of bounds
+                for i in range(min(len(columns), len(row))):
+                    col = columns[i]
+                    value = row[i]
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
                     elif isinstance(value, (int, float)):
@@ -229,6 +245,9 @@ async def quick_query(query_type: str):
                     else:
                         value = str(value)
                     row_dict[col] = value
+                # Add any missing columns as empty
+                for col in columns[len(row):]:
+                    row_dict[col] = ""
                 data.append(row_dict)
             
             return JSONResponse(content={
@@ -277,8 +296,10 @@ async def search_farmer(name: str):
             data = []
             for row in rows:
                 row_dict = {}
-                for i, col in enumerate(columns):
-                    value = row[i] if i < len(row) else None
+                # Ensure we don't go out of bounds
+                for i in range(min(len(columns), len(row))):
+                    col = columns[i]
+                    value = row[i]
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
                     elif isinstance(value, (int, float)):
@@ -288,6 +309,9 @@ async def search_farmer(name: str):
                     else:
                         value = str(value)
                     row_dict[col] = value
+                # Add any missing columns as empty
+                for col in columns[len(row):]:
+                    row_dict[col] = ""
                 data.append(row_dict)
             
             # If farmer found, also get their fields

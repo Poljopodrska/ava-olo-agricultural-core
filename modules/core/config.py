@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250807001800'  # v4.19.8 - Add endpoint to check fields table structure
 COMMIT_HASH = "check-fields-table"  # Check actual fields table structure and Edi's fields
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.21.1"
+VERSION = "v4.21.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

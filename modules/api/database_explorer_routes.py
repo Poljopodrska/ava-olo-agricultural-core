@@ -191,8 +191,10 @@ async def get_table_data(
         data = []
         for row in rows:
             row_dict = {}
-            for i, col in enumerate(columns):
-                value = row[i] if i < len(row) else None
+            # Ensure we don't go out of bounds
+            for i in range(min(len(columns), len(row))):
+                col = columns[i]
+                value = row[i]
                 
                 # Handle different data types
                 if hasattr(value, 'isoformat'):
@@ -205,6 +207,9 @@ async def get_table_data(
                     value = str(value)
                     
                 row_dict[col] = value
+            # Add any missing columns as None
+            for col in columns[len(row):]:
+                row_dict[col] = None
             data.append(row_dict)
         
         return JSONResponse(content={
