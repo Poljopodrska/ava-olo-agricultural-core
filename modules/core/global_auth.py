@@ -37,6 +37,7 @@ PUBLIC_PATHS = [
     "/diagnostic/ip-check",  # IP detection diagnostic - public for testing
     "/dashboards",  # Dashboards landing page - public access
     "/dashboards/database",  # Database dashboard - public for admin use
+    "/dashboards/database/explorer",  # Database explorer - public for admin use
 ]
 
 class GlobalAuthMiddleware(BaseHTTPMiddleware):
