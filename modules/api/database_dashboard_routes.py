@@ -169,7 +169,7 @@ async def quick_query(query_type: str):
                        fa.manager_name, fa.manager_last_name
                 FROM fields f
                 LEFT JOIN farmers fa ON f.farmer_id = fa.id
-                ORDER BY f.created_at DESC
+                ORDER BY f.id DESC
                 LIMIT 100
             """,
             "farmers-by-country": """
@@ -377,7 +377,7 @@ def convert_nlq_to_sql(question: str) -> Optional[str]:
             SELECT f.*, fa.manager_name, fa.manager_last_name
             FROM fields f
             LEFT JOIN farmers fa ON f.farmer_id = fa.id
-            ORDER BY f.created_at DESC
+            ORDER BY f.id DESC
             LIMIT 100
         """
     
