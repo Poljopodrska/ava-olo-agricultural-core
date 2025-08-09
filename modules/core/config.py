@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809173000'  # v4.22.3 - Fix tuple index error in NLQ result processing
-COMMIT_HASH = "fix-tuple-index-error"  # Fix tuple index error when processing query results
+DEPLOYMENT_TIMESTAMP = '20250809174500'  # v4.22.5 - Fix fallback SQL query column mismatch
+COMMIT_HASH = "fix-fallback-query-columns"  # Fix column mismatch in fallback SQL queries
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.22.3"
+VERSION = "v4.22.5"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

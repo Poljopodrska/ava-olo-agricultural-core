@@ -186,12 +186,16 @@ async def natural_language_query(request: NLQRequest):
             })
         
         # Execute the query
+        logger.info(f"Executing SQL query: {sql_query}")
         result = execute_simple_query(sql_query, ())
         
         if result.get('success'):
             # Format the results
             rows = result.get('rows', [])
             columns = result.get('columns', [])
+            logger.info(f"Query returned {len(rows)} rows with {len(columns)} columns")
+            if rows and len(rows) > 0:
+                logger.info(f"First row has {len(rows[0])} values: {rows[0][:3] if len(rows[0]) > 3 else rows[0]}")
             
             # Convert rows to dict format
             data = []
@@ -453,8 +457,7 @@ def convert_nlq_to_sql(question: str) -> Optional[str]:
     if "edi kante" in question_lower:
         if "field" in question_lower:
             return """
-                SELECT f.id, f.field_name, f.area_ha, f.country,
-                       fa.manager_name, fa.manager_last_name
+                SELECT f.*, fa.manager_name, fa.manager_last_name
                 FROM fields f
                 JOIN farmers fa ON f.farmer_id = fa.id
                 WHERE LOWER(fa.manager_name) LIKE '%edi%' 
