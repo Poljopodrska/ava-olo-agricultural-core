@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809224500'  # v4.27.0 - Add comprehensive debug logging for corn query issue
-COMMIT_HASH = "debug-corn-logging"  # Extensive logging to trace why corn shows on wrong field
+DEPLOYMENT_TIMESTAMP = '20250809230000'  # v4.28.0 - Add unified farmer data API for dashboard consistency
+COMMIT_HASH = "unified-farmer-api"  # Ensures dashboard and chat get exactly same data
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.27.1"
+VERSION = "v4.28.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

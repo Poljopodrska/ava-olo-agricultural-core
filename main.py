@@ -86,6 +86,9 @@ from modules.api.database_dashboard_routes import router as database_dashboard_r
 from modules.api.database_explorer_routes import router as database_explorer_router
 from modules.api.llm_query_routes import router as llm_query_router
 
+# Unified farmer data API
+from modules.api.farmer_data_api import router as farmer_data_api_router
+
 # Global authentication middleware
 from modules.core.global_auth import GlobalAuthMiddleware
 
@@ -319,6 +322,8 @@ app.include_router(weather_location_router)
 app.include_router(cava_router)
 app.include_router(chat_router)
 app.include_router(chat_history_router)
+# Also mount chat router at /api/v1 for backward compatibility with dashboard
+app.include_router(chat_router, prefix="/api/v1")
 app.include_router(dashboard_chat_router)
 app.include_router(whatsapp_router)
 app.include_router(migration_router)
@@ -336,6 +341,9 @@ app.include_router(check_edi_router)
 app.include_router(test_save_router)
 app.include_router(check_fields_router)
 app.include_router(check_table_router)
+
+# Add unified farmer data API
+app.include_router(farmer_data_api_router)
 
 # Add debug Edi route
 from modules.api.debug_edi_route import router as debug_edi_router
