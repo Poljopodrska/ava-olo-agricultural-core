@@ -38,6 +38,7 @@ PUBLIC_PATHS = [
     "/dashboards",  # Dashboards landing page - public access
     "/dashboards/database",  # Database dashboard - public for admin use
     "/dashboards/database/explorer",  # Database explorer - public for admin use
+    "/dashboards/database/llm",  # LLM query assistant - public for admin use
 ]
 
 class GlobalAuthMiddleware(BaseHTTPMiddleware):

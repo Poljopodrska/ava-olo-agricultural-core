@@ -84,6 +84,7 @@ from modules.api.check_fields_table import router as check_table_router
 from modules.api.dashboards_landing_route import router as dashboards_landing_router
 from modules.api.database_dashboard_routes import router as database_dashboard_router
 from modules.api.database_explorer_routes import router as database_explorer_router
+from modules.api.llm_query_routes import router as llm_query_router
 
 # Global authentication middleware
 from modules.core.global_auth import GlobalAuthMiddleware
@@ -303,6 +304,7 @@ app.include_router(business_router)
 app.include_router(dashboards_landing_router)
 app.include_router(database_dashboard_router)
 app.include_router(database_explorer_router)
+app.include_router(llm_query_router)
 # Dashboard routers moved to monitoring-dashboards service
 app.include_router(webhook_router)
 app.include_router(system_router)
