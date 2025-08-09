@@ -95,24 +95,29 @@ async def execute_sql_query(request: SQLRequest):
             data = []
             for row in rows:
                 row_dict = {}
-                # Ensure we don't go out of bounds
-                for i in range(min(len(columns), len(row))):
+                # Ensure we don't go out of bounds - handle both tuple and list rows
+                row_len = len(row) if row else 0
+                for i in range(min(len(columns), row_len)):
                     col = columns[i]
-                    value = row[i]
-                    # Convert datetime to string if needed
-                    if hasattr(value, 'isoformat'):
-                        value = value.isoformat()
-                    elif isinstance(value, (int, float)):
-                        value = value
-                    elif value is None:
+                    try:
+                        value = row[i]
+                        # Convert datetime to string if needed
+                        if hasattr(value, 'isoformat'):
+                            value = value.isoformat()
+                        elif isinstance(value, (int, float)):
+                            value = value
+                        elif value is None:
+                            value = ""
+                        else:
+                            value = str(value)
+                    except IndexError:
                         value = ""
-                    else:
-                        value = str(value)
                     row_dict[col] = value
                 
                 # Add any missing columns as empty
-                for col in columns[len(row):]:
-                    row_dict[col] = ""
+                for i in range(row_len, len(columns)):
+                    if i < len(columns):
+                        row_dict[columns[i]] = ""
                     
                 data.append(row_dict)
             
@@ -192,24 +197,29 @@ async def natural_language_query(request: NLQRequest):
             data = []
             for row in rows:
                 row_dict = {}
-                # Ensure we don't go out of bounds
-                for i in range(min(len(columns), len(row))):
+                # Ensure we don't go out of bounds - handle both tuple and list rows
+                row_len = len(row) if row else 0
+                for i in range(min(len(columns), row_len)):
                     col = columns[i]
-                    value = row[i]
-                    # Convert datetime to string if needed
-                    if hasattr(value, 'isoformat'):
-                        value = value.isoformat()
-                    elif isinstance(value, (int, float)):
-                        value = value
-                    elif value is None:
+                    try:
+                        value = row[i]
+                        # Convert datetime to string if needed
+                        if hasattr(value, 'isoformat'):
+                            value = value.isoformat()
+                        elif isinstance(value, (int, float)):
+                            value = value
+                        elif value is None:
+                            value = ""
+                        else:
+                            value = str(value)
+                    except IndexError:
                         value = ""
-                    else:
-                        value = str(value)
                     row_dict[col] = value
                 
                 # Add any missing columns as empty
-                for col in columns[len(row):]:
-                    row_dict[col] = ""
+                for i in range(row_len, len(columns)):
+                    if i < len(columns):
+                        row_dict[columns[i]] = ""
                     
                 data.append(row_dict)
             

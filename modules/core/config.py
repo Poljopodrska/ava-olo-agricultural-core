@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809162000'  # v4.22.0 - Enhanced LLM query with farming intelligence
-COMMIT_HASH = "enhanced-llm-farming-context"  # Fix "list fields of Edi Kante" query interpretation
+DEPLOYMENT_TIMESTAMP = '20250809173000'  # v4.22.3 - Fix tuple index error in NLQ result processing
+COMMIT_HASH = "fix-tuple-index-error"  # Fix tuple index error when processing query results
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.22.2"
+VERSION = "v4.22.3"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
