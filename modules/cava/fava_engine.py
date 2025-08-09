@@ -188,8 +188,8 @@ RESPONSE FORMAT (JSON):
         context = {
             'farmer': welcome_package.get('farmer_info', {}),
             'fields': welcome_package.get('fields', []),
-            'crops': welcome_package.get('current_crops', []),
-            'recent_tasks': welcome_package.get('recent_tasks', []),
+            'crops': welcome_package.get('all_crops', welcome_package.get('current_crops', [])),
+            'recent_tasks': welcome_package.get('all_tasks', welcome_package.get('recent_tasks', [])),
             'recent_messages': [],  # Will be loaded separately if needed
             'total_hectares': welcome_package.get('total_hectares', 0),
             'total_fields': welcome_package.get('total_fields', 0),
