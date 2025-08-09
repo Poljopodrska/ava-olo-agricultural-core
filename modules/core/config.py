@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250807001800'  # v4.19.8 - Add endpoint to check fields table structure
-COMMIT_HASH = "check-fields-table"  # Check actual fields table structure and Edi's fields
+DEPLOYMENT_TIMESTAMP = '20250809162000'  # v4.22.0 - Enhanced LLM query with farming intelligence
+COMMIT_HASH = "enhanced-llm-farming-context"  # Fix "list fields of Edi Kante" query interpretation
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.21.3"
+VERSION = "v4.22.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

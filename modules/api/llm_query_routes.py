@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-LLM Query Routes
+LLM Query Routes - DEPRECATED: Now redirects to enhanced NLQ handler
 Provides AI-powered natural language to SQL query conversion using GPT-3.5
+Note: This module is deprecated. Use the enhanced database dashboard NLQ instead.
 """
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import logging
@@ -17,6 +18,7 @@ from ..core.config import VERSION
 from ..core.simple_db import execute_simple_query
 
 logger = logging.getLogger(__name__)
+logger.warning("llm_query_routes.py is DEPRECATED - redirecting to enhanced NLQ handler")
 
 router = APIRouter(prefix="/dashboards/database/llm", tags=["llm-query"])
 templates = Jinja2Templates(directory="templates")
@@ -41,15 +43,53 @@ class LLMQueryRequest(BaseModel):
 
 @router.get("", response_class=HTMLResponse)
 async def llm_query_page(request: Request):
-    """Main LLM query page"""
-    try:
-        return templates.TemplateResponse("llm_query.html", {
-            "request": request,
-            "version": VERSION
-        })
-    except Exception as e:
-        logger.error(f"Error rendering LLM query page: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    """
+    AI Assistant page - DEPRECATED
+    This tool is deprecated in favor of the Natural Language Query in the Database Dashboard.
+    Redirecting to the Database Dashboard which has proper farming context intelligence.
+    """
+    logger.warning("AI Assistant is DEPRECATED - redirecting to Database Dashboard with enhanced NLQ")
+    # Show deprecation notice before redirecting
+    deprecation_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>AI Assistant - Deprecated</title>
+        <meta http-equiv="refresh" content="3;url=/dashboards/database">
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                margin: 0;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .notice {
+                background: white;
+                padding: 40px;
+                border-radius: 10px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                text-align: center;
+                max-width: 500px;
+            }
+            h1 { color: #e53e3e; }
+            p { color: #4a5568; margin: 20px 0; }
+            .redirect { color: #667eea; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="notice">
+            <h1>⚠️ AI Assistant Deprecated</h1>
+            <p>The AI Assistant has been replaced by the enhanced Natural Language Query in the Database Dashboard.</p>
+            <p class="redirect">Redirecting to Database Dashboard in 3 seconds...</p>
+            <p>If not redirected, <a href="/dashboards/database">click here</a></p>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=deprecation_html)
 
 def get_database_schema() -> str:
     """Fetch the current database schema"""
@@ -116,12 +156,22 @@ def create_gpt_prompt(user_query: str, schema: str) -> str:
     """Create a detailed prompt for GPT-3.5"""
     current_date = datetime.now().strftime("%Y-%m-%d")
     
-    prompt = f"""You are a PostgreSQL SQL query expert. Your task is to convert natural language questions into SQL queries.
+    prompt = f"""You are a PostgreSQL SQL query expert for an agricultural database. Your task is to convert natural language questions into SQL queries.
 
 CURRENT DATE: {current_date}
 
+FARMING ENTITY RELATIONSHIPS:
+- Farmers OWN fields (farmers.id → fields.farmer_id)
+- Fields CONTAIN crops (fields.id → field_crops.field_id)
+- "fields of [PersonName]" means: find farmer named PersonName, then their fields
+- "what are edi kante's fields" means: find farmer Edi Kante and list their fields
+
 DATABASE SCHEMA:
 {schema}
+
+CRITICAL EXAMPLES:
+- "what are edi kante's fields" → SELECT f.* FROM fields f JOIN farmers fa ON f.farmer_id = fa.id WHERE fa.manager_name ILIKE '%edi%' AND fa.manager_last_name ILIKE '%kante%'
+- "list fields of Edi Kante" → SELECT f.* FROM fields f JOIN farmers fa ON f.farmer_id = fa.id WHERE fa.manager_name ILIKE '%edi%' AND fa.manager_last_name ILIKE '%kante%'
 
 IMPORTANT RULES:
 1. ONLY generate SELECT queries (no INSERT, UPDATE, DELETE, DROP, ALTER, CREATE)
@@ -133,7 +183,9 @@ IMPORTANT RULES:
 7. For date/time queries, use PostgreSQL date functions (NOW(), INTERVAL, DATE_TRUNC, etc.)
 8. Always use lowercase for table and column names
 9. When counting or aggregating, use appropriate GROUP BY clauses
-10. For text searches, use ILIKE for case-insensitive matching
+10. CRITICAL: For ALL person name searches, ALWAYS use ILIKE '%name%' - NEVER use = 'name'
+11. When searching for farmers like "Edi Kante", use: WHERE manager_name ILIKE '%edi%' AND manager_last_name ILIKE '%kante%'
+12. NEVER use exact match (=) for text fields - ALWAYS use ILIKE with wildcards
 
 USER QUESTION: {user_query}
 
@@ -268,7 +320,21 @@ def generate_fallback_sql(user_query: str) -> str:
 
 @router.post("/query", response_class=JSONResponse)
 async def process_llm_query(request: LLMQueryRequest):
-    """Process a natural language query using LLM"""
+    """
+    Process a natural language query using LLM - DEPRECATED
+    This endpoint is deprecated. Use /dashboards/database/nlq instead.
+    """
+    logger.warning(f"DEPRECATED AI Assistant query endpoint called with: {request.query}")
+    
+    # Return deprecation notice
+    return JSONResponse(content={
+        "success": False,
+        "error": "This AI Assistant is deprecated. Please use the Natural Language Query in the Database Dashboard at /dashboards/database",
+        "deprecated": True,
+        "redirect_to": "/dashboards/database"
+    })
+    
+    # Original code below is no longer executed
     try:
         user_query = request.query.strip()
         

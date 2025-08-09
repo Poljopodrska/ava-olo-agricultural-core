@@ -13,7 +13,32 @@ from typing import Optional, List, Dict, Any
 from ..core.config import VERSION
 from ..core.simple_db import execute_simple_query
 
+# Import enhanced LLM query handler
+try:
+    import sys
+    import os
+    # Add parent directory to path to import llm_query_handler
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    from llm_query_handler import LLMQueryHandler
+    from database_operations import DatabaseOperations
+    LLM_AVAILABLE = True
+except ImportError as e:
+    LLM_AVAILABLE = False
+    LLMQueryHandler = None
+    DatabaseOperations = None
+
 logger = logging.getLogger(__name__)
+
+# Initialize LLM handler if available
+llm_handler = None
+if LLM_AVAILABLE:
+    try:
+        db_ops = DatabaseOperations()
+        llm_handler = LLMQueryHandler(db_ops)
+        logger.info("Enhanced LLM query handler initialized successfully")
+    except Exception as e:
+        logger.warning(f"Could not initialize LLM handler: {e}")
+        llm_handler = None
 
 router = APIRouter(prefix="/dashboards/database", tags=["database-dashboard"])
 templates = Jinja2Templates(directory="templates")
@@ -112,10 +137,42 @@ async def execute_sql_query(request: SQLRequest):
 
 @router.post("/nlq", response_class=JSONResponse)
 async def natural_language_query(request: NLQRequest):
-    """Convert natural language to SQL and execute"""
+    """Convert natural language to SQL and execute with enhanced farming intelligence"""
     try:
-        # Convert natural language to SQL
-        sql_query = convert_nlq_to_sql(request.question)
+        sql_query = None
+        query_metadata = {}
+        
+        # Try enhanced LLM handler first if available
+        if llm_handler and LLM_AVAILABLE:
+            try:
+                llm_result = await llm_handler.convert_natural_language_to_sql(request.question)
+                
+                # Check if clarification is needed
+                if llm_result.get("needs_clarification"):
+                    return JSONResponse(content={
+                        "success": False,
+                        "needs_clarification": True,
+                        "clarification_question": llm_result.get("clarification_question"),
+                        "suggestion": llm_result.get("suggestion", ""),
+                        "error": "Query needs clarification"
+                    })
+                
+                sql_query = llm_result.get("sql_query")
+                query_metadata = {
+                    "query_type": llm_result.get("query_type"),
+                    "farming_context_used": llm_result.get("farming_context_used", False),
+                    "detected_relationship": llm_result.get("detected_relationship"),
+                    "potential_farmers": llm_result.get("potential_farmers", [])
+                }
+                logger.info(f"Enhanced LLM generated SQL: {sql_query}")
+            except Exception as e:
+                logger.warning(f"LLM handler failed, falling back to pattern matching: {e}")
+                sql_query = None
+        
+        # Fallback to simple pattern matching if LLM failed or unavailable
+        if not sql_query:
+            sql_query = convert_nlq_to_sql(request.question)
+            query_metadata = {"query_type": "pattern_based"}
         
         if not sql_query:
             return JSONResponse(content={
@@ -160,7 +217,8 @@ async def natural_language_query(request: NLQRequest):
                 "success": True,
                 "data": data,
                 "columns": columns,
-                "query": sql_query
+                "query": sql_query,
+                "metadata": query_metadata
             })
         else:
             return JSONResponse(content={
