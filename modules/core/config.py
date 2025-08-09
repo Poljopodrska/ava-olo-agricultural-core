@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250809224500'  # v4.27.0 - Add comprehensive debug logging for corn query issue
 COMMIT_HASH = "debug-corn-logging"  # Extensive logging to trace why corn shows on wrong field
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.27.0"
+VERSION = "v4.27.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
