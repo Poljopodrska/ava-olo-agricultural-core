@@ -353,6 +353,10 @@ app.include_router(debug_edi_router)
 from modules.api.debug_field_crops import router as debug_crops_router
 app.include_router(debug_crops_router)
 
+# Add field data debug route
+from modules.api.debug_field_data import router as debug_field_data_router
+app.include_router(debug_field_data_router)
+
 # Add test logging route
 from modules.api.test_logging import router as test_logging_router
 app.include_router(test_logging_router, prefix="/api")
