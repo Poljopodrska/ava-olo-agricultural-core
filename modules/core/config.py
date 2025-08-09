@@ -14,7 +14,7 @@ SERVICE_NAME = "agricultural-core"
 DEPLOYMENT_TIMESTAMP = '20250810000000'  # v4.29.0 - Remove field IDs from LLM prompt to fix "field 66" issue
 COMMIT_HASH = "fix-field-66"  # Don't show field IDs to LLM - it was confusing it
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.29.1"
+VERSION = "v4.29.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
