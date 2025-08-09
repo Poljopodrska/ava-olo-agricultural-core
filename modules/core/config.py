@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809201500'  # v4.23.6 - Add Redis diagnostic endpoint for Edi
-COMMIT_HASH = "redis-edi-diagnostic"  # Direct Redis debugging to see why Edi's data isn't cached
+DEPLOYMENT_TIMESTAMP = '20250809203000'  # v4.24.0 - Redis infrastructure configured
+COMMIT_HASH = "redis-infrastructure"  # Redis ElastiCache cluster created and configured in ECS
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.23.6"
+VERSION = "v4.24.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
