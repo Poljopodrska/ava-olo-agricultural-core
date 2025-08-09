@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809213800'  # v4.26.0 - Add field_activities integration for accurate crop and task data
-COMMIT_HASH = "add-field-activities"  # Integrate field_activities table for spraying/fertilizing data
+DEPLOYMENT_TIMESTAMP = '20250809220900'  # v4.26.1 - Add debug endpoint to investigate field_crops data
+COMMIT_HASH = "debug-field-crops"  # Debug why corn shows on wrong field
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.26.0"
+VERSION = "v4.26.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
