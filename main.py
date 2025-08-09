@@ -336,7 +336,12 @@ app.include_router(check_edi_router)
 app.include_router(test_save_router)
 app.include_router(check_fields_router)
 app.include_router(check_table_router)
-STARTUP_STATUS["total_routers_included"] = 35
+
+# Add debug Edi route
+from modules.api.debug_edi_route import router as debug_edi_router
+app.include_router(debug_edi_router)
+
+STARTUP_STATUS["total_routers_included"] = 36
 
 # Startup event
 @app.on_event("startup")
