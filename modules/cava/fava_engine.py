@@ -143,10 +143,16 @@ RESPONSE FORMAT (JSON):
             else:
                 logger.error(f"❌ Farmer {farmer_id} NOT FOUND in database!")
         
-        # Load crops
+        # Load crops WITH FIELD NAMES (critical fix!)
         if context['fields']:
             field_ids = ','.join(str(f['id']) for f in context['fields'])
-            crops_query = f"SELECT * FROM field_crops WHERE field_id IN ({field_ids})"
+            # FIXED: Join with fields table to get field_name
+            crops_query = f"""
+                SELECT fc.*, f.field_name 
+                FROM field_crops fc
+                JOIN fields f ON fc.field_id = f.id
+                WHERE fc.field_id IN ({field_ids})
+            """
             crops_result = await db_conn.fetch(crops_query)
             context['crops'] = [dict(row) for row in crops_result]
         else:
@@ -247,7 +253,17 @@ Fields ({len(farmer_context['fields'])} total):
         for crop in farmer_context['crops']:
             # Handle both field names - crop_type (old) and crop (new)
             crop_name = crop.get('crop', crop.get('crop_type', crop.get('crop_name', '')))
-            field_name = crop.get('field_name', 'unknown')
+            # CRITICAL FIX: Get field_name, not field_id!
+            field_name = crop.get('field_name')
+            if not field_name:
+                # Try to find field name from context fields
+                field_id = crop.get('field_id')
+                for field in farmer_context.get('fields', []):
+                    if field.get('id') == field_id:
+                        field_name = field.get('field_name', field.get('name', 'unknown'))
+                        break
+                if not field_name:
+                    field_name = f"unknown (ID: {field_id})" if field_id else 'unknown'
             variety = crop.get('variety', '')
             
             # DEBUG: Log each crop
