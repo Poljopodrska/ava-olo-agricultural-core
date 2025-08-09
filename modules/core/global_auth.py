@@ -35,6 +35,8 @@ PUBLIC_PATHS = [
     "/farmer/dashboard",  # Farmer dashboard - has its own auth via require_auth
     "/farmer/api",  # Farmer API endpoints - have their own auth
     "/diagnostic/ip-check",  # IP detection diagnostic - public for testing
+    "/dashboards",  # Dashboards landing page - public access
+    "/dashboards/database",  # Database dashboard - public for admin use
 ]
 
 class GlobalAuthMiddleware(BaseHTTPMiddleware):
