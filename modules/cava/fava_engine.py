@@ -87,23 +87,32 @@ RESPONSE FORMAT (JSON):
         NEW WAY: Get from Redis welcome package (much faster)
         """
         
-        logger.info(f"Loading context for farmer {farmer_id}")
-        logger.info(f"Welcome package manager available: {self.welcome_package_manager is not None}")
+        logger.info(f"🎯 CONTEXT LOADING for farmer {farmer_id}")
+        logger.info(f"  - Welcome package manager: {'AVAILABLE' if self.welcome_package_manager else 'NOT AVAILABLE'}")
         
         # Try to use welcome package manager if available
         if self.welcome_package_manager:
             try:
-                logger.info(f"Attempting to load welcome package for farmer {farmer_id}")
+                logger.info(f"  - Attempting Redis fetch for farmer {farmer_id}")
                 # Get welcome package from Redis (or auto-build if missing)
                 welcome_package = self.welcome_package_manager.get_welcome_package(farmer_id)
                 
-                # Transform welcome package into FAVA context format
-                context = self._transform_welcome_package_to_context(welcome_package)
-                logger.info(f"✅ Loaded farmer context from welcome package for farmer {farmer_id}")
-                logger.info(f"Context has {len(context.get('fields', []))} fields")
-                return context
+                if welcome_package:
+                    logger.info(f"  - Welcome package retrieved: {list(welcome_package.keys())}")
+                    logger.info(f"  - Fields in package: {len(welcome_package.get('fields', []))}")
+                    
+                    # Log field details
+                    for field in welcome_package.get('fields', [])[:3]:  # First 3 fields
+                        logger.info(f"    - Field: {field}")
+                    
+                    # Transform welcome package into FAVA context format
+                    context = self._transform_welcome_package_to_context(welcome_package)
+                    logger.info(f"✅ SUCCESS: Loaded from Redis - {len(context.get('fields', []))} fields")
+                    return context
+                else:
+                    logger.warning(f"  - Welcome package was empty/None")
             except Exception as e:
-                logger.error(f"❌ Failed to load welcome package for farmer {farmer_id}: {e}", exc_info=True)
+                logger.error(f"❌ REDIS FAILED for farmer {farmer_id}: {str(e)}", exc_info=True)
         
         # Fallback to original database loading if welcome package not available
         logger.info(f"Using database fallback for farmer {farmer_id}")

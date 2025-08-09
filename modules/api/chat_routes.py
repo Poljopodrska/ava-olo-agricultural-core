@@ -835,16 +835,28 @@ async def chat_with_cava_engine(request: ChatRequest):
                         for similar in similar_results:
                             logger.info(f"  - {similar['wa_phone_number']}: {similar['manager_name']}")
                 
-                # Get fields
+                # Get fields - FIXED COLUMN NAMES!
                 if farmer_id:
-                    fields_result = await conn.fetch(
-                        "SELECT field_name, crop, hectares FROM fields WHERE farmer_id = $1",
-                        farmer_id
-                    )
-                    farmer_context["fields"] = [
-                        {"name": f["field_name"], "crop": f["crop"], "hectares": f["hectares"]}
-                        for f in fields_result
-                    ]
+                    logger.info(f"📊 DEBUG: Fetching fields for farmer_id={farmer_id}")
+                    try:
+                        fields_result = await conn.fetch(
+                            "SELECT id, field_name, area_ha FROM fields WHERE farmer_id = $1",
+                            farmer_id
+                        )
+                        logger.info(f"📊 DEBUG: Found {len(fields_result)} fields for farmer {farmer_id}")
+                        
+                        farmer_context["fields"] = []
+                        for f in fields_result:
+                            field_data = {
+                                "id": f["id"],
+                                "name": f["field_name"] or f"Field {f['id']}",
+                                "hectares": float(f["area_ha"]) if f["area_ha"] else 0
+                            }
+                            farmer_context["fields"].append(field_data)
+                            logger.info(f"  - Field: {field_data['name']} ({field_data['hectares']} ha)")
+                    except Exception as field_error:
+                        logger.error(f"❌ DEBUG: Error fetching fields: {field_error}")
+                        farmer_context["fields"] = []
         except Exception as e:
             logger.warning(f"Could not fetch farmer context: {e}")
         
