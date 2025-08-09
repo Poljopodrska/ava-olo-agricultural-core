@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Dashboard - AVA OLO</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            color: #2d3748;
+            font-size: 1.8em;
+        }
+        
+        .back-btn {
+            background: #4299e1;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #3182ce;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .query-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .query-card h2 {
+            margin-top: 0;
+            color: #2d3748;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        
+        .nlq-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .nlq-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .nlq-input:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        
+        .nlq-submit {
+            background: #48bb78;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .nlq-submit:hover {
+            background: #38a169;
+        }
+        
+        .quick-queries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .quick-query-btn {
+            background: #f7fafc;
+            border: 2px solid #cbd5e0;
+            padding: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .quick-query-btn:hover {
+            background: #edf2f7;
+            border-color: #4299e1;
+            transform: translateY(-2px);
+        }
+        
+        .quick-query-btn strong {
+            display: block;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .quick-query-btn span {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .results-container.active {
+            display: block;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .results-title {
+            font-size: 1.3em;
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .results-stats {
+            color: #718096;
+            font-size: 0.9em;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .results-table th {
+            background: #f7fafc;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #4a5568;
+        }
+        
+        .results-table tr:hover {
+            background: #f7fafc;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .examples {
+            background: #f0fff4;
+            border-left: 4px solid #48bb78;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .examples h3 {
+            margin-top: 0;
+            color: #22543d;
+        }
+        
+        .examples ul {
+            margin: 10px 0;
+            padding-left: 20px;
+            color: #2f855a;
+        }
+        
+        .examples li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🗄️ Database Dashboard</h1>
+            <a href="/dashboards" class="back-btn">← Back to Dashboards</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Natural Language Query -->
+        <div class="query-card">
+            <h2>Natural Language Query</h2>
+            <form class="nlq-form" onsubmit="executeNLQ(event)">
+                <input type="text" 
+                       class="nlq-input" 
+                       id="nlq-input"
+                       placeholder="Ask a question about the data, e.g., 'Show all fields for Edi Kante'" 
+                       required>
+                <button type="submit" class="nlq-submit">Search</button>
+            </form>
+            
+            <div class="examples">
+                <h3>Example Queries:</h3>
+                <ul>
+                    <li>"Show all fields for farmer Edi Kante"</li>
+                    <li>"How many farmers do we have from Slovenia?"</li>
+                    <li>"List farmers with more than 10 hectares"</li>
+                    <li>"Show recent farmer registrations"</li>
+                    <li>"What crops are being grown?"</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Quick Queries -->
+        <div class="query-card">
+            <h2>Quick Queries</h2>
+            <div class="quick-queries">
+                <button class="quick-query-btn" onclick="executeQuickQuery('total-farmers')">
+                    <strong>Total Farmers</strong>
+                    <span>Count of all active farmers</span>
+                </button>
+                <button class="quick-query-btn" onclick="executeQuickQuery('recent-farmers')">
+                    <strong>Recent Registrations</strong>
+                    <span>Last 10 farmer registrations</span>
+                </button>
+                <button class="quick-query-btn" onclick="executeQuickQuery('all-fields')">
+                    <strong>All Fields</strong>
+                    <span>List all registered fields</span>
+                </button>
+                <button class="quick-query-btn" onclick="executeQuickQuery('farmers-by-country')">
+                    <strong>Farmers by Country</strong>
+                    <span>Group farmers by country</span>
+                </button>
+                <button class="quick-query-btn" onclick="searchFarmerByName()">
+                    <strong>Search Farmer</strong>
+                    <span>Find farmer by name</span>
+                </button>
+                <button class="quick-query-btn" onclick="executeQuickQuery('field-statistics')">
+                    <strong>Field Statistics</strong>
+                    <span>Total area and averages</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Results -->
+        <div class="results-container" id="results-container">
+            <div class="results-header">
+                <h3 class="results-title">Query Results</h3>
+                <div class="results-stats" id="results-stats"></div>
+            </div>
+            <div id="results-content"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function executeNLQ(event) {
+            event.preventDefault();
+            const question = document.getElementById('nlq-input').value;
+            
+            showLoading();
+            
+            try {
+                const response = await fetch('/dashboards/database/nlq', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data, data.columns, data.query);
+                } else {
+                    showError(data.error || 'Query failed');
+                }
+            } catch (error) {
+                showError('Failed to execute query: ' + error.message);
+            }
+        }
+        
+        async function executeQuickQuery(queryType) {
+            showLoading();
+            
+            try {
+                const response = await fetch(`/dashboards/database/quick/${queryType}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data, data.columns, data.query);
+                } else {
+                    showError(data.error || 'Query failed');
+                }
+            } catch (error) {
+                showError('Failed to execute query: ' + error.message);
+            }
+        }
+        
+        async function searchFarmerByName() {
+            const name = prompt('Enter farmer name to search:');
+            if (!name) return;
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`/dashboards/database/search-farmer?name=${encodeURIComponent(name)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data, data.columns, data.query);
+                } else {
+                    showError(data.error || 'Search failed');
+                }
+            } catch (error) {
+                showError('Failed to search: ' + error.message);
+            }
+        }
+        
+        function showLoading() {
+            const container = document.getElementById('results-container');
+            const content = document.getElementById('results-content');
+            container.classList.add('active');
+            content.innerHTML = '<div class="loading">Loading...</div>';
+        }
+        
+        function showError(message) {
+            const container = document.getElementById('results-container');
+            const content = document.getElementById('results-content');
+            container.classList.add('active');
+            content.innerHTML = `<div class="error">Error: ${message}</div>`;
+        }
+        
+        function displayResults(data, columns, query) {
+            const container = document.getElementById('results-container');
+            const content = document.getElementById('results-content');
+            const stats = document.getElementById('results-stats');
+            
+            container.classList.add('active');
+            
+            if (!data || data.length === 0) {
+                content.innerHTML = '<p>No results found</p>';
+                stats.textContent = '0 rows';
+                return;
+            }
+            
+            stats.textContent = `${data.length} rows`;
+            
+            // If columns are provided, use them; otherwise get from data
+            if (!columns && data.length > 0) {
+                columns = Object.keys(data[0]);
+            }
+            
+            let html = '<table class="results-table"><thead><tr>';
+            
+            // Headers
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // Rows
+            data.forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    const value = row[col] !== null && row[col] !== undefined ? row[col] : '';
+                    html += `<td>${value}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            if (query) {
+                html += `<div style="margin-top: 20px; padding: 10px; background: #f7fafc; border-radius: 4px;">
+                    <strong>SQL Query:</strong><br>
+                    <code style="color: #2d3748;">${query}</code>
+                </div>`;
+            }
+            
+            content.innerHTML = html;
+        }
+    </script>
+</body>
+</html>

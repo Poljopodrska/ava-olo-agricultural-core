@@ -80,8 +80,9 @@ from modules.api.test_message_save import router as test_save_router
 from modules.api.check_edi_fields import router as check_fields_router
 from modules.api.check_fields_table import router as check_table_router
 
-# Dashboards landing page
+# Dashboards landing page and database dashboard
 from modules.api.dashboards_landing_route import router as dashboards_landing_router
+from modules.api.database_dashboard_routes import router as database_dashboard_router
 
 # Global authentication middleware
 from modules.core.global_auth import GlobalAuthMiddleware
@@ -299,6 +300,7 @@ app.include_router(agricultural_router)
 app.include_router(debug_router)
 app.include_router(business_router)
 app.include_router(dashboards_landing_router)
+app.include_router(database_dashboard_router)
 # Dashboard routers moved to monitoring-dashboards service
 app.include_router(webhook_router)
 app.include_router(system_router)
