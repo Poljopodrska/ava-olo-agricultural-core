@@ -117,9 +117,21 @@ RESPONSE FORMAT (JSON):
         
         # Load fields
         fields_query = f"SELECT * FROM fields WHERE farmer_id = {farmer_id}"
+        logger.info(f"🔍 FAVA FIELDS QUERY: {fields_query}")
         fields_result = await db_conn.fetch(fields_query)
         context['fields'] = [dict(row) for row in fields_result]
-        logger.info(f"Found {len(context['fields'])} fields for farmer {farmer_id}")
+        logger.info(f"📊 FAVA FIELDS RESULT: Found {len(context['fields'])} fields for farmer {farmer_id}")
+        if context['fields']:
+            for field in context['fields']:
+                logger.info(f"  - Field: {field.get('field_name', 'unnamed')} ({field.get('area_ha', 0)} ha)")
+        else:
+            logger.warning(f"⚠️ NO FIELDS FOUND for farmer {farmer_id} - checking if farmer exists...")
+            check_farmer = f"SELECT id, manager_name, manager_last_name FROM farmers WHERE id = {farmer_id}"
+            farmer_check = await db_conn.fetchrow(check_farmer)
+            if farmer_check:
+                logger.info(f"✅ Farmer {farmer_id} EXISTS: {dict(farmer_check)}")
+            else:
+                logger.error(f"❌ Farmer {farmer_id} NOT FOUND in database!")
         
         # Load crops
         if context['fields']:

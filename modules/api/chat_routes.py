@@ -768,11 +768,35 @@ async def chat_with_cava_engine(request: ChatRequest):
         logger.info(f"🔍 DEBUG: Looking up farmer for WhatsApp: {wa_phone_number}")
         try:
             async with db_manager.get_connection_async() as conn:
-                # Get farmer info
+                # Get farmer info - try exact match first
                 farmer_result = await conn.fetchrow(
-                    "SELECT id, first_name, last_name, location, manager_name, manager_last_name FROM farmers WHERE wa_phone_number = $1 OR phone = $1",
+                    "SELECT id, first_name, last_name, location, manager_name, manager_last_name, wa_phone_number, phone FROM farmers WHERE wa_phone_number = $1 OR phone = $1",
                     wa_phone_number
                 )
+                
+                # If no match, try with different formats
+                if not farmer_result and wa_phone_number:
+                    logger.info(f"  - No exact match for {wa_phone_number}, trying alternate formats...")
+                    
+                    # Try without + prefix
+                    if wa_phone_number.startswith('+'):
+                        alt_phone = wa_phone_number.lstrip('+')
+                        farmer_result = await conn.fetchrow(
+                            "SELECT id, first_name, last_name, location, manager_name, manager_last_name, wa_phone_number, phone FROM farmers WHERE wa_phone_number = $1 OR phone = $1",
+                            alt_phone
+                        )
+                        if farmer_result:
+                            logger.info(f"  - Found with alternate format (no +): {alt_phone}")
+                    
+                    # Try with + prefix if not present
+                    if not farmer_result and not wa_phone_number.startswith('+'):
+                        alt_phone = '+' + wa_phone_number
+                        farmer_result = await conn.fetchrow(
+                            "SELECT id, first_name, last_name, location, manager_name, manager_last_name, wa_phone_number, phone FROM farmers WHERE wa_phone_number = $1 OR phone = $1",
+                            alt_phone
+                        )
+                        if farmer_result:
+                            logger.info(f"  - Found with + prefix: {alt_phone}")
                 
                 logger.info(f"🔍 DEBUG: Farmer query result: {farmer_result is not None}")
                 
@@ -786,6 +810,14 @@ async def chat_with_cava_engine(request: ChatRequest):
                     logger.info(f"✅ DEBUG: Found farmer ID {farmer_id}: {fname} {lname}")
                 else:
                     logger.warning(f"❌ DEBUG: No farmer found for WhatsApp: {wa_phone_number}")
+                    # Check what phone numbers exist for Edi
+                    edi_check = await conn.fetch(
+                        "SELECT id, manager_name, wa_phone_number, phone FROM farmers WHERE LOWER(manager_name) LIKE '%edi%' LIMIT 5"
+                    )
+                    if edi_check:
+                        logger.info(f"  - Found Edi entries in database:")
+                        for row in edi_check:
+                            logger.info(f"    - ID: {row['id']}, Name: {row['manager_name']}, WA: {row['wa_phone_number']}, Phone: {row['phone']}")
                     
                     # Try to find similar numbers
                     similar_query = """
