@@ -11,7 +11,6 @@ import logging
 import os
 import json
 from typing import Optional, List, Dict, Any
-import openai
 from datetime import datetime
 
 from ..core.config import VERSION
@@ -24,10 +23,18 @@ templates = Jinja2Templates(directory="templates")
 
 # OpenAI API configuration
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+openai_client = None
+
 if not OPENAI_API_KEY:
     logger.warning("OPENAI_API_KEY not set - LLM queries will use fallback mode")
 else:
-    openai.api_key = OPENAI_API_KEY
+    try:
+        from openai import OpenAI
+        openai_client = OpenAI(api_key=OPENAI_API_KEY)
+        logger.info("OpenAI client initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize OpenAI client: {e}")
+        openai_client = None
 
 class LLMQueryRequest(BaseModel):
     query: str
@@ -137,13 +144,13 @@ Please respond with ONLY the SQL query, no explanations or markdown. The query s
 def generate_sql_with_gpt(user_query: str, schema: str) -> tuple[str, str]:
     """Generate SQL using GPT-3.5"""
     try:
-        if not OPENAI_API_KEY:
-            # Fallback to simple pattern matching if no API key
-            return generate_fallback_sql(user_query), "Using fallback SQL generation (no OpenAI API key)"
+        if not openai_client:
+            # Fallback to simple pattern matching if no API key or client
+            return generate_fallback_sql(user_query), "Using fallback SQL generation (OpenAI not available)"
         
         prompt = create_gpt_prompt(user_query, schema)
         
-        response = openai.ChatCompletion.create(
+        response = openai_client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a PostgreSQL SQL expert. Generate only executable SQL queries."},
