@@ -71,24 +71,63 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
             logger.error(f"❌ Exception storing user message for {wa_phone}: {e}")
             # Continue anyway to provide response to user
         
-        # Use CAVA engine for intelligent responses
-        cava_engine = get_cava_engine()
+        # Use FAVA for farmer-aware intelligence (with Redis caching)
+        from modules.cava.fava_engine import get_fava_engine
+        from modules.core.database_manager import DatabaseManager
         
-        # Ensure engine is initialized
-        if not cava_engine.initialized:
-            await cava_engine.initialize()
+        response_text = None
+        fava_response = None
         
-        # Create session ID based on farmer
-        session_id = f"farmer_{farmer['farmer_id']}_dashboard"
+        # Try FAVA first for farmer-specific intelligence
+        logger.info(f"🤖 Dashboard: Using FAVA for farmer {farmer['farmer_id']}")
+        try:
+            fava_engine = get_fava_engine()
+            db_manager = DatabaseManager()
+            
+            async with db_manager.get_connection_async() as conn:
+                fava_response = await fava_engine.process_farmer_message(
+                    farmer_id=farmer['farmer_id'],
+                    message=message,
+                    db_connection=conn,
+                    language_code='en'  # TODO: Get from farmer preferences
+                )
+                
+                if fava_response and fava_response.get('response'):
+                    response_text = fava_response['response']
+                    logger.info(f"✅ FAVA response received for dashboard chat")
+                    
+                    # Execute any database actions if suggested
+                    if fava_response.get('sql_query') and not fava_response.get('needs_confirmation'):
+                        try:
+                            sql_query = fava_response['sql_query']
+                            logger.info(f"Executing FAVA suggested SQL: {sql_query[:100]}...")
+                            await conn.execute(sql_query)
+                        except Exception as sql_error:
+                            logger.error(f"Failed to execute FAVA SQL: {sql_error}")
+                            
+        except Exception as fava_error:
+            logger.error(f"FAVA failed: {fava_error}")
         
-        # Get GPT response with farmer context
-        result = await cava_engine.chat(
-            session_id=session_id,
-            message=message,
-            farmer_context=farmer_context
-        )
-        
-        response_text = result.get("response", "I'm here to help with your farming questions!")
+        # Fallback to CAVA if FAVA didn't provide response
+        if not response_text:
+            logger.info("Falling back to CAVA engine")
+            cava_engine = get_cava_engine()
+            
+            # Ensure engine is initialized
+            if not cava_engine.initialized:
+                await cava_engine.initialize()
+            
+            # Create session ID based on farmer
+            session_id = f"farmer_{farmer['farmer_id']}_dashboard"
+            
+            # Get GPT response with farmer context
+            result = await cava_engine.chat(
+                session_id=session_id,
+                message=message,
+                farmer_context=farmer_context
+            )
+            
+            response_text = result.get("response", "I'm here to help with your farming questions!")
         
         # Store assistant response in database
         try:
@@ -155,7 +194,7 @@ async def get_farmer_chat_context(farmer_id: int) -> Dict:
         # Get farmer's fields using simple_db
         fields_query = """
         SELECT 
-            field_id,
+            id,
             field_name,
             area_ha
         FROM fields
