@@ -492,13 +492,18 @@ async def dev_database_query(request: Request):
             rows = []
             for row in result:
                 row_dict = {}
-                for i, col in enumerate(columns):
+                # Ensure we don't go out of bounds
+                for i in range(min(len(columns), len(row))):
+                    col = columns[i]
                     value = row[i]
                     if isinstance(value, Decimal):
                         value = float(value)
                     elif isinstance(value, datetime):
                         value = value.isoformat()
                     row_dict[col] = value
+                # Add any missing columns as None
+                for col in columns[len(row):]:
+                    row_dict[col] = None
                 rows.append(row_dict)
             
             logger.info(f"DEV QUERY EXECUTED: {query[:100]}...")

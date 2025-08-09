@@ -333,8 +333,10 @@ async def search_farmer(name: str):
                     
                     for row in fields_rows:
                         field_dict = {}
-                        for i, col in enumerate(fields_columns):
-                            value = row[i] if i < len(row) else None
+                        # Ensure we don't go out of bounds
+                        for i in range(min(len(fields_columns), len(row))):
+                            col = fields_columns[i]
+                            value = row[i]
                             if hasattr(value, 'isoformat'):
                                 value = value.isoformat()
                             elif isinstance(value, (int, float)):
@@ -344,6 +346,9 @@ async def search_farmer(name: str):
                             else:
                                 value = str(value)
                             field_dict[col] = value
+                        # Add any missing columns as empty
+                        for col in fields_columns[len(row):]:
+                            field_dict[col] = ""
                         fields_data.append(field_dict)
                     
                     # Add fields to farmers

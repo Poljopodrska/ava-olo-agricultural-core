@@ -204,12 +204,17 @@ async def execute_natural_query(request: Request):
             formatted_data = []
             for row in data:
                 formatted_row = {}
-                for i, col in enumerate(columns):
+                # Ensure we don't go out of bounds
+                for i in range(min(len(columns), len(row))):
+                    col = columns[i]
                     value = row[i]
                     # Convert datetime objects to strings
                     if hasattr(value, 'strftime'):
                         value = value.strftime('%Y-%m-%d %H:%M:%S')
                     formatted_row[col] = value
+                # Add any missing columns as None
+                for col in columns[len(row):]:
+                    formatted_row[col] = None
                 formatted_data.append(formatted_row)
             
             return {
