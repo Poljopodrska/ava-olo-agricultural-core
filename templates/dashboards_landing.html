@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVA OLO Dashboards</title>
+    <link rel="stylesheet" href="/static/css/constitutional-design-v3.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header .subtitle {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            border-color: #6c9a8b;
+        }
+        
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #6c9a8b, #8db5a6);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .dashboard-card:hover::before {
+            transform: scaleX(1);
+        }
+        
+        .dashboard-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .dashboard-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .dashboard-description {
+            color: #666;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #6c9a8b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+        
+        .section-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+            margin: 40px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .external-badge {
+            background: #e74c3c;
+        }
+        
+        .auth-required {
+            background: #f39c12;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌾 AVA OLO Dashboards</h1>
+        <p class="subtitle">Agricultural Management & Monitoring Center</p>
+    </div>
+    
+    <div class="container">
+        <!-- Farmer Dashboards -->
+        <h2 class="section-title">Farmer Dashboards</h2>
+        <div class="dashboard-grid">
+            <a href="/farmer/dashboard" class="dashboard-card">
+                <span class="dashboard-icon">👨‍🌾</span>
+                <div class="dashboard-title">Farmer Dashboard</div>
+                <div class="dashboard-description">
+                    View your personal farming data including fields, weather, and messages.
+                </div>
+                <span class="badge auth-required">Login Required</span>
+            </a>
+        </div>
+        
+        <!-- Admin & Monitoring Dashboards -->
+        <h2 class="section-title">Admin & Monitoring Dashboards</h2>
+        <div class="dashboard-grid">
+            <a href="https://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/dashboards/database" class="dashboard-card">
+                <span class="dashboard-icon">🗄️</span>
+                <div class="dashboard-title">Database Dashboard</div>
+                <div class="dashboard-description">
+                    Query and manage farmer data, fields, and agricultural records. Includes Natural Language Query support.
+                </div>
+                <span class="badge external-badge">Monitoring Service</span>
+            </a>
+            
+            <a href="https://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/dashboards/health" class="dashboard-card">
+                <span class="dashboard-icon">💚</span>
+                <div class="dashboard-title">Health Dashboard</div>
+                <div class="dashboard-description">
+                    Monitor system health, service status, and performance metrics.
+                </div>
+                <span class="badge external-badge">Monitoring Service</span>
+            </a>
+            
+            <a href="https://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/dashboards/business" class="dashboard-card">
+                <span class="dashboard-icon">📊</span>
+                <div class="dashboard-title">Business Dashboard</div>
+                <div class="dashboard-description">
+                    Business analytics, subscription management, and revenue tracking.
+                </div>
+                <span class="badge external-badge">Monitoring Service</span>
+            </a>
+            
+            <a href="https://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/dashboards/deployment" class="dashboard-card">
+                <span class="dashboard-icon">🚀</span>
+                <div class="dashboard-title">Deployment Dashboard</div>
+                <div class="dashboard-description">
+                    Track deployments, version history, and system updates.
+                </div>
+                <span class="badge external-badge">Monitoring Service</span>
+            </a>
+        </div>
+        
+        <!-- Data Management -->
+        <h2 class="section-title">Data Management</h2>
+        <div class="dashboard-grid">
+            <a href="https://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/dashboards/database/retrieval" class="dashboard-card">
+                <span class="dashboard-icon">🔍</span>
+                <div class="dashboard-title">Data Retrieval</div>
+                <div class="dashboard-description">
+                    Advanced data queries with Natural Language support. Search farmers, fields, and tasks.
+                </div>
+                <span class="badge external-badge">Monitoring Service</span>
+            </a>
+            
+            <a href="https://ava-olo-internal-alb-426050720.us-east-1.elb.amazonaws.com/dashboards/database/schema" class="dashboard-card">
+                <span class="dashboard-icon">📐</span>
+                <div class="dashboard-title">Database Schema</div>
+                <div class="dashboard-description">
+                    View database structure, table relationships, and schema documentation.
+                </div>
+                <span class="badge external-badge">Monitoring Service</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>AVA OLO Agricultural Core v{{ version }} | © 2025 AVA OLO</p>
+    </div>
+</body>
+</html>
