@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809195000'  # v4.23.5 - Fix field column names and add Redis debug logging
-COMMIT_HASH = "fix-fields-redis-debug"  # Fix wrong column names (hectares->area_ha) and trace Redis usage
+DEPLOYMENT_TIMESTAMP = '20250809201500'  # v4.23.6 - Add Redis diagnostic endpoint for Edi
+COMMIT_HASH = "redis-edi-diagnostic"  # Direct Redis debugging to see why Edi's data isn't cached
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.23.5"
+VERSION = "v4.23.6"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

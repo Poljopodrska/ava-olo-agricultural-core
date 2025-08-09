@@ -341,6 +341,10 @@ app.include_router(check_table_router)
 from modules.api.debug_edi_route import router as debug_edi_router
 app.include_router(debug_edi_router)
 
+# Add Redis debug route
+from modules.api.redis_debug_route import router as redis_debug_router
+app.include_router(redis_debug_router)
+
 STARTUP_STATUS["total_routers_included"] = 36
 
 # Startup event
