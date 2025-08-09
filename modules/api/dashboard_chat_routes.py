@@ -80,17 +80,29 @@ async def dashboard_chat_message(chat_request: DashboardChatRequest, request: Re
         
         # Try FAVA first for farmer-specific intelligence
         logger.info(f"🤖 Dashboard: Using FAVA for farmer {farmer['farmer_id']}")
+        logger.info(f"📝 DASHBOARD CHAT - Message: '{message}'")
+        
+        # Special debug for corn query
+        if 'corn' in message.lower():
+            logger.info(f"🌽 CORN QUERY DETECTED for farmer {farmer['farmer_id']} (Edi)")
+        
         try:
             fava_engine = get_fava_engine()
             db_manager = DatabaseManager()
             
             async with db_manager.get_connection_async() as conn:
+                logger.info(f"🔍 About to call FAVA with message: {message}")
+                
                 fava_response = await fava_engine.process_farmer_message(
                     farmer_id=farmer['farmer_id'],
                     message=message,
                     db_connection=conn,
                     language_code='en'  # TODO: Get from farmer preferences
                 )
+                
+                logger.info(f"✅ FAVA response received: {fava_response.get('response', 'No response')[:200]}")
+                if 'corn' in message.lower():
+                    logger.info(f"🌽 FULL FAVA RESPONSE for corn query: {fava_response}")
                 
                 if fava_response and fava_response.get('response'):
                     response_text = fava_response['response']

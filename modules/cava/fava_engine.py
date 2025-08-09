@@ -87,8 +87,9 @@ RESPONSE FORMAT (JSON):
         NEW WAY: Get from Redis welcome package (much faster)
         """
         
-        logger.info(f"🎯 CONTEXT LOADING for farmer {farmer_id}")
+        logger.info(f"🎯 FAVA CONTEXT LOADING for farmer {farmer_id}")
         logger.info(f"  - Welcome package manager: {'AVAILABLE' if self.welcome_package_manager else 'NOT AVAILABLE'}")
+        logger.info(f"  - Farmer ID: {farmer_id} (Type: {type(farmer_id)})")
         
         # Try to use welcome package manager if available
         if self.welcome_package_manager:
@@ -238,10 +239,25 @@ Fields ({len(farmer_context['fields'])} total):
             context_text += f"- {field.get('field_name', 'Unknown')} (ID: {field.get('id', '?')}): {field.get('area_ha', 0)} hectares\n"
         
         context_text += f"\nCrops ({len(farmer_context['crops'])} active):\n"
+        
+        # DEBUG: Log all crops found
+        logger.info(f"🌾 FAVA CROPS CONTEXT: Found {len(farmer_context['crops'])} crops")
+        
         for crop in farmer_context['crops']:
             # Handle both field names - crop_type (old) and crop (new)
             crop_name = crop.get('crop', crop.get('crop_type', crop.get('crop_name', '')))
-            context_text += f"- Field {crop.get('field_name', 'unknown')}: {crop_name} - {crop.get('variety', '')} (planted {crop.get('planting_date', crop.get('start_date', 'unknown'))})\n"
+            field_name = crop.get('field_name', 'unknown')
+            variety = crop.get('variety', '')
+            
+            # DEBUG: Log each crop
+            logger.info(f"  - Crop: {crop_name} on field '{field_name}' (variety: {variety})")
+            
+            # Special debug for corn
+            if crop_name and 'corn' in crop_name.lower():
+                logger.info(f"🌽 CORN FOUND: Field '{field_name}', Crop '{crop_name}', Variety '{variety}'")
+                logger.info(f"🌽 Full crop data: {crop}")
+            
+            context_text += f"- Field {field_name}: {crop_name} - {variety} (planted {crop.get('planting_date', crop.get('start_date', 'unknown'))})\n"
         
         context_text += f"\nRecent Tasks:\n"
         for task in farmer_context['recent_tasks'][:5]:
