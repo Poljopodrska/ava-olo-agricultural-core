@@ -236,7 +236,8 @@ Fields ({len(farmer_context['fields'])} total):
 """
         
         for field in farmer_context['fields']:
-            context_text += f"- {field.get('field_name', 'Unknown')} (ID: {field.get('id', '?')}): {field.get('area_ha', 0)} hectares\n"
+            # Don't include field ID in the prompt - it confuses the LLM
+            context_text += f"- {field.get('field_name', 'Unknown')}: {field.get('area_ha', 0)} hectares\n"
         
         context_text += f"\nCrops ({len(farmer_context['crops'])} active):\n"
         
