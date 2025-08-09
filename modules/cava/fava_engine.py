@@ -20,11 +20,12 @@ class FAVAEngine:
     """
     
     def __init__(self):
-        """Initialize FAVA with OpenAI connection"""
+        """Initialize FAVA with OpenAI connection and Welcome Package Manager"""
         self.api_key = os.getenv('OPENAI_API_KEY')
         self.api_url = "https://api.openai.com/v1/chat/completions"
         self.model = "gpt-3.5-turbo"
         self.static_prompt = self._load_static_prompt()
+        self.welcome_package_manager = None  # Will be initialized when needed
         
     def _load_static_prompt(self) -> str:
         """Load the static FAVA prompt template"""
@@ -81,9 +82,25 @@ RESPONSE FORMAT (JSON):
     
     async def _load_farmer_context(self, farmer_id: int, db_conn: Any) -> Dict:
         """
-        Load ALL farmer context from database
-        Pure queries - NO conditional logic
+        Load farmer context using Welcome Package system (Redis-first, database fallback)
+        OLD WAY: Multiple database queries for each message
+        NEW WAY: Get from Redis welcome package (much faster)
         """
+        
+        # Try to use welcome package manager if available
+        if self.welcome_package_manager:
+            try:
+                # Get welcome package from Redis (or auto-build if missing)
+                welcome_package = self.welcome_package_manager.get_welcome_package(farmer_id)
+                
+                # Transform welcome package into FAVA context format
+                context = self._transform_welcome_package_to_context(welcome_package)
+                logger.info(f"Loaded farmer context from welcome package for farmer {farmer_id}")
+                return context
+            except Exception as e:
+                logger.error(f"Failed to load welcome package, falling back to database: {e}")
+        
+        # Fallback to original database loading if welcome package not available
         context = {}
         
         # Load farmer details
@@ -132,6 +149,24 @@ RESPONSE FORMAT (JSON):
         messages_result = await db_conn.fetch(messages_query)
         context['recent_messages'] = [dict(row) for row in messages_result]
         
+        return context
+    
+    def _transform_welcome_package_to_context(self, welcome_package: Dict) -> Dict:
+        """
+        Transform welcome package format into FAVA context format
+        This is just data transformation, no LLM calls
+        """
+        context = {
+            'farmer': welcome_package.get('farmer_info', {}),
+            'fields': welcome_package.get('fields', []),
+            'crops': welcome_package.get('current_crops', []),
+            'recent_tasks': welcome_package.get('recent_tasks', []),
+            'recent_messages': [],  # Will be loaded separately if needed
+            'total_hectares': welcome_package.get('total_hectares', 0),
+            'total_fields': welcome_package.get('total_fields', 0),
+            'context_source': 'welcome_package',
+            'context_age': welcome_package.get('generated_at', '')
+        }
         return context
     
     def _build_full_prompt(self, farmer_context: Dict, message: str, language_code: str = 'en') -> str:
@@ -298,14 +333,64 @@ Generate FAVA response in JSON format:"""
                 'success': False,
                 'error': 'JSON parsing failed'
             }
+    
+    def initialize_welcome_package_manager(self):
+        """Initialize the Welcome Package Manager with Redis connection"""
+        try:
+            from ..core.redis_config import RedisConfig
+            from ..core.welcome_package_manager import WelcomePackageManager
+            from ..core.simple_db import execute_simple_query
+            
+            # Get Redis client
+            redis_client = RedisConfig.get_redis_client()
+            
+            if redis_client:
+                # Create a simple DB wrapper for the welcome package manager
+                class SimpleDBOps:
+                    def execute_query(self, query, params):
+                        return execute_simple_query(query, params)
+                
+                db_ops = SimpleDBOps()
+                self.welcome_package_manager = WelcomePackageManager(redis_client, db_ops)
+                logger.info("Welcome Package Manager initialized with Redis")
+            else:
+                logger.warning("Redis not available - Welcome Package Manager disabled")
+                
+        except Exception as e:
+            logger.error(f"Failed to initialize Welcome Package Manager: {e}")
+            self.welcome_package_manager = None
+    
+    def refresh_welcome_package_after_data_change(self, farmer_id: int, fava_response: Dict):
+        """
+        Update welcome package after farmer data changes
+        Called after successful database operations
+        """
+        if not self.welcome_package_manager:
+            return
+        
+        try:
+            action_type = fava_response.get('database_action')
+            
+            if action_type in ['INSERT', 'UPDATE', 'DELETE']:
+                # Clear the package to force rebuild on next access
+                self.welcome_package_manager.clear_package(farmer_id)
+                logger.info(f"Welcome package cleared for farmer {farmer_id} after {action_type}")
+                
+                # Immediately rebuild to have fresh data ready
+                self.welcome_package_manager.get_welcome_package(farmer_id)
+                logger.info(f"Welcome package rebuilt for farmer {farmer_id}")
+                
+        except Exception as e:
+            logger.error(f"Failed to refresh welcome package for farmer {farmer_id}: {e}")
 
 # Singleton instance
 _fava_engine = None
 
 def get_fava_engine() -> FAVAEngine:
-    """Get or create FAVA engine instance"""
+    """Get or create FAVA engine instance with Welcome Package support"""
     global _fava_engine
     if _fava_engine is None:
         _fava_engine = FAVAEngine()
-        logger.info("FAVA Engine initialized - Pure LLM implementation active")
+        _fava_engine.initialize_welcome_package_manager()
+        logger.info("FAVA Engine initialized - Pure LLM implementation with Redis Welcome Packages")
     return _fava_engine

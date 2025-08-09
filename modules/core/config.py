@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809174500'  # v4.22.5 - Fix fallback SQL query column mismatch
-COMMIT_HASH = "fix-fallback-query-columns"  # Fix column mismatch in fallback SQL queries
+DEPLOYMENT_TIMESTAMP = '20250809180000'  # v4.23.0 - Redis Welcome Package System for instant farmer context
+COMMIT_HASH = "redis-welcome-packages"  # Implement Redis-based welcome package caching system
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.22.5"
+VERSION = "v4.23.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
