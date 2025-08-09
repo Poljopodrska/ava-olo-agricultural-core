@@ -765,6 +765,7 @@ async def chat_with_cava_engine(request: ChatRequest):
         
         # Try to get farmer details
         farmer_id = None
+        logger.info(f"🔍 DEBUG: Looking up farmer for WhatsApp: {wa_phone_number}")
         try:
             async with db_manager.get_connection_async() as conn:
                 # Get farmer info
@@ -772,12 +773,35 @@ async def chat_with_cava_engine(request: ChatRequest):
                     "SELECT id, first_name, last_name, location, manager_name, manager_last_name FROM farmers WHERE wa_phone_number = $1 OR phone = $1",
                     wa_phone_number
                 )
+                
+                logger.info(f"🔍 DEBUG: Farmer query result: {farmer_result is not None}")
+                
                 if farmer_result:
                     farmer_id = farmer_result['id']
                     fname = farmer_result['manager_name'] or farmer_result['first_name'] or ''
                     lname = farmer_result['manager_last_name'] or farmer_result['last_name'] or ''
                     farmer_context["farmer_name"] = f"{fname} {lname}".strip()
                     farmer_context["location"] = farmer_result['location'] or "Slovenia"
+                    
+                    logger.info(f"✅ DEBUG: Found farmer ID {farmer_id}: {fname} {lname}")
+                else:
+                    logger.warning(f"❌ DEBUG: No farmer found for WhatsApp: {wa_phone_number}")
+                    
+                    # Try to find similar numbers
+                    similar_query = """
+                        SELECT wa_phone_number, manager_name 
+                        FROM farmers 
+                        WHERE wa_phone_number LIKE $1 
+                           OR phone LIKE $1
+                        LIMIT 5
+                    """
+                    similar_pattern = f"%{wa_phone_number[-6:]}%"  # Last 6 digits
+                    similar_results = await conn.fetch(similar_query, similar_pattern)
+                    
+                    if similar_results:
+                        logger.info(f"🔍 DEBUG: Found similar phone numbers:")
+                        for similar in similar_results:
+                            logger.info(f"  - {similar['wa_phone_number']}: {similar['manager_name']}")
                 
                 # Get fields
                 if farmer_id:
@@ -811,7 +835,10 @@ async def chat_with_cava_engine(request: ChatRequest):
         
         # FAVA INTEGRATION: Process message through FAVA for farmer-aware intelligence
         fava_response = None
+        logger.info(f"🤖 DEBUG: FAVA check - farmer_id={farmer_id}, message='{message[:50]}...'")
+        
         if farmer_id:
+            logger.info(f"🤖 DEBUG: Calling FAVA for farmer {farmer_id}")
             try:
                 fava_engine = get_fava_engine()
                 
@@ -828,6 +855,11 @@ async def chat_with_cava_engine(request: ChatRequest):
                         db_connection=conn,
                         language_code=detected_language  # Use the already detected language
                     )
+                    
+                    logger.info(f"🤖 DEBUG: FAVA response received")
+                    logger.info(f"  - Response: {fava_response.get('response', 'NO RESPONSE')[:100]}...")
+                    logger.info(f"  - Context used: {fava_response.get('context_used', [])}")
+                    logger.info(f"  - Database action: {fava_response.get('database_action')}")
                     
                     # Execute database action if FAVA suggests one
                     if fava_response.get('sql_query') and not fava_response.get('needs_confirmation'):
@@ -875,7 +907,9 @@ async def chat_with_cava_engine(request: ChatRequest):
                             fava_response['response'] = f"I couldn't save that information. Error: {str(sql_error)[:100]}"
                             
             except Exception as fava_error:
-                logger.error(f"FAVA processing error: {fava_error}")
+                logger.error(f"FAVA processing error: {fava_error}", exc_info=True)
+        else:
+            logger.warning(f"⚠️ DEBUG: FAVA not called - no farmer_id found for {wa_phone_number}")
         
         # Use FAVA response if available, otherwise fall back to CAVA
         if fava_response and fava_response.get('response'):

@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809184500'  # v4.23.1 - Fix FAVA context loading with proper fallback
-COMMIT_HASH = "fix-fava-context-loading"  # Fix FAVA not seeing farmer fields due to Redis connection issues
+DEPLOYMENT_TIMESTAMP = '20250809190000'  # v4.23.2 - Add comprehensive debug logging for FAVA context
+COMMIT_HASH = "debug-fava-context"  # Add detailed logging to diagnose why Edi's fields aren't showing
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.23.1"
+VERSION = "v4.23.2"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
