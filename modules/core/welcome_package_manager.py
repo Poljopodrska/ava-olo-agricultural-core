@@ -102,7 +102,7 @@ class WelcomePackageManager:
         
         # All farmer's fields (adapted to actual schema)
         fields_query = """
-            SELECT field_name, area_ha, latitude, longitude, 
+            SELECT id, field_name, area_ha, latitude, longitude, 
                    blok_id, raba, country, created_at
             FROM fields 
             WHERE farmer_id = %s
@@ -110,31 +110,60 @@ class WelcomePackageManager:
         """
         fields_result = self.db.execute_query(fields_query, (farmer_id,))
         
-        # Recent tasks (last 30 days)
+        # ALL tasks done on fields (not just recent)
         tasks_query = """
-            SELECT t.task_type, t.task_description, t.due_date, 
-                   t.status, t.created_at, f.field_name 
+            SELECT t.id, t.task_type, t.task_description, t.due_date, 
+                   t.status, t.created_at, f.field_name, f.id as field_id,
+                   t.date_performed, t.notes
             FROM tasks t 
             JOIN fields f ON t.field_id = f.id 
             WHERE f.farmer_id = %s 
-                AND t.created_at >= %s
-            ORDER BY t.created_at DESC 
-            LIMIT 10
+            ORDER BY t.created_at DESC
         """
-        thirty_days_ago = datetime.now() - timedelta(days=30)
-        tasks_result = self.db.execute_query(tasks_query, (farmer_id, thirty_days_ago))
+        tasks_result = self.db.execute_query(tasks_query, (farmer_id,))
         
-        # Current crops
+        # Current crops (including harvested for historical context)
         crops_query = """
-            SELECT fc.crop_name, fc.variety, fc.planting_date, 
-                   fc.harvest_date, fc.status, fc.area_ha, f.field_name 
+            SELECT fc.id, fc.crop_name, fc.variety, fc.planting_date, 
+                   fc.harvest_date, fc.status, fc.area_ha, f.field_name, f.id as field_id
             FROM field_crops fc 
             JOIN fields f ON fc.field_id = f.id 
             WHERE f.farmer_id = %s
-                AND (fc.status IS NULL OR fc.status != 'harvested')
             ORDER BY fc.planting_date DESC
         """
         crops_result = self.db.execute_query(crops_query, (farmer_id,))
+        
+        # Materials used with dose rates
+        materials_query = """
+            SELECT DISTINCT
+                tm.task_id,
+                tm.inventory_id,
+                tm.quantity,
+                mc.name as material_name,
+                mc.brand,
+                mc.group_name,
+                mc.formulation,
+                mc.unit,
+                tmd.rate_per_ha,
+                tmd.rate_unit,
+                t.task_type,
+                t.date_performed,
+                f.field_name,
+                f.id as field_id
+            FROM task_materials tm
+            JOIN tasks t ON tm.task_id = t.id
+            JOIN fields f ON t.field_id = f.id
+            LEFT JOIN inventory i ON tm.inventory_id = i.id
+            LEFT JOIN material_catalog mc ON i.material_id = mc.id
+            LEFT JOIN task_material_dose tmd ON (
+                tmd.material_id = mc.id 
+                AND tmd.task_type = t.task_type
+                AND tmd.farmer_id = %s
+            )
+            WHERE f.farmer_id = %s
+            ORDER BY t.date_performed DESC
+        """
+        materials_result = self.db.execute_query(materials_query, (farmer_id, farmer_id))
         
         # Build package structure
         farmer_info = {}
@@ -157,52 +186,119 @@ class WelcomePackageManager:
         if fields_result.get('success') and fields_result.get('rows'):
             for field in fields_result['rows']:
                 field_data = {
-                    "name": field[0],
-                    "area_ha": float(field[1]) if field[1] else 0,
-                    "latitude": float(field[2]) if field[2] else None,
-                    "longitude": float(field[3]) if field[3] else None,
-                    "blok_id": field[4],
-                    "raba": field[5],
-                    "country": field[6]
+                    "id": field[0],
+                    "name": field[1],
+                    "area_ha": float(field[2]) if field[2] else 0,
+                    "latitude": float(field[3]) if field[3] else None,
+                    "longitude": float(field[4]) if field[4] else None,
+                    "blok_id": field[5],
+                    "raba": field[6],
+                    "country": field[7],
+                    "created_at": field[8].isoformat() if field[8] else None
                 }
                 fields.append(field_data)
-                if field[1]:
-                    total_hectares += float(field[1])
+                if field[2]:
+                    total_hectares += float(field[2])
         
-        recent_tasks = []
+        all_tasks = []
+        tasks_by_field = {}
         if tasks_result.get('success') and tasks_result.get('rows'):
             for task in tasks_result['rows']:
-                recent_tasks.append({
-                    "task_type": task[0],
-                    "description": task[1],
-                    "due_date": task[2].isoformat() if task[2] else None,
-                    "status": task[3],
-                    "created_at": task[4].isoformat() if task[4] else None,
-                    "field": task[5]
-                })
+                task_data = {
+                    "id": task[0],
+                    "task_type": task[1],
+                    "description": task[2],
+                    "due_date": task[3].isoformat() if task[3] else None,
+                    "status": task[4],
+                    "created_at": task[5].isoformat() if task[5] else None,
+                    "field_name": task[6],
+                    "field_id": task[7],
+                    "date_performed": task[8].isoformat() if task[8] else None,
+                    "notes": task[9]
+                }
+                all_tasks.append(task_data)
+                
+                # Group tasks by field
+                field_id = task[7]
+                if field_id not in tasks_by_field:
+                    tasks_by_field[field_id] = []
+                tasks_by_field[field_id].append(task_data)
         
-        current_crops = []
+        all_crops = []
+        crops_by_field = {}
         if crops_result.get('success') and crops_result.get('rows'):
             for crop in crops_result['rows']:
-                current_crops.append({
-                    "crop": crop[0],
-                    "variety": crop[1],
-                    "planting_date": crop[2].isoformat() if crop[2] else None,
-                    "harvest_date": crop[3].isoformat() if crop[3] else None,
-                    "status": crop[4],
-                    "area_ha": float(crop[5]) if crop[5] else 0,
-                    "field": crop[6]
-                })
+                crop_data = {
+                    "id": crop[0],
+                    "crop": crop[1],
+                    "variety": crop[2],
+                    "planting_date": crop[3].isoformat() if crop[3] else None,
+                    "harvest_date": crop[4].isoformat() if crop[4] else None,
+                    "status": crop[5],
+                    "area_ha": float(crop[6]) if crop[6] else 0,
+                    "field_name": crop[7],
+                    "field_id": crop[8]
+                }
+                all_crops.append(crop_data)
+                
+                # Group crops by field
+                field_id = crop[8]
+                if field_id not in crops_by_field:
+                    crops_by_field[field_id] = []
+                crops_by_field[field_id].append(crop_data)
         
-        # Build complete package
+        # Process materials and dose rates
+        materials_used = []
+        materials_by_field = {}
+        if materials_result.get('success') and materials_result.get('rows'):
+            for mat in materials_result['rows']:
+                material_data = {
+                    "task_id": mat[0],
+                    "inventory_id": mat[1],
+                    "quantity_used": float(mat[2]) if mat[2] else 0,
+                    "material_name": mat[3],
+                    "brand": mat[4],
+                    "group": mat[5],
+                    "formulation": mat[6],
+                    "unit": mat[7],
+                    "rate_per_ha": float(mat[8]) if mat[8] else None,
+                    "rate_unit": mat[9],
+                    "task_type": mat[10],
+                    "date_applied": mat[11].isoformat() if mat[11] else None,
+                    "field_name": mat[12],
+                    "field_id": mat[13]
+                }
+                materials_used.append(material_data)
+                
+                # Group materials by field
+                field_id = mat[13]
+                if field_id not in materials_by_field:
+                    materials_by_field[field_id] = []
+                materials_by_field[field_id].append(material_data)
+        
+        # Enhance fields with their associated data
+        enhanced_fields = []
+        for field in fields:
+            field_id = field["id"]
+            
+            field["tasks"] = tasks_by_field.get(field_id, [])
+            field["crops"] = crops_by_field.get(field_id, [])
+            field["materials_used"] = materials_by_field.get(field_id, [])
+            enhanced_fields.append(field)
+        
+        # Build complete package with all the comprehensive data
         package = {
             "farmer_id": farmer_id,
             "farmer_info": farmer_info,
-            "fields": fields,
+            "fields": enhanced_fields,
             "total_fields": len(fields),
             "total_hectares": round(total_hectares, 2),
-            "recent_tasks": recent_tasks,
-            "current_crops": current_crops,
+            "all_tasks": all_tasks,
+            "all_crops": all_crops,
+            "materials_used": materials_used,
+            "tasks_by_field": tasks_by_field,
+            "crops_by_field": crops_by_field,
+            "materials_by_field": materials_by_field,
             "generated_at": datetime.now().isoformat(),
             "expires_at": (datetime.now() + timedelta(seconds=self.ttl_seconds)).isoformat(),
             "source": "database"

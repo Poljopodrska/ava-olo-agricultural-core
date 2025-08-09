@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809204500'  # v4.24.1 - Dashboard chat now uses FAVA with Redis
-COMMIT_HASH = "dashboard-fava-integration"  # Dashboard chat now uses FAVA like WhatsApp does
+DEPLOYMENT_TIMESTAMP = '20250809210000'  # v4.25.0 - Enhanced Redis welcome package with complete farm data
+COMMIT_HASH = "enhanced-welcome-package"  # Now includes ALL tasks, crops, varieties, materials, and dose rates
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.24.1"
+VERSION = "v4.25.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
