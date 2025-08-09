@@ -26,8 +26,12 @@ class RedisConfig:
         """
         
         # Get Redis connection details from environment
-        # Default to AWS ElastiCache endpoint if available
-        redis_host = os.getenv('REDIS_HOST', 'ava-redis-cluster.cache.amazonaws.com')
+        # Don't default to a non-existent host - require explicit configuration
+        redis_host = os.getenv('REDIS_HOST')
+        if not redis_host:
+            logger.warning("REDIS_HOST not configured - Redis caching disabled")
+            return None
+            
         redis_port = int(os.getenv('REDIS_PORT', 6379))
         redis_db = int(os.getenv('REDIS_DB', 0))
         redis_password = os.getenv('REDIS_PASSWORD', None)

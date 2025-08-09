@@ -87,31 +87,39 @@ RESPONSE FORMAT (JSON):
         NEW WAY: Get from Redis welcome package (much faster)
         """
         
+        logger.info(f"Loading context for farmer {farmer_id}")
+        logger.info(f"Welcome package manager available: {self.welcome_package_manager is not None}")
+        
         # Try to use welcome package manager if available
         if self.welcome_package_manager:
             try:
+                logger.info(f"Attempting to load welcome package for farmer {farmer_id}")
                 # Get welcome package from Redis (or auto-build if missing)
                 welcome_package = self.welcome_package_manager.get_welcome_package(farmer_id)
                 
                 # Transform welcome package into FAVA context format
                 context = self._transform_welcome_package_to_context(welcome_package)
-                logger.info(f"Loaded farmer context from welcome package for farmer {farmer_id}")
+                logger.info(f"✅ Loaded farmer context from welcome package for farmer {farmer_id}")
+                logger.info(f"Context has {len(context.get('fields', []))} fields")
                 return context
             except Exception as e:
-                logger.error(f"Failed to load welcome package, falling back to database: {e}")
+                logger.error(f"❌ Failed to load welcome package for farmer {farmer_id}: {e}", exc_info=True)
         
         # Fallback to original database loading if welcome package not available
+        logger.info(f"Using database fallback for farmer {farmer_id}")
         context = {}
         
         # Load farmer details
         farmer_query = f"SELECT * FROM farmers WHERE id = {farmer_id}"
         farmer_result = await db_conn.fetchrow(farmer_query)
         context['farmer'] = dict(farmer_result) if farmer_result else {}
+        logger.info(f"Farmer found: {farmer_result is not None}")
         
         # Load fields
         fields_query = f"SELECT * FROM fields WHERE farmer_id = {farmer_id}"
         fields_result = await db_conn.fetch(fields_query)
         context['fields'] = [dict(row) for row in fields_result]
+        logger.info(f"Found {len(context['fields'])} fields for farmer {farmer_id}")
         
         # Load crops
         if context['fields']:

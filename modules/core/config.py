@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809180000'  # v4.23.0 - Redis Welcome Package System for instant farmer context
-COMMIT_HASH = "redis-welcome-packages"  # Implement Redis-based welcome package caching system
+DEPLOYMENT_TIMESTAMP = '20250809184500'  # v4.23.1 - Fix FAVA context loading with proper fallback
+COMMIT_HASH = "fix-fava-context-loading"  # Fix FAVA not seeing farmer fields due to Redis connection issues
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.23.0"
+VERSION = "v4.23.1"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)
