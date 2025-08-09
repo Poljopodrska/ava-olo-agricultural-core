@@ -357,9 +357,13 @@ app.include_router(debug_crops_router)
 from modules.api.debug_field_data import router as debug_field_data_router
 app.include_router(debug_field_data_router)
 
-# Add welcome package debug route
-from modules.api.debug_welcome_package import router as debug_welcome_router
-app.include_router(debug_welcome_router)
+# Add welcome package debug route (disabled - has import issues)
+# from modules.api.debug_welcome_package import router as debug_welcome_router
+# app.include_router(debug_welcome_router)
+
+# Add simple cache debug route
+from modules.api.debug_cache_simple import router as debug_cache_router
+app.include_router(debug_cache_router)
 
 # Add test logging route
 from modules.api.test_logging import router as test_logging_router
