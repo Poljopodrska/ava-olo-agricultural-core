@@ -11,10 +11,10 @@ from datetime import datetime
 
 # Service-specific deployment tracking
 SERVICE_NAME = "agricultural-core"
-DEPLOYMENT_TIMESTAMP = '20250809211500'  # v4.25.1 - Fix FAVA compatibility with new welcome package structure
-COMMIT_HASH = "fix-fava-compatibility"  # Handle both old and new welcome package field names
+DEPLOYMENT_TIMESTAMP = '20250809213800'  # v4.26.0 - Add field_activities integration for accurate crop and task data
+COMMIT_HASH = "add-field-activities"  # Integrate field_activities table for spraying/fertilizing data
 BUILD_ID = f"{COMMIT_HASH}-{hashlib.md5(f'{SERVICE_NAME}-{DEPLOYMENT_TIMESTAMP}'.encode()).hexdigest()[:8]}"
-VERSION = "v4.25.1"
+VERSION = "v4.26.0"
 
 # Set up logger
 logging.basicConfig(level=logging.DEBUG)

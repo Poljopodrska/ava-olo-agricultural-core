@@ -122,6 +122,26 @@ class WelcomePackageManager:
         """
         tasks_result = self.db.execute_query(tasks_query, (farmer_id,))
         
+        # Also get activities from field_activities table (this is where actual spraying/fertilizing is stored)
+        activities_query = """
+            SELECT 
+                fa.id, 
+                fa.activity_type, 
+                fa.product_name, 
+                fa.activity_date,
+                fa.dose_amount, 
+                fa.dose_unit,
+                f.field_name, 
+                f.id as field_id,
+                fa.notes,
+                fa.created_at
+            FROM field_activities fa
+            JOIN fields f ON fa.field_id = f.id
+            WHERE f.farmer_id = %s
+            ORDER BY fa.activity_date DESC, fa.created_at DESC
+        """
+        activities_result = self.db.execute_query(activities_query, (farmer_id,))
+        
         # Current crops (including harvested for historical context)
         crops_query = """
             SELECT fc.id, fc.crop_name, fc.variety, fc.planting_date, 
@@ -224,6 +244,48 @@ class WelcomePackageManager:
                     tasks_by_field[field_id] = []
                 tasks_by_field[field_id].append(task_data)
         
+        # Process field activities (spraying, fertilizing, etc.)
+        all_activities = []
+        activities_by_field = {}
+        if activities_result.get('success') and activities_result.get('rows'):
+            for activity in activities_result['rows']:
+                # Format activity description
+                activity_desc = activity[1]  # activity_type
+                if activity[2]:  # product_name
+                    activity_desc += f" - {activity[2]}"
+                    if activity[4] and activity[5]:  # dose_amount and dose_unit
+                        activity_desc += f" ({activity[4]} {activity[5]})"
+                
+                activity_data = {
+                    "id": activity[0],
+                    "task_type": activity_desc,  # Formatted description
+                    "activity_type": activity[1],
+                    "product_name": activity[2],
+                    "date_performed": activity[3].isoformat() if activity[3] else None,
+                    "dose_amount": float(activity[4]) if activity[4] else None,
+                    "dose_unit": activity[5],
+                    "field_name": activity[6],
+                    "field_id": activity[7],
+                    "notes": activity[8],
+                    "created_at": activity[9].isoformat() if activity[9] else None,
+                    "source": "field_activities"  # Mark the source
+                }
+                all_activities.append(activity_data)
+                
+                # Add to all_tasks for compatibility
+                all_tasks.append(activity_data)
+                
+                # Group activities by field
+                field_id = activity[7]
+                if field_id not in activities_by_field:
+                    activities_by_field[field_id] = []
+                activities_by_field[field_id].append(activity_data)
+                
+                # Also add to tasks_by_field for unified access
+                if field_id not in tasks_by_field:
+                    tasks_by_field[field_id] = []
+                tasks_by_field[field_id].append(activity_data)
+        
         all_crops = []
         crops_by_field = {}
         if crops_result.get('success') and crops_result.get('rows'):
@@ -293,10 +355,12 @@ class WelcomePackageManager:
             "fields": enhanced_fields,
             "total_fields": len(fields),
             "total_hectares": round(total_hectares, 2),
-            "all_tasks": all_tasks,
+            "all_tasks": all_tasks,  # Now includes both tasks and field_activities
+            "all_activities": all_activities,  # Separate list of just field_activities
             "all_crops": all_crops,
             "materials_used": materials_used,
-            "tasks_by_field": tasks_by_field,
+            "tasks_by_field": tasks_by_field,  # Now includes both
+            "activities_by_field": activities_by_field,  # Separate activities by field
             "crops_by_field": crops_by_field,
             "materials_by_field": materials_by_field,
             "generated_at": datetime.now().isoformat(),

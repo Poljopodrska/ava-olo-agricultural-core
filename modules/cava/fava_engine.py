@@ -218,7 +218,8 @@ RESPONSE FORMAT (JSON):
         context_text = f"""
 DATABASE SCHEMA FOR SQL GENERATION:
 - fields table: id (SERIAL), farmer_id (INT), field_name (VARCHAR), area_ha (FLOAT)
-- field_crops table: id (SERIAL), field_id (INT), crop_type (VARCHAR), variety (VARCHAR), planting_date (DATE)
+- field_crops table: id (SERIAL), field_id (INT), crop_name (VARCHAR), variety (VARCHAR), start_date (DATE)
+- field_activities table: id (SERIAL), field_id (INT), activity_type (VARCHAR), product_name (VARCHAR), activity_date (DATE), dose_amount (FLOAT), dose_unit (VARCHAR)
 - tasks table: id (SERIAL), field_id (INT), task_type (VARCHAR), date_performed (DATE)
 
 CURRENT FARMER CONTEXT:
@@ -238,7 +239,9 @@ Fields ({len(farmer_context['fields'])} total):
         
         context_text += f"\nCrops ({len(farmer_context['crops'])} active):\n"
         for crop in farmer_context['crops']:
-            context_text += f"- {crop.get('crop_type', '')}: {crop.get('variety', '')} (planted {crop.get('planting_date', 'unknown')})\n"
+            # Handle both field names - crop_type (old) and crop (new)
+            crop_name = crop.get('crop', crop.get('crop_type', crop.get('crop_name', '')))
+            context_text += f"- Field {crop.get('field_name', 'unknown')}: {crop_name} - {crop.get('variety', '')} (planted {crop.get('planting_date', crop.get('start_date', 'unknown'))})\n"
         
         context_text += f"\nRecent Tasks:\n"
         for task in farmer_context['recent_tasks'][:5]:
