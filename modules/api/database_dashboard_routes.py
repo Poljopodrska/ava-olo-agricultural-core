@@ -75,8 +75,12 @@ async def execute_sql_query(request: SQLRequest):
                     # Convert datetime to string if needed
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
+                    elif isinstance(value, (int, float)):
+                        value = value
                     elif value is None:
                         value = ""
+                    else:
+                        value = str(value)
                     row_dict[col] = value
                 data.append(row_dict)
             
@@ -129,6 +133,12 @@ async def natural_language_query(request: NLQRequest):
                     # Convert datetime to string if needed
                     if hasattr(value, 'isoformat'):
                         value = value.isoformat()
+                    elif isinstance(value, (int, float)):
+                        value = value
+                    elif value is None:
+                        value = ""
+                    else:
+                        value = str(value)
                     row_dict[col] = value
                 data.append(row_dict)
             
@@ -303,6 +313,12 @@ async def search_farmer(name: str):
                             value = row[i] if i < len(row) else None
                             if hasattr(value, 'isoformat'):
                                 value = value.isoformat()
+                            elif isinstance(value, (int, float)):
+                                value = value
+                            elif value is None:
+                                value = ""
+                            else:
+                                value = str(value)
                             field_dict[col] = value
                         fields_data.append(field_dict)
                     
